@@ -286,48 +286,48 @@ export default function BranchManagementPage() {
   }
 
   // Show upgrade message if user doesn't have multi-branch feature
-  if (!hasMultiBranch) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title={isBangla ? 'শাখা পরিচালনা' : 'Branch Management'}
-          subtitle={isBangla ? 'আপনার সকল শাখা পরিচালনা করুন' : 'Manage all your branches'}
-          icon={Building2}
-        >
-          <Button variant="outline" onClick={() => navigateTo('settings')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {isBangla ? 'ফিরে যান' : 'Go Back'}
-          </Button>
-        </PageHeader>
+  // if (!hasMultiBranch) {
+  //   return (
+  //     <div className="space-y-6">
+  //       <PageHeader
+  //         title={isBangla ? 'শাখা পরিচালনা' : 'Branch Management'}
+  //         subtitle={isBangla ? 'আপনার সকল শাখা পরিচালনা করুন' : 'Manage all your branches'}
+  //         icon={Building2}
+  //       >
+  //         <Button variant="outline" onClick={() => navigateTo('settings')}>
+  //           <ArrowLeft className="w-4 h-4 mr-2" />
+  //           {isBangla ? 'ফিরে যান' : 'Go Back'}
+  //         </Button>
+  //       </PageHeader>
 
-        {/* Premium Feature Gate */}
-        <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center mb-4">
-                <Crown className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">
-                {isBangla ? 'প্রিমিয়াম ফিচার' : 'Premium Feature'}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                {isBangla
-                  ? 'মাল্টি-ব্রাঞ্চ সাপোর্ট Growth বা Intelligence প্ল্যানে উপলব্ধ। আপগ্রেড করে একাধিক শাখা পরিচালনা করুন।'
-                  : 'Multi-branch support is available on Growth or Intelligence plan. Upgrade to manage multiple branches.'}
-              </p>
-              <Button 
-                className="bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700"
-                onClick={() => navigateTo('settings')}
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                {isBangla ? 'আপগ্রেড করুন' : 'Upgrade Now'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  //       {/* Premium Feature Gate */}
+  //       <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+  //         <CardContent className="pt-6">
+  //           <div className="text-center py-8">
+  //             <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center mb-4">
+  //               <Crown className="h-8 w-8 text-white" />
+  //             </div>
+  //             <h3 className="text-lg font-bold mb-2">
+  //               {isBangla ? 'প্রিমিয়াম ফিচার' : 'Premium Feature'}
+  //             </h3>
+  //             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+  //               {isBangla
+  //                 ? 'মাল্টি-ব্রাঞ্চ সাপোর্ট Growth বা Intelligence প্ল্যানে উপলব্ধ। আপগ্রেড করে একাধিক শাখা পরিচালনা করুন।'
+  //                 : 'Multi-branch support is available on Growth or Intelligence plan. Upgrade to manage multiple branches.'}
+  //             </p>
+  //             <Button 
+  //               className="bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700"
+  //               onClick={() => navigateTo('settings')}
+  //             >
+  //               <Crown className="w-4 h-4 mr-2" />
+  //               {isBangla ? 'আপগ্রেড করুন' : 'Upgrade Now'}
+  //             </Button>
+  //           </div>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-6">

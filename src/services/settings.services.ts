@@ -10,7 +10,7 @@ export const updateBusiness = async (businessInfo: any) => {
     return res.data
 };
 
-export const updatePassword = async (passwords: { currentPassword: string, newPassword: string, confirmPassword: string }) => {
+export const updatePassword = async (passwords: { currentPassword: string, newPassword: string}) => {
     const res = await client.patch('/api/settings/user/password', passwords);
     return res.data
 };

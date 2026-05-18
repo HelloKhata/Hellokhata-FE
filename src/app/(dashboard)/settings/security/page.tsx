@@ -57,7 +57,7 @@ const SecurityPage = () => {
       return;
     }
 
-    updatePassword(passwordForm, {
+    updatePassword({currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword  }, {
       onSuccess: () => {
         toast({
           title: isBangla ? 'সফলভাবে আপডেট করা হয়েছে' : 'Successfully updated',

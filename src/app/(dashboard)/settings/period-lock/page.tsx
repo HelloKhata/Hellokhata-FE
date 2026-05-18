@@ -20,7 +20,6 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useNavigation } from '@/stores/uiStore';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 interface PeriodLock {
   id: string;
