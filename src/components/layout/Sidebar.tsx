@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore, type PageRoute } from '@/stores/uiStore';
@@ -28,6 +29,8 @@ import {
   CreditCard,
   LayoutList,
   Tag,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,20 +43,63 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+export interface SubnavItem {
+  page: string;
+  icon?: any;
+  labelKey: string;
+  labelBn: string;
+}
 
-const mainNavItems = [
+export interface NavItem {
+  labelKey: string;
+  labelBn: string;
+  icon: any;
+  page?: string;
+  submenu?: SubnavItem[];
+}
+
+const navGroups: NavItem[] = [
   { page: '/', icon: LayoutDashboard, labelKey: 'Dashboard', labelBn: 'ড্যাশবোর্ড' },
-  { page: '/sales', icon: ShoppingCart, labelKey: 'Sales', labelBn: 'বিক্রি' },
-  { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
-  { page: '/returns', icon: RotateCcw, labelKey: 'Returns', labelBn: 'রিটার্ন' },
-  { page: '/purchases', icon: Truck, labelKey: 'Purchases', labelBn: 'ক্রয়' },
+  {
+    labelKey: 'Sales',
+    labelBn: 'বিক্রি',
+    icon: ShoppingCart,
+    submenu: [
+      { page: '/sales', icon: ShoppingCart, labelKey: 'Sales List', labelBn: 'বিক্রয় তালিকা' },
+      { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
+      { page: '/returns/sales', icon: RotateCcw, labelKey: 'Sales Return', labelBn: 'বিক্রয় ফেরত' },
+    ],
+  },
+  {
+    labelKey: 'Purchases',
+    labelBn: 'ক্রয়',
+    icon: Truck,
+    submenu: [
+      { page: '/purchases', icon: Truck, labelKey: 'Purchase List', labelBn: 'ক্রয় তালিকা' },
+      { page: '/returns/purchases', icon: RotateCcw, labelKey: 'Purchase Return', labelBn: 'ক্রয় ফেরত' },
+    ],
+  },
   { page: '/parties', icon: Users, labelKey: 'Parties', labelBn: 'পার্টি' },
-  { page: '/inventory', icon: Package, labelKey: 'Inventory', labelBn: 'ইনভেন্টরি' },
-  { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
-  { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
+  {
+    labelKey: 'Inventory',
+    labelBn: 'ইনভেন্টরি',
+    icon: Package,
+    submenu: [
+      { page: '/inventory', icon: Package, labelKey: 'Inventory List', labelBn: 'ইনভেন্টরি তালিকা' },
+      { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
+    ],
+  },
+  {
+    labelKey: 'Finance',
+    labelBn: 'অর্থায়ন',
+    icon: Receipt,
+    submenu: [
+      { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
+      { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
+      { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
+    ],
+  },
   { page: '/reports', icon: BarChart3, labelKey: 'Reports', labelBn: 'রিপোর্ট' },
-  { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
-  { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
 ];
 
 const bottomNavItems = [
@@ -67,6 +113,29 @@ export function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed, currentPage, navigateTo } = useUiStore();
   const path = usePathname();
   const language = useUiStore((state) => state.language);
+
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>(() => {
+    // Initialize with the submenu that is active based on path
+    const initialOpen: Record<string, boolean> = {};
+    navGroups.forEach((group) => {
+      if (group.submenu && group.submenu.some((sub) => path === sub.page)) {
+        initialOpen[group.labelKey] = true;
+      }
+    });
+    return initialOpen;
+  });
+
+  const toggleSubmenu = (labelKey: string) => {
+    if (sidebarCollapsed) {
+      setSidebarCollapsed(false);
+      setOpenSubmenus((prev) => ({ ...prev, [labelKey]: true }));
+      return;
+    }
+    setOpenSubmenus((prev) => ({
+      ...prev,
+      [labelKey]: !prev[labelKey],
+    }));
+  };
 
   return (
     <TooltipProvider>
@@ -96,9 +165,8 @@ export function Sidebar() {
           )}
           <Button
             variant="ghost"
-            // size="icon-sm"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground p-0 flex items-center justify-center"
           >
             <ChevronLeft className={cn('h-4 w-4 transition-transform duration-200', sidebarCollapsed && 'rotate-180')} />
           </Button>
@@ -122,64 +190,144 @@ export function Sidebar() {
         )}
 
         {/* Main Navigation */}
-        <ScrollArea className="flex-1 px-3 py-4 scrollbar-premium overflow-scroll">
-          <nav className="space-y-1">
-            {mainNavItems?.map((item, index) => (
-              <div key={item.page} className="stagger-item" style={{ animationDelay: `${index * 30}ms` }}>
-                <Link href={item.page}
+        <ScrollArea className="flex-1 px-3 py-4 scrollbar-premium overflow-y-auto">
+          <nav className="space-y-1.5">
+            {navGroups.map((item, index) => {
+              const isGroupActive = item.submenu
+                ? item.submenu.some((sub) => path === sub.page)
+                : path === item.page;
+
+              const element = item.submenu ? (
+                // Group with submenu
+                <div className="space-y-1">
+                  <button
+                    onClick={() => toggleSubmenu(item.labelKey)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full text-left',
+                      'relative group',
+                      'text-muted-foreground hover:text-foreground hover:bg-muted/50',
+                      isGroupActive && !openSubmenus[item.labelKey] && 'text-primary bg-primary-subtle',
+                      sidebarCollapsed && 'justify-center px-2',
+                    )}
+                  >
+                    {isGroupActive && !openSubmenus[item.labelKey] && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+                    )}
+                    <item.icon className={cn(
+                      'h-5 w-5 flex-shrink-0 transition-all duration-200',
+                      isGroupActive && 'text-primary',
+                      'group-hover:scale-105'
+                    )} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="truncate">{language === 'en' ? item.labelKey : item.labelBn}</span>
+                        <span className="ml-auto flex-shrink-0">
+                          {openSubmenus[item.labelKey] ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                          )}
+                        </span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Submenu list */}
+                  {!sidebarCollapsed && openSubmenus[item.labelKey] && (
+                    <div className="mt-1 ml-4 pl-3 border-l border-sidebar-border space-y-1">
+                      {item.submenu.map((subItem) => (
+                        <Link
+                          key={subItem.page}
+                          href={subItem.page}
+                          className={cn(
+                            'flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 w-full relative group',
+                            'text-muted-foreground hover:text-foreground hover:bg-muted/30',
+                            path === subItem.page && 'text-primary bg-primary-subtle font-semibold',
+                          )}
+                        >
+                          {path === subItem.page && (
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-r-full" />
+                          )}
+                          {subItem.icon && (
+                            <subItem.icon className={cn(
+                              'h-4 w-4 flex-shrink-0 transition-all duration-200',
+                              path === subItem.page && 'text-primary'
+                            )} />
+                          )}
+                          <span className="truncate">{language === 'en' ? subItem.labelKey : subItem.labelBn}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Direct Link
+                <Link
+                  href={item.page || '/'}
                   className={cn(
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full',
                     'relative group',
-                    // Default state
                     'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                    // Active state with indigo accent
-                    path === item.page && [
-                      'text-primary bg-primary-subtle',
-                    ],
+                    path === item.page && 'text-primary bg-primary-subtle',
                     sidebarCollapsed && 'justify-center px-2',
                   )}
                 >
-                  {/* Active indicator dot */}
                   {path === item.page && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
                   )}
-
                   <item.icon className={cn(
                     'h-5 w-5 flex-shrink-0 transition-all duration-200',
                     path === item.page && 'text-primary',
                     'group-hover:scale-105'
                   )} />
-
                   {!sidebarCollapsed && (
-                    <>
-                      <span className="truncate">{language === 'en' ? item.labelKey : item.labelBn}</span>
-                      {/* {isLocked && (
-              <Badge variant="warning" size="sm" className="ml-auto">Pro</Badge>
-            )} */}
-                    </>
+                    <span className="truncate">{language === 'en' ? item.labelKey : item.labelBn}</span>
                   )}
                 </Link>
-              </div>
-            ))}
+              );
+
+              return (
+                <div key={item.labelKey} className="stagger-item" style={{ animationDelay: `${index * 30}ms` }}>
+                  {sidebarCollapsed ? (
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <div className="w-full">{element}</div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="bg-popover border border-border text-popover-foreground">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold text-xs">{language === 'en' ? item.labelKey : item.labelBn}</span>
+                          {item.submenu && (
+                            <div className="flex flex-col gap-0.5 pl-2 border-l border-border text-[11px] text-muted-foreground">
+                              {item.submenu.map((sub) => (
+                                <span key={sub.page}>• {language === 'en' ? sub.labelKey : sub.labelBn}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    element
+                  )}
+                </div>
+              );
+            })}
           </nav>
         </ScrollArea>
 
         {/* Bottom Navigation */}
         <div className="border-t border-border-subtle p-3 space-y-1">
           {bottomNavItems?.map((item, index) => (
-            <div key={item.page} className="stagger-item" style={{ animationDelay: `${(mainNavItems.length + index) * 30}ms` }}>
+            <div key={item.page} className="stagger-item" style={{ animationDelay: `${(navGroups.length + index) * 30}ms` }}>
               <Link href={item.page}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full',
                   'relative group',
-                  // Default state
                   'text-muted-foreground hover:text-foreground hover:bg-muted/50',
-                  // Active state with indigo accent
                   path === item.page && [
                     'text-primary bg-primary-subtle',
                   ],
                   sidebarCollapsed && 'justify-center px-2',
-                  //isLocked && 'opacity-50 cursor-not-allowed'
                 )}
               >
                 {/* Active indicator dot */}
@@ -196,9 +344,6 @@ export function Sidebar() {
                 {!sidebarCollapsed && (
                   <>
                     <span className="truncate">{language === 'en' ? item.labelKey : item.labelBn}</span>
-                    {/* {isLocked && (
-              <Badge variant="warning" size="sm" className="ml-auto">Pro</Badge>
-            )} */}
                   </>
                 )}
               </Link>
@@ -218,8 +363,6 @@ export function Sidebar() {
             {!sidebarCollapsed && <span>{isBangla ? 'লগআউট' : 'Logout'}</span>}
           </button>
         </div>
-
-
       </aside>
     </TooltipProvider>
   );
