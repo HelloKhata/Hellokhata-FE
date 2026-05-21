@@ -3,12 +3,11 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button, Card, Badge } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useCategories } from '@/hooks/queries';
 import {
@@ -48,6 +47,8 @@ import {
 import { useSessionStore } from '@/stores/sessionStore';
 import { useNavigation } from '@/stores/uiStore';
 import { ArrowLeft } from 'lucide-react';
+import { useGetInventorySettings, useUpdateInventorySettings } from '@/hooks/api/useSettings';
+import { toast } from 'sonner';
 
 // Settings input component using shadcn/ui Input with full width
 const SettingsInput = ({
@@ -171,219 +172,184 @@ const ToggleRow = ({
   </div>
 );
 
-export default function InventorySettingsPage() {
-  const { isBangla } = useAppTranslation();
-  const { toast } = useToast();
-  const businessId = useSessionStore((s) => s.business?.id);
-  const { data: categories, refetch: refetchCategories } = useCategories();
-  const { navigateTo } = useNavigation();
+export interface InventorySettingsFormState {
+  lowStockThreshold: number;
+  lowStockAlerts: boolean;
+  stockWarningNotifications: boolean;
+}
 
-  // Form state
-  const [lowStockThreshold, setLowStockThreshold] = useState(10);
-  const [lowStockAlerts, setLowStockAlerts] = useState(true);
-  const [stockWarningNotifications, setStockWarningNotifications] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+interface InventorySettingsFormProps {
+  initialSettings?: {
+    lowStockThreshold?: number;
+    lowStockAlerts?: boolean;
+    stockWarningNotifications?: boolean;
+  };
+  isBangla: boolean;
+}
 
-  // Category management state
-  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; nameBn: string } | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<{ id: string; name: string } | null>(null);
-  const [categoryForm, setCategoryForm] = useState({ name: '', nameBn: '' });
-  const [isCategorySaving, setIsCategorySaving] = useState(false);
+function InventorySettingsForm({ initialSettings, isBangla }: InventorySettingsFormProps) {
+  const [formState, setFormState] = useState<InventorySettingsFormState>(() => ({
+    lowStockThreshold: initialSettings?.lowStockThreshold ?? 10,
+    lowStockAlerts: initialSettings?.lowStockAlerts ?? true,
+    stockWarningNotifications: initialSettings?.stockWarningNotifications ?? true,
+  }));
 
-  // Fetch settings from API
-  const fetchSettings = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/inventory-settings');
-      const data = await response.json();
-      if (data.success) {
-        setLowStockThreshold(data.data.lowStockThreshold);
-        setLowStockAlerts(data.data.lowStockAlerts);
-        setStockWarningNotifications(data.data.stockWarningNotifications);
-      }
-    } catch (error) {
-      console.error('Failed to fetch inventory settings:', error);
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: isBangla ? 'সেটিংস লোড করতে ব্যর্থ' : 'Failed to load settings',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast, isBangla]);
+  const { mutate: updateSettings, isPending: isSaving } = useUpdateInventorySettings();
 
-  // Fetch on mount
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
-
-  // Save settings
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch('/api/inventory-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lowStockThreshold,
-          lowStockAlerts,
-          stockWarningNotifications,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast({
-          title: isBangla ? 'সফল হয়েছে' : 'Success',
+  const handleSave = useCallback(() => {
+    updateSettings(formState, {
+      onSuccess: () => {
+        toast.success(isBangla ? 'সফল হয়েছে' : 'Success', {
           description: isBangla
             ? 'ইনভেন্টরি সেটিংস সংরক্ষিত হয়েছে'
             : 'Inventory settings saved successfully',
         });
-      } else {
-        toast({
-          title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-          description: data.error || (isBangla ? 'সেটিংস সংরক্ষণ ব্যর্থ' : 'Failed to save settings'),
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: isBangla ? 'কিছু ভুল হয়েছে' : 'Something went wrong',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      },
+    });
+  }, [formState, updateSettings, isBangla]);
 
-  // Category management handlers
-  const handleAddCategory = async () => {
-    if (!categoryForm.name.trim()) {
-      toast({
-        title: isBangla ? 'নাম প্রয়োজন' : 'Name required',
-        description: isBangla ? 'ক্যাটাগরির নাম দিন' : 'Please enter category name',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleThresholdChange = useCallback((value: string) => {
+    setFormState((prev) => ({
+      ...prev,
+      lowStockThreshold: parseInt(value, 10) || 0,
+    }));
+  }, []);
 
-    setIsCategorySaving(true);
-    try {
-      const response = await fetch('/api/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': businessId || '',
-        },
-        body: JSON.stringify({
-          name: categoryForm.name,
-          nameBn: categoryForm.nameBn || categoryForm.name,
-        }),
-      });
+  const handleAlertsChange = useCallback((checked: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      lowStockAlerts: checked,
+    }));
+  }, []);
 
-      const data = await response.json();
+  const handleNotificationsChange = useCallback((checked: boolean) => {
+    setFormState((prev) => ({
+      ...prev,
+      stockWarningNotifications: checked,
+    }));
+  }, []);
 
-      if (data.success) {
-        toast({
-          title: isBangla ? 'সফল হয়েছে' : 'Success',
-          description: isBangla ? 'ক্যাটাগরি যোগ হয়েছে' : 'Category added successfully',
-        });
-        setIsAddCategoryOpen(false);
-        setCategoryForm({ name: '', nameBn: '' });
-        refetchCategories();
-      } else {
-        throw new Error(data.error?.message || 'Failed to add category');
-      }
-    } catch (error) {
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: isBangla ? 'ক্যাটাগরি যোগ ব্যর্থ' : 'Failed to add category',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCategorySaving(false);
-    }
-  };
+  return (
+    <div className="space-y-6 max-w-[800px]">
+      {/* Low Stock Settings */}
+      <SettingsCard>
+        <SectionHeader
+          icon={TrendingDown}
+          title={isBangla ? 'লো স্টক থ্রেশহোল্ড' : 'Low Stock Threshold'}
+          description={isBangla
+            ? 'যে পরিমাণের নিচে স্টক কম বলে গণ্য হবে'
+            : 'Stock quantity below this will be considered low'}
+          iconColor="warning"
+        />
 
-  const handleEditCategory = async () => {
-    if (!editingCategory || !editingCategory.name.trim()) return;
+        <div className="w-full sm:w-80 space-y-3">
+          <SettingsInput
+            label={isBangla ? 'ডিফল্ট থ্রেশহোল্ড' : 'Default Threshold'}
+            type="number"
+            value={formState.lowStockThreshold}
+            onChange={handleThresholdChange}
+            placeholder="10"
+            suffix={isBangla ? 'পিস' : 'pcs'}
+          />
+          <p className="text-xs text-muted-foreground">
+            {isBangla
+              ? 'স্টক এই সংখ্যার নিচে নামলে লো স্টক এলার্ট দেখাবে'
+              : 'Alert will show when stock falls below this number'}
+          </p>
+        </div>
 
-    setIsCategorySaving(true);
-    try {
-      const response = await fetch(`/api/categories/${editingCategory.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': businessId || '',
-        },
-        body: JSON.stringify({
-          name: editingCategory.name,
-          nameBn: editingCategory.nameBn || editingCategory.name,
-        }),
-      });
+        {/* Preview */}
+        <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border w-full sm:w-80">
+          <p className="text-xs text-muted-foreground mb-2">
+            {isBangla ? 'উদাহরণ:' : 'Example:'}
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-foreground">
+                  {isBangla ? 'পণ্য A' : 'Product A'}
+                </span>
+                <span className="text-sm font-medium text-warning flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {formState.lowStockThreshold} {isBangla ? 'পিস' : 'pcs'}
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-warning to-warning/70 rounded-full"
+                  style={{
+                    width: `${
+                      formState.lowStockThreshold <= 0
+                        ? 100
+                        : Math.min((5 / formState.lowStockThreshold) * 50, 100)
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </SettingsCard>
 
-      const data = await response.json();
+      {/* Alert Settings */}
+      <SettingsCard>
+        <SectionHeader
+          icon={Bell}
+          title={isBangla ? 'এলার্ট সেটিংস' : 'Alert Settings'}
+          description={isBangla
+            ? 'স্টক সংক্রান্ত নোটিফিকেশন সেটিংস'
+            : 'Configure stock-related notifications'}
+          iconColor="primary"
+        />
 
-      if (data.success) {
-        toast({
-          title: isBangla ? 'সফল হয়েছে' : 'Success',
-          description: isBangla ? 'ক্যাটাগরি আপডেট হয়েছে' : 'Category updated successfully',
-        });
-        setEditingCategory(null);
-        refetchCategories();
-      } else {
-        throw new Error(data.error?.message || 'Failed to update category');
-      }
-    } catch (error) {
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: isBangla ? 'ক্যাটাগরি আপডেট ব্যর্থ' : 'Failed to update category',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCategorySaving(false);
-    }
-  };
+        <div className="space-y-3 w-full">
+          <ToggleRow
+            icon={AlertTriangle}
+            title={isBangla ? 'লো স্টক এলার্ট' : 'Low Stock Alerts'}
+            description={isBangla
+              ? 'স্টক কম হলে এলার্ট দেখাবে'
+              : 'Show alerts when stock is low'}
+            checked={formState.lowStockAlerts}
+            onCheckedChange={handleAlertsChange}
+          />
 
-  const handleDeleteCategory = async () => {
-    if (!deletingCategory) return;
+          <ToggleRow
+            icon={Bell}
+            title={isBangla ? 'স্টক ওয়ার্নিং নোটিফিকেশন' : 'Stock Warning Notifications'}
+            description={isBangla
+              ? 'ড্যাশবোর্ডে ওয়ার্নিং দেখাবে'
+              : 'Show warnings on dashboard'}
+            checked={formState.stockWarningNotifications}
+            onCheckedChange={handleNotificationsChange}
+          />
+        </div>
+      </SettingsCard>
 
-    setIsCategorySaving(true);
-    try {
-      const response = await fetch(`/api/categories/${deletingCategory.id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-business-id': businessId || '',
-        },
-      });
+      {/* Save Button */}
+      <div className="flex justify-end pt-4">
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="h-11 px-8 rounded-xl font-medium text-sm"
+        >
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {isBangla ? 'সংরক্ষণ করুন' : 'Save Settings'}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-      const data = await response.json();
+export default function InventorySettingsPage() {
+  const { isBangla } = useAppTranslation();
+  const { navigateTo } = useNavigation();
 
-      if (data.success) {
-        toast({
-          title: isBangla ? 'সফল হয়েছে' : 'Success',
-          description: isBangla ? 'ক্যাটাগরি মুছে ফেলা হয়েছে' : 'Category deleted successfully',
-        });
-        setDeletingCategory(null);
-        refetchCategories();
-      } else {
-        throw new Error(data.error?.message || 'Failed to delete category');
-      }
-    } catch (error) {
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: isBangla ? 'ক্যাটাগরি মুছতে ব্যর্থ' : 'Failed to delete category',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsCategorySaving(false);
-    }
-  };
+  // get inventory settings from API on mount and populate form
+  const { data: inventorySettings, isLoading, refetch } = useGetInventorySettings();
 
   return (
     <div className="space-y-6">
@@ -413,7 +379,7 @@ export default function InventorySettingsPage() {
         <Button
           variant="outline"
           size="icon-sm"
-          onClick={fetchSettings}
+          onClick={() => refetch()}
           disabled={isLoading}
           className="rounded-lg"
         >
@@ -426,265 +392,15 @@ export default function InventorySettingsPage() {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
-        <div className="space-y-6 max-w-[800px]">
-          {/* Low Stock Settings */}
-            <SettingsCard>
-              <SectionHeader
-                icon={TrendingDown}
-                title={isBangla ? 'লো স্টক থ্রেশহোল্ড' : 'Low Stock Threshold'}
-                description={isBangla
-                  ? 'যে পরিমাণের নিচে স্টক কম বলে গণ্য হবে'
-                  : 'Stock quantity below this will be considered low'}
-                iconColor="warning"
-              />
-
-              <div className="w-full sm:w-80 space-y-3">
-                <SettingsInput
-                  label={isBangla ? 'ডিফল্ট থ্রেশহোল্ড' : 'Default Threshold'}
-                  type="number"
-                  value={lowStockThreshold}
-                  onChange={(v) => setLowStockThreshold(parseInt(v) || 0)}
-                  placeholder="10"
-                  suffix={isBangla ? 'পিস' : 'pcs'}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {isBangla
-                    ? 'স্টক এই সংখ্যার নিচে নামলে লো স্টক এলার্ট দেখাবে'
-                    : 'Alert will show when stock falls below this number'}
-                </p>
-              </div>
-
-              {/* Preview */}
-              <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border w-full sm:w-80">
-                <p className="text-xs text-muted-foreground mb-2">
-                  {isBangla ? 'উদাহরণ:' : 'Example:'}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-foreground">
-                        {isBangla ? 'পণ্য A' : 'Product A'}
-                      </span>
-                      <span className="text-sm font-medium text-warning flex items-center gap-1">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        5 {isBangla ? 'পিস' : 'pcs'}
-                      </span>
-                    </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-warning to-warning/70 rounded-full"
-                        style={{ width: `${Math.min((5 / lowStockThreshold) * 50, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SettingsCard>
-
-            {/* Alert Settings */}
-            <SettingsCard>
-              <SectionHeader
-                icon={Bell}
-                title={isBangla ? 'এলার্ট সেটিংস' : 'Alert Settings'}
-                description={isBangla
-                  ? 'স্টক সংক্রান্ত নোটিফিকেশন সেটিংস'
-                  : 'Configure stock-related notifications'}
-                iconColor="primary"
-              />
-
-              <div className="space-y-3 w-full">
-                <ToggleRow
-                  icon={AlertTriangle}
-                  title={isBangla ? 'লো স্টক এলার্ট' : 'Low Stock Alerts'}
-                  description={isBangla
-                    ? 'স্টক কম হলে এলার্ট দেখাবে'
-                    : 'Show alerts when stock is low'}
-                  checked={lowStockAlerts}
-                  onCheckedChange={setLowStockAlerts}
-                />
-
-                <ToggleRow
-                  icon={Bell}
-                  title={isBangla ? 'স্টক ওয়ার্নিং নোটিফিকেশন' : 'Stock Warning Notifications'}
-                  description={isBangla
-                    ? 'ড্যাশবোর্ডে ওয়ার্নিং দেখাবে'
-                    : 'Show warnings on dashboard'}
-                  checked={stockWarningNotifications}
-                  onCheckedChange={setStockWarningNotifications}
-                />
-              </div>
-            </SettingsCard>
-
-            {/* Inventory Features Info */}
-            <SettingsCard>
-              <SectionHeader
-                icon={Shield}
-                title={isBangla ? 'ইনভেন্টরি ফিচার' : 'Inventory Features'}
-                description={isBangla
-                  ? 'উপলব্ধ ইনভেন্টরি ব্যবস্থাপনা ফিচার'
-                  : 'Available inventory management features'}
-                iconColor="emerald"
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Package className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">
-                      {isBangla ? 'স্টক ট্র্যাকিং' : 'Stock Tracking'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isBangla
-                      ? 'রিয়েল-টাইম স্টক আপডেট'
-                      : 'Real-time stock updates'}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="h-4 w-4 text-warning" />
-                    <span className="text-sm font-medium text-foreground">
-                      {isBangla ? 'লো স্টক এলার্ট' : 'Low Stock Alert'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isBangla
-                      ? 'স্বয়ংক্রিয় এলার্ট সিস্টেম'
-                      : 'Automatic alert system'}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <TrendingDown className="h-4 w-4 text-emerald" />
-                    <span className="text-sm font-medium text-foreground">
-                      {isBangla ? 'ডেড স্টক রিপোর্ট' : 'Dead Stock Report'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isBangla
-                      ? 'অচল পণ্য শনাক্তকরণ'
-                      : 'Identify non-moving items'}
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Settings className="h-4 w-4 text-indigo" />
-                    <span className="text-sm font-medium text-foreground">
-                      {isBangla ? 'কাস্টম থ্রেশহোল্ড' : 'Custom Thresholds'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isBangla
-                      ? 'পণ্যভিত্তিক সেটিংস'
-                      : 'Per-product settings'}
-                  </p>
-                </div>
-              </div>
-            </SettingsCard>
-
-            {/* Category Management */}
-            <SettingsCard>
-              <div className="flex items-center justify-between mb-6">
-                <SectionHeader
-                  icon={FolderOpen}
-                  title={isBangla ? 'ক্যাটাগরি পরিচালনা' : 'Category Management'}
-                  description={isBangla
-                    ? 'পণ্য ক্যাটাগরি যোগ ও পরিচালনা করুন'
-                    : 'Add and manage product categories'}
-                  iconColor="indigo"
-                />
-              </div>
-
-              {/* Add Category Button */}
-              <div className="mb-4">
-                <Button
-                  onClick={() => setIsAddCategoryOpen(true)}
-                  className="h-10 px-4 rounded-xl"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {isBangla ? 'নতুন ক্যাটাগরি' : 'Add Category'}
-                </Button>
-              </div>
-
-              {/* Category List */}
-              <div className="space-y-2 w-full">
-                {categories && categories.length > 0 ? (
-                  categories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FolderOpen className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground text-sm">
-                            {category.nameBn || category.name}
-                          </p>
-                          {category.nameBn && (
-                            <p className="text-xs text-muted-foreground">{category.name}</p>
-                          )}
-                        </div>
-                        {category.itemCount > 0 && (
-                          <Badge variant="secondary" size="sm">{category.itemCount}</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setEditingCategory({
-                            id: category.id,
-                            name: category.name,
-                            nameBn: category.nameBn || '',
-                          })}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeletingCategory({ id: category.id, name: category.nameBn || category.name })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FolderOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">{isBangla ? 'কোনো ক্যাটাগরি নেই' : 'No categories yet'}</p>
-                  </div>
-                )}
-              </div>
-            </SettingsCard>
-
-            {/* Save Button */}
-            <div className="flex justify-end pt-4">
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="h-11 px-8 rounded-xl font-medium text-sm"
-              >
-                {isSaving ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                {isBangla ? 'সংরক্ষণ করুন' : 'Save Settings'}
-              </Button>
-            </div>
-          </div>
-        )}
+        <InventorySettingsForm
+          key={inventorySettings ? 'loaded' : 'loading'}
+          initialSettings={inventorySettings}
+          isBangla={isBangla}
+        />
+      )}
 
       {/* Add Category Dialog */}
-      <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+      {/* <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{isBangla ? 'নতুন ক্যাটাগরি' : 'Add Category'}</DialogTitle>
@@ -722,7 +438,7 @@ export default function InventorySettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Category Dialog */}
+    
       <Dialog open={!!editingCategory} onOpenChange={() => setEditingCategory(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -761,7 +477,7 @@ export default function InventorySettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Category Dialog */}
+     
       <AlertDialog open={!!deletingCategory} onOpenChange={() => setDeletingCategory(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -783,7 +499,7 @@ export default function InventorySettingsPage() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   );
 }

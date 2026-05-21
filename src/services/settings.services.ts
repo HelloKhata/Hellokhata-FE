@@ -15,3 +15,11 @@ export const updatePassword = async (passwords: { currentPassword: string, newPa
     return res.data
 };
 
+export const getInvetorySettings = async () => {
+    const res = await client.get('/api/settings/inventory');
+    return res.data;
+}
+export const updateInventorySettings = async (inventorySettings: any) => {
+    const res = await client.put('/api/settings/inventory', inventorySettings);
+    return res.data;
+}
