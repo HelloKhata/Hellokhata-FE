@@ -43,7 +43,7 @@ export default function LoginPage() {
         if (data.success) {
           setSessionFromAuthResponse(data);
           toast.success(data.message);
-          // router.push("/");
+          router.push("/");
         }
       },
     });
