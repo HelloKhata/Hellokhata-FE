@@ -14,7 +14,9 @@ client.interceptors.response.use(
     if (error.response.status === 401) {
       if (typeof window !== "undefined") {
         toast.error(message);
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       }
       return Promise.reject(error);
     }
