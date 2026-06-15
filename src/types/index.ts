@@ -675,6 +675,7 @@ export interface DashboardStats {
   pendingPayments: number;
   salesGrowth: number;
   expenseGrowth: number;
+  profitGrowth?: number;
   // NEW
   cashBalance?: number;
   bankBalance?: number;
