@@ -10,11 +10,13 @@ client.interceptors.response.use(
   (res) => res,
   (error) => {
     // console.log(error.response.data)
+    console.log(error.response.data)
     const message = error.response.data.message || "Something went wrong!";
     if (error.response.status === 401) {
       if (typeof window !== "undefined") {
         toast.error(message);
-        if (window.location.pathname !== "/login") {
+        const pathname = window.location.pathname
+        if ((pathname !== "/login") && (pathname !== "/verify-forget-otp")) {
           window.location.href = "/login";
         }
       }

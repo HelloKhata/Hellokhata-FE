@@ -78,7 +78,7 @@ export default function RegisterPage() {
         if (data.success) {
           toast.success(data.message);
           router.push(
-            `/verify-otp?userId=${data.data.userId}&phone=${phone}&otp=${data.data.otp}`
+            `/verify-otp?otp=${data.data.otp}`
           );
         }
       },

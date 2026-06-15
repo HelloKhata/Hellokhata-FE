@@ -11,7 +11,6 @@ export const verifyOTP = async (payload: any) => {
 };
 
 export const resendOTP = async (resendItem: {
-  userId: string;
   purpose: string;
 }) => {
   const res = await client.post("/api/auth/resend-otp", resendItem);
@@ -25,7 +24,22 @@ export const loginUser = async ({
   phone: string;
   password: string;
 }) => {
-  console.log("login", phone, password);
   const res = await client.post("/api/auth/signin", { phone, password });
   return res.data;
 };
+
+export const forgotPassword = async (phone: string) => {
+  const res = await client.post("/api/auth/forget-password", { phone });
+  return res.data;
+};
+
+export const verifyForgetOTP = async (otp: string) => {
+  const res = await client.post("/api/auth/verify-forget-otp", { code: otp });
+  return res.data;
+}
+
+
+export const resetPassword = async (newPassword: string) => {
+  const res = await client.post("/api/auth/reset-password", { newPassword });
+  return res.data;
+}

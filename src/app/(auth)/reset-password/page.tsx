@@ -1,52 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone,
   Lock,
-  ArrowRight,
   Loader2,
   Store,
   EyeOff,
   Eye,
+  CheckCircle2,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSessionStore } from "@/stores/sessionStore";
-import { useLoginUser } from "@/hooks/api/useUser";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useForgotPasswordStore } from "@/stores/forgotPasswordStore";
+import { useResetPassword } from "@/hooks/api/useUser";
 
-export default function LoginPage() {
+function ResetPasswordContent() {
   const router = useRouter();
-  const { setSessionFromAuthResponse } = useSessionStore();
+  const searchParams = useSearchParams();
 
-  const [phone, setPhone] = useState("");
+  const { phone: storedPhone, otp: storedOtp } = useForgotPasswordStore();
+  const phone = searchParams.get("phone") || storedPhone || "";
+  const initialOtp = searchParams.get("otp") || storedOtp || "";
+
+  const [otp, setOtp] = useState(initialOtp);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const loginUser = useLoginUser();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleLogin = () => {
-    if (!phone || !/^01[3-9]\d{8}$/.test(phone)) {
-      toast.error("Invalid phone number", {
-        description: "Please enter a valid Bangladeshi phone number",
+  const { mutate: resetPassword, isPending } = useResetPassword();
+  const { clearForgotPasswordInfo } = useForgotPasswordStore();
+
+  const handleResetPassword = () => {
+    if (!phone) {
+      toast.error("Invalid state", {
+        description: "Phone number is missing. Please restart password recovery.",
       });
       return;
     }
 
+    if (!otp || otp.length !== 6) {
+      toast.error("Invalid reset code", {
+        description: "Please enter the 6-digit reset code sent to your phone",
+      });
+      return;
+    }
 
-    const user = { phone, password };
-    loginUser.mutate(user, {
-      onSuccess: (data) => {
-        if (data.success) {
-          setSessionFromAuthResponse(data);
-          toast.success(data.message);
-          router.push("/");
-        }
-      },
-    });
+    if (!password || password.length < 8) {
+      toast.error("Invalid password", {
+        description: "Password must be at least 8 characters long",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match", {
+        description: "Please confirm your new password correctly",
+      });
+      return;
+    }
+
+    resetPassword(
+      password,
+      {
+        onSuccess: (data) => {
+          if (data.success) {
+            clearForgotPasswordInfo();
+            toast.success("Password reset successfully!");
+            router.push("/login");
+          }
+        },
+        onError: (error: any) => {
+          const errMsg = error.response?.data?.error?.message || "Failed to reset password";
+          toast.error(errMsg);
+        },
+      }
+    );
   };
 
   return (
@@ -113,7 +148,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Card */}
         <div
           className="px-6 py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 rounded-xl w-full flex flex-col relative"
           style={{
@@ -136,74 +171,54 @@ export default function LoginPage() {
             <motion.form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleLogin();
+                handleResetPassword();
               }}
-              key="phone"
-              initial={{ opacity: 0, x: -20 }}
+              key="reset-password"
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              exit={{ opacity: 0, x: -20 }}
               className="flex flex-col gap-5 md:gap-6 relative z-10"
             >
               <div className="shrink-0">
-                <h2
-                  className="text-xl md:text-2xl font-semibold whitespace-nowrap"
-                  style={{ color: "#E6EDF5" }}
-                >
-                  Welcome Back!
-                </h2>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/forgot-password"
+                    className="p-1.5 rounded-lg transition-colors shrink-0 hover:bg-white/5"
+                    style={{ color: "#9DA7B3" }}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Link>
+                  <h2
+                    className="text-xl md:text-2xl font-semibold whitespace-nowrap"
+                    style={{ color: "#E6EDF5" }}
+                  >
+                    Reset Password
+                  </h2>
+                </div>
                 <p
-                  className="text-sm md:text-base whitespace-nowrap mt-1"
+                  className="text-sm md:text-base mt-1 ml-10"
                   style={{ color: "#9DA7B3" }}
                 >
-                  Enter your phone number to login
+                  Set your new account password below
                 </p>
               </div>
 
+              {/* New Password */}
               <div className="flex flex-col gap-2">
                 <label
                   className="text-sm font-medium whitespace-nowrap shrink-0"
                   style={{ color: "#E6EDF5" }}
                 >
-                  Phone Number
+                  New Password
                 </label>
-                <div className="relative w-full">
-                  <Phone
-                    className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                    style={{ color: "#6B7684" }}
-                  />
-                  <Input
-                    type="tel"
-                    placeholder="01XXXXXXXXX"
-                    value={phone}
-                    onChange={(e) =>
-                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))
-                    }
-                    className="pl-12 w-full h-12 md:h-14 text-base"
-                    style={{
-                      backgroundColor: "#171F29",
-                      borderColor: "rgba(255, 255, 255, 0.05)",
-                      color: "#E6EDF5",
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium whitespace-nowrap shrink-0"
-                  style={{ color: "#E6EDF5" }}
-                >
-                  Password
-                </label>
-
                 <div className="relative w-full">
                   <Lock
                     className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
                     style={{ color: "#6B7684" }}
                   />
-
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="At least 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-12 pr-12 w-full h-12 md:h-14 text-base"
@@ -213,88 +228,89 @@ export default function LoginPage() {
                       color: "#E6EDF5",
                     }}
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2"
                   >
                     {showPassword ? (
-                      <EyeOff
-                        className="h-5 w-5"
-                        style={{ color: "#6B7684" }}
-                      />
+                      <EyeOff className="h-5 w-5" style={{ color: "#6B7684" }} />
                     ) : (
                       <Eye className="h-5 w-5" style={{ color: "#6B7684" }} />
                     )}
                   </button>
                 </div>
               </div>
-              <div className="flex justify-end -mt-2 shrink-0">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs md:text-sm hover:underline transition-colors"
-                  style={{ color: "#4F5BFF" }}
+
+              {/* Confirm Password */}
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium whitespace-nowrap shrink-0"
+                  style={{ color: "#E6EDF5" }}
                 >
-                  Forgot Password?
-                </Link>
+                  Confirm Password
+                </label>
+                <div className="relative w-full">
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
+                    style={{ color: "#6B7684" }}
+                  />
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Repeat new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-12 pr-12 w-full h-12 md:h-14 text-base"
+                    style={{
+                      backgroundColor: "#171F29",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
+                      color: "#E6EDF5",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" style={{ color: "#6B7684" }} />
+                    ) : (
+                      <Eye className="h-5 w-5" style={{ color: "#6B7684" }} />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs mt-1" style={{ color: "#FF6B6B" }}>
+                    Passwords do not match
+                  </p>
+                )}
               </div>
+
               <Button
                 type="submit"
-                disabled={loginUser.isPending || phone.length !== 11 || password.length < 8}
+                disabled={
+                  isPending ||
+                  otp.length !== 6 ||
+                  password.length < 8 ||
+                  password !== confirmPassword
+                }
                 className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
                 style={{
                   background:
-                    "linear-gradient(135deg, #4F5BFF 0%, #5E6AFF 100%)",
+                    "linear-gradient(135deg, #0FBF9F 0%, #1FAF86 100%)",
                   color: "#FFFFFF",
-                  boxShadow: "0 0 20px rgba(79, 91, 255, 0.25)",
+                  boxShadow: "0 0 20px rgba(15, 191, 159, 0.25)",
                 }}
               >
-                {loginUser.isPending ? (
+                {isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
-                    <span className="whitespace-nowrap">Login</span>
-                    <ArrowRight className="ml-2 h-5 w-5 shrink-0" />
+                    <span className="whitespace-nowrap">Reset Password</span>
+                    <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                   </>
                 )}
               </Button>
-
-              <div className="relative my-2 shrink-0">
-                <div className="absolute inset-0 flex items-center">
-                  <div
-                    className="w-full border-t"
-                    style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
-                  ></div>
-                </div>
-                <div className="relative flex justify-center text-xs md:text-sm">
-                  <span
-                    className="px-3 whitespace-nowrap"
-                    style={{
-                      color: "#6B7684",
-                      background:
-                        "linear-gradient(180deg, rgba(35, 46, 60, 1) 0%, rgba(28, 36, 48, 1) 100%)",
-                    }}
-                  >
-                    or
-                  </span>
-                </div>
-              </div>
-
-              <Link href="/register" className="w-full">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
-                  style={{
-                    backgroundColor: "transparent",
-                    borderColor: "rgba(255, 255, 255, 0.1)",
-                    color: "#E6EDF5",
-                  }}
-                >
-                  Create New Account
-                </Button>
-              </Link>
             </motion.form>
           </AnimatePresence>
         </div>
@@ -307,5 +323,22 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: "#0F141B" }}
+        >
+          <Loader2 className="h-8 w-8 animate-spin text-primary" style={{ color: "#4F5BFF" }} />
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

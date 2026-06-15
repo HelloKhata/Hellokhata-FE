@@ -12,44 +12,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSessionStore, useUser } from "@/stores/sessionStore";
+import { useForgotPasswordStore } from "@/stores/forgotPasswordStore";
 import {
     useVerifyOTP,
     useResendOTP,
+    useVerifyForgetOTP,
+    useForgotPassword,
 } from "@/hooks/api/useUser";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function VerifyOtpContent() {
-
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const phone = searchParams.get("phone") || "";
-    const initialOtp = searchParams.get("otp") || "";
+    // Retrieve phone and OTP from store (fallback for query parameters)
+    const { phone: storedPhone, otp: storedOtp } = useForgotPasswordStore();
 
-    const [demoOTP, setDemoOTP] = useState(initialOtp);
+    const [demoOTP, setDemoOTP] = useState(storedOtp);
     const [countdown, setCountdown] = useState(60);
     const [otp, setOtp] = useState("");
 
-    const verifyOTP = useVerifyOTP();
-    const resendOTP = useResendOTP();
-    const { setSessionFromAuthResponse } = useSessionStore();
+    const verifyForgetOTP = useVerifyForgetOTP();
+    // const forgotPassword = useForgotPassword();
 
-    const user = useUser();
-
-    useEffect(() => {
-        if (countdown <= 0) return;
-        const timer = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [countdown]);
+    // useEffect(() => {
+    //     if (countdown <= 0) return;
+    //     const timer = setInterval(() => {
+    //         setCountdown((prev) => {
+    //             if (prev <= 1) {
+    //                 clearInterval(timer);
+    //                 return 0;
+    //             }
+    //             return prev - 1;
+    //         });
+    //     }, 1000);
+    //     return () => clearInterval(timer);
+    // }, [countdown]);
 
     const handleVerifyOtp = () => {
         if (!otp || otp.length !== 6) {
@@ -59,45 +57,47 @@ function VerifyOtpContent() {
             return;
         }
 
-        verifyOTP.mutate(
-            { code: otp },
+        verifyForgetOTP.mutate(
+            otp,
             {
                 onSuccess: (data) => {
                     if (data.success) {
-                        setSessionFromAuthResponse(data)
                         toast.success(data.message || "OTP verified successfully");
-                        router.push("/");
-                    } else {
-                        toast.error(data.message || "Verification failed");
+                        // Redirect to reset password page with phone and code parameters
+                        router.push(`/reset-password`);
                     }
                 },
                 onError: (error: any) => {
-                    const errMsg = error.response?.data?.message || "Invalid OTP code";
-                    toast.error(errMsg);
+                    toast.error('Verification failed');
                 }
             }
         );
     };
 
-    const handleResendOTP = () => {
+    // const handleResendOTP = () => {
+    //     if (!storedPhone) {
+    //         toast.error("No phone number found", {
+    //             description: "Please go back and enter your phone number again",
+    //         });
+    //         return;
+    //     }
 
-        const obj = { purpose: "signup" };
-        resendOTP.mutate(obj, {
-            onSuccess: (data) => {
-                if (data.success) {
-                    setDemoOTP(data.data.otp);
-                    setCountdown(60);
-                    toast.success("OTP has been resent successfully!");
-                } else {
-                    toast.error(data.message || "Failed to resend OTP");
-                }
-            },
-            onError: (error: any) => {
-                const errMsg = error.response?.data?.message || "Failed to resend OTP";
-                toast.error(errMsg);
-            }
-        });
-    };
+    //     forgotPassword.mutate(storedPhone, {
+    //         onSuccess: (data) => {
+    //             if (data.success) {
+    //                 setDemoOTP(data.data.otp);
+    //                 setCountdown(60);
+    //                 toast.success("OTP has been resent successfully!");
+    //             } else {
+    //                 toast.error(data.message || "Failed to resend OTP");
+    //             }
+    //         },
+    //         onError: (error: any) => {
+    //             const errMsg = error.response?.data?.message || "Failed to resend OTP";
+    //             toast.error(errMsg);
+    //         }
+    //     });
+    // };
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 relative overflow-hidden">
@@ -199,14 +199,14 @@ function VerifyOtpContent() {
                                     className="text-xl md:text-2xl font-semibold whitespace-nowrap"
                                     style={{ color: "#E6EDF5" }}
                                 >
-                                    Verify & Complete Registration
+                                    Verify OTP
                                 </h2>
                                 <p
                                     className="text-sm md:text-base mt-1"
                                     style={{ color: "#9DA7B3" }}
                                 >
                                     Enter the code sent to{" "}
-                                    <span className="font-semibold text-white">{phone || "your phone number"}</span>
+                                    <span className="font-semibold text-white">{storedPhone || "your phone number"}</span>
                                 </p>
                             </div>
 
@@ -257,7 +257,7 @@ function VerifyOtpContent() {
 
                             <Button
                                 type="submit"
-                                disabled={verifyOTP.isPending || otp.length !== 6}
+                                disabled={verifyForgetOTP.isPending || otp.length !== 6}
                                 className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
                                 style={{
                                     background:
@@ -266,12 +266,12 @@ function VerifyOtpContent() {
                                     boxShadow: "0 0 20px rgba(79, 91, 255, 0.25)",
                                 }}
                             >
-                                {verifyOTP.isPending ? (
+                                {verifyForgetOTP.isPending ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
                                 ) : (
                                     <>
                                         <span className="whitespace-nowrap">
-                                            Verify & Complete
+                                            Verify & Continue
                                         </span>
                                         <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
                                     </>
@@ -288,7 +288,7 @@ function VerifyOtpContent() {
                                         <ArrowLeft className="h-4 w-4 shrink-0" /> Back
                                     </button>
                                 </Link>
-                                <button
+                                {/* <button
                                     type="button"
                                     onClick={handleResendOTP}
                                     disabled={countdown > 0 || resendOTP.isPending}
@@ -296,7 +296,7 @@ function VerifyOtpContent() {
                                     style={{ color: countdown > 0 ? "#6B7684" : "#4F5BFF" }}
                                 >
                                     {countdown > 0 ? `Resend in ${countdown}s` : "Resend OTP"}
-                                </button>
+                                </button> */}
                             </div>
                         </motion.form>
                     </AnimatePresence>

@@ -16,7 +16,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { useDashboardStats, useDailySales, useAiInsights, useAccounts, useHealthScore, useDeadStockReport } from '@/hooks/queries';
+import { useDailySales, useAiInsights, useAccounts, useHealthScore, useDeadStockReport } from '@/hooks/queries';
+import { useDashboardStats } from '@/hooks/api/useDashboard';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
@@ -56,21 +57,22 @@ export default function DashboardPage() {
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency, formatNumber } = useCurrency();
   const [chartView, setChartView] = useState<'sales' | 'profit'>('sales');
-  
+
   // API data hooks
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
+  console.log('stats', stats)
   const { data: dailySales, isLoading: salesLoading, refetch: refetchDailySales } = useDailySales();
   const { data: aiInsightsResponse, refetch: refetchInsights } = useAiInsights();
   const { data: accounts, refetch: refetchAccounts } = useAccounts();
   const { data: apiHealthScore, refetch: refetchHealthScore } = useHealthScore();
   const { data: deadStockReport, refetch: refetchDeadStock } = useDeadStockReport();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Extract the health score data which contains suggestions
   const aiInsightsData = aiInsightsResponse?.data;
-  
+
   const isLoading = statsLoading || salesLoading;
-  
+
   // Transform API health score to display format
   const healthScore = apiHealthScore ? {
     overallScore: apiHealthScore.overallScore,
@@ -109,24 +111,24 @@ export default function DashboardPage() {
       },
     ],
   } : null;
-  
+
   // Transform API insights to display format
   // aiInsightsData comes from health-score endpoint which has suggestions array
   const insights = (() => {
     // Check if aiInsightsData has suggestions (from health score endpoint)
     const suggestions = aiInsightsData?.suggestions || [];
-    
+
     if (suggestions.length > 0) {
       return suggestions.map((suggestion) => ({
         id: suggestion.id,
-        type: suggestion.priority === 'high' ? 'alert' as const : 
-              suggestion.priority === 'medium' ? 'opportunity' as const : 'suggestion' as const,
+        type: suggestion.priority === 'high' ? 'alert' as const :
+          suggestion.priority === 'medium' ? 'opportunity' as const : 'suggestion' as const,
         title: suggestion.title,
         titleBn: suggestion.titleBn,
         description: suggestion.description,
         descriptionBn: suggestion.descriptionBn,
-        impact: suggestion.priority === 'high' ? 'high' as const : 
-                suggestion.priority === 'medium' ? 'medium' as const : 'low' as const,
+        impact: suggestion.priority === 'high' ? 'high' as const :
+          suggestion.priority === 'medium' ? 'medium' as const : 'low' as const,
         impactLabel: '',
         impactLabelBn: '',
         actionLabel: suggestion.action || 'View',
@@ -134,7 +136,7 @@ export default function DashboardPage() {
         actionUrl: suggestion.actionUrl || '#',
       }));
     }
-    
+
     // Return default insights if no data
     return [
       {
@@ -181,10 +183,10 @@ export default function DashboardPage() {
       },
     ];
   })();
-  
+
   // Calculate dead stock value
   const deadStockValue = deadStockReport?.reduce((sum, item) => sum + item.stockValue, 0) || stats?.deadStockValue || 0;
-  
+
   // Format chart data
   const chartData = dailySales?.map((item) => ({
     date: new Date(item.date).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', {
@@ -194,7 +196,7 @@ export default function DashboardPage() {
     expenses: item.expenses,
     profit: item.profit,
   })) || [];
-  
+
   // Calculate account totals
   const cashBalance = accounts?.filter(a => a.type === 'cash').reduce((sum, a) => sum + a.currentBalance, 0) || 0;
   const bankBalance = accounts?.filter(a => a.type === 'bank' || a.type === 'mobile_wallet').reduce((sum, a) => sum + a.currentBalance, 0) || 0;
@@ -218,9 +220,9 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Refresh Button */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={async () => {
               setIsRefreshing(true);
               try {
@@ -235,7 +237,7 @@ export default function DashboardPage() {
               } finally {
                 setIsRefreshing(false);
               }
-            }} 
+            }}
             disabled={isRefreshing}
             className="text-muted-foreground"
           >
@@ -244,7 +246,7 @@ export default function DashboardPage() {
           </Button>
           {/* Health Score Badge */}
           {healthScore && (
-            <div 
+            <div
               onClick={() => router.push('/reports/health-score')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-subtle cursor-pointer hover:bg-primary/10 transition-colors"
             >
@@ -257,7 +259,7 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-      
+
       {/* Action Dock */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-6 scrollbar-hidden">
         <ActionDockButton
@@ -285,28 +287,24 @@ export default function DashboardPage() {
           onClick={() => router.push('/purchases/new')}
         />
       </div>
-      
+
       {/* KPI Cards with Count-up */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICardAnimated
-          title="Today's Sales"
-          titleBn="আজকের বিক্রি"
-          value={stats?.todaySales || 0}
+          title="Total Sales"
+          titleBn="মোট বিক্রি"
+          value={stats?.sales?.totalSales || 0}
           prefix="৳"
-          change={stats?.salesGrowth}
-          isPositive={(stats?.salesGrowth || 0) >= 0}
           icon={<TrendingUp className="h-5 w-5" />}
           color="emerald"
           isBangla={isBangla}
           isLoading={isLoading}
         />
         <KPICardAnimated
-          title="Today's Profit"
-          titleBn="আজকের লাভ"
-          value={stats?.todayProfit || 0}
+          title="Net Profit"
+          titleBn="নিট লাভ"
+          value={stats?.revenue?.netProfit || 0}
           prefix="৳"
-          change={stats?.profitGrowth}
-          isPositive={(stats?.profitGrowth || 0) >= 0}
           icon={<Wallet className="h-5 w-5" />}
           color="indigo"
           isBangla={isBangla}
@@ -315,7 +313,7 @@ export default function DashboardPage() {
         <KPICardAnimated
           title="Receivable"
           titleBn="পাওনা"
-          value={stats?.receivable || 0}
+          value={stats?.sales?.totalDue || 0}
           prefix="৳"
           icon={<Users className="h-5 w-5" />}
           color="warning"
@@ -323,17 +321,16 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
         <KPICardAnimated
-          title="Stock Value"
-          titleBn="স্টক মূল্য"
-          value={stats?.stockValue || 0}
-          prefix="৳"
+          title="Total Stock"
+          titleBn="মোট স্টক"
+          value={stats?.inventory?.totalStockQty || 0}
           icon={<Package className="h-5 w-5" />}
           color="default"
           isBangla={isBangla}
           isLoading={isLoading}
         />
       </div>
-      
+
       {/* AI Daily Brief + Health Score Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* AI Daily Brief - Intelligence Engine */}
@@ -353,7 +350,7 @@ export default function DashboardPage() {
               <BriefItem key={insight.id} insight={insight} isBangla={isBangla} index={index} />
             ))}
           </div>
-          <Link 
+          <Link
             href="/ai"
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-200 hover:bg-muted/50 hover:text-foreground h-10 px-4 py-2 rounded-lg w-full mt-4 border border-border-subtle"
           >
@@ -394,22 +391,22 @@ export default function DashboardPage() {
                           <span className="text-muted-foreground">{isBangla ? component.nameBn : component.name}</span>
                           <span className={cn(
                             'font-medium',
-                            component.score >= 80 ? 'text-primary' : 
-                            component.score >= 60 ? 'text-warning' : 'text-destructive'
+                            component.score >= 80 ? 'text-primary' :
+                              component.score >= 60 ? 'text-warning' : 'text-destructive'
                           )}>
                             {component.score}
                           </span>
                         </div>
-                        <Progress 
-                          value={component.score} 
-                          size="sm" 
+                        <Progress
+                          value={component.score}
+                          size="sm"
                           color={component.score >= 80 ? 'emerald' : component.score >= 60 ? 'warning' : 'destructive'}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
-                <Link 
+                <Link
                   href="/reports/health-score"
                   className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-200 border border-border bg-transparent hover:bg-muted hover:text-foreground h-10 px-4 py-2 rounded-lg w-full mt-4"
                 >
@@ -425,7 +422,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Chart Row */}
       <div className="grid grid-cols-1 gap-6 mb-6">
         <Card variant="elevated" padding="lg">
@@ -504,7 +501,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Account Balances + Dead Stock Alert */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Cash & Bank Balances */}
@@ -561,23 +558,23 @@ export default function DashboardPage() {
                   )}>৳{formatNum(item.stockValue)}</span>
                 </div>
               )) || (
-                <>
-                  <div className="flex items-center justify-between text-sm py-2 border-b border-border-subtle">
-                    <span className="text-muted-foreground">{isBangla ? '৩০-৬০ দিন' : '30-60 days'}</span>
-                    <span className="font-medium">৳{formatNum(deadStockValue * 0.33)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm py-2 border-b border-border-subtle">
-                    <span className="text-muted-foreground">{isBangla ? '৬০-৯০ দিন' : '60-90 days'}</span>
-                    <span className="font-medium">৳{formatNum(deadStockValue * 0.27)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm py-2">
-                    <span className="text-muted-foreground">{isBangla ? '৯০+ দিন' : '90+ days'}</span>
-                    <span className="font-medium text-destructive">৳{formatNum(deadStockValue * 0.4)}</span>
-                  </div>
-                </>
-              )}
+                  <>
+                    <div className="flex items-center justify-between text-sm py-2 border-b border-border-subtle">
+                      <span className="text-muted-foreground">{isBangla ? '৩০-৬০ দিন' : '30-60 days'}</span>
+                      <span className="font-medium">৳{formatNum(deadStockValue * 0.33)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm py-2 border-b border-border-subtle">
+                      <span className="text-muted-foreground">{isBangla ? '৬০-৯০ দিন' : '60-90 days'}</span>
+                      <span className="font-medium">৳{formatNum(deadStockValue * 0.27)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm py-2">
+                      <span className="text-muted-foreground">{isBangla ? '৯০+ দিন' : '90+ days'}</span>
+                      <span className="font-medium text-destructive">৳{formatNum(deadStockValue * 0.4)}</span>
+                    </div>
+                  </>
+                )}
             </div>
-            <Link 
+            <Link
               href="/reports/dead-stock"
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all duration-200 border border-border bg-transparent hover:bg-muted hover:text-foreground h-10 px-4 py-2 rounded-lg w-full mt-4"
             >
@@ -592,14 +589,14 @@ export default function DashboardPage() {
 }
 
 // Action Dock Button
-function ActionDockButton({ 
-  icon: Icon, 
-  label, 
-  color, 
-  onClick 
-}: { 
-  icon: React.ElementType; 
-  label: string; 
+function ActionDockButton({
+  icon: Icon,
+  label,
+  color,
+  onClick
+}: {
+  icon: React.ElementType;
+  label: string;
   color: 'emerald' | 'indigo' | 'warning' | 'default';
   onClick: () => void;
 }) {
@@ -609,7 +606,7 @@ function ActionDockButton({
     warning: 'bg-warning-subtle text-warning hover:bg-warning/20',
     default: 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20 border border-white/5',
   };
-  
+
   return (
     <button
       onClick={onClick}
@@ -652,38 +649,38 @@ function KPICardAnimated({
   const [displayValue, setDisplayValue] = useState(0);
   const hasAnimated = useRef(false);
   const prevValue = useRef(value);
-  
+
   useEffect(() => {
     // Reset animation when value changes significantly
     if (Math.abs(value - prevValue.current) > 100) {
       hasAnimated.current = false;
     }
     prevValue.current = value;
-    
+
     if (hasAnimated.current) return;
     hasAnimated.current = true;
-    
+
     // Use requestAnimationFrame for smoother animation
     const duration = 800;
     const startTime = performance.now();
-    
+
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Ease out cubic for smooth deceleration
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.floor(eased * value);
-      
+
       setDisplayValue(current);
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
         setDisplayValue(value);
       }
     };
-    
+
     requestAnimationFrame(animate);
   }, [value]);
 
@@ -691,14 +688,14 @@ function KPICardAnimated({
   const formatNumber = (num: number): string => {
     return new Intl.NumberFormat(isBangla ? 'bn-BD' : 'en-US').format(num);
   };
-  
+
   const colorClasses = {
     emerald: 'text-emerald bg-emerald-subtle',
     indigo: 'text-primary bg-primary-subtle',
     warning: 'text-warning bg-warning-subtle',
     default: 'text-foreground bg-muted',
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -743,13 +740,13 @@ function BriefItem({ insight, isBangla, index }: { insight: any; isBangla: boole
     suggestion: 'border-l-indigo bg-indigo-subtle/30',
     achievement: 'border-l-warning bg-warning-subtle/30',
   };
-  
+
   const impactStyles = {
     high: 'bg-destructive-subtle text-destructive',
     medium: 'bg-warning-subtle text-warning',
     low: 'bg-primary-subtle text-primary',
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
