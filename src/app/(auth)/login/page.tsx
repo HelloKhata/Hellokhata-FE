@@ -8,15 +8,13 @@ import {
   ArrowRight,
   Loader2,
   Store,
-  CheckCircle2,
-  ArrowLeft,
   EyeOff,
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSessionStore } from "@/stores/sessionStore";
-import { useLoginUser, useVerifyOTP, useResendOTP } from "@/hooks/api/useUser";
+import { useLoginUser } from "@/hooks/api/useUser";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -25,50 +23,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { setSessionFromAuthResponse } = useSessionStore();
 
-  const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
-  const [userId, setUserId] = useState("");
-  const [demoOTP, setDemoOTP] = useState("");
-  const [countdown, setCountdown] = useState(0);
-  const verifyOTP = useVerifyOTP();
+  const [showPassword, setShowPassword] = useState(false);
   const loginUser = useLoginUser();
-  const resendOTP = useResendOTP();
-
-  const handleVerifyOtp = () => {
-    if (!otp || otp.length !== 6) {
-      toast.error("Invalid OTP", {
-        description: "Please enter the 6-digit OTP",
-      });
-      return;
-    }
-
-    verifyOTP.mutate(
-      { uuid: userId, code: otp },
-      {
-        onSuccess: (data) => {
-          if (data.success) {
-            toast.success(data.message);
-            setSessionFromAuthResponse(data);
-            router.push("/");
-          }
-        },
-      },
-    );
-  };
-
-  const handleResendOTP = () => {
-    const obj = { userId, purpose: "signin" };
-    resendOTP.mutate(obj, {
-      onSuccess: (data) => {
-        setDemoOTP(data.data.otp);
-
-        toast.info("OTP Resent!");
-      },
-    });
-  };
 
   const handleLogin = () => {
     if (!phone || !/^01[3-9]\d{8}$/.test(phone)) {
@@ -78,37 +36,14 @@ export default function LoginPage() {
       return;
     }
 
-    // if (!password || password.length < 8) {
-    //   toast.error("Invalid password", {
-    //     description: "Please enter a valid password (at least 6 characters)",
-    //   });
-    //   return;
-    // }
 
     const user = { phone, password };
     loginUser.mutate(user, {
       onSuccess: (data) => {
         if (data.success) {
-          setUserId(data.userId);
           setSessionFromAuthResponse(data);
           toast.success(data.message);
           router.push("/");
-          // setStep("otp");
-          // setDemoOTP(data.code);
-          // setOtp("");
-          // toast.success("OTP Sent!");
-
-          // Start Countdown
-          // setCountdown(60);
-          // const timer = setInterval(() => {
-          //   setCountdown((prev) => {
-          //     if (prev <= 1) {
-          //       clearInterval(timer);
-          //       return 0;
-          //     }
-          //     return prev - 1;
-          //   });
-          // }, 1000);
         }
       },
     });
@@ -198,270 +133,160 @@ export default function LoginPage() {
           />
 
           <AnimatePresence mode="wait">
-            {step === "phone" && (
-              <motion.div
-                key="phone"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="flex flex-col gap-5 md:gap-6 relative z-10"
-              >
-                <div className="shrink-0">
-                  <h2
-                    className="text-xl md:text-2xl font-semibold whitespace-nowrap"
-                    style={{ color: "#E6EDF5" }}
-                  >
-                    Welcome Back!
-                  </h2>
-                  <p
-                    className="text-sm md:text-base whitespace-nowrap mt-1"
-                    style={{ color: "#9DA7B3" }}
-                  >
-                    Enter your phone number to login
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium whitespace-nowrap shrink-0"
-                    style={{ color: "#E6EDF5" }}
-                  >
-                    Phone Number
-                  </label>
-                  <div className="relative w-full">
-                    <Phone
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                      style={{ color: "#6B7684" }}
-                    />
-                    <Input
-                      type="tel"
-                      placeholder="01XXXXXXXXX"
-                      value={phone}
-                      onChange={(e) =>
-                        setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))
-                      }
-                      className="pl-12 w-full h-12 md:h-14 text-base"
-                      style={{
-                        backgroundColor: "#171F29",
-                        borderColor: "rgba(255, 255, 255, 0.05)",
-                        color: "#E6EDF5",
-                      }}
-                    />
-                  </div>
-                  <p
-                    className="text-xs md:text-sm whitespace-nowrap shrink-0"
-                    style={{ color: "#6B7684" }}
-                  >
-                    We'll send you a 6-digit verification code
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium whitespace-nowrap shrink-0"
-                    style={{ color: "#E6EDF5" }}
-                  >
-                    Password
-                  </label>
-
-                  <div className="relative w-full">
-                    <Lock
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                      style={{ color: "#6B7684" }}
-                    />
-
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-12 pr-12 w-full h-12 md:h-14 text-base"
-                      style={{
-                        backgroundColor: "#171F29",
-                        borderColor: "rgba(255, 255, 255, 0.05)",
-                        color: "#E6EDF5",
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2"
-                    >
-                      {showPassword ? (
-                        <EyeOff
-                          className="h-5 w-5"
-                          style={{ color: "#6B7684" }}
-                        />
-                      ) : (
-                        <Eye className="h-5 w-5" style={{ color: "#6B7684" }} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleLogin}
-                  disabled={loginUser.isPending || phone.length !== 11}
-                  className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #4F5BFF 0%, #5E6AFF 100%)",
-                    color: "#FFFFFF",
-                    boxShadow: "0 0 20px rgba(79, 91, 255, 0.25)",
-                  }}
+            <motion.form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLogin();
+              }}
+              key="phone"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="flex flex-col gap-5 md:gap-6 relative z-10"
+            >
+              <div className="shrink-0">
+                <h2
+                  className="text-xl md:text-2xl font-semibold whitespace-nowrap"
+                  style={{ color: "#E6EDF5" }}
                 >
-                  {loginUser.isPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      <span className="whitespace-nowrap">Login</span>
-                      <ArrowRight className="ml-2 h-5 w-5 shrink-0" />
-                    </>
-                  )}
-                </Button>
+                  Welcome Back!
+                </h2>
+                <p
+                  className="text-sm md:text-base whitespace-nowrap mt-1"
+                  style={{ color: "#9DA7B3" }}
+                >
+                  Enter your phone number to login
+                </p>
+              </div>
 
-                <div className="relative my-2 shrink-0">
-                  <div className="absolute inset-0 flex items-center">
-                    <div
-                      className="w-full border-t"
-                      style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
-                    ></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs md:text-sm">
-                    <span
-                      className="px-3 whitespace-nowrap"
-                      style={{
-                        color: "#6B7684",
-                        background:
-                          "linear-gradient(180deg, rgba(35, 46, 60, 1) 0%, rgba(28, 36, 48, 1) 100%)",
-                      }}
-                    >
-                      or
-                    </span>
-                  </div>
-                </div>
-
-                <Link href="/register" className="w-full">
-                  <Button
-                    variant="outline"
-                    className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium whitespace-nowrap shrink-0"
+                  style={{ color: "#E6EDF5" }}
+                >
+                  Phone Number
+                </label>
+                <div className="relative w-full">
+                  <Phone
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
+                    style={{ color: "#6B7684" }}
+                  />
+                  <Input
+                    type="tel"
+                    placeholder="01XXXXXXXXX"
+                    value={phone}
+                    onChange={(e) =>
+                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))
+                    }
+                    className="pl-12 w-full h-12 md:h-14 text-base"
                     style={{
-                      backgroundColor: "transparent",
-                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      backgroundColor: "#171F29",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
                       color: "#E6EDF5",
                     }}
-                  >
-                    Create New Account
-                  </Button>
-                </Link>
-              </motion.div>
-            )}
-
-            {step === "otp" && (
-              <motion.div
-                key="otp"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex flex-col gap-5 md:gap-6 relative z-10"
-              >
-                <div className="shrink-0">
-                  <h2
-                    className="text-xl md:text-2xl font-semibold whitespace-nowrap"
-                    style={{ color: "#E6EDF5" }}
-                  >
-                    Verify OTP
-                  </h2>
-                  <p
-                    className="text-sm md:text-base whitespace-nowrap mt-1"
-                    style={{ color: "#9DA7B3" }}
-                  >
-                    Enter the code sent to {phone}
-                  </p>
+                  />
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium whitespace-nowrap shrink-0"
-                    style={{ color: "#E6EDF5" }}
-                  >
-                    Verification Code
-                  </label>
-                  <div className="relative w-full">
-                    <Lock
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                      style={{ color: "#6B7684" }}
-                    />
-                    <Input
-                      type="text"
-                      placeholder="Enter 6-digit code"
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      className="pl-12 text-center tracking-widest w-full h-12 md:h-14 font-mono text-lg md:text-xl"
-                      maxLength={6}
-                      style={{
-                        backgroundColor: "#171F29",
-                        borderColor: "rgba(255, 255, 255, 0.05)",
-                        color: "#E6EDF5",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <p
-                  className="text-xs md:text-sm text-center whitespace-nowrap shrink-0"
-                  style={{ color: "#6B7684" }}
+              </div>
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium whitespace-nowrap shrink-0"
+                  style={{ color: "#E6EDF5" }}
                 >
-                  Demo OTP:{" "}
-                  <span
-                    className="font-mono font-bold"
-                    style={{ color: "#0FBF9F" }}
-                  >
-                    {demoOTP}
-                  </span>
-                </p>
+                  Password
+                </label>
 
+                <div className="relative w-full">
+                  <Lock
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
+                    style={{ color: "#6B7684" }}
+                  />
+
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-12 pr-12 w-full h-12 md:h-14 text-base"
+                    style={{
+                      backgroundColor: "#171F29",
+                      borderColor: "rgba(255, 255, 255, 0.05)",
+                      color: "#E6EDF5",
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeOff
+                        className="h-5 w-5"
+                        style={{ color: "#6B7684" }}
+                      />
+                    ) : (
+                      <Eye className="h-5 w-5" style={{ color: "#6B7684" }} />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={loginUser.isPending || phone.length !== 11 || password.length < 8}
+                className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #4F5BFF 0%, #5E6AFF 100%)",
+                  color: "#FFFFFF",
+                  boxShadow: "0 0 20px rgba(79, 91, 255, 0.25)",
+                }}
+              >
+                {loginUser.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <span className="whitespace-nowrap">Login</span>
+                    <ArrowRight className="ml-2 h-5 w-5 shrink-0" />
+                  </>
+                )}
+              </Button>
+
+              <div className="relative my-2 shrink-0">
+                <div className="absolute inset-0 flex items-center">
+                  <div
+                    className="w-full border-t"
+                    style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
+                  ></div>
+                </div>
+                <div className="relative flex justify-center text-xs md:text-sm">
+                  <span
+                    className="px-3 whitespace-nowrap"
+                    style={{
+                      color: "#6B7684",
+                      background:
+                        "linear-gradient(180deg, rgba(35, 46, 60, 1) 0%, rgba(28, 36, 48, 1) 100%)",
+                    }}
+                  >
+                    or
+                  </span>
+                </div>
+              </div>
+
+              <Link href="/register" className="w-full">
                 <Button
-                  onClick={handleVerifyOtp}
-                  disabled={verifyOTP.isPending || otp.length !== 6}
+                  type="button"
+                  variant="outline"
                   className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
                   style={{
-                    background:
-                      "linear-gradient(135deg, #4F5BFF 0%, #5E6AFF 100%)",
-                    color: "#FFFFFF",
-                    boxShadow: "0 0 20px rgba(79, 91, 255, 0.25)",
+                    backgroundColor: "transparent",
+                    borderColor: "rgba(255, 255, 255, 0.1)",
+                    color: "#E6EDF5",
                   }}
                 >
-                  {verifyOTP.isPending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      <span className="whitespace-nowrap">Verify OTP</span>
-                      <CheckCircle2 className="ml-2 h-5 w-5 shrink-0" />
-                    </>
-                  )}
+                  Create New Account
                 </Button>
-
-                <div className="flex items-center justify-between shrink-0">
-                  <button
-                    onClick={() => setStep("phone")}
-                    className="text-sm md:text-base flex items-center gap-1 whitespace-nowrap transition-colors hover:opacity-80"
-                    style={{ color: "#9DA7B3" }}
-                  >
-                    <ArrowLeft className="h-4 w-4 shrink-0" /> Back
-                  </button>
-                  <button
-                    onClick={handleResendOTP}
-                    disabled={countdown > 0}
-                    className="text-sm md:text-base whitespace-nowrap transition-colors disabled:opacity-50"
-                    style={{ color: countdown > 0 ? "#6B7684" : "#4F5BFF" }}
-                  >
-                    {countdown > 0 ? `Resend in ${countdown}s` : "Resend OTP"}
-                  </button>
-                </div>
-              </motion.div>
-            )}
+              </Link>
+            </motion.form>
           </AnimatePresence>
         </div>
 
