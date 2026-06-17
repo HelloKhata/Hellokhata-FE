@@ -1,11 +1,13 @@
 // Hello Khata - Root Layout
 // হ্যালো খাতা - রুট লেআউট
 
+
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Bengali, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/Providers";
+
 
 // Bengali font for better Bangla text rendering
 const notoSansBengali = Noto_Sans_Bengali({
@@ -43,11 +45,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+
   return (
     <html lang="bn" className="dark" suppressHydrationWarning>
       <body
         className={`${notoSansBengali.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}
       >
+
         <Providers>
           {children}
           <Toaster position="top-right" richColors />
