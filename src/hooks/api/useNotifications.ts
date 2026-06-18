@@ -1,35 +1,22 @@
-'use client';
 
-import { useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { getNotifications, readAllNotifications } from "@/services/notifications.services"
 
-export default function NotificationStream() {
-  useEffect(() => {
-
-    const eventSource = new EventSource('https://voiceerp.mapleitfirm.com/api/notifications/stream', {
-      withCredentials: true,
-    });
-
-    eventSource.onopen = () => {
-
-      console.log(
-        "✅ SSE connected"
-      );
-
-    };
-
-    eventSource.onmessage = (event) => {
-      const notification = JSON.parse(event.data);
-      alert(`🔔 ${notification.title}\n${notification.message}`);
-    };
-
-    eventSource.onerror = (err) => {
-      console.error('SSE Connection Error:', err);
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
-
-  return null; // Renders nothing on the screen
+export const useNotifications = () => {
+    return useQuery({
+        queryKey: ['notifications'],
+        queryFn: getNotifications
+    })
 }
+
+export const useReadAllNotifications = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: readAllNotifications,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+    })
+}
+

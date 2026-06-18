@@ -9,7 +9,8 @@ import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import client from '@/lib/axios';
 import { useRouter } from 'next/navigation';
-import NotificationStream from '@/hooks/api/useNotifications';
+import { useNotifications } from '@/hooks/api/useNotifications';
+import NotificatoinProvider from '@/components/notifications/NotificatoinProvider';
 
 // Simple store subscription for hydration
 const emptySubscribe = () => () => { };
@@ -18,6 +19,8 @@ const DashboardLayout = ({ children }) => {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
+  const { data } = useNotifications()
+  console.log(data)
   // Proper hydration detection using useSyncExternalStore
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -62,12 +65,6 @@ const DashboardLayout = ({ children }) => {
   }, [toggleAiDrawer]);
 
 
-
-  //      useEffect(()=>{
-  //      client.get('https://voiceerp.mapleitfirm.com/api/auth/status')
-  //      .then(res => console.log(res))
-  //       .then(data => console.log(data))
-  // },[])
   // Loading state - show while hydrating
   if (!mounted) {
     return (
@@ -94,10 +91,10 @@ const DashboardLayout = ({ children }) => {
     return router.push('/login')
   }
 
+
   return (
-    <>
+    <NotificatoinProvider>
       <AppLayout>
-        <NotificationStream />
         {children}
       </AppLayout>
 
@@ -112,7 +109,7 @@ const DashboardLayout = ({ children }) => {
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
       />
-    </>
+    </NotificatoinProvider>
   )
 }
 
