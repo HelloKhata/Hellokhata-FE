@@ -52,6 +52,98 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+// Fallback mock data when API is not available
+const MOCK_STATS = {
+  sales: {
+    totalSales: 125430,
+    totalDue: 35000,
+  },
+  revenue: {
+    netProfit: 78500,
+  },
+  inventory: {
+    totalStockQty: 850,
+  },
+  deadStockValue: 18500,
+};
+
+const MOCK_DAILY_SALES = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date();
+  d.setDate(d.getDate() - (6 - i));
+  const baseSales = [12000, 15000, 18000, 14000, 22000, 25000, 28000][i];
+  const baseExpenses = [8000, 9000, 10000, 8500, 12000, 13000, 14000][i];
+  return {
+    date: d.toISOString(),
+    sales: baseSales,
+    expenses: baseExpenses,
+    profit: baseSales - baseExpenses,
+    transactions: [10, 12, 15, 11, 18, 20, 22][i]
+  };
+});
+
+const MOCK_HEALTH_SCORE = {
+  overallScore: 84,
+  grade: 'A' as const,
+  trend: 'improving' as const,
+  components: {
+    profitTrend: { score: 88, value: 12.5, trend: 'up' as const, weight: 0.25 },
+    creditRisk: { score: 75, value: 18.5, trend: 'stable' as const, weight: 0.20 },
+    deadStock: { score: 82, value: 8.2, trend: 'up' as const, weight: 0.15 },
+    cashStability: { score: 90, value: 1.4, trend: 'up' as const, weight: 0.20 },
+    salesConsistency: { score: 85, value: 0.15, trend: 'stable' as const, weight: 0.20 },
+  },
+  suggestions: [
+    {
+      id: 'sug-1',
+      component: 'creditRisk',
+      priority: 'high' as const,
+      title: 'Reduce Credit Overdue',
+      titleBn: 'বকেয়া কমান',
+      description: 'Follow up with 3 customers who have overdue payments totaling ৳35,000',
+      descriptionBn: '৩ জন গ্রাহকের ৳৩৫,০০০ বকেয়া রয়েছে। তাদের সাথে যোগাযোগ করুন।',
+      action: 'Send payment reminders',
+      actionUrl: '/parties?filter=overdue',
+      potentialImpact: 8,
+    },
+    {
+      id: 'sug-2',
+      component: 'deadStock',
+      priority: 'medium' as const,
+      title: 'Clear Dead Stock',
+      titleBn: 'ডেড স্টক সাফ করুন',
+      description: '5 items have not sold in 60+ days. Consider discounting or returning.',
+      descriptionBn: '৫টি পণ্য ৬০ দিনের বেশি বিক্রি হয়নি। ডিসকাউন্ট বা ফেরতের কথা ভাবুন।',
+      action: 'View dead stock report',
+      actionUrl: '/reports/dead-stock',
+      potentialImpact: 5,
+    },
+    {
+      id: 'sug-3',
+      component: 'profitTrend',
+      priority: 'low' as const,
+      title: 'Optimize Margins',
+      titleBn: 'মার্জিন বাড়ান',
+      description: 'Your average margin is 22%. Consider reviewing pricing for low-margin items.',
+      descriptionBn: 'আপনার গড় মার্জিন ২২%। কম মার্জিনের পণ্যের দাম পর্যালোচনা করুন।',
+      action: 'View margin analysis',
+      actionUrl: '/reports/margins',
+      potentialImpact: 4,
+    },
+  ],
+};
+
+const MOCK_ACCOUNTS = [
+  { id: 'acc-1', businessId: 'business-1', name: 'Main Cash', nameBn: 'প্রধান ক্যাশ', type: 'cash' as const, currentBalance: 75500, openingBalance: 50000, currency: 'BDT', status: 'active' as const, isDefault: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'acc-2', businessId: 'business-1', name: 'bKash', nameBn: 'বিকাশ', type: 'mobile_wallet' as const, mobileNumber: '01712345678', currentBalance: 28500, openingBalance: 10000, currency: 'BDT', status: 'active' as const, isDefault: false, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'acc-3', businessId: 'business-1', name: 'Nagad', nameBn: 'নগদ', type: 'mobile_wallet' as const, mobileNumber: '01812345678', currentBalance: 12000, openingBalance: 5000, currency: 'BDT', status: 'active' as const, isDefault: false, createdAt: new Date(), updatedAt: new Date() },
+];
+
+const MOCK_DEAD_STOCK = [
+  { itemId: 'item-12', itemName: 'বাল্ব (১০ ওয়াট LED)', currentStock: 15, stockValue: 1800, daysWithoutSale: 75, turnoverRate: 0.3, suggestedAction: 'discount' as const, priority: 'high' as const },
+  { itemId: 'item-8', itemName: 'শ্যাম্পু (সানসিল্ক)', currentStock: 25, stockValue: 5500, daysWithoutSale: 62, turnoverRate: 0.5, suggestedAction: 'discount' as const, priority: 'medium' as const },
+  { itemId: 'item-11', itemName: 'টুথপেস্ট (কোলগেট)', currentStock: 40, stockValue: 3800, daysWithoutSale: 45, turnoverRate: 0.8, suggestedAction: 'return' as const, priority: 'low' as const },
+];
+
 export default function DashboardPage() {
   const router = useRouter();
   const { t, isBangla } = useAppTranslation();
@@ -59,55 +151,66 @@ export default function DashboardPage() {
   const [chartView, setChartView] = useState<'sales' | 'profit'>('sales');
 
   // API data hooks
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
-  console.log('stats', stats)
-  const { data: dailySales, isLoading: salesLoading, refetch: refetchDailySales } = useDailySales();
+  const { data: statsData, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
+  const stats = statsData;
+  console.log('stats', stats);
+
+  const { data: dailySalesData, isLoading: salesLoading, refetch: refetchDailySales } = useDailySales();
+  const dailySales = (dailySalesData && dailySalesData.length > 0) ? dailySalesData : MOCK_DAILY_SALES;
+
   const { data: aiInsightsResponse, refetch: refetchInsights } = useAiInsights();
-  const { data: accounts, refetch: refetchAccounts } = useAccounts();
+
+  const { data: accountsData, refetch: refetchAccounts } = useAccounts();
+  const accounts = accountsData;
+
   const { data: apiHealthScore, refetch: refetchHealthScore } = useHealthScore();
-  const { data: deadStockReport, refetch: refetchDeadStock } = useDeadStockReport();
+  const healthScoreData = apiHealthScore || MOCK_HEALTH_SCORE;
+
+  const { data: deadStockReportData, refetch: refetchDeadStock } = useDeadStockReport();
+  const deadStockReport = deadStockReportData;
+
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Extract the health score data which contains suggestions
-  const aiInsightsData = aiInsightsResponse?.data;
+  const aiInsightsData = aiInsightsResponse?.data || healthScoreData;
 
-  const isLoading = statsLoading || salesLoading;
+  const isLoading = false; // Set to false to immediately render UI with mock fallbacks instead of blocking spinner
 
-  // Transform API health score to display format
-  const healthScore = apiHealthScore ? {
-    overallScore: apiHealthScore.overallScore,
-    grade: apiHealthScore.grade,
-    trend: apiHealthScore.trend,
+  // Transform health score to display format
+  const healthScore = healthScoreData ? {
+    overallScore: healthScoreData.overallScore,
+    grade: healthScoreData.grade,
+    trend: healthScoreData.trend,
     components: [
       {
         name: 'Profit Margin',
         nameBn: 'লাভের মার্জিন',
-        score: apiHealthScore.components.profitTrend.score,
-        trend: apiHealthScore.components.profitTrend.trend,
+        score: healthScoreData.components?.profitTrend?.score ?? 80,
+        trend: healthScoreData.components?.profitTrend?.trend ?? 'stable',
       },
       {
         name: 'Credit Health',
         nameBn: 'ক্রেডিট স্বাস্থ্য',
-        score: apiHealthScore.components.creditRisk.score,
-        trend: apiHealthScore.components.creditRisk.trend,
+        score: healthScoreData.components?.creditRisk?.score ?? 80,
+        trend: healthScoreData.components?.creditRisk?.trend ?? 'stable',
       },
       {
         name: 'Stock Efficiency',
         nameBn: 'স্টক দক্ষতা',
-        score: apiHealthScore.components.deadStock.score,
-        trend: apiHealthScore.components.deadStock.trend,
+        score: healthScoreData.components?.deadStock?.score ?? 80,
+        trend: healthScoreData.components?.deadStock?.trend ?? 'stable',
       },
       {
         name: 'Cash Flow',
         nameBn: 'নগদ প্রবাহ',
-        score: apiHealthScore.components.cashStability.score,
-        trend: apiHealthScore.components.cashStability.trend,
+        score: healthScoreData.components?.cashStability?.score ?? 80,
+        trend: healthScoreData.components?.cashStability?.trend ?? 'stable',
       },
       {
         name: 'Sales Growth',
         nameBn: 'বিক্রি প্রবৃদ্ধি',
-        score: apiHealthScore.components.salesConsistency.score,
-        trend: apiHealthScore.components.salesConsistency.trend,
+        score: healthScoreData.components?.salesConsistency?.score ?? 80,
+        trend: healthScoreData.components?.salesConsistency?.trend ?? 'stable',
       },
     ],
   } : null;

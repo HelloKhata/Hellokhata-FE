@@ -5,7 +5,8 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Bengali, Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/Providers";
 
 
@@ -55,7 +56,8 @@ export default function RootLayout({
 
         <Providers>
           {children}
-          <Toaster position="top-right" richColors />
+          <SonnerToaster position="top-right" richColors />
+          <ShadcnToaster />
         </Providers>
       </body>
     </html>

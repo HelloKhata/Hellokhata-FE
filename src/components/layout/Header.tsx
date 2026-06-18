@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { Bell, Search, Menu, Globe, LogOut, Sparkles } from 'lucide-react';
+import { Bell, Search, Menu, Globe, LogOut, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,6 +20,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useHealthScore } from '@/hooks/queries';
+import { useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
 import { cn } from '@/lib/utils';
 import { BranchSwitcher } from '@/components/common';
 
@@ -33,6 +34,44 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const { setMobileMenuOpen, unreadNotifications } = useUiStore();
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: healthScoreData } = useHealthScore();
+  const { data: notificationsData } = useNotifications();
+  const notifications = Array.isArray(notificationsData)
+    ? notificationsData
+    : (Array.isArray((notificationsData as any)?.data) ? (notificationsData as any).data : []);
+
+  const [localNotifications, setLocalNotifications] = useState<any[]>([]);
+  const [filter, setFilter] = useState<'all' | 'read' | 'unread'>('all');
+
+  const { mutate: readAllNotifications, isPending: isReadingAll } = useReadAllNotifications();
+
+  useEffect(() => {
+    if (notifications) {
+      setLocalNotifications(notifications);
+    }
+  }, [notificationsData]);
+
+  const handleMarkAsRead = (id: string) => {
+    setLocalNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    );
+  };
+
+  const handleReadAll = () => {
+    readAllNotifications(undefined, {
+      onSuccess: () => {
+        setLocalNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      }
+    });
+  };
+
+  const unreadCount = localNotifications.filter(n => !n.read).length;
+
+  const filteredNotifications = localNotifications.filter(n => {
+    if (filter === 'read') return n.read === true;
+    if (filter === 'unread') return !n.read;
+    return true;
+  });
+
   const [scrolled, setScrolled] = useState(false);
   
   // Use useSyncExternalStore for safe client-side only rendering
@@ -180,26 +219,143 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
-              {unreadNotifications > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
-                  {unreadNotifications}
+                  {unreadCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 bg-card border-border">
-            <DropdownMenuLabel className="flex items-center justify-between">
+          <DropdownMenuContent align="end" className="w-80 bg-card border-border flex flex-col max-h-[480px]">
+            <DropdownMenuLabel className="flex items-center justify-between shrink-0">
               <span>{isBangla ? 'নোটিফিকেশন' : 'Notifications'}</span>
-              <Badge variant="secondary" size="sm">{unreadNotifications || 0}</Badge>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border-subtle" />
-            <div className="p-6 text-center">
-              <div className="h-12 w-12 mx-auto mb-3 rounded-2xl bg-muted flex items-center justify-center">
-                <Bell className="h-6 w-6 text-muted-foreground" />
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" size="sm">{unreadCount}</Badge>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[10px] text-primary hover:bg-primary/10 rounded-md font-medium flex items-center gap-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleReadAll();
+                    }}
+                    disabled={isReadingAll}
+                  >
+                    {isReadingAll ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      isBangla ? 'সব পঠিত করুন' : 'Mark all read'
+                    )}
+                  </Button>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {isBangla ? 'কোনো নোটিফিকেশন নেই' : 'No notifications'}
-              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border-subtle shrink-0" />
+            
+            {/* Filter Tabs */}
+            <div className="flex gap-1 p-1 bg-muted/40 border-b border-border-subtle shrink-0">
+              <Button 
+                variant={filter === 'all' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className="flex-1 text-[11px] h-7 rounded-md font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilter('all');
+                }}
+              >
+                {isBangla ? 'সব' : 'All'}
+              </Button>
+              <Button 
+                variant={filter === 'unread' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className="flex-1 text-[11px] h-7 rounded-md font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilter('unread');
+                }}
+              >
+                {isBangla ? 'অপঠিত' : 'Unread'}
+              </Button>
+              <Button 
+                variant={filter === 'read' ? 'secondary' : 'ghost'} 
+                size="sm" 
+                className="flex-1 text-[11px] h-7 rounded-md font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilter('read');
+                }}
+              >
+                {isBangla ? 'পঠিত' : 'Read'}
+              </Button>
+            </div>
+
+            <div className="overflow-y-auto flex-1">
+              {filteredNotifications && filteredNotifications.length > 0 ? (
+                <div className="py-1">
+                  {filteredNotifications.map((notification: any) => (
+                    <div 
+                      key={notification.id} 
+                      className={cn(
+                        "px-4 py-3 border-b border-border-subtle last:border-0 transition-colors flex flex-col gap-2",
+                        notification.read ? "bg-card hover:bg-muted/10" : "bg-primary/5 hover:bg-primary/10"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className={cn("text-sm font-semibold text-foreground", !notification.read && "text-primary")}>
+                            {isBangla && notification.titleBn ? notification.titleBn : notification.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {isBangla && notification.messageBn ? notification.messageBn : notification.message}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        {notification.createdAt ? (
+                          <p className="text-[10px] text-muted-foreground/60">
+                            {new Date(notification.createdAt).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        ) : <div />}
+                        
+                        {!notification.read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[10px] hover:bg-primary/20 text-primary hover:text-primary-foreground font-medium rounded-md"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleMarkAsRead(notification.id);
+                            }}
+                          >
+                            {isBangla ? 'পঠিত চিহ্নিত করুন' : 'Mark as Read'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <div className="h-12 w-12 mx-auto mb-3 rounded-2xl bg-muted flex items-center justify-center">
+                    <Bell className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {isBangla ? 'কোনো নোটিফিকেশন নেই' : 'No notifications'}
+                  </p>
+                </div>
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
