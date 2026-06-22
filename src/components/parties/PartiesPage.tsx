@@ -175,6 +175,7 @@ export default function PartiesPage() {
             "w-full lg:w-[40%] p-6 flex flex-col shrink-0",
             selectedParty && "hidden lg:flex"
           )}>
+            {/* added total count */}
             <div className="flex items-center justify-between mb-4 gap-4">
               <h2 className="text-lg font-bold text-foreground">
                 {isBangla ? `পার্টি (${partiesData?.summery?.total})` : `Parties (${partiesData?.summary?.total})`}
