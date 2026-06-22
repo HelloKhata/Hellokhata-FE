@@ -99,7 +99,19 @@ const navGroups: NavItem[] = [
       { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
     ],
   },
-  { page: '/reports', icon: BarChart3, labelKey: 'Reports', labelBn: 'রিপোর্ট' },
+  {
+    labelKey: 'Reports',
+    labelBn: 'রিপোর্ট',
+    icon: BarChart3,
+    page: '/reports',
+    submenu: [
+      { page: '/reports/sales', icon: ShoppingCart, labelKey: 'Sales Report', labelBn: 'বিক্রয় রিপোর্ট' },
+      { page: '/reports/purchase', icon: Truck, labelKey: 'Purchase Reports', labelBn: 'ক্রয় রিপোর্ট' },
+      { page: '/reports/profit-loss', icon: Receipt, labelKey: 'Profit/Loss', labelBn: 'লাভ-লোকসান' },
+      { page: '/reports/stock', icon: Package, labelKey: 'Stock', labelBn: 'স্টক' },
+      { page: '/reports/health-score', icon: Sparkles, labelKey: 'Health Score', labelBn: 'হেলথ স্কোর' },
+    ],
+  },
 ];
 
 const bottomNavItems = [
@@ -194,14 +206,20 @@ export function Sidebar() {
           <nav className="space-y-1.5">
             {navGroups.map((item, index) => {
               const isGroupActive = item.submenu
-                ? item.submenu.some((sub) => path === sub.page)
+                ? item.submenu.some((sub) => path === sub.page) || (item.page && path === item.page)
                 : path === item.page;
 
               const element = item.submenu ? (
                 // Group with submenu
                 <div className="space-y-1">
-                  <button
-                    onClick={() => toggleSubmenu(item.labelKey)}
+                  <Link
+                    href={item.page || '#'}
+                    onClick={(e) => {
+                      toggleSubmenu(item.labelKey);
+                      if (!item.page) {
+                        e.preventDefault();
+                      }
+                    }}
                     className={cn(
                       'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full text-left',
                       'relative group',
@@ -230,7 +248,7 @@ export function Sidebar() {
                         </span>
                       </>
                     )}
-                  </button>
+                  </Link>
 
                   {/* Submenu list */}
                   {!sidebarCollapsed && openSubmenus[item.labelKey] && (
