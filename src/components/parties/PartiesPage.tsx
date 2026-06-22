@@ -71,9 +71,9 @@ export default function PartiesPage() {
   const parties = partiesData?.data || [];
   const { data: partiesSearchData } = useSearch(searchTerm);
   const searchParties = partiesSearchData?.data.hits;
-  console.log('searchParties', searchParties)
   const router = useRouter();
 
+  console.log('partiesData', partiesData)
   // Client-side filtering and searching
   const filteredParties = parties.filter((party: any) => {
     // Type Filter
@@ -177,7 +177,7 @@ export default function PartiesPage() {
           )}>
             <div className="flex items-center justify-between mb-4 gap-4">
               <h2 className="text-lg font-bold text-foreground">
-                {isBangla ? `পার্টি (${filteredParties.length})` : `Parties (${filteredParties.length})`}
+                {isBangla ? `পার্টি (${filteredParties.length})` : `Parties (${partiesData.summary.total})`}
               </h2>
               <Button
                 onClick={() => router.push('/parties/new')}
