@@ -89,7 +89,7 @@ export function NewPaymentPlanModal({
   const parties = partiesData?.data || []
 
   const { data: salesData, isLoading: salesLoading } = useGetSales();
-  const sales = salesData?.data;
+  const sales = (salesData as any)?.data;
   // Filter sales for selected party
   const partySales = sales?.filter((s) => s.partyId === formData.partyId);
   const { mutate: createPaymentPlans, isPending: isSubmitting } = useCreatePaymentPlans()

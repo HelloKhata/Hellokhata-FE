@@ -331,7 +331,7 @@ export function useSales(params?: { partyId?: string; startDate?: string; endDat
   return useQuery({
     queryKey: queryKeys.sales(params),
     queryFn: () => apiFunctions.getSales(params),
-    select: (response) => response?.data || [],
+    select: (response) => (response as any)?.data?.data || (response as any)?.data || [],
     staleTime: 30000,
   });
 }
@@ -358,7 +358,7 @@ export function usePurchases(params?: { supplierId?: string; startDate?: string;
   return useQuery({
     queryKey: queryKeys.purchases(params),
     queryFn: () => apiFunctions.getPurchases(params),
-    select: (response) => response?.data || [],
+    select: (response) => (response as any)?.data?.data || (response as any)?.data || [],
     staleTime: 30000,
   });
 }
@@ -393,7 +393,7 @@ export function useExpenses(params?: { categoryId?: string; startDate?: string; 
   return useQuery({
     queryKey: queryKeys.expenses(params),
     queryFn: () => apiFunctions.getExpenses(params),
-    select: (response) => response?.data || [],
+    select: (response) => (response as any)?.data?.data || (response as any)?.data || [],
     staleTime: 60000,
   });
 }

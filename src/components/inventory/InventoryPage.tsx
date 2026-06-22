@@ -180,14 +180,12 @@ export default function InventoryPage() {
               <Settings className="h-4 w-4" />
             </Button>
 
-            {/* Stock Actions — disabled, coming soon */}
+            {/* Stock Actions */}
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
-                disabled
-                title={isBangla ? 'শীঘ্রই আসছে' : 'Coming soon'}
-                className="opacity-50 cursor-not-allowed"
+                onClick={() => router.push('/inventory/stock-adjustment')}
               >
                 <ArrowUpCircle className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline whitespace-nowrap">{isBangla ? 'সংশোধন' : 'Adjust'}</span>
