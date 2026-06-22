@@ -57,6 +57,7 @@ import { useDeleteParty, useParties, useParty } from '@/hooks/api/useParties';
 import { toast } from '@/hooks/use-toast';
 import { AlertDialog } from '@radix-ui/react-alert-dialog';
 import { AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { useSearch } from '@/hooks/api/useSearch';
 
 export default function PartiesPage() {
   const { t, isBangla } = useAppTranslation();
@@ -68,6 +69,9 @@ export default function PartiesPage() {
 
   const { data: partiesData, isLoading } = useParties();
   const parties = partiesData?.data || [];
+  const { data: partiesSearchData } = useSearch(searchTerm);
+  const searchParties = partiesSearchData?.data.hits;
+  console.log('searchParties', searchParties)
   const router = useRouter();
 
   // Client-side filtering and searching
@@ -86,10 +90,10 @@ export default function PartiesPage() {
     }
     // Search Term
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const nameMatch = party.name.toLowerCase().includes(term);
-      const phoneMatch = party.phone?.toLowerCase().includes(term) || false;
-      return nameMatch || phoneMatch;
+      // const term = searchTerm.toLowerCase();
+      // const nameMatch = party.name.toLowerCase().includes(term);
+      // const phoneMatch = party.phone?.toLowerCase().includes(term) || false;
+      // return nameMatch || phoneMatch;
     }
     return true;
   });
@@ -175,7 +179,7 @@ export default function PartiesPage() {
               <h2 className="text-lg font-bold text-foreground">
                 {isBangla ? `পার্টি (${filteredParties.length})` : `Parties (${filteredParties.length})`}
               </h2>
-              <Button 
+              <Button
                 onClick={() => router.push('/parties/new')}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
               >
@@ -201,35 +205,35 @@ export default function PartiesPage() {
 
             {/* Filter Chips */}
             <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 shrink-0">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setTypeFilter(typeFilter === 'customer' ? 'both' : 'customer')}
                 className={cn(
                   "rounded-full px-4 h-8 text-xs font-medium border-input",
-                  typeFilter === 'customer' 
-                    ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30" 
+                  typeFilter === 'customer'
+                    ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30"
                     : "text-muted-foreground bg-transparent hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 {isBangla ? 'গ্রাহক' : 'Customer'}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setTypeFilter(typeFilter === 'supplier' ? 'both' : 'supplier')}
                 className={cn(
                   "rounded-full px-4 h-8 text-xs font-medium border-input",
-                  typeFilter === 'supplier' 
-                    ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30" 
+                  typeFilter === 'supplier'
+                    ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30"
                     : "text-muted-foreground bg-transparent hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 {isBangla ? 'সরবরাহকারী' : 'Supplier'}
               </Button>
-              
-              <Select 
-                value={paymentFilter} 
+
+              <Select
+                value={paymentFilter}
                 onValueChange={(value: any) => setPaymentFilter(value)}
               >
                 <SelectTrigger className="w-auto h-8 rounded-full px-4 text-xs font-medium border-input bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:ring-0">
@@ -264,7 +268,7 @@ export default function PartiesPage() {
             ) : (
               <ScrollArea className="flex-1 max-h-[550px] pr-2">
                 <div className="space-y-1">
-                  {filteredParties.map((party: any) => (
+                  {searchParties?.map((party: any) => (
                     <PartyCard
                       key={party.id}
                       party={party}
@@ -296,14 +300,14 @@ export default function PartiesPage() {
                   {isBangla ? 'পার্টি নির্বাচন করুন' : 'Select a Party'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {isBangla 
-                    ? 'পার্টির বিস্তারিত তথ্য এবং লেনদেনের ইতিহাস দেখতে বাম পাশের তালিকা থেকে যেকোনো একটি পার্টি সিলেক্ট করুন।' 
+                  {isBangla
+                    ? 'পার্টির বিস্তারিত তথ্য এবং লেনদেনের ইতিহাস দেখতে বাম পাশের তালিকা থেকে যেকোনো একটি পার্টি সিলেক্ট করুন।'
                     : 'Select a party from the list on the left to view their detailed information and complete transaction history.'}
                 </p>
               </Card>
             ) : (
               <Card className="p-6 flex flex-col h-full flex-1">
-                <PartyDetailsAndTransactions 
+                <PartyDetailsAndTransactions
                   partyId={selectedParty.id}
                   onClose={() => setSelectedParty(null)}
                   isBangla={isBangla}
@@ -460,7 +464,7 @@ function PartyDetailsAndTransactions({
             )}
           </div>
         </div>
-        
+
         <div className="text-right shrink-0">
           <span className="text-xs text-muted-foreground font-semibold block uppercase tracking-wider">
             {isReceivable ? (isBangla ? 'পাওনা' : 'Receivable') : (isBangla ? 'দেনা' : 'Payable')}
@@ -468,7 +472,7 @@ function PartyDetailsAndTransactions({
           <span className={cn(
             "text-2xl font-extrabold block mt-0.5",
             party.currentBalance > 0 ? "text-emerald-600" :
-            party.currentBalance < 0 ? "text-red-600" : "text-foreground"
+              party.currentBalance < 0 ? "text-red-600" : "text-foreground"
           )}>
             {formatCurrency(Math.abs(party.currentBalance))}
           </span>
@@ -480,8 +484,8 @@ function PartyDetailsAndTransactions({
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="border-input hover:bg-accent hover:text-accent-foreground text-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
               >
@@ -501,8 +505,8 @@ function PartyDetailsAndTransactions({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             className="border-input hover:bg-accent hover:text-accent-foreground text-foreground h-9 w-9 shrink-0 flex items-center justify-center"
             onClick={() => router.push(`/parties/${party.id}/edit`)}
@@ -511,8 +515,8 @@ function PartyDetailsAndTransactions({
           </Button>
         </div>
 
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           onClick={() => {
             toast({
@@ -557,7 +561,7 @@ function PartyDetailsAndTransactions({
           <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
             {isBangla ? `লেনদেন (${filteredLedger.length})` : `Transactions (${filteredLedger.length})`}
           </h3>
-          
+
           <div className="flex items-center gap-2">
             {showTxSearch && (
               <Input
@@ -568,8 +572,8 @@ function PartyDetailsAndTransactions({
                 autoFocus
               />
             )}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               className={cn(
                 "h-9 w-9 border-input hover:bg-accent hover:text-accent-foreground text-foreground shrink-0",
@@ -582,9 +586,9 @@ function PartyDetailsAndTransactions({
             >
               <Search className="h-4 w-4 text-muted-foreground" />
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               size="sm"
               className="h-9 border-input hover:bg-accent hover:text-accent-foreground text-foreground text-xs font-semibold flex items-center gap-1.5 shrink-0"
               onClick={() => setTxSortOrder(txSortOrder === 'desc' ? 'asc' : 'desc')}
@@ -595,7 +599,7 @@ function PartyDetailsAndTransactions({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
+                <Button
                   className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1 shrink-0"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -693,12 +697,12 @@ function PartyCard({ party, onView, isSelected }: PartyCardProps) {
   const { formatCurrency } = useCurrency();
 
   return (
-    <div 
-      onClick={onView} 
+    <div
+      onClick={onView}
       className={cn(
         "flex items-center justify-between p-3.5 rounded-xl border transition-all gap-4 cursor-pointer",
-        isSelected 
-          ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+        isSelected
+          ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
           : "border-transparent hover:bg-muted/50"
       )}
     >
@@ -721,9 +725,9 @@ function PartyCard({ party, onView, isSelected }: PartyCardProps) {
           {formatCurrency(party.currentBalance)}
         </p>
         <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
-          {party.currentBalance > 0 ? (isBangla ? 'পাওনা' : 'Receivable') : 
-           party.currentBalance < 0 ? (isBangla ? 'দেনা' : 'Payable') : 
-           (isBangla ? 'মিমাংসিত' : 'Settled')}
+          {party.currentBalance > 0 ? (isBangla ? 'পাওনা' : 'Receivable') :
+            party.currentBalance < 0 ? (isBangla ? 'দেনা' : 'Payable') :
+              (isBangla ? 'মিমাংসিত' : 'Settled')}
         </p>
       </div>
     </div>
