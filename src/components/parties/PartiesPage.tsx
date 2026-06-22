@@ -177,7 +177,7 @@ export default function PartiesPage() {
           )}>
             <div className="flex items-center justify-between mb-4 gap-4">
               <h2 className="text-lg font-bold text-foreground">
-                {isBangla ? `পার্টি (${filteredParties.length})` : `Parties (${partiesData.summary.total})`}
+                {isBangla ? `পার্টি (${partiesData?.summery?.total})` : `Parties (${partiesData?.summary?.total})`}
               </h2>
               <Button
                 onClick={() => router.push('/parties/new')}
