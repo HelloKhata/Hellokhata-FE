@@ -1,9 +1,9 @@
 import client from "@/lib/axios";
 
-export const getSearch = async (query: string) => {
+export const getSearch = async ({ index, query }: { index: string; query: string }) => {
     const res = await client.get(`/api/search`, {
         params: {
-            index: 'parties',
+            index,
             q: query
         }
     })

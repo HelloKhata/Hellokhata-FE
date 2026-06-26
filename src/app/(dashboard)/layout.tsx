@@ -19,8 +19,6 @@ const DashboardLayout = ({ children }) => {
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
-  const { data } = useNotifications()
-  console.log(data)
   // Proper hydration detection using useSyncExternalStore
   const mounted = useSyncExternalStore(
     emptySubscribe,

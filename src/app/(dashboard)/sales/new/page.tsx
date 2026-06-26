@@ -3,8 +3,8 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,14 +29,15 @@ import {
   ArrowLeft,
   Camera,
   Search,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useGetItems } from '@/hooks/api/useItems';
-import { useParties } from '@/hooks/api/useParties';
+import { useParties, useParty } from '@/hooks/api/useParties';
 import { useCreateSales } from '@/hooks/api/useSales';
 
 interface BillingItemRow {
@@ -53,8 +54,10 @@ interface BillingItemRow {
   showSuggestions: boolean;
 }
 
-export default function NewSalePage() {
+function NewSaleContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const partyIdParam = searchParams.get('partyId') || '';
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
   const { mutate, isPending } = useCreateSales();
@@ -66,7 +69,10 @@ export default function NewSalePage() {
   const parties = partiesData?.data || [];
 
   // Form State
-  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
+
+  // Fetch individual party if selectedPartyId is set
+  const { data: singlePartyData } = useParty(selectedPartyId, { enabled: !!selectedPartyId });
   const [partySearchQuery, setPartySearchQuery] = useState('');
   const [showPartySuggestions, setShowPartySuggestions] = useState(false);
 
@@ -108,8 +114,12 @@ export default function NewSalePage() {
   // Selected Party Name
   const selectedPartyName = useMemo(() => {
     const party = parties.find((p: any) => p.id === selectedPartyId);
-    return party ? party.name : '';
-  }, [parties, selectedPartyId]);
+    if (party) return party.name;
+    if (singlePartyData?.data && singlePartyData.data.id === selectedPartyId) {
+      return singlePartyData.data.name;
+    }
+    return '';
+  }, [parties, selectedPartyId, singlePartyData]);
 
   // Calculations
   const subtotal = useMemo(() => {
@@ -736,5 +746,17 @@ export default function NewSalePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewSalePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <NewSaleContent />
+    </Suspense>
   );
 }

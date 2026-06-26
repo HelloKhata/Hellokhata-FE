@@ -20,10 +20,11 @@ export const useParties = (filter: { type?: 'customer' | 'supplier', search?: st
     })
 }
 
-export const useParty = (id: string) => {
+export const useParty = (id: string, options?: { enabled?: boolean }) => {
     return useQuery({
         queryKey: ['party', id],
-        queryFn: () => getParty(id)
+        queryFn: () => getParty(id),
+        ...options
     })
 }
 
