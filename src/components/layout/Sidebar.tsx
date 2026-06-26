@@ -89,16 +89,17 @@ const navGroups: NavItem[] = [
       { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
     ],
   },
-  {
-    labelKey: 'Finance',
-    labelBn: 'অর্থায়ন',
-    icon: Receipt,
-    submenu: [
-      { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
-      { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
-      { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
-    ],
-  },
+  // {
+  //   labelKey: 'Finance',
+  //   labelBn: 'অর্থায়ন',
+  //   icon: Receipt,
+  //   submenu: [
+  //     { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
+  //     { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
+  //     { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
+  //   ],
+  // },
+  { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
   {
     labelKey: 'Reports',
     labelBn: 'রিপোর্ট',

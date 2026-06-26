@@ -11,3 +11,11 @@ export const createPaymentPlans = (data: any) => {
 export const getPaymentList = (id?: string) => {
     return client.get('/api/payments/plans/list', { params: { partyId: id } })
 }
+
+export const createPaymentIn = (data: any) => {
+    return client.post('/api/parties/payment-in', data)
+}
+
+export const createPaymentOut = (data: any) => {
+    return client.post('/api/parties/payment-out', data)
+}

@@ -24,7 +24,6 @@ export interface Party {
   branchId: string;
   openingBalance: number;
   creditLimit?: number;
-  paymentTerms?: number;
   notes?: string;
 }
 
@@ -43,7 +42,6 @@ export default function NewPartyPage() {
     type: 'customer' as 'customer' | 'supplier' | 'both',
     openingBalance: '0',
     creditLimit: '',
-    paymentTerms: '',
     notes: '',
   });
 
@@ -66,7 +64,6 @@ export default function NewPartyPage() {
       branchId: user?.branchId || '',
       openingBalance: parseFloat(formData.openingBalance) || 0,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
-      paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : undefined,
       notes: formData.notes || undefined,
     }
 
@@ -228,18 +225,6 @@ export default function NewPartyPage() {
                       value={formData.creditLimit}
                       onChange={(e) => updateForm('creditLimit', e.target.value)}
                       placeholder="0"
-                      className="h-11"
-                    />
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">
-                      {isBangla ? 'পেমেন্ট পিরিয়ড (দিন)' : 'Payment Terms (days)'}
-                    </Label>
-                    <Input
-                      type="number"
-                      value={formData.paymentTerms}
-                      onChange={(e) => updateForm('paymentTerms', e.target.value)}
-                      placeholder="30"
                       className="h-11"
                     />
                   </div>

@@ -4,11 +4,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Divider } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 import {
   Select,
   SelectContent,
@@ -30,519 +33,620 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  Calendar as CalendarIcon,
+  X,
+  Search,
+  Users,
+  Camera
 } from 'lucide-react';
-import { useItems, useSuppliers, useBranches } from '@/hooks/queries';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useNavigation } from '@/stores/uiStore';
 import { useSessionStore, useUser } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useGetItems } from '@/hooks/api/useItems';
-import { useParties } from '@/hooks/api/useParties';
+import { useParties, useParty } from '@/hooks/api/useParties';
 import { useCreatePurchases } from '@/hooks/api/usePurchases';
 
 interface PurchaseItem {
-  tempId: string;
+  id: string;
   itemId: string;
   itemName: string;
   quantity: number;
   unitCost: number;
   unit: string;
   total: number;
+  searchQuery: string;
+  showSuggestions: boolean;
 }
 
-export default function NewPurchasePage() {
+function NewPurchaseContent() {
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
+  const searchParams = useSearchParams();
+  const partyIdParam = searchParams.get('partyId') || 'none';
+  const router = useRouter();
 
   // Form state
-  const [supplierId, setSupplierId] = useState<string>('none');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank' | 'mobile_banking'>('cash');
-  const [paidAmount, setPaidAmount] = useState<string>('0');
+  const [supplierId, setSupplierId] = useState<string>(partyIdParam);
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
+  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile_banking' | 'credit'>('cash');
+  const [paidAmount, setPaidAmount] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [items, setItems] = useState<PurchaseItem[]>([]);
+  const [purchaseDate, setPurchaseDate] = useState<Date>(new Date());
 
-  // Add item modal state
-  const [showItemSelector, setShowItemSelector] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
-  const [itemQuantity, setItemQuantity] = useState<string>('1');
-  const [itemCost, setItemCost] = useState<string>('');
+  // Billing items table state
+  const [items, setItems] = useState<PurchaseItem[]>([
+    {
+      id: '1',
+      itemId: '',
+      itemName: '',
+      quantity: 1,
+      unitCost: 0,
+      unit: 'pcs',
+      total: 0,
+      searchQuery: '',
+      showSuggestions: false,
+    }
+  ]);
 
   // Fetch data
-  const { data: productsData } = useGetItems({ search: '' });
+  const { data: productsData } = useGetItems({ page: 1, limit: 100 });
   const { data: suppliersData } = useParties({ type: 'supplier' });
-
-  //  create purchase mutation
   const { mutate: createPurchase, isPending: isCreatingPurchases } = useCreatePurchases();
+
   const products = productsData?.data || [];
   const suppliers = suppliersData?.data || [];
-
   const user = useUser();
 
-  const router = useRouter()
-  // Set default branch
-  // useEffect(() => {
-  //   if (branches.length > 0 && !branchId) {
-  //     const mainBranch = branches.find(b => b.isMain);
-  //     setBranchId(mainBranch?.id || branches[0].id);
-  //   }
-  // }, [branches, branchId]);
+  // Fetch individual supplier if supplierId is set
+  const { data: singleSupplierData } = useParty(supplierId, { enabled: !!supplierId && supplierId !== 'none' });
 
-  // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const total = subtotal;
-  const dueAmount = total - parseFloat(paidAmount || '0');
-  // const isCredit = paymentMethod === 'credit' || (paymentMethod === 'partial' && dueAmount > 0);
-
-  // Add item to purchase
-  const handleAddItem = () => {
-    if (!selectedItemId || !itemQuantity || !itemCost) {
-      toast.error(isBangla ? 'সব তথ্য পূরণ করুন' : 'Please fill all fields');
-      return;
+  // Selected Supplier Name
+  const selectedSupplierName = useMemo(() => {
+    if (supplierId === 'none') return '';
+    const supplier = suppliers.find((s: any) => s.id === supplierId);
+    if (supplier) return supplier.name;
+    if (singleSupplierData?.data && singleSupplierData.data.id === supplierId) {
+      return singleSupplierData.data.name;
     }
+    return '';
+  }, [suppliers, supplierId, singleSupplierData]);
 
-    const product = products.find(p => p.id === selectedItemId);
-    if (!product) return;
+  // Filter suppliers for autocomplete suggestions
+  const filteredSuppliers = useMemo(() => {
+    if (!supplierSearchQuery) return suppliers.slice(0, 10);
+    return suppliers.filter((supplier: any) =>
+      supplier.name.toLowerCase().includes(supplierSearchQuery.toLowerCase()) ||
+      supplier.phone?.toLowerCase().includes(supplierSearchQuery.toLowerCase())
+    );
+  }, [suppliers, supplierSearchQuery]);
 
-    const quantity = parseFloat(itemQuantity);
-    const unitCost = parseFloat(itemCost);
-    const total = quantity * unitCost;
-
-    const newItem: PurchaseItem = {
-      tempId: Math.random().toString(36).substring(2, 9),
-      itemId: selectedItemId,
-      itemName: product.name,
-      quantity,
-      unitCost,
-      unit: product.unit || 'pcs',
-      total,
-    };
-
-    setItems([...items, newItem]);
-    setSelectedItemId('');
-    setItemQuantity('1');
-    setItemCost('');
-    setShowItemSelector(false);
+  // Filter available products for inline suggestions
+  const getFilteredProducts = (query: string) => {
+    if (!query) return products.slice(0, 10);
+    return products.filter((item: any) =>
+      item.name.toLowerCase().includes(query.toLowerCase()) ||
+      item.sku?.toLowerCase().includes(query.toLowerCase())
+    );
   };
 
-  // Remove item
-  const handleRemoveItem = (tempId: string) => {
-    setItems(items.filter(item => item.tempId !== tempId));
+  // Calculations
+  const subtotal = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.total, 0);
+  }, [items]);
+
+  const total = subtotal;
+
+  const effectivePaidAmount = useMemo(() => {
+    if (paymentMethod === 'credit') return 0;
+    return paidAmount === '' ? total : (parseFloat(paidAmount) || total);
+  }, [paymentMethod, paidAmount, total]);
+
+  const due = Math.max(0, total - effectivePaidAmount);
+
+  // Name Input Change
+  const handleNameChange = (id: string, value: string) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          itemName: value,
+          searchQuery: value,
+          showSuggestions: true,
+        };
+      }
+      return item;
+    }));
   };
 
-  // Submit purchase
+  // Product Selection
+  const handleSelectProduct = (rowId: string, product: any) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id === rowId) {
+        const cost = product.costPrice || 0;
+        return {
+          ...item,
+          itemId: product.id,
+          itemName: product.name,
+          unit: product.unit || 'pcs',
+          unitCost: cost,
+          total: item.quantity * cost,
+          showSuggestions: false,
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Quantity Change
+  const handleQuantityChange = (id: string, value: string) => {
+    const qty = parseFloat(value) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          quantity: qty,
+          total: qty * item.unitCost,
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Cost Change
+  const handleCostChange = (id: string, value: string) => {
+    const cost = parseFloat(value) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          unitCost: cost,
+          total: item.quantity * cost,
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Add Item Row
+  const addItemRow = () => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(),
+        itemId: '',
+        itemName: '',
+        quantity: 1,
+        unitCost: 0,
+        unit: 'pcs',
+        total: 0,
+        searchQuery: '',
+        showSuggestions: false,
+      }
+    ]);
+  };
+
+  // Remove Item Row
+  const removeItemRow = (id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Handle row blur with delay to register suggestion clicks
+  const handleRowBlur = (id: string) => {
+    setTimeout(() => {
+      setItems((prev) => prev.map((item) => {
+        if (item.id === id) {
+          return { ...item, showSuggestions: false };
+        }
+        return item;
+      }));
+    }, 200);
+  };
+
+  // Submit Purchase
   const handleSubmit = () => {
-    if (items.length === 0) {
+    const validItems = items.filter((i) => i.itemId !== '');
+    if (validItems.length === 0) {
       toast.error(isBangla ? 'অন্তত একটি পণ্য যোগ করুন' : 'Add at least one item');
       return;
     }
 
-    // if (!branchId) {
-    //   toast.error(isBangla ? 'শাখা নির্বাচন করুন' : 'Please select a branch');
-    //   return;
-    // }
-
     const data = {
       supplierId: supplierId === 'none' ? undefined : supplierId,
-      items: items.map(item => ({
+      items: validItems.map(item => ({
         itemId: item.itemId,
         itemName: item.itemName,
         quantity: item.quantity,
         unitCost: item.unitCost,
         trackBatch: true,
-        expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(), // default 1 year expiry
-        manufactureDate: new Date().toISOString(), // default to today
+        expiryDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+        manufactureDate: new Date().toISOString(),
       })),
-      paidAmount: parseFloat(paidAmount || '0'),
+      paidAmount: effectivePaidAmount,
       accountId: user?.id || '',
       notes,
-    }
-
+    };
 
     createPurchase(data, {
       onSuccess: () => {
         toast.success(isBangla ? 'স্টক সফলভাবে যোগ করা হয়েছে' : 'Stock added successfully');
         router.push('/purchases');
       }
-    })
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Truck className="h-6 w-6 text-primary" />
-              {isBangla ? 'স্টক যোগ করুন' : 'Add Stock'}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-              {isBangla ? 'নতুন পণ্য ক্রয় বা স্টক যোগ করুন' : 'Add new stock or record a purchase'}
-            </p>
+      {/* Top Header Section */}
+      <div className="flex items-center justify-between pb-2">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          {isBangla ? 'স্টক যোগ করুন' : 'Add Stock'}
+        </h1>
+        <Button variant="ghost" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {isBangla ? 'পেছনে' : 'Back'}
+        </Button>
+      </div>
+
+      <div className="space-y-6">
+        {/* Row 1 Layout: Select Supplier, Purchase No, Purchase Date */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          {/* Select Supplier */}
+          <div className="relative space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {isBangla ? 'সরবরাহকারী নির্বাচন করুন' : 'Select Supplier'}
+            </Label>
+            <div className="relative">
+              <Input
+                value={selectedSupplierName || supplierSearchQuery}
+                onChange={(e) => {
+                  setSupplierSearchQuery(e.target.value);
+                  if (supplierId && supplierId !== 'none') setSupplierId('none');
+                  setShowSupplierSuggestions(true);
+                }}
+                onFocus={() => setShowSupplierSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowSupplierSuggestions(false), 200);
+                }}
+                placeholder={isBangla ? 'সরবরাহকারী খুঁজুন...' : 'Search for supplier'}
+                className="pr-10 h-11 bg-background/50 border-input"
+              />
+              <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+              {showSupplierSuggestions && (
+                <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  {filteredSuppliers.length === 0 ? (
+                    <div className="p-3 text-center text-sm text-muted-foreground">
+                      {isBangla ? 'কোনো সরবরাহকারী পাওয়া যায়নি' : 'No suppliers found'}
+                    </div>
+                  ) : (
+                    filteredSuppliers.map((supplier: any) => (
+                      <button
+                        key={supplier.id}
+                        type="button"
+                        className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
+                        onClick={() => {
+                          setSupplierId(supplier.id);
+                          setSupplierSearchQuery('');
+                        }}
+                      >
+                        <span className="font-medium text-foreground">{supplier.name}</span>
+                        {supplier.phone && <span className="text-xs text-muted-foreground">{supplier.phone}</span>}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Purchase No */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-medium text-foreground">
+                {isBangla ? 'ক্রয় নম্বর' : 'Purchase No'}
+              </Label>
+            </div>
+            <Input
+              disabled
+              placeholder={isBangla ? 'স্বয়ংক্রিয় ক্রয়' : 'Auto Generated'}
+              className="h-11 bg-background/50 border-input font-medium"
+            />
+          </div>
+
+          {/* Purchase Date */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {isBangla ? 'ক্রয় তারিখ' : 'Purchase Date'}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted"
+                >
+                  <span>{format(purchaseDate, 'dd MMM yyyy')}</span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={purchaseDate}
+                  onSelect={(date) => date && setPurchaseDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Row 2: Billing Items Table */}
+        <div className="border border-border rounded-xl bg-card overflow-visible shadow-sm">
+          <div className="overflow-visible">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border text-muted-foreground text-xs font-semibold uppercase">
+                  <th className="px-4 py-3 w-[8%]">{isBangla ? 'ক্রমিক' : 'S.N.'}</th>
+                  <th className="px-4 py-3 w-[45%]">{isBangla ? 'নাম' : 'Name'}</th>
+                  <th className="px-4 py-3 w-[15%]">{isBangla ? 'পরিমাণ' : 'Quantity'}</th>
+                  <th className="px-4 py-3 w-[20%]">{isBangla ? 'ক্রয় মূল্য / দর' : 'Cost Price / Rate'}</th>
+                  <th className="px-4 py-3 w-[12%] text-right">{isBangla ? 'মোট' : 'Amount'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {items.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+                    {/* SN */}
+                    <td className="px-4 py-4 font-bold text-amber-500 align-middle">
+                      {idx + 1}
+                    </td>
+
+                    {/* Name */}
+                    <td className="px-4 py-3 align-middle relative">
+                      <Input
+                        value={item.itemName}
+                        onChange={(e) => handleNameChange(item.id, e.target.value)}
+                        onFocus={() => {
+                          setItems((prev) => prev.map((it) => {
+                            if (it.id === item.id) {
+                              return { ...it, showSuggestions: true };
+                            }
+                            return it;
+                          }));
+                        }}
+                        onBlur={() => handleRowBlur(item.id)}
+                        placeholder={isBangla ? 'পণ্য নাম লিখুন' : 'Enter Item name'}
+                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
+                      />
+
+                      {item.showSuggestions && (
+                        <div className="absolute z-50 left-4 right-4 top-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                          {getFilteredProducts(item.searchQuery).length === 0 ? (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                              {isBangla ? 'কোনো পণ্য পাওয়া যায়নি' : 'No items found'}
+                            </div>
+                          ) : (
+                            getFilteredProducts(item.searchQuery).map((product: any) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                className="w-full text-left p-3 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                                onClick={() => handleSelectProduct(item.id, product)}
+                              >
+                                <div>
+                                  <p className="font-semibold text-foreground">{product.name}</p>
+                                  <p className="text-[10px] text-muted-foreground">Stock: {product.currentStock} {product.unit}</p>
+                                </div>
+                                <span className="font-bold text-emerald-500">Tk. {product.costPrice}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Quantity */}
+                    <td className="px-4 py-3 align-middle">
+                      <Input
+                        type="number"
+                        value={item.quantity || ''}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        className="bg-background/30 h-9 text-center border-input focus:ring-0"
+                        min="1"
+                      />
+                    </td>
+
+                    {/* Rate */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="relative flex items-center">
+                        <span className="absolute left-3 text-xs text-muted-foreground font-medium">Tk.</span>
+                        <Input
+                          type="number"
+                          value={item.unitCost || ''}
+                          onChange={(e) => handleCostChange(item.id, e.target.value)}
+                          className="pl-9 bg-background/30 h-9 border-input focus:ring-0"
+                          min="0"
+                        />
+                      </div>
+                    </td>
+
+                    {/* Amount & Action */}
+                    <td className="px-4 py-3 align-middle text-right font-medium text-foreground">
+                      <div className="flex items-center justify-end gap-3">
+                        <span className="font-semibold text-foreground text-sm">Tk. {item.total.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItemRow(item.id)}
+                          className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Bottom Add Action */}
+          <div className="flex justify-between items-center px-6 py-4 bg-muted/10 border-t border-border">
+            <button
+              type="button"
+              onClick={addItemRow}
+              className="text-emerald-500 font-semibold text-sm flex items-center gap-1.5 hover:text-emerald-600 transition-colors cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              {isBangla ? 'বিল আইটেম যোগ করুন' : 'Add Billing Item'}
+            </button>
+            <div className="flex items-center gap-8">
+              <span className="text-sm text-muted-foreground font-medium">{isBangla ? 'উপমোট' : 'Sub Total'}</span>
+              <span className="font-bold text-foreground text-base">Tk. {subtotal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3 Layout: Notes, Attachments, Totals and Payment */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Notes and Attachments */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">
+                {isBangla ? 'নোট বা মন্তব্য' : 'Notes or Remarks'}
+              </Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={isBangla ? 'নোট লিখুন...' : 'Enter note or description...'}
+                className="min-h-[100px] bg-background/50 border-input resize-none"
+              />
+            </div>
+
+            {/* Attach Images */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">
+                {isBangla ? 'ছবি সংযুক্ত করুন' : 'Attach Images'}
+              </Label>
+              <div className="flex flex-wrap gap-3 items-center">
+                <button
+                  type="button"
+                  className="h-16 w-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center bg-background/30 hover:bg-muted/50 hover:border-emerald-500 transition-all text-muted-foreground hover:text-foreground"
+                >
+                  <Camera className="h-5 w-5 mb-1" />
+                  <span className="text-[10px]">{isBangla ? 'ক্যামেরা' : 'Upload'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Totals, Payment Mode and Submit Actions */}
+          <div className="space-y-6 lg:pl-12">
+            {/* Total Amount Output */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-base font-semibold text-foreground">{isBangla ? 'সর্বমোট পরিমাণ' : 'Total Amount'}</span>
+              <div className="relative w-48 flex items-center">
+                <span className="absolute left-3 text-sm text-muted-foreground font-semibold">Tk.</span>
+                <Input
+                  value={total.toFixed(2)}
+                  readOnly
+                  className="pl-9 h-11 bg-muted/30 border-input text-right font-bold text-lg text-foreground focus-visible:ring-0"
+                />
+              </div>
+            </div>
+
+            {/* Payment Mode Selector */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-base font-semibold text-foreground">{isBangla ? 'পেমেন্ট মোড' : 'Payment Mode'}</span>
+              <div className="w-48">
+                <Select value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val)}>
+                  <SelectTrigger className="h-11 bg-background/50 border-input text-foreground">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">{isBangla ? 'নগদ (Cash)' : 'Cash'}</SelectItem>
+                    <SelectItem value="card">{isBangla ? 'কার্ড (Card)' : 'Card'}</SelectItem>
+                    <SelectItem value="mobile_banking">{isBangla ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}</SelectItem>
+                    <SelectItem value="credit">{isBangla ? 'বাকি (Credit)' : 'Credit'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Paid Amount Input (if not Credit) */}
+            {paymentMethod !== 'credit' && (
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-base font-semibold text-foreground">{isBangla ? 'পরিশোধিত পরিমাণ' : 'Paid Amount'}</span>
+                <div className="relative w-48 flex items-center">
+                  <span className="absolute left-3 text-sm text-muted-foreground font-semibold">Tk.</span>
+                  <Input
+                    type="number"
+                    value={paidAmount}
+                    onChange={(e) => setPaidAmount(e.target.value)}
+                    placeholder={total.toString()}
+                    className="pl-9 h-11 bg-background/50 border-input text-right font-bold text-foreground"
+                    min="0"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Due Alert */}
+            {due > 0 && (
+              <div className="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex justify-between items-center text-sm font-semibold">
+                <span className="text-destructive">{isBangla ? 'বাকি পরিমাণ' : 'Due Amount'}</span>
+                <span className="text-destructive font-bold">Tk. {due.toFixed(2)}</span>
+              </div>
+            )}
+
+            {/* Submit Action Buttons */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex-1 h-11 border-input hover:bg-muted"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isCreatingPurchases || items.length === 0}
+                className="flex-1 h-11 font-semibold"
+              >
+                {isCreatingPurchases ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                    {isBangla ? 'সংরক্ষণ হচ্ছে...' : 'Saving...'}
+                  </span>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {isBangla ? 'স্টক যোগ করুন' : 'Add Stock'}
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Items */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Supplier & Branch Selection */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base whitespace-nowrap">
-                {isBangla ? 'সরবরাহকারী ও শাখা' : 'Supplier & Branch'}
-              </CardTitle>
-            </CardHeader>
-            <Divider />
-            <CardContent className="pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{isBangla ? 'সরবরাহকারী' : 'Supplier'}</Label>
-                  <Select value={supplierId} onValueChange={setSupplierId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isBangla ? 'সরবরাহকারী নির্বাচন করুন' : 'Select supplier'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{isBangla ? 'কোনোটি নয়' : 'None'}</SelectItem>
-                      {suppliers.filter(s => s.type === 'supplier').map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* <div className="space-y-2">
-                    <Label>{isBangla ? 'শাখা' : 'Branch'}</Label>
-                    <Select value={branchId} onValueChange={setBranchId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isBangla ? 'শাখা নির্বাচন করুন' : 'Select branch'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id}>
-                            {branch.nameBn || branch.name}
-                            {branch.isMain && ` (${isBangla ? 'প্রধান' : 'Main'})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div> */}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Items List */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base whitespace-nowrap">
-                  {isBangla ? 'পণ্য তালিকা' : 'Items'}
-                </CardTitle>
-                <Button size="sm" onClick={() => setShowItemSelector(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  <span className="whitespace-nowrap">{isBangla ? 'পণ্য যোগ' : 'Add Item'}</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <Divider />
-            <CardContent className="pt-4">
-              {items.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">
-                    {isBangla ? 'কোনো পণ্য যোগ করা হয়নি' : 'No items added yet'}
-                  </p>
-                  <Button variant="outline" className="mt-4" onClick={() => setShowItemSelector(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {isBangla ? 'পণ্য যোগ করুন' : 'Add First Item'}
-                  </Button>
-                </div>
-              ) : (
-                <ScrollArea className="h-[300px]">
-                  <div className="space-y-3">
-                    {items.map((item, index) => (
-                      <div
-                        key={item.tempId}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border-subtle"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <Package className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-foreground truncate">{item.itemName}</p>
-                            <p className="text-sm text-muted-foreground whitespace-nowrap">
-                              {item.quantity} {item.unit} × {formatCurrency(item.unitCost)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <p className="font-bold text-foreground whitespace-nowrap">
-                            {formatCurrency(item.total)}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => handleRemoveItem(item.tempId)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Add Item Selector */}
-          {showItemSelector && (
-            <Card variant="elevated" padding="default" className="border-primary/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base whitespace-nowrap">
-                  {isBangla ? 'পণ্য নির্বাচন করুন' : 'Select Product'}
-                </CardTitle>
-              </CardHeader>
-              <Divider />
-              <CardContent className="pt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>{isBangla ? 'পণ্য' : 'Product'}</Label>
-                    <Select value={selectedItemId} onValueChange={(value) => {
-                      setSelectedItemId(value);
-                      const product = products.find(p => p.id === value);
-                      if (product) {
-                        setItemCost(product.costPrice?.toString() || '');
-                      }
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={isBangla ? 'পণ্য নির্বাচন' : 'Select product'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} {product.sku && `(${product.sku})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{isBangla ? 'পরিমাণ' : 'Quantity'}</Label>
-                    <Input
-                      type="number"
-                      value={itemQuantity}
-                      onChange={(e) => setItemQuantity(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>{isBangla ? 'ক্রয় মূল্য' : 'Cost Price'}</Label>
-                    <Input
-                      type="number"
-                      value={itemCost}
-                      onChange={(e) => setItemCost(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setShowItemSelector(false)}>
-                    {isBangla ? 'বাতিল' : 'Cancel'}
-                  </Button>
-                  <Button onClick={handleAddItem}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {isBangla ? 'যোগ করুন' : 'Add'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right Column - Summary & Payment */}
-        <div className="space-y-6">
-          {/* Summary */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base whitespace-nowrap flex items-center gap-2">
-                <Calculator className="h-4 w-4" />
-                {isBangla ? 'সারসংক্ষেপ' : 'Summary'}
-              </CardTitle>
-            </CardHeader>
-            <Divider />
-            <CardContent className="pt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{isBangla ? 'উপমোট' : 'Subtotal'}</span>
-                <span className="font-medium">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{isBangla ? 'পণ্য' : 'Items'}</span>
-                <span className="font-medium">{items.length}</span>
-              </div>
-              <Divider />
-              <div className="flex justify-between text-lg font-bold">
-                <span>{isBangla ? 'মোট' : 'Total'}</span>
-                <span className="text-primary">{formatCurrency(total)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Method */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base whitespace-nowrap flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                {isBangla ? 'পেমেন্ট' : 'Payment'}
-              </CardTitle>
-            </CardHeader>
-            <Divider />
-            <CardContent className="pt-4 space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => {
-                    setPaymentMethod('cash');
-
-                  }}
-                  className={cn(
-                    'flex flex-col items-center gap-2 p-3 rounded-lg border transition-all',
-                    paymentMethod === 'cash'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border-subtle hover:border-primary/50'
-                  )}
-                >
-                  <Banknote className="h-5 w-5" />
-                  <span className="text-xs font-medium">{isBangla ? 'নগদ' : 'Cash'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setPaymentMethod('bank');
-                  }}
-                  className={cn(
-                    'flex flex-col items-center gap-2 p-3 rounded-lg border transition-all',
-                    paymentMethod === 'bank'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border-subtle hover:border-primary/50'
-                  )}
-                >
-                  <CreditCard className="h-5 w-5" />
-                  <span className="text-xs font-medium">{isBangla ? 'ব্যাংক ট্রান্সফার' : 'Bank Transfer'}</span>
-                </button>
-                <button
-                  onClick={() => setPaymentMethod('mobile_banking')}
-                  className={cn(
-                    'flex flex-col items-center gap-2 p-3 rounded-lg border transition-all',
-                    paymentMethod === 'mobile_banking'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border-subtle hover:border-primary/50'
-                  )}
-                >
-                  <Wallet className="h-5 w-5" />
-                  <span className="text-xs font-medium">{isBangla ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}</span>
-                </button>
-              </div>
-              <div className="space-y-2">
-                <Label>{isBangla ? 'পরিশোধিত পরিমাণ' : 'Paid Amount'}</Label>
-                <Input
-                  type="number"
-                  value={paidAmount}
-                  onChange={(e) => setPaidAmount(e.target.value)}
-                  placeholder="0"
-                  min="0"
-                  max={total.toString()}
-                  step="0.01"
-                />
-              </div>
-              {/* {paymentMethod === 'partial' && (
-                  <div className="space-y-2">
-                    <Label>{isBangla ? 'পরিশোধিত পরিমাণ' : 'Paid Amount'}</Label>
-                    <Input
-                      type="number"
-                      value={paidAmount}
-                      onChange={(e) => setPaidAmount(e.target.value)}
-                      placeholder="0"
-                      min="0"
-                      max={total.toString()}
-                      step="0.01"
-                    />
-                  </div>
-                )} */}
-
-              {dueAmount > 0 && (
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-                  <div className="flex items-center gap-2 text-warning mb-1">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">{isBangla ? 'বাকি পরিমাণ' : 'Due Amount'}</span>
-                  </div>
-                  <p className="text-lg font-bold text-warning">{formatCurrency(dueAmount)}</p>
-                  {supplierId && supplierId !== 'none' && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {isBangla ? 'সরবরাহকারীর পাওনায় যোগ হবে' : 'Will be added to supplier payable'}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {parseFloat(paidAmount) === total && (
-                <div className="p-3 rounded-lg bg-emerald/10 border border-emerald/20">
-                  <div className="flex items-center gap-2 text-emerald">
-                    <CheckCircle className="h-4 w-4" />
-                    <span className="text-sm font-medium">{isBangla ? 'সম্পূর্ণ পরিশোধিত' : 'Fully Paid'}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Notes */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base whitespace-nowrap">{isBangla ? 'নোট' : 'Notes'}</CardTitle>
-            </CardHeader>
-            <Divider />
-            <CardContent className="pt-4">
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={isBangla ? 'ঐচ্ছিক নোট...' : 'Optional notes...'}
-                className="w-full h-20 px-3 py-2 text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Submit Button */}
-          <Button
-            className="w-full h-12 text-base"
-            onClick={handleSubmit}
-            disabled={isCreatingPurchases || items.length === 0}
-          >
-            {isCreatingPurchases ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                {isBangla ? 'সংরক্ষণ হচ্ছে...' : 'Saving...'}
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-5 w-5 mr-2" />
-                {isBangla ? 'স্টক যোগ করুন' : 'Add Stock'}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
     </div>
+  );
+}
+
+export default function NewPurchasePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <NewPurchaseContent />
+    </Suspense>
   );
 }

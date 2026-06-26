@@ -1,6 +1,6 @@
 
-import { createPaymentPlans, getPaymentList, paymentSummary } from "@/services/payments.services"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut } from "@/services/payments.services"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const usePaymentSummary = () => {
     return useQuery({
@@ -10,11 +10,27 @@ export const usePaymentSummary = () => {
     })
 }
 
-export const useCreatePaymentPlans = () => {
+export const useCreatePaymentIn = () => {
+    const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: createPaymentPlans,
-    })
-}
+        mutationFn: createPaymentIn,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+        }
+    });
+};
+
+export const useCreatePaymentOut = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createPaymentOut,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+        }
+    });
+};
 
 export const useGetPaymentList = (partyId?: string) => {
     return useQuery({
