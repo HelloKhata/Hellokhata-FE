@@ -1,5 +1,5 @@
 
-import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut } from "@/services/payments.services"
+import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut, adjustBalance } from "@/services/payments.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const usePaymentSummary = () => {
@@ -31,7 +31,16 @@ export const useCreatePaymentOut = () => {
         }
     });
 };
-
+export const useAdjustBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: adjustBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+        }
+    });
+}
 export const useGetPaymentList = (partyId?: string) => {
     return useQuery({
         queryKey: ['payment-plans', partyId],

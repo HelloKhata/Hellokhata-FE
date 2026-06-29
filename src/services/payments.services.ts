@@ -19,3 +19,7 @@ export const createPaymentIn = (data: any) => {
 export const createPaymentOut = (data: any) => {
     return client.post('/api/parties/payment-out', data)
 }
+
+export const adjustBalance = (data: any) => {
+    return client.post('/api/parties/adjust-balance', data)
+}

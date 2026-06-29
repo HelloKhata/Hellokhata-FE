@@ -42,6 +42,7 @@ import { getInitials } from './utils';
 import { AddPaymentInModal } from './AddPaymentInModal';
 import { AddPaymentOutModal } from './AddPaymentOutModal';
 import { AdjustBalanceModal } from './AdjustBalanceModal';
+import { AddReminderModal } from './AddReminderModal';
 
 interface PartyDetailsAndTransactionsProps {
   partyId: string;
@@ -67,6 +68,7 @@ export function PartyDetailsAndTransactions({
   const [showPaymentInModal, setShowPaymentInModal] = useState(false);
   const [showPaymentOutModal, setShowPaymentOutModal] = useState(false);
   const [showAdjustBalanceModal, setShowAdjustBalanceModal] = useState(false);
+  const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
   const party = partyDetailData?.data;
   if (isLoading) {
@@ -202,12 +204,7 @@ export function PartyDetailsAndTransactions({
         <Button
           // variant="outline"
           size="sm"
-          onClick={() => {
-            toast({
-              title: isBangla ? 'রিমাইন্ডার পাঠানো হয়েছে' : 'Reminder Sent',
-              description: isBangla ? `${party.name}-কে তাগাদা পাঠানো হয়েছে।` : `Payment reminder sent to ${party.name}.`
-            });
-          }}
+          onClick={() => setShowAddReminderModal(true)}
           className="text-red-500 bg-red-600/20 h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
         >
           <Bell className="h-3.5 w-3.5 text-muted-foreground" />
@@ -389,6 +386,16 @@ export function PartyDetailsAndTransactions({
         partyId={party.id}
         partyName={party.name}
         currentBalance={party.currentBalance}
+      />
+
+      <AddReminderModal
+        isOpen={showAddReminderModal}
+        onClose={() => setShowAddReminderModal(false)}
+        initialTitle={
+          isReceivable
+            ? `Collect Tk. ${Math.abs(party.currentBalance).toLocaleString()} from ${party.name}`
+            : `Pay Tk. ${Math.abs(party.currentBalance).toLocaleString()} to ${party.name}`
+        }
       />
     </div>
   );
