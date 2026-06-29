@@ -1,8 +1,4 @@
-// Hello Khata - Adjust Balance Modal Component
-// Modal to adjust a party's balance (Add Balance or Reduce Balance)
-
 "use client";
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -25,8 +21,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
-import { useQueryClient } from "@tanstack/react-query";
 import client from "@/lib/axios";
+import { useAdjustBalance } from "@/hooks/api/usePayments";
 
 interface AdjustBalanceComponentProps {
   isOpen: boolean;
@@ -46,29 +42,29 @@ export function AdjustBalanceModal({
   onSuccess,
 }: AdjustBalanceComponentProps) {
   const { isBangla } = useAppTranslation();
-  const queryClient = useQueryClient();
 
-  const [adjustmentType, setAdjustmentType] = useState<"add" | "reduce">("add");
+  const [adjustmentType, setAdjustmentType] = useState<"add_balance" | "reduce_balance">("add_balance");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState<Date>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [remarks, setRemarks] = useState("");
-  const [isPending, setIsPending] = useState(false);
+
+  const {mutate:adjustBalance, isPending} = useAdjustBalance()
 
   // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setAdjustmentType("add");
-      setAmount("");
-      setDate(new Date());
-      setRemarks("");
-    }
-  }, [isOpen]);
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     setAdjustmentType("add_balance");
+  //     setAmount("");
+  //     setDate(new Date());
+  //     setRemarks("");
+  //   }
+  // }, [isOpen]);
 
   // Calculate adjusted balance
   const parsedAmount = parseFloat(amount) || 0;
   const adjustedBalance =
-    adjustmentType === "add"
+    adjustmentType === "add_balance"
       ? currentBalance + parsedAmount
       : currentBalance - parsedAmount;
 
@@ -82,40 +78,26 @@ export function AdjustBalanceModal({
       return;
     }
 
-    setIsPending(true);
-    try {
-      await client.post("/api/parties/adjust-balance", {
+    adjustBalance({
         partyId,
         type: adjustmentType,
         amount: parsedAmount,
         date: date.toISOString(),
         remarks,
-      });
-
-      toast.success(
-        isBangla
-          ? "ব্যালেন্স সমন্বয় সফল হয়েছে!"
-          : "Balance adjusted successfully!"
-      );
-
-      // Invalidate queries to refresh details & ledger
-      queryClient.invalidateQueries({ queryKey: ["party", partyId] });
-      queryClient.invalidateQueries({ queryKey: ["parties"] });
-
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch (err: any) {
-      console.error(err);
-      const errMsg =
-        err.response?.data?.message ||
-        (isBangla ? "ব্যালেন্স সমন্বয় ব্যর্থ হয়েছে" : "Balance adjustment failed");
-      toast.error(errMsg);
-    } finally {
-      setIsPending(false);
-    }
+      },{
+        onSuccess: () => {
+          toast.success(
+            isBangla
+              ? "ব্যালেন্স সমন্বয় সফল হয়েছে!"
+              : "Balance adjusted successfully!"
+          );
+          if (onSuccess) onSuccess();
+          onClose();
+        }
+      })
   };
 
-  const isReduce = adjustmentType === "reduce";
+  const isReduce = adjustmentType === "reduce_balance";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -143,10 +125,10 @@ export function AdjustBalanceModal({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setAdjustmentType("add")}
+                onClick={() => setAdjustmentType("add_balance")}
                 className={cn(
                   "flex-1 py-2 px-4 text-sm font-semibold rounded-lg border transition-all duration-200 cursor-pointer",
-                  adjustmentType === "add"
+                  adjustmentType === "add_balance"
                     ? "bg-primary/10 text-primary border-primary/20 shadow-sm"
                     : "bg-transparent text-muted-foreground border-border hover:bg-muted/50"
                 )}
@@ -155,10 +137,10 @@ export function AdjustBalanceModal({
               </button>
               <button
                 type="button"
-                onClick={() => setAdjustmentType("reduce")}
+                onClick={() => setAdjustmentType("reduce_balance")}
                 className={cn(
                   "flex-1 py-2 px-4 text-sm font-semibold rounded-lg border transition-all duration-200 cursor-pointer",
-                  adjustmentType === "reduce"
+                  adjustmentType === "reduce_balance"
                     ? "bg-red-50 text-red-700 border-red-200 shadow-sm"
                     : "bg-transparent text-muted-foreground border-border hover:bg-muted/50"
                 )}
