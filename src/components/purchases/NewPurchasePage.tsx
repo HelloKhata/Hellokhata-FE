@@ -92,9 +92,18 @@ function NewPurchaseContent() {
     }
   ]);
 
+  // Debounce supplier search query
+  const [debouncedSupplierSearchQuery, setDebouncedSupplierSearchQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSupplierSearchQuery(supplierSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [supplierSearchQuery]);
+
   // Fetch data
   const { data: productsData } = useGetItems({ page: 1, limit: 100 });
-  const { data: suppliersData } = useParties({ type: 'supplier' });
+  const { data: suppliersData } = useParties({ type: 'supplier', search: debouncedSupplierSearchQuery });
   const { mutate: createPurchase, isPending: isCreatingPurchases } = useCreatePurchases();
 
   const products = productsData?.data || [];
@@ -328,9 +337,11 @@ function NewPurchaseContent() {
                         key={supplier.id}
                         type="button"
                         className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSupplierId(supplier.id);
                           setSupplierSearchQuery('');
+                          setShowSupplierSuggestions(false);
                         }}
                       >
                         <span className="font-medium text-foreground">{supplier.name}</span>
@@ -435,7 +446,10 @@ function NewPurchaseContent() {
                                 key={product.id}
                                 type="button"
                                 className="w-full text-left p-3 hover:bg-muted/80 text-xs transition-colors flex justify-between"
-                                onClick={() => handleSelectProduct(item.id, product)}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleSelectProduct(item.id, product);
+                                }}
                               >
                                 <div>
                                   <p className="font-semibold text-foreground">{product.name}</p>

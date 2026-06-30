@@ -31,6 +31,7 @@ import {
   Tag,
   ChevronDown,
   ChevronRight,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -100,6 +101,7 @@ const navGroups: NavItem[] = [
   //   ],
   // },
   { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
+  { page: '/reminders', icon: Bell, labelKey: 'Reminders', labelBn: 'রিমাইন্ডার' },
   {
     labelKey: 'Reports',
     labelBn: 'রিপোর্ট',

@@ -121,7 +121,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       // customerTier: formData.customerTier === 'regular' ? null : formData.customerTier || null,
       categoryId: formData.categoryId === '__none__' ? null : formData.categoryId || null,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
-      paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : null,
+      // paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : null,
       notes: formData.notes || null,
       // isActive: formData.isActive,
     }
@@ -159,7 +159,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       customerTier: party.data.customerTier || "regular",
       categoryId: party.data.categoryId || "__none__",
       creditLimit: party.data.creditLimit?.toString() || "",
-      paymentTerms: party.data.paymentTerms?.toString() || "",
+      // paymentTerms: party.data.paymentTerms?.toString() || "",
       notes: party.data.notes || "",
       isActive: party.data.isActive ?? true,
     });
