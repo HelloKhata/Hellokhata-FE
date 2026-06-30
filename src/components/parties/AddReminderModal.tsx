@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,7 +64,6 @@ const PERIODS = ["AM", "PM"];
 export function AddReminderModal({
   isOpen,
   onClose,
-  partyId,
   initialTitle = "",
   initialDate,
   initialTime,
@@ -69,7 +73,6 @@ export function AddReminderModal({
   reminderId,
 }: AddReminderModalProps) {
   const { isBangla } = useAppTranslation();
-
   // State Management
   const [title, setTitle] = useState(initialTitle);
   const [date, setDate] = useState<Date>(initialDate || new Date());
@@ -81,6 +84,7 @@ export function AddReminderModal({
         hour12: true,
       }),
   );
+
   const [type, setType] = useState(initialType || "payment reminder");
   const [notes, setNotes] = useState(initialNotes);
 
@@ -96,6 +100,22 @@ export function AddReminderModal({
   const { mutate: createReminder, isPending: isCreating } = useCreateReminder();
   const { mutate: updateReminder, isPending: isUpdating } = useUpdateReminder();
   const isPending = isCreating || isUpdating;
+
+  useEffect(() => {
+    if (initialDateTime) {
+      const dateObj = new Date(initialDateTime);
+      setDate(dateObj);
+      const formattedTime = dateObj.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+      setTime(formattedTime);
+      setType(initialType || "payment reminder");
+      setNotes(initialNotes || "");
+      setTitle(initialTitle || "");
+    }
+  }, [initialDateTime]);
 
   // Handle saving time from custom picker
   const handleTimeChange = (hour: string, minute: string, period: string) => {
@@ -137,7 +157,7 @@ export function AddReminderModal({
       dateTime,
       type: type as "payment reminder" | "event reminder" | "task reminder",
       notes,
-      partyId,
+      // partyId,
     };
 
     if (reminderId) {
@@ -151,7 +171,7 @@ export function AddReminderModal({
                 ? "রিমাইন্ডার সফলভাবে আপডেট করা হয়েছে"
                 : "Reminder updated successfully",
             );
-            onClose();
+            handleClose();
           },
         },
       );
@@ -164,15 +184,45 @@ export function AddReminderModal({
               ? "রিমাইন্ডার সফলভাবে তৈরি হয়েছে"
               : "Reminder created successfully",
           );
-          onClose();
+          handleClose();
         },
       });
     }
   };
 
+  const handleClose = () => {
+    onClose();
+    // Reset form fields when modal closes
+    setTitle(initialTitle || "");
+    setDate(initialDate || new Date());
+    setTime(
+      initialTime ||
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+    );
+    setType(initialType || "payment reminder");
+    setNotes(initialNotes || "");
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[540px] p-0 rounded-xl overflow-hidden border border-border/80 bg-card shadow-2xl">
+        <DialogHeader className="flex items-center justify-between px-6 py-4 border-b border-border/40 bg-muted/20">
+          <DialogTitle>
+            <h3>
+              {reminderId
+                ? isBangla
+                  ? "রিমাইন্ডার আপডেট করুন"
+                  : "Update Reminder"
+                : isBangla
+                  ? "নতুন রিমাইন্ডার যোগ করুন"
+                  : "Add New Reminder"}
+            </h3>
+          </DialogTitle>
+        </DialogHeader>
         {/* Body Content */}
         <div className="p-6 space-y-6">
           {/* Reminder Title Input */}
@@ -380,7 +430,7 @@ export function AddReminderModal({
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border/40 bg-muted/20">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             className="h-10 px-5 border-border/60 hover:bg-muted text-foreground font-medium rounded-lg text-sm cursor-pointer"
           >
             {isBangla ? "বাতিল" : "Cancel"}
@@ -389,7 +439,7 @@ export function AddReminderModal({
           <Button
             onClick={handleSave}
             disabled={isPending}
-            className="h-10 px-5 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 border-none shadow-sm rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
+            className="h-10 px-5 font-semibold text-white bg-primary hover:bg-primary/60 active:bg-primary/80 border-none shadow-sm rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {isBangla ? "সংরক্ষণ করুন" : "Save"}

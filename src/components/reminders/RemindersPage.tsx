@@ -37,7 +37,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/common";
 import { useAppTranslation, useDateFormat } from "@/hooks/useAppTranslation";
-import { useGetReminders, useDeleteReminder } from "@/hooks/api/useReminders";
+import {
+  useGetReminders,
+  useDeleteReminder,
+  useUpdateReminder,
+} from "@/hooks/api/useReminders";
 import { AddReminderModal } from "@/components/parties/AddReminderModal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -59,16 +63,19 @@ export default function RemindersPage() {
   const { isBangla } = useAppTranslation();
   const { formatDateTime } = useDateFormat();
 
-  const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("completed");
+  const [activeTab, setActiveTab] = useState<"upcoming" | "completed">(
+    "completed",
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editReminderModal, setEditReminderModal] = useState(false);
   const [selectedReminder, setSelectedReminder] = useState<any>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
   const { data: reminders = [], isLoading } = useGetReminders();
   const { mutate: deleteReminder, isPending: isDeleting } = useDeleteReminder();
-
   // Helper to determine if a reminder is completed (past date or explicit property)
+
+  console.log("reminders", reminders);
   const isCompleted = (r: any) => {
     if (r.completed === true || r.status === "completed") return true;
     return new Date(r.dateTime) <= new Date();
@@ -97,7 +104,7 @@ export default function RemindersPage() {
         toast.success(
           isBangla
             ? "রিমাইন্ডার সফলভাবে মুছে ফেলা হয়েছে"
-            : "Reminder deleted successfully"
+            : "Reminder deleted successfully",
         );
         setDeleteConfirmId(null);
       },
@@ -106,7 +113,7 @@ export default function RemindersPage() {
 
   const handleEdit = (reminder: any) => {
     setSelectedReminder(reminder);
-    setAddModalOpen(true);
+    setEditReminderModal(true);
   };
 
   return (
@@ -129,7 +136,7 @@ export default function RemindersPage() {
             setSelectedReminder(null);
             setAddModalOpen(true);
           }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 rounded-lg px-4 h-10 border-none shadow-sm cursor-pointer transition-colors"
+          className="bg-primary hover:bg-primary/60 text-white font-semibold flex items-center gap-2 rounded-lg px-4 h-10 border-none shadow-sm cursor-pointer transition-colors"
         >
           <Plus className="h-4 w-4" />
           {isBangla ? "নতুন রিমাইন্ডার" : "Add New Reminder"}
@@ -143,13 +150,15 @@ export default function RemindersPage() {
           className={cn(
             "pb-3 text-sm font-medium relative transition-colors cursor-pointer",
             activeTab === "upcoming"
-              ? "text-emerald-500 font-semibold"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-primary font-semibold"
+              : "text-muted-foreground hover:text-primary",
           )}
         >
-          {isBangla ? `আসন্ন (${upcomingCount})` : `Upcoming (${upcomingCount})`}
+          {isBangla
+            ? `আসন্ন (${upcomingCount})`
+            : `Upcoming (${upcomingCount})`}
           {activeTab === "upcoming" && (
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-emerald-500 rounded-full" />
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full" />
           )}
         </button>
         <button
@@ -157,15 +166,15 @@ export default function RemindersPage() {
           className={cn(
             "pb-3 text-sm font-medium relative transition-colors cursor-pointer",
             activeTab === "completed"
-              ? "text-emerald-500 font-semibold"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-primary font-semibold"
+              : "text-muted-foreground hover:text-primary",
           )}
         >
           {isBangla
             ? `সম্পন্ন (${completedCount})`
             : `Completed (${completedCount})`}
           {activeTab === "completed" && (
-            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-emerald-500 rounded-full" />
+            <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-full" />
           )}
         </button>
       </div>
@@ -212,16 +221,16 @@ export default function RemindersPage() {
               <Table>
                 <TableHeader className="bg-background/20 border-b border-border/40">
                   <TableRow className="border-b border-border/40 hover:bg-transparent">
-                    <TableHead className="w-[200px] text-muted-foreground font-semibold py-4 px-6">
+                    <TableHead className="w-1/4 text-muted-foreground font-semibold py-4 px-6">
                       {isBangla ? "ধরণ" : "Type"}
                     </TableHead>
-                    <TableHead className="text-muted-foreground font-semibold py-4 px-6">
+                    <TableHead className="w-1/4 text-muted-foreground font-semibold py-4 px-6">
                       {isBangla ? "শিরোনাম" : "Title"}
                     </TableHead>
-                    <TableHead className="w-[250px] text-muted-foreground font-semibold py-4 px-6">
+                    <TableHead className="w-1/4 text-muted-foreground font-semibold py-4 px-6">
                       {isBangla ? "তারিখ" : "Date"}
                     </TableHead>
-                    <TableHead className="w-[120px] text-right text-muted-foreground font-semibold py-4 px-6">
+                    <TableHead className="w-1/6 text-right text-muted-foreground font-semibold py-4 px-6">
                       {isBangla ? "অ্যাকশন" : "Action"}
                     </TableHead>
                   </TableRow>
@@ -300,6 +309,14 @@ export default function RemindersPage() {
         isOpen={addModalOpen}
         onClose={() => {
           setAddModalOpen(false);
+        }}
+      />
+
+      {/* Edit Reminder Modal */}
+      <AddReminderModal
+        isOpen={editReminderModal}
+        onClose={() => {
+          setEditReminderModal(false);
           setSelectedReminder(null);
         }}
         reminderId={selectedReminder?.id}
@@ -315,7 +332,7 @@ export default function RemindersPage() {
         open={!!deleteConfirmId}
         onOpenChange={(open) => !open && setDeleteConfirmId(null)}
       >
-        <AlertDialogContent className="bg-card border border-border/80 rounded-xl shadow-2xl">
+        <AlertDialogContent className="w-[500px] bg-card border border-border/80 rounded-xl shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground">
               {isBangla ? "আপনি কি নিশ্চিত?" : "Are you sure?"}
