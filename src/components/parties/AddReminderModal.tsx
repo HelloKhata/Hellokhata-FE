@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,67 +20,82 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Clock, X } from "lucide-react";
+import { CalendarIcon, Clock, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { useCreateReminder, useUpdateReminder } from "@/hooks/api/useReminders";
 
 interface AddReminderModalProps {
   isOpen: boolean;
   onClose: () => void;
+  partyId?: string;
   onSave?: (data: {
     title: string;
-    date: Date;
-    time: string;
-    type: string;
+    dateTime: string;
+    type: "payment reminder" | "event reminder" | "task reminder";
+    notes: string;
+    partyId?: string;
   }) => void;
   initialTitle?: string;
   initialDate?: Date;
   initialTime?: string;
-  initialType?: string;
+  initialDateTime?: string;
+  initialType?: "payment reminder" | "event reminder" | "task reminder";
+  initialNotes?: string;
+  reminderId?: string;
 }
 
 // Time Picker Dropdown Options
-const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+const HOURS = Array.from({ length: 12 }, (_, i) =>
+  String(i + 1).padStart(2, "0"),
+);
+const MINUTES = Array.from({ length: 60 }, (_, i) =>
+  String(i).padStart(2, "0"),
+);
 const PERIODS = ["AM", "PM"];
 
 export function AddReminderModal({
   isOpen,
   onClose,
-  onSave,
-  initialTitle = "Collect Tk. 60,000 from rahman",
+  partyId,
+  initialTitle = "",
   initialDate,
-  initialTime = "03:33 PM",
-  initialType = "Payment Reminder",
+  initialTime,
+  initialDateTime,
+  initialType,
+  initialNotes = "",
+  reminderId,
 }: AddReminderModalProps) {
   const { isBangla } = useAppTranslation();
 
   // State Management
   const [title, setTitle] = useState(initialTitle);
-  const [date, setDate] = useState<Date>(initialDate || new Date(2026, 5, 26)); // Default 26 Jun 2026 as in image
-  const [time, setTime] = useState(initialTime);
-  const [type, setType] = useState(initialType);
+  const [date, setDate] = useState<Date>(initialDate || new Date());
+  const [time, setTime] = useState(
+    initialTime ||
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+  );
+  const [type, setType] = useState(initialType || "payment reminder");
+  const [notes, setNotes] = useState(initialNotes);
 
   // Popover States
   const [dateOpen, setDateOpen] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
 
   // Split time into components for custom time picker
-  const [selectedHour, setSelectedHour] = useState("03");
-  const [selectedMinute, setSelectedMinute] = useState("33");
-  const [selectedPeriod, setSelectedPeriod] = useState("PM");
+  const [selectedHour, setSelectedHour] = useState("12");
+  const [selectedMinute, setSelectedMinute] = useState("00");
+  const [selectedPeriod, setSelectedPeriod] = useState("AM");
 
-  // Sync internal time picker states when 'time' prop changes or component mounts
-  useEffect(() => {
-    const match = time.match(/^(\d{2}):(\d{2})\s(AM|PM)$/i);
-    if (match) {
-      setSelectedHour(match[1]);
-      setSelectedMinute(match[2]);
-      setSelectedPeriod(match[3].toUpperCase());
-    }
-  }, [time]);
+  const { mutate: createReminder, isPending: isCreating } = useCreateReminder();
+  const { mutate: updateReminder, isPending: isUpdating } = useUpdateReminder();
+  const isPending = isCreating || isUpdating;
 
   // Handle saving time from custom picker
   const handleTimeChange = (hour: string, minute: string, period: string) => {
@@ -92,39 +104,75 @@ export function AddReminderModal({
   };
 
   const handleSave = () => {
-    if (!title.trim()) {
-      toast.error(isBangla ? "দয়া করে রিমাইন্ডার টাইটেল লিখুন" : "Please enter a reminder title");
+    if (!title?.trim()) {
+      toast.error(
+        isBangla
+          ? "দয়া করে রিমাইন্ডার টাইটেল লিখুন"
+          : "Please enter a reminder title",
+      );
       return;
     }
 
-    if (onSave) {
-      onSave({ title, date, time, type });
+    // Combine date and time to ISO 8601 string
+    const match = time.match(/^(\d{2}):(\d{2})\s(AM|PM)$/i);
+    console.log("Time match:", match);
+    let hour = 12;
+    let minute = 0;
+    if (match) {
+      hour = parseInt(match[1], 10);
+      minute = parseInt(match[2], 10);
+      const period = match[3].toUpperCase();
+      if (period === "PM" && hour < 12) {
+        hour += 12;
+      } else if (period === "AM" && hour === 12) {
+        hour = 0;
+      }
     }
+    const combinedDate = new Date(date);
+    combinedDate.setHours(hour, minute, 0, 0);
+    const dateTime = combinedDate.toISOString();
 
-    toast.success(
-      isBangla
-        ? "রিমাইন্ডার সফলভাবে সেট করা হয়েছে!"
-        : "Reminder set successfully!"
-    );
-    onClose();
+    const payload = {
+      title,
+      dateTime,
+      type: type as "payment reminder" | "event reminder" | "task reminder",
+      notes,
+      partyId,
+    };
+
+    if (reminderId) {
+      updateReminder(
+        { id: reminderId, data: payload },
+        {
+          onSuccess: (data) => {
+            console.log("Reminder updated:", data);
+            toast.success(
+              isBangla
+                ? "রিমাইন্ডার সফলভাবে আপডেট করা হয়েছে"
+                : "Reminder updated successfully",
+            );
+            onClose();
+          },
+        },
+      );
+    } else {
+      createReminder(payload, {
+        onSuccess: (data) => {
+          console.log("Reminder created:", data);
+          toast.success(
+            isBangla
+              ? "রিমাইন্ডার সফলভাবে তৈরি হয়েছে"
+              : "Reminder created successfully",
+          );
+          onClose();
+        },
+      });
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[540px] p-0 rounded-xl overflow-hidden border border-border/80 bg-card shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40">
-          <DialogTitle className="text-[17px] font-semibold text-foreground tracking-tight">
-            {isBangla ? "নতুন রিমাইন্ডার যোগ করুন" : "Add New Reminder"}
-          </DialogTitle>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1 text-muted-foreground/75 hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-          >
-            <X className="h-4.5 w-4.5" />
-          </button>
-        </div>
-
         {/* Body Content */}
         <div className="p-6 space-y-6">
           {/* Reminder Title Input */}
@@ -136,7 +184,9 @@ export function AddReminderModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={isBangla ? "রিমাইন্ডার লিখুন..." : "Enter reminder title..."}
+              placeholder={
+                isBangla ? "রিমাইন্ডার লিখুন..." : "Enter reminder title..."
+              }
               className="h-11 w-full bg-background border-border/60 text-foreground font-normal rounded-lg px-4 focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/40"
             />
           </div>
@@ -188,7 +238,9 @@ export function AddReminderModal({
                   <div className="flex p-3 gap-2 bg-card border border-border/80 rounded-lg shadow-xl max-h-[240px] overflow-hidden">
                     {/* Hour Column */}
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1.5">Hour</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1.5">
+                        Hour
+                      </span>
                       <ScrollArea className="h-40 w-12 border-r border-border/50 pr-2">
                         <div className="flex flex-col gap-0.5">
                           {HOURS.map((h) => (
@@ -196,13 +248,17 @@ export function AddReminderModal({
                               key={h}
                               onClick={() => {
                                 setSelectedHour(h);
-                                handleTimeChange(h, selectedMinute, selectedPeriod);
+                                handleTimeChange(
+                                  h,
+                                  selectedMinute,
+                                  selectedPeriod,
+                                );
                               }}
                               className={cn(
                                 "px-2 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer text-center",
                                 selectedHour === h
                                   ? "bg-primary text-primary-foreground font-bold"
-                                  : "text-foreground hover:bg-muted/60"
+                                  : "text-foreground hover:bg-muted/60",
                               )}
                             >
                               {h}
@@ -214,7 +270,9 @@ export function AddReminderModal({
 
                     {/* Minute Column */}
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1.5">Min</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1.5">
+                        Min
+                      </span>
                       <ScrollArea className="h-40 w-12 border-r border-border/50 pr-2">
                         <div className="flex flex-col gap-0.5">
                           {MINUTES.map((m) => (
@@ -222,13 +280,17 @@ export function AddReminderModal({
                               key={m}
                               onClick={() => {
                                 setSelectedMinute(m);
-                                handleTimeChange(selectedHour, m, selectedPeriod);
+                                handleTimeChange(
+                                  selectedHour,
+                                  m,
+                                  selectedPeriod,
+                                );
                               }}
                               className={cn(
                                 "px-2 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer text-center",
                                 selectedMinute === m
                                   ? "bg-primary text-primary-foreground font-bold"
-                                  : "text-foreground hover:bg-muted/60"
+                                  : "text-foreground hover:bg-muted/60",
                               )}
                             >
                               {m}
@@ -240,7 +302,9 @@ export function AddReminderModal({
 
                     {/* AM/PM Column */}
                     <div className="flex flex-col items-center justify-center pl-1.5 gap-2">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Period</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">
+                        Period
+                      </span>
                       <div className="flex flex-col gap-1.5">
                         {PERIODS.map((p) => (
                           <button
@@ -253,7 +317,7 @@ export function AddReminderModal({
                               "px-3 py-1.5 text-xs font-bold rounded-md transition-colors border cursor-pointer text-center",
                               selectedPeriod === p
                                 ? "bg-primary text-primary-foreground border-primary"
-                                : "text-foreground bg-background border-border/60 hover:bg-muted/60"
+                                : "text-foreground bg-background border-border/60 hover:bg-muted/60",
                             )}
                           >
                             {p}
@@ -273,26 +337,42 @@ export function AddReminderModal({
               {isBangla ? "রিমাইন্ডারের ধরন" : "Reminder Type"}
             </Label>
             <div className="w-[50%]">
-              <Select value={type} onValueChange={setType}>
+              <Select value={type} onValueChange={setType as any}>
                 <SelectTrigger className="w-full h-11 bg-background border-border/60 text-foreground font-normal rounded-lg px-4">
-                  <SelectValue placeholder={isBangla ? "রিমাইন্ডার টাইপ" : "Reminder Type"} />
+                  <SelectValue
+                    placeholder={isBangla ? "রিমাইন্ডার টাইপ" : "Reminder Type"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Payment Reminder">
+                  <SelectItem value="payment reminder">
                     {isBangla ? "পেমেন্ট রিমাইন্ডার" : "Payment Reminder"}
                   </SelectItem>
-                  <SelectItem value="Follow-up Reminder">
-                    {isBangla ? "ফলো-আপ রিমাইন্ডার" : "Follow-up Reminder"}
+                  <SelectItem value="event reminder">
+                    {isBangla ? "ইভেন্ট রিমাইন্ডার" : "Event Reminder"}
                   </SelectItem>
-                  <SelectItem value="Call Reminder">
-                    {isBangla ? "কল রিমাইন্ডার" : "Call Reminder"}
-                  </SelectItem>
-                  <SelectItem value="Other">
-                    {isBangla ? "অন্যান্য" : "Other"}
+                  <SelectItem value="task reminder">
+                    {isBangla ? "টাস্ক রিমাইন্ডার" : "Task Reminder"}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Notes field */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground/90">
+              {isBangla ? "রিমাইন্ডার নোট" : "Notes"}
+            </Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={
+                isBangla
+                  ? "রিমাইন্ডার সম্পর্কে লিখুন..."
+                  : "Enter reminder notes/details..."
+              }
+              className="min-h-[100px] w-full bg-background border-border/60 text-foreground font-normal rounded-lg px-4 py-3 focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-muted-foreground/40 resize-none"
+            />
           </div>
         </div>
 
@@ -308,8 +388,10 @@ export function AddReminderModal({
 
           <Button
             onClick={handleSave}
-            className="h-10 px-5 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 border-none shadow-sm rounded-lg text-sm transition-colors cursor-pointer"
+            disabled={isPending}
+            className="h-10 px-5 font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 border-none shadow-sm rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
           >
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {isBangla ? "সংরক্ষণ করুন" : "Save"}
           </Button>
         </div>

@@ -1,7 +1,7 @@
 // Hello Khata OS - New Quotation Page
 // হ্যালো খাতা - নতুন কোটেশন পেজ
 'use client'
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import {
@@ -104,9 +104,18 @@ function NewQuotationContent() {
     }
   ]);
 
+  // Debounce party search query
+  const [debouncedPartySearchQuery, setDebouncedPartySearchQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedPartySearchQuery(partySearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [partySearchQuery]);
+
   // API Data
   const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
-  const { data: partiesData = [] } = useParties({ type: 'customer' });
+  const { data: partiesData = [] } = useParties({ type: 'customer', search: debouncedPartySearchQuery });
   const availableItems = itemsData?.data || [];
   const parties = partiesData.data || [];
 
@@ -188,7 +197,8 @@ function NewQuotationContent() {
       if (item.id === id) {
         return {
           ...item,
-          itemName: query,
+          itemId: '',
+          itemName: '',
           searchQuery: query,
           showSuggestions: true
         };
@@ -209,7 +219,7 @@ function NewQuotationContent() {
           ...item,
           itemId: product.id,
           itemName: product.name,
-          searchQuery: product.name,
+          searchQuery: '',
           unitPrice: price,
           total,
           showSuggestions: false
@@ -315,7 +325,7 @@ function NewQuotationContent() {
         }
         return item;
       }));
-    }, 200);
+    }, 300);
   };
 
   // Handle save draft
@@ -413,9 +423,11 @@ function NewQuotationContent() {
                         key={party.id}
                         type="button"
                         className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setSelectedPartyId(party.id);
                           setPartySearchQuery('');
+                          setShowPartySuggestions(false);
                         }}
                       >
                         <span className="font-medium text-foreground">{party.name}</span>
@@ -486,8 +498,8 @@ function NewQuotationContent() {
         </div>
 
         {/* Row 2: Billing Items Table */}
-        <div className="border border-border rounded-xl bg-card overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="border border-border rounded-xl bg-card overflow-visible shadow-sm">
+          <div className="overflow-visible">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="bg-muted/30 border-b border-border text-muted-foreground text-xs font-semibold uppercase">
@@ -510,8 +522,24 @@ function NewQuotationContent() {
                     {/* Name */}
                     <td className="px-4 py-3 align-middle relative">
                       <Input
-                        value={item.itemName}
+                        value={item.itemName || item.searchQuery}
                         onChange={(e) => handleNameChange(item.id, e.target.value)}
+                        onFocus={() => {
+                          setItems((prev) => prev.map((it) => {
+                            if (it.id === item.id) {
+                              return { ...it, showSuggestions: true };
+                            }
+                            return it;
+                          }));
+                        }}
+                        onClick={() => {
+                          setItems((prev) => prev.map((it) => {
+                            if (it.id === item.id) {
+                              return { ...it, showSuggestions: true };
+                            }
+                            return it;
+                          }));
+                        }}
                         onBlur={() => handleRowBlur(item.id)}
                         placeholder={isBangla ? 'পণ্য নাম লিখুন' : 'Enter Item name'}
                         className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
@@ -529,6 +557,9 @@ function NewQuotationContent() {
                                 key={product.id}
                                 type="button"
                                 className="w-full text-left p-3 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                }}
                                 onClick={() => handleSelectProduct(item.id, product)}
                               >
                                 <div>

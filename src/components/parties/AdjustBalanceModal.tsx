@@ -43,23 +43,15 @@ export function AdjustBalanceModal({
 }: AdjustBalanceComponentProps) {
   const { isBangla } = useAppTranslation();
 
-  const [adjustmentType, setAdjustmentType] = useState<"add_balance" | "reduce_balance">("add_balance");
+  const [adjustmentType, setAdjustmentType] = useState<
+    "add_balance" | "reduce_balance"
+  >("add_balance");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState<Date>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [remarks, setRemarks] = useState("");
 
-  const {mutate:adjustBalance, isPending} = useAdjustBalance()
-
-  // Reset form when modal opens
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     setAdjustmentType("add_balance");
-  //     setAmount("");
-  //     setDate(new Date());
-  //     setRemarks("");
-  //   }
-  // }, [isOpen]);
+  const { mutate: adjustBalance, isPending } = useAdjustBalance();
 
   // Calculate adjusted balance
   const parsedAmount = parseFloat(amount) || 0;
@@ -73,28 +65,31 @@ export function AdjustBalanceModal({
       toast.error(
         isBangla
           ? "দয়া করে সঠিক পরিমাণ লিখুন"
-          : "Please enter a valid adjustment amount"
+          : "Please enter a valid adjustment amount",
       );
       return;
     }
 
-    adjustBalance({
+    adjustBalance(
+      {
         partyId,
         type: adjustmentType,
         amount: parsedAmount,
         date: date.toISOString(),
         remarks,
-      },{
+      },
+      {
         onSuccess: () => {
           toast.success(
             isBangla
               ? "ব্যালেন্স সমন্বয় সফল হয়েছে!"
-              : "Balance adjusted successfully!"
+              : "Balance adjusted successfully!",
           );
           if (onSuccess) onSuccess();
           onClose();
-        }
-      })
+        },
+      },
+    );
   };
 
   const isReduce = adjustmentType === "reduce_balance";
@@ -130,7 +125,7 @@ export function AdjustBalanceModal({
                   "flex-1 py-2 px-4 text-sm font-semibold rounded-lg border transition-all duration-200 cursor-pointer",
                   adjustmentType === "add_balance"
                     ? "bg-primary/10 text-primary border-primary/20 shadow-sm"
-                    : "bg-transparent text-muted-foreground border-border hover:bg-muted/50"
+                    : "bg-transparent text-muted-foreground border-border hover:bg-muted/50",
                 )}
               >
                 {isBangla ? "ব্যালেন্স যোগ করুন" : "Add Balance"}
@@ -142,7 +137,7 @@ export function AdjustBalanceModal({
                   "flex-1 py-2 px-4 text-sm font-semibold rounded-lg border transition-all duration-200 cursor-pointer",
                   adjustmentType === "reduce_balance"
                     ? "bg-red-50 text-red-700 border-red-200 shadow-sm"
-                    : "bg-transparent text-muted-foreground border-border hover:bg-muted/50"
+                    : "bg-transparent text-muted-foreground border-border hover:bg-muted/50",
                 )}
               >
                 {isBangla ? "ব্যালেন্স কমান" : "Reduce Balance"}
@@ -205,7 +200,9 @@ export function AdjustBalanceModal({
               {isBangla ? "মন্তব্য" : "Remarks"}
             </Label>
             <Textarea
-              placeholder={isBangla ? "এখানে মন্তব্য লিখুন..." : "Enter remarks here..."}
+              placeholder={
+                isBangla ? "এখানে মন্তব্য লিখুন..." : "Enter remarks here..."
+              }
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               className="min-h-[80px] bg-background/50 border-input text-foreground resize-none focus:ring-1 focus:ring-primary"
@@ -251,7 +248,7 @@ export function AdjustBalanceModal({
               "h-11 px-5 font-semibold shadow-md rounded-lg transition-colors duration-200",
               isReduce
                 ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-primary hover:bg-primary/90 text-primary-foreground",
             )}
           >
             {isPending ? (
@@ -259,8 +256,10 @@ export function AdjustBalanceModal({
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {isBangla ? "সমন্বয় হচ্ছে..." : "Adjusting..."}
               </span>
+            ) : isBangla ? (
+              "সমন্বয় নিশ্চিত করুন"
             ) : (
-              isBangla ? "সমন্বয় নিশ্চিত করুন" : "Confirm Adjustment"
+              "Confirm Adjustment"
             )}
           </Button>
         </div>
