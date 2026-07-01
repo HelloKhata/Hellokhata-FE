@@ -68,6 +68,7 @@ const navGroups: NavItem[] = [
     submenu: [
       { page: '/sales', icon: ShoppingCart, labelKey: 'Sales List', labelBn: 'বিক্রয় তালিকা' },
       { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
+      { page: '/sales/payment-in', icon: CreditCard, labelKey: 'Payment In', labelBn: 'পেমেন্ট ইন' },
       { page: '/returns/sales', icon: RotateCcw, labelKey: 'Sales Return', labelBn: 'বিক্রয় ফেরত' },
     ],
   },
@@ -77,6 +78,7 @@ const navGroups: NavItem[] = [
     icon: Truck,
     submenu: [
       { page: '/purchases', icon: Truck, labelKey: 'Purchase List', labelBn: 'ক্রয় তালিকা' },
+      { page: '/purchases/payment-out', icon: CreditCard, labelKey: 'Payment Out', labelBn: 'পেমেন্ট আউট' },
       { page: '/returns/purchases', icon: RotateCcw, labelKey: 'Purchase Return', labelBn: 'ক্রয় ফেরত' },
     ],
   },

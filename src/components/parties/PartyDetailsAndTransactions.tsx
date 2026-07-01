@@ -164,7 +164,7 @@ export function PartyDetailsAndTransactions({
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden shrink-0 h-9 w-9 p-0 flex items-center justify-center"
+            className="shrink-0 h-9 w-9 p-0 flex items-center justify-center"
             onClick={onClose}
           >
             <ChevronLeft className="h-6 w-6 text-foreground" />
@@ -212,20 +212,33 @@ export function PartyDetailsAndTransactions({
       {/* Quick Action buttons */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Button
-            className="text-white/50"
-            onClick={() => router.push(`/parties/${party.id}/edit`)}
-          >
-            <Edit className="h-3.5 w-3.5 mr-2" />
-            {/* {isBangla ? 'সম্পাদনা করুন' : 'Edit Party'} */}
-          </Button>
-          <Button
-            className="text-white/50"
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-2" />
-            {/* {isBangla ? 'মুছে ফেলুন' : 'Delete Party'} */}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-input hover:bg-accent hover:text-accent-foreground text-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                {isBangla ? "পার্টি পরিচালনা" : "Manage Party"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40 text-xs">
+              <DropdownMenuItem
+                onClick={() => router.push(`/parties/${party.id}/edit`)}
+              >
+                <Edit className="h-3.5 w-3.5 mr-2" />
+                {isBangla ? "সম্পাদনা করুন" : "Edit Party"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                {isBangla ? "মুছে ফেলুন" : "Delete Party"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <Button
