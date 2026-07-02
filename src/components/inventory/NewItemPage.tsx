@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Divider } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,7 @@ import { useNavigation } from '@/stores/uiStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useCreateItem, useGetItemsCategories } from '@/hooks/api/useItems';
+import { useSearch } from '@/hooks/api/useSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -76,6 +77,52 @@ export default function NewItemPage() {
   const [formData, setFormData] = useState(initialForm);
   console.log('Initial categories:', categories);
   const [showAdvancedPricing, setShowAdvancedPricing] = useState(false);
+  
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(formData.name);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [formData.name]);
+
+  const { data: searchResults } = useSearch({
+    index: "items",
+    query: debouncedSearchQuery,
+    filter: "isActive = true",
+  });
+
+  const suggestions = searchResults?.data?.hits || [];
+
+  const handleSelectItem = (item: any) => {
+    const costPrice = item.costPrice !== undefined ? item.costPrice : (item.cost !== undefined ? item.cost : "");
+    const sellingPrice = item.sellingPrice !== undefined ? item.sellingPrice : (item.price !== undefined ? item.price : (item.retailPrice !== undefined ? item.retailPrice : ""));
+    const currentStock = item.currentStock !== undefined ? item.currentStock : (item.stock !== undefined ? item.stock : (item.quantity !== undefined ? item.quantity : "0"));
+    const barcode = item.barcode !== undefined ? item.barcode : (item.code !== undefined ? item.code : "");
+
+    setFormData({
+      name: item.name || "",
+      categoryId: item.categoryId || "",
+      sku: item.sku || "",
+      barcode: barcode !== undefined ? String(barcode) : "",
+      description: item.description || "",
+      unit: item.unit || "pcs",
+      costPrice: costPrice !== undefined ? String(costPrice) : "",
+      sellingPrice: sellingPrice !== undefined ? String(sellingPrice) : "",
+      wholesalePrice: item.wholesalePrice !== undefined ? String(item.wholesalePrice) : "",
+      vipPrice: item.vipPrice !== undefined ? String(item.vipPrice) : "",
+      minimumPrice: item.minimumPrice !== undefined ? String(item.minimumPrice) : "",
+      currentStock: currentStock !== undefined ? String(currentStock) : "0",
+      minStock: item.minStock !== undefined ? String(item.minStock) : "10",
+      maxStock: item.maxStock !== undefined ? String(item.maxStock) : "",
+    });
+    if (item.wholesalePrice || item.vipPrice || item.minimumPrice) {
+      setShowAdvancedPricing(true);
+    }
+    setShowSuggestions(false);
+  };
   
   const updateForm = (key: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -245,16 +292,57 @@ export default function NewItemPage() {
             
             <CardContent className="p-6 space-y-5">
               {/* Name */}
-              <div>
+              <div className="relative">
                 <Label className="mb-2 block">
                   {isBangla ? 'পণ্যের নাম' : 'Item Name'} <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => updateForm('name', e.target.value)}
-                  placeholder={isBangla ? 'পণ্যের নাম লিখুন' : 'Enter item name'}
-                  className="h-11"
-                />
+                <div className="relative">
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => {
+                      updateForm('name', e.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      // Small delay to allow clicking suggestion
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    placeholder={isBangla ? 'পণ্যের নাম লিখুন' : 'Enter item name'}
+                    className="h-11"
+                  />
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                      {suggestions.map((item: any) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between items-center"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectItem(item);
+                          }}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium text-foreground">
+                              {item.name}
+                            </span>
+                            {item.sku && (
+                              <span className="text-[10px] text-muted-foreground mt-0.5">
+                                SKU: {item.sku}
+                              </span>
+                            )}
+                          </div>
+                          {item.sellingPrice !== undefined && (
+                            <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded">
+                              ৳{item.sellingPrice}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* Category & Unit */}

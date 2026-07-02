@@ -378,6 +378,17 @@ export interface Sale {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
+  paymentDetails?: {
+    cashReceived?: number;
+    changeReturned?: number;
+    cardNetwork?: string;
+    last4Digits?: string;
+    transactionRef?: string;
+    mobileOperator?: string;
+    senderNumber?: string;
+    transactionId?: string;
+    dueDate?: string;
+  };
 }
 export interface SaleItem {
   id: string;

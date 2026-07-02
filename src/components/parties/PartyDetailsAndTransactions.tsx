@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useDateFormat,
   useAppTranslation,
   useCurrency,
 } from "@/hooks/useAppTranslation";
-import { useParty, useDeleteParty } from "@/hooks/api/useParties";
+import { useParty, useDeleteParty, usePartyLedger } from "@/hooks/api/useParties";
 import { toast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,8 @@ import { AddPaymentInModal } from "./AddPaymentInModal";
 import { AddPaymentOutModal } from "./AddPaymentOutModal";
 import { AdjustBalanceModal } from "./AdjustBalanceModal";
 import { AddReminderModal } from "./AddReminderModal";
+import { PaginationHelper } from "@/components/shared/PaginationHelper";
+import { TransactionDetailsModal } from "./TransactionDetailsModal";
 
 interface PartyDetailsAndTransactionsProps {
   partyId: string;
@@ -68,6 +70,27 @@ export function PartyDetailsAndTransactions({
   const [txSearchTerm, setTxSearchTerm] = useState("");
   const [txSortOrder, setTxSortOrder] = useState<"desc" | "asc">("desc");
   const [showTxSearch, setShowTxSearch] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setTxSearchTerm("");
+    setShowTxSearch(false);
+    setSelectedTransaction(null);
+  }, [partyId]);
+
+  const {
+    data: ledgerData,
+    isLoading: isLedgerLoading,
+    isFetching: isLedgerFetching,
+  } = usePartyLedger(partyId, {
+    page: currentPage,
+    limit: itemsPerPage,
+    sort: txSortOrder,
+  });
+
   const [showPaymentInModal, setShowPaymentInModal] = useState(false);
   const [showPaymentOutModal, setShowPaymentOutModal] = useState(false);
   const [showAdjustBalanceModal, setShowAdjustBalanceModal] = useState(false);
@@ -136,23 +159,9 @@ export function PartyDetailsAndTransactions({
     return <span className="text-muted-foreground">—</span>;
   };
 
-  const ledgerEntries = party.ledgerEntries || [];
-
-  const filteredLedger = ledgerEntries
-    .filter((entry: any) => {
-      if (!txSearchTerm) return true;
-      const term = txSearchTerm.toLowerCase();
-      return (
-        entry.description?.toLowerCase().includes(term) ||
-        entry.type?.toLowerCase().includes(term) ||
-        entry.referenceId?.toLowerCase().includes(term)
-      );
-    })
-    .sort((a: any, b: any) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return txSortOrder === "desc" ? dateB - dateA : dateA - dateB;
-    });
+  const ledgerEntries = ledgerData?.data?.entries || [];
+  const totalPages = ledgerData?.meta?.totalPages || 1;
+  const totalTransactions = ledgerData?.meta?.total || 0;
 
   const isReceivable = party.currentBalance >= 0;
 
@@ -289,8 +298,8 @@ export function PartyDetailsAndTransactions({
         <div className="flex items-center justify-between gap-4 mt-6 pb-4">
           <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
             {isBangla
-              ? `লেনদেন (${filteredLedger.length})`
-              : `Transactions (${filteredLedger.length})`}
+              ? `লেনদেন (${totalTransactions})`
+              : `Transactions (${totalTransactions})`}
           </h3>
 
           <div className="flex items-center gap-2">
@@ -298,7 +307,10 @@ export function PartyDetailsAndTransactions({
               <Input
                 placeholder={isBangla ? "খুঁজুন..." : "Search..."}
                 value={txSearchTerm}
-                onChange={(e) => setTxSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setTxSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="h-9 w-36 text-xs bg-background border-input"
                 autoFocus
               />
@@ -313,6 +325,7 @@ export function PartyDetailsAndTransactions({
               onClick={() => {
                 setShowTxSearch(!showTxSearch);
                 if (showTxSearch) setTxSearchTerm("");
+                setCurrentPage(1);
               }}
             >
               <Search className="h-4 w-4 text-muted-foreground" />
@@ -322,9 +335,10 @@ export function PartyDetailsAndTransactions({
               variant="outline"
               size="sm"
               className="h-9 border-input hover:bg-accent hover:text-accent-foreground text-foreground text-xs font-semibold flex items-center gap-1.5 shrink-0"
-              onClick={() =>
-                setTxSortOrder(txSortOrder === "desc" ? "asc" : "desc")
-              }
+              onClick={() => {
+                setTxSortOrder(txSortOrder === "desc" ? "asc" : "desc");
+                setCurrentPage(1);
+              }}
             >
               <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
               {isBangla ? "সাজান" : "Sort"}
@@ -374,8 +388,15 @@ export function PartyDetailsAndTransactions({
         </div>
 
         {/* Ledger Table */}
-        <div className="border border-border rounded-xl overflow-hidden bg-transparent shadow-sm flex-1 min-h-[300px]">
-          {filteredLedger.length === 0 ? (
+        <div className="border border-border rounded-xl overflow-hidden bg-transparent shadow-sm flex-1 min-h-[300px] flex flex-col justify-between relative">
+          {isLedgerLoading ? (
+            <div className="p-8 text-center text-muted-foreground my-auto flex flex-col items-center justify-center h-full min-h-[250px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+              <p className="text-sm">
+                {isBangla ? "লোড হচ্ছে..." : "Loading transactions..."}
+              </p>
+            </div>
+          ) : ledgerEntries.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground my-auto flex flex-col items-center justify-center h-full min-h-[250px]">
               <CreditCard className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm">
@@ -383,62 +404,73 @@ export function PartyDetailsAndTransactions({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto max-h-[450px]">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground text-xs font-semibold uppercase sticky top-0 border-b border-border z-10">
-                  <tr>
-                    <th className="px-6 py-3">{isBangla ? "ধরন" : "Type"}</th>
-                    <th className="px-6 py-3">{isBangla ? "তারিখ" : "Date"}</th>
-                    <th className="px-6 py-3 text-right">
-                      {isBangla ? "মোট" : "Total"}
-                    </th>
-                    <th className="px-6 py-3">
-                      {isBangla ? "স্ট্যাটাস" : "Status"}
-                    </th>
-                    <th className="px-6 py-3 text-right">
-                      {isBangla ? "ব্যালেন্স" : "Balance"}
-                    </th>
-                    <th className="px-6 py-3">
-                      {isBangla ? "মন্তব্য" : "Remarks"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border bg-transparent">
-                  {filteredLedger.map((entry: any) => {
-                    return (
-                      <tr
-                        key={entry.id}
-                        className="hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="px-6 py-4 font-semibold text-foreground max-w-[180px] truncate text-xs">
-                          {entry.description}
-                          {entry.referenceId && (
-                            <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">
-                              Ref: #{entry.referenceId}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDate(entry.date, "short")}
-                        </td>
-                        <td className="px-6 py-4 text-right font-medium whitespace-nowrap text-xs">
-                          {formatCurrency(Math.abs(entry.amount))}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusContent(entry)}
-                        </td>
-                        <td className="px-6 py-4 text-right font-semibold text-foreground whitespace-nowrap text-xs">
-                          {formatCurrency(entry.balance)}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-muted-foreground truncate max-w-[120px]">
-                          {entry.remarks || "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className={cn("overflow-x-auto max-h-[450px] flex-1", isLedgerFetching && "opacity-50 transition-opacity")}>
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/50 text-muted-foreground text-xs font-semibold uppercase sticky top-0 border-b border-border z-10">
+                    <tr>
+                      <th className="px-6 py-3">{isBangla ? "ধরন" : "Type"}</th>
+                      <th className="px-6 py-3">{isBangla ? "তারিখ" : "Date"}</th>
+                      <th className="px-6 py-3 text-right">
+                        {isBangla ? "মোট" : "Total"}
+                      </th>
+                      <th className="px-6 py-3">
+                        {isBangla ? "স্ট্যাটাস" : "Status"}
+                      </th>
+                      <th className="px-6 py-3 text-right">
+                        {isBangla ? "ব্যালেন্স" : "Balance"}
+                      </th>
+                      <th className="px-6 py-3">
+                        {isBangla ? "মন্তব্য" : "Remarks"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border bg-transparent">
+                    {ledgerEntries.map((entry: any) => {
+                      return (
+                        <tr
+                          key={entry.id}
+                          className="hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedTransaction(entry)}
+                        >
+                          <td className="px-6 py-4 font-semibold text-foreground max-w-[180px] truncate text-xs">
+                            {entry.description}
+                            {entry.referenceId && (
+                              <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">
+                                Ref: #{entry.referenceId}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDate(entry.date, "short")}
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium whitespace-nowrap text-xs">
+                            {formatCurrency(Math.abs(entry.amount))}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusContent(entry)}
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-foreground whitespace-nowrap text-xs">
+                            {formatCurrency(entry.balance)}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground truncate max-w-[120px]">
+                            {entry.remarks || "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-6 pb-4 bg-muted/5">
+                <PaginationHelper
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  isBangla={isBangla}
+                />
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -472,6 +504,12 @@ export function PartyDetailsAndTransactions({
             ? `Collect Tk. ${Math.abs(party.currentBalance).toLocaleString()} from ${party.name}`
             : `Pay Tk. ${Math.abs(party.currentBalance).toLocaleString()} to ${party.name}`
         }
+      />
+
+      <TransactionDetailsModal
+        isOpen={selectedTransaction !== null}
+        onClose={() => setSelectedTransaction(null)}
+        entry={selectedTransaction}
       />
     </div>
   );

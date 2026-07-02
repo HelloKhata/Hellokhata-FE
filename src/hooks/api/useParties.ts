@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createParty, deleteParty, getParties, getParty, updateParty } from "@/services/parties.services";
+import { createParty, deleteParty, getParties, getParty, getPartyLedger, updateParty } from "@/services/parties.services";
 // import { Party } from "@/app/(dashboard)/parties/new/page";
 
 export const useCreateParty = () => {
@@ -24,6 +24,19 @@ export const useParty = (id: string, options?: { enabled?: boolean }) => {
     return useQuery({
         queryKey: ['party', id],
         queryFn: () => getParty(id),
+        ...options
+    })
+}
+
+export const usePartyLedger = (
+    id: string,
+    params?: { page?: number; limit?: number; search?: string; sort?: string },
+    options?: { enabled?: boolean }
+) => {
+    return useQuery({
+        queryKey: ['partyLedger', id, params],
+        queryFn: () => getPartyLedger(id, params),
+        placeholderData: (previousData) => previousData,
         ...options
     })
 }
