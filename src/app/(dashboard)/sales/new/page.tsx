@@ -6,7 +6,6 @@
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +66,6 @@ function NewSaleContent() {
   const { mutate, isPending } = useCreateSales();
 
   // API Data
-  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
   const [partySearchQuery, setPartySearchQuery] = useState("");
   const [debouncedPartySearchQuery, setDebouncedPartySearchQuery] =
     useState("");
@@ -80,12 +78,12 @@ function NewSaleContent() {
     return () => clearTimeout(timer);
   }, [partySearchQuery]);
 
-  const { data: partiesData } = useParties();
-  const [availableItems, setAvailableItems] = useState<any[]>(
-    itemsData?.data || [],
-  );
+  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
 
-  console.log("availableItems", availableItems);
+  const items = itemsData?.data || [];
+  console.log("itemsData", itemsData);
+  console.log("items", items);
+  const { data: partiesData } = useParties();
 
   const parties = partiesData?.data || [];
 
@@ -107,10 +105,9 @@ function NewSaleContent() {
     "cash" | "card" | "mobile_banking" | "credit"
   >("cash");
   const [paidAmount, setPaidAmount] = useState<string>("");
-  const [images, setImages] = useState<File[]>([]);
   // Billing Items Table Rows
 
-  const [items, setItems] = useState<BillingItemRow[]>([
+  const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([
     {
       id: "initial-row",
       itemId: "",
@@ -148,12 +145,12 @@ function NewSaleContent() {
 
   // Calculations
   const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  }, [items]);
+    return selectedItems.reduce((sum, item) => sum + item.total, 0);
+  }, [selectedItems]);
 
   const totalDiscount = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.discountFlat, 0);
-  }, [items]);
+    return selectedItems.reduce((sum, item) => sum + item.discountFlat, 0);
+  }, [selectedItems]);
 
   const total = subtotal; // In this mockup, total is sum of rows after row-level discounts
 
@@ -166,7 +163,7 @@ function NewSaleContent() {
 
   // Add Item Row
   const addItemRow = () => {
-    setItems((prev) => [
+    setSelectedItems((prev) => [
       ...prev,
       {
         id: Math.random().toString(),
@@ -186,8 +183,8 @@ function NewSaleContent() {
 
   // Remove Item Row
   const removeItemRow = (id: string) => {
-    if (items.length === 1) {
-      setItems([
+    if (selectedItems.length === 1) {
+      setSelectedItems([
         {
           id: "initial-row",
           itemId: "",
@@ -204,7 +201,7 @@ function NewSaleContent() {
       ]);
       return;
     }
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setSelectedItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Calculate Row Total helper
@@ -218,7 +215,7 @@ function NewSaleContent() {
 
   // Handle Name field input (search items)
   const handleNameChange = (id: string, query: string) => {
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           return {
@@ -230,7 +227,6 @@ function NewSaleContent() {
             showSuggestions: true,
           };
         }
-
         return item;
       }),
     );
@@ -238,7 +234,7 @@ function NewSaleContent() {
 
   // Handle product selection from dropdown
   const handleSelectProduct = (rowId: string, product: any) => {
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === rowId) {
           const qty = item.quantity || 1;
@@ -264,7 +260,7 @@ function NewSaleContent() {
   // Handle Quantity Change
   const handleQuantityChange = (id: string, val: string) => {
     const qty = parseFloat(val) || 0;
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const price = item.unitPrice || 0;
@@ -288,7 +284,7 @@ function NewSaleContent() {
   // Handle Rate Change
   const handleRateChange = (id: string, val: string) => {
     const rate = parseFloat(val) || 0;
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const qty = item.quantity || 0;
@@ -312,7 +308,7 @@ function NewSaleContent() {
   // Handle Row Discount % Change
   const handleDiscountPercentChange = (id: string, val: string) => {
     const percent = parseFloat(val) || 0;
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const qty = item.quantity || 0;
@@ -335,7 +331,7 @@ function NewSaleContent() {
   // Handle Row Discount Flat Tk Change
   const handleDiscountFlatChange = (id: string, val: string) => {
     const flat = parseFloat(val) || 0;
-    setItems((prev) =>
+    setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
           const qty = item.quantity || 0;
@@ -358,28 +354,10 @@ function NewSaleContent() {
     );
   };
 
-  // Filter available items for inline suggestions dropdown
-  const getFilteredProducts = (query: string) => {
-    // Show all products when input is empty
-    if (!query.trim()) {
-      return availableItems;
-    }
-
-    const search = query.toLowerCase();
-
-    return availableItems.filter((product: any) => {
-      return (
-        product.name?.toLowerCase().includes(search) ||
-        product.sku?.toLowerCase().includes(search) ||
-        product.barcode?.toLowerCase().includes(search)
-      );
-    });
-  };
-
   // Handle row blur with delay to register suggestion clicks
   const handleRowBlur = (id: string) => {
     setTimeout(() => {
-      setItems((prev) =>
+      setSelectedItems((prev) =>
         prev.map((item) => {
           if (item.id === id) {
             return { ...item, showSuggestions: false };
@@ -390,10 +368,25 @@ function NewSaleContent() {
     }, 300);
   };
 
+  // Filter available items for inline suggestions dropdown
+  const getFilteredProducts = (query: string) => {
+    if (!query?.trim()) {
+      return items.slice(0, 10);
+    }
+    const search = query.toLowerCase();
+    return items.filter((product: any) => {
+      return (
+        product.name?.toLowerCase().includes(search) ||
+        product.sku?.toLowerCase().includes(search) ||
+        product.barcode?.toLowerCase().includes(search)
+      );
+    });
+  };
+
   // Handle submit form
   const handleSubmit = async () => {
     // Filter empty items
-    const validItems = items.filter((i) => i.itemId !== "");
+    const validItems = selectedItems.filter((i) => i.itemId !== "");
     if (validItems.length === 0) {
       toast.error(
         isBangla ? "অন্তত একটি পণ্য যোগ করুন" : "Add at least one item",
@@ -516,7 +509,7 @@ function NewSaleContent() {
               <button
                 type="button"
                 onClick={() => setIsManualInvoiceNo(!isManualInvoiceNo)}
-                className="text-xs text-emerald-500 font-semibold hover:underline"
+                className="text-xs text-primary font-semibold hover:underline"
               >
                 {isManualInvoiceNo
                   ? isBangla
@@ -564,8 +557,8 @@ function NewSaleContent() {
         </div>
 
         {/* Row 2: Billing Items Table */}
-        <div className="border border-border rounded-xl bg-card overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="border border-border rounded-xl bg-card overflow-visible shadow-sm">
+          <div className="overflow-visible">
             <table className="w-full text-sm text-left border-collapse">
               <thead>
                 <tr className="bg-muted/30 border-b border-border text-muted-foreground text-xs font-semibold uppercase">
@@ -590,7 +583,7 @@ function NewSaleContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {items.map((item, idx) => (
+                {selectedItems.map((item, idx) => (
                   <tr
                     key={item.id}
                     className="hover:bg-muted/10 transition-colors"
@@ -601,97 +594,11 @@ function NewSaleContent() {
                     </td>
 
                     {/* Name */}
-                    {/*<td className="px-4 py-3 align-middle relative">
-                      <Input
-                        value={
-                          item.showSuggestions
-                            ? item.searchQuery
-                            : item.itemName || item.searchQuery
-                        }
-                        onChange={(e) =>
-                          handleNameChange(item.id, e.target.value)
-                        }
-                        onFocus={() => {
-                          setItems((prev) =>
-                            prev.map((it) => {
-                              if (it.id === item.id) {
-                                return {
-                                  ...it,
-                                  searchQuery: it.itemName,
-                                  showSuggestions: true,
-                                };
-                              }
-                              return it;
-                            }),
-                          );
-                        }}
-                        onClick={() => {
-                          setItems((prev) =>
-                            prev.map((it) => {
-                              if (it.id === item.id) {
-                                return {
-                                  ...it,
-                                  searchQuery: it.itemName,
-                                  showSuggestions: true,
-                                };
-                              }
-                              return it;
-                            }),
-                          );
-                        }}
-                        onBlur={() => handleRowBlur(item.id)}
-                        placeholder={
-                          isBangla ? "পণ্য নাম লিখুন" : "Enter Item name"
-                        }
-                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
-                      />
-
-                      {item.showSuggestions && (
-                        <div className="absolute z-50 left-4 right-4 top-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                          {getFilteredProducts(item.searchQuery).length ===
-                          0 ? (
-                            <div className="p-3 text-center text-xs text-muted-foreground">
-                              {isBangla
-                                ? "কোনো পণ্য পাওয়া যায়নি"
-                                : "No items found"}
-                            </div>
-                          ) : (
-                            getFilteredProducts(item.searchQuery).map(
-                              (product: any) => (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  className="w-full text-left p-3 hover:bg-muted/80 text-xs transition-colors flex justify-between"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleSelectProduct(item.id, product);
-                                  }}
-                                >
-                                  <div>
-                                    <p className="font-semibold text-foreground">
-                                      {product.name}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                      Stock: {product.currentStock}{" "}
-                                      {product.unit}
-                                    </p>
-                                  </div>
-                                  <span className="font-bold text-emerald-500">
-                                    Tk. {product.sellingPrice}
-                                  </span>
-                                </button>
-                              ),
-                            )
-                          )}
-                        </div>
-                      )}
-                    </td> */}
-                    {/* Name */}
                     <td className="px-4 py-3 align-middle relative">
                       <Input
                         value={
                           item.showSuggestions
-                            ? item.searchQuery
+                            ? item.searchQuery || ""
                             : item.itemName
                         }
                         placeholder={
@@ -699,34 +606,15 @@ function NewSaleContent() {
                         }
                         className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
                         onFocus={() => {
-                          setItems((prev) =>
-                            prev.map((it) =>
-                              it.id === item.id
+                          setSelectedItems((prev) =>
+                            prev.map((i) =>
+                              i.id === item.id
                                 ? {
-                                    ...it,
-                                    searchQuery: "",
+                                    ...i,
+                                    searchQuery: i.itemName,
                                     showSuggestions: true,
                                   }
-                                : {
-                                    ...it,
-                                    showSuggestions: false,
-                                  },
-                            ),
-                          );
-                        }}
-                        onClick={() => {
-                          setItems((prev) =>
-                            prev.map((it) =>
-                              it.id === item.id
-                                ? {
-                                    ...it,
-                                    searchQuery: "",
-                                    showSuggestions: true,
-                                  }
-                                : {
-                                    ...it,
-                                    showSuggestions: false,
-                                  },
+                                : i,
                             ),
                           );
                         }}
@@ -738,15 +626,15 @@ function NewSaleContent() {
 
                       {item.showSuggestions && (
                         <div className="absolute z-50 left-4 right-4 top-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                          {getFilteredProducts(item.searchQuery).length ===
-                          0 ? (
+                          {getFilteredProducts(item.searchQuery || "")
+                            .length === 0 ? (
                             <div className="p-3 text-center text-sm text-muted-foreground">
                               {isBangla
                                 ? "কোনো পণ্য পাওয়া যায়নি"
                                 : "No items found"}
                             </div>
                           ) : (
-                            getFilteredProducts(item.searchQuery).map(
+                            getFilteredProducts(item.searchQuery || "").map(
                               (product: any) => (
                                 <button
                                   key={product.id}
@@ -773,7 +661,7 @@ function NewSaleContent() {
                                   </div>
 
                                   <div className="text-right">
-                                    <p className="font-semibold text-emerald-600">
+                                    <p className="font-semibold text-primary">
                                       Tk. {product.sellingPrice}
                                     </p>
                                   </div>
@@ -881,7 +769,7 @@ function NewSaleContent() {
             <button
               type="button"
               onClick={addItemRow}
-              className="text-emerald-500 font-semibold text-sm flex items-center gap-1.5 hover:text-emerald-600 transition-colors cursor-pointer"
+              className="text-primary font-semibold text-sm flex items-center gap-1.5 hover:text-primary-hover transition-colors cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               {isBangla ? "বিল আইটেম যোগ করুন" : "Add Billing Item"}
@@ -923,7 +811,7 @@ function NewSaleContent() {
               <div className="flex flex-wrap gap-3 items-center">
                 <button
                   type="button"
-                  className="h-16 w-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center bg-background/30 hover:bg-muted/50 hover:border-emerald-500 transition-all text-muted-foreground hover:text-foreground"
+                  className="h-16 w-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center bg-background/30 hover:bg-muted/50 hover:border-primary transition-all text-muted-foreground hover:text-foreground"
                 >
                   <Camera className="h-5 w-5 mb-1" />
                   <span className="text-[10px]">
@@ -1033,7 +921,7 @@ function NewSaleContent() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isPending}
-                className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                className="flex-1 h-11 bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
               >
                 {isPending ? (
                   <span className="flex items-center justify-center gap-2">

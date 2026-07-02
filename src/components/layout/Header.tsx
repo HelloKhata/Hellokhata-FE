@@ -20,7 +20,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useHealthScore } from '@/hooks/queries';
-import { useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
+import { useMarkAsReadNotification, useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
 import { cn } from '@/lib/utils';
 import { BranchSwitcher } from '@/components/common';
 
@@ -35,6 +35,8 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: healthScoreData } = useHealthScore();
   const { data: notificationsData } = useNotifications();
+
+  console.log('notificationsData',notificationsData)
   const notifications = Array.isArray(notificationsData)
     ? notificationsData
     : (Array.isArray((notificationsData as any)?.data) ? (notificationsData as any).data : []);
@@ -43,7 +45,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const [filter, setFilter] = useState<'all' | 'read' | 'unread'>('all');
 
   const { mutate: readAllNotifications, isPending: isReadingAll } = useReadAllNotifications();
-
+  const {mutate: markAsReadNotification} = useMarkAsReadNotification();
   useEffect(() => {
     if (notifications) {
       setLocalNotifications(notifications);
@@ -51,9 +53,16 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   }, [notificationsData]);
 
   const handleMarkAsRead = (id: string) => {
-    setLocalNotifications(prev =>
+  markAsReadNotification(id,{
+    onSuccess: data =>{
+      if(data.success){
+        setLocalNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
+      }
+    }
+
+  })
   };
 
   const handleReadAll = () => {
@@ -64,11 +73,12 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
     });
   };
 
-  const unreadCount = localNotifications.filter(n => !n.read).length;
+  const unreadCount = localNotifications.filter(n => !n.isRead).length;
 
   const filteredNotifications = localNotifications.filter(n => {
-    if (filter === 'read') return n.read === true;
-    if (filter === 'unread') return !n.read;
+    console.log(n.isRead)
+    if (filter === 'read') return n.isRead === true;
+    if (filter === 'unread') return !n.isRead;
     return true;
   });
 
@@ -304,14 +314,14 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <p className={cn("text-sm font-semibold text-foreground", !notification.read && "text-primary")}>
+                          <p className={cn("text-sm font-semibold text-foreground", !notification.isRead && "text-primary")}>
                             {isBangla && notification.titleBn ? notification.titleBn : notification.title}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {isBangla && notification.messageBn ? notification.messageBn : notification.message}
                           </p>
                         </div>
-                        {!notification.read && (
+                        {!notification.isRead && (
                           <span className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
                         )}
                       </div>
@@ -328,7 +338,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
                           </p>
                         ) : <div />}
                         
-                        {!notification.read && (
+                        {!notification.isRead && (
                           <Button
                             variant="ghost"
                             size="sm"

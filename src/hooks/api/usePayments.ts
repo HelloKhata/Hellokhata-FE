@@ -1,5 +1,5 @@
 
-import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut, adjustBalance } from "@/services/payments.services"
+import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut, adjustBalance, deletePayment } from "@/services/payments.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const usePaymentSummary = () => {
@@ -17,6 +17,7 @@ export const useCreatePaymentIn = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     });
 };
@@ -28,6 +29,7 @@ export const useCreatePaymentOut = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     });
 };
@@ -38,6 +40,7 @@ export const useAdjustBalance = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     });
 }
@@ -48,3 +51,15 @@ export const useGetPaymentList = (partyId?: string) => {
         select: data => data.data
     })
 }
+
+export const useDeletePayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deletePayment,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    });
+};

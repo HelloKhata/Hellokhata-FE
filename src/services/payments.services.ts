@@ -23,3 +23,8 @@ export const createPaymentOut = (data: any) => {
 export const adjustBalance = (data: any) => {
     return client.post('/api/parties/adjust-balance', data)
 }
+
+export const deletePayment = async (id: string) => {
+    const res = await client.delete(`/api/payments/${id}`);
+    return res.data;
+}
