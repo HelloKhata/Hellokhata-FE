@@ -510,6 +510,7 @@ export function PartyDetailsAndTransactions({
         isOpen={selectedTransaction !== null}
         onClose={() => setSelectedTransaction(null)}
         entry={selectedTransaction}
+        party={party}
       />
     </div>
   );
