@@ -93,6 +93,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
     type: 'customer' as 'customer' | 'supplier' | 'both',
     customerTier: 'regular',
     categoryId: '__none__',
+    openingBalance: '0',
+    balanceType: 'receive' as 'receive' | 'give',
     creditLimit: '',
     paymentTerms: '',
     notes: '',
@@ -150,6 +152,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
 
   useEffect(() => {
     if (!party?.data) return;
+    const balance = party.data.openingBalance ?? 0;
     setFormData({
       name: party.data.name || "",
       phone: party.data.phone || "",
@@ -158,6 +161,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       type: party.data.type ?? "customer",
       customerTier: party.data.customerTier || "regular",
       categoryId: party.data.categoryId || "__none__",
+      openingBalance: Math.abs(balance).toString(),
+      balanceType: balance >= 0 ? 'receive' : 'give',
       creditLimit: party.data.creditLimit?.toString() || "",
       // paymentTerms: party.data.paymentTerms?.toString() || "",
       notes: party.data.notes || "",
@@ -388,6 +393,49 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
               </Select>
             </div>
           )}
+
+          {/* Opening Balance */}
+          <div>
+            <Label className="mb-2 block">
+              {isBangla ? 'ওপেনিং ব্যালেন্স (৳)' : 'Opening Balance (৳)'}
+            </Label>
+            <Input
+              type="number"
+              value={formData.openingBalance}
+              onChange={(e) => setFormData({ ...formData, openingBalance: e.target.value })}
+              placeholder="0"
+              className="h-11"
+            />
+          </div>
+
+          {/* Balance Direction Toggle (To Receive / To Give) */}
+          <div>
+            <Label className="mb-2 block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {isBangla ? 'ব্যালেন্সের ধরন' : 'Balance Direction'}
+            </Label>
+            <div className="flex gap-2">
+              {[
+                { value: 'receive', label: isBangla ? 'পাওনা (To Receive)' : 'To Receive' },
+                { value: 'give', label: isBangla ? 'দেনা (To Give)' : 'To Give' },
+              ].map((dir) => (
+                <button
+                  key={dir.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, balanceType: dir.value as 'receive' | 'give' })}
+                  className={cn(
+                    'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
+                    formData.balanceType === dir.value
+                      ? dir.value === 'receive'
+                        ? 'border-primary/50 bg-primary/10 text-primary font-bold'
+                        : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'
+                      : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                  )}
+                >
+                  {dir.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

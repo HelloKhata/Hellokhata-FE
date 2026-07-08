@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,25 +11,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  CreditCard,
   Plus,
   Search,
   Calendar,
   MoreVertical,
   FileText,
-  ArrowUpDown
+  ArrowUpDown,
+  Loader2,
 } from 'lucide-react';
 import { AddPaymentOutModal } from '@/components/parties/AddPaymentOutModal';
+import { PaymentDetailsModal } from '@/components/parties/PaymentDetailsModal';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-
-interface PaymentTransaction {
-  receiptNo: string;
-  partyName: string;
-  date: string;
-  paymentMode: string;
-  amount: number;
-  remarks: string;
-}
+import { useGetPaymentList } from '@/hooks/api/usePayments';
 
 export default function PaymentOutPage() {
   const { isBangla } = useAppTranslation();
@@ -38,46 +31,54 @@ export default function PaymentOutPage() {
   const [dateFilter, setDateFilter] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
 
-  // Mock Transactions matching screenshot exactly
-  const [transactions] = useState<PaymentTransaction[]>([
-    {
-      receiptNo: '2',
-      partyName: 'sdf',
-      date: '23 Jun 2026',
-      paymentMode: 'Cash',
-      amount: 600,
-      remarks: '--',
-    },
-    {
-      receiptNo: '1',
-      partyName: 'rahim',
-      date: '23 Jun 2026',
-      paymentMode: 'Cash',
-      amount: 50,
-      remarks: '--',
-    },
-  ]);
+  // Fetch payment list from API
+  const { data: paymentResponse, isLoading, isError } = useGetPaymentList('paid');
+  const transactions = paymentResponse?.data?.data ?? paymentResponse?.data ?? [];
 
-  // Filtering
-  const filteredTransactions = transactions
-    .filter((tx) => {
-      const matchesSearch =
-        tx.partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tx.receiptNo.includes(searchTerm) ||
-        tx.remarks.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesMode =
-        paymentModeFilter === 'all' ||
-        tx.paymentMode.toLowerCase() === paymentModeFilter.toLowerCase();
-      
-      return matchesSearch && matchesMode;
-    })
-    .sort((a, b) => {
-      const numA = parseInt(a.receiptNo);
-      const numB = parseInt(b.receiptNo);
-      return sortOrder === 'desc' ? numB - numA : numA - numB;
-    });
+  // Helper to format date
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Filtering & sorting
+  const filteredTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
+
+    return transactions
+      .filter((tx: any) => {
+        const partyName = tx.party?.name || '';
+        const receiptNo = tx.reference || '';
+        const remarks = tx.notes || '';
+        const mode = tx.mode || '';
+
+        const matchesSearch =
+          partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(receiptNo).includes(searchTerm) ||
+          remarks.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesMode =
+          paymentModeFilter === 'all' ||
+          mode.toLowerCase() === paymentModeFilter.toLowerCase();
+
+        return matchesSearch && matchesMode;
+      })
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+  }, [transactions, searchTerm, paymentModeFilter, sortOrder]);
 
   return (
     <>
@@ -168,26 +169,53 @@ export default function PaymentOutPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
+                        <span>{isBangla ? 'লোড হচ্ছে...' : 'Loading payments...'}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-rose-500">
+                      {isBangla ? 'ডেটা লোড করতে সমস্যা হয়েছে' : 'Failed to load payments'}
+                    </td>
+                  </tr>
+                ) : filteredTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-muted-foreground">
                       {isBangla ? 'কোনো লেনদেন পাওয়া যায়নি' : 'No transactions found'}
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((tx) => (
+                  filteredTransactions.map((tx: any) => (
                     <tr
-                      key={tx.receiptNo}
-                      className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors"
+                      key={tx.id}
+                      className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedPaymentId(tx.id)}
                     >
-                      <td className="p-4 text-muted-foreground font-medium">{tx.receiptNo}</td>
-                      <td className="p-4 font-bold text-white">{tx.partyName}</td>
-                      <td className="p-4 text-muted-foreground">{tx.date}</td>
-                      <td className="p-4 text-white">{tx.paymentMode}</td>
-                      <td className="p-4 font-bold text-white">Tk. {tx.amount}</td>
-                      <td className="p-4 text-muted-foreground">{tx.remarks}</td>
+                      <td className="p-4 text-muted-foreground font-medium">
+                        {tx.reference || '—'}
+                        {console.log('reference',tx.reference)}
+                      </td>
+                      <td className="p-4 font-bold text-white">{tx.party?.name || '—'}</td>
+                      <td className="p-4 text-muted-foreground">{formatDate(tx.createdAt)}</td>
+                      <td className="p-4 text-white capitalize">{tx.mode || '—'}</td>
+                      <td className="p-4 font-bold text-white">Tk. {Math.abs(tx.amount)}</td>
+                      <td className="p-4 text-muted-foreground">{tx.notes || '—'}</td>
                       <td className="p-4 text-center flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white p-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-white p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPaymentId(tx.id);
+                          }}
+                        >
                           <FileText className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white p-0">
@@ -207,6 +235,14 @@ export default function PaymentOutPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
       />
+
+      {selectedPaymentId && (
+        <PaymentDetailsModal
+          isOpen={!!selectedPaymentId}
+          onClose={() => setSelectedPaymentId(null)}
+          paymentId={selectedPaymentId}
+        />
+      )}
     </>
   );
 }

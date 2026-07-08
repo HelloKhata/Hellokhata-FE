@@ -131,8 +131,8 @@ export default function StockReportPage() {
 
     // 3. Stock Level Alert filter
     let matchStockStatus = true;
-    const isLow = item.currentStock <= (item.minStock || 10);
-    const isOut = item.currentStock <= 0;
+    const isLow = (item.currentStock ?? 0) <= (item.minStock || 10);
+    const isOut = (item.currentStock ?? 0) <= 0;
     if (stockStatusFilter === 'low') {
       matchStockStatus = isLow;
     } else if (stockStatusFilter === 'out') {
@@ -161,11 +161,11 @@ export default function StockReportPage() {
 
   // Calculate stock statistics based on filtered list
   const totalItems = filteredItems.length;
-  const lowStockItems = filteredItems.filter(item => item.currentStock <= (item.minStock || 10));
-  const totalStockValue = filteredItems.reduce((sum, item) => sum + (item.currentStock * (item.costPrice || 0)), 0);
+  const lowStockItems = filteredItems.filter(item => (item.currentStock ?? 0) <= (item.minStock || 10));
+  const totalStockValue = filteredItems.reduce((sum, item) => sum + ((item.currentStock ?? 0) * (item.costPrice || 0)), 0);
   const deadStockValue = filteredItems
-    .filter(item => item.currentStock > 0 && (!item.lastSaleDate || (new Date().getTime() - new Date(item.lastSaleDate).getTime()) > 60 * 24 * 60 * 60 * 1000))
-    .reduce((sum, item) => sum + (item.currentStock * (item.costPrice || 0)), 0);
+    .filter(item => (item.currentStock ?? 0) > 0 && (!item.lastSaleDate || (new Date().getTime() - new Date(item.lastSaleDate).getTime()) > 60 * 24 * 60 * 60 * 1000))
+    .reduce((sum, item) => sum + ((item.currentStock ?? 0) * (item.costPrice || 0)), 0);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
@@ -522,8 +522,8 @@ export default function StockReportPage() {
               <TableBody>
                 {paginatedItems.length > 0 ? (
                   paginatedItems.map((item) => {
-                    const isLow = item.currentStock <= (item.minStock || 10);
-                    const isOut = item.currentStock <= 0;
+                    const isLow = (item.currentStock ?? 0) <= (item.minStock || 10);
+                    const isOut = (item.currentStock ?? 0) <= 0;
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-mono text-xs">{item.sku || 'N/A'}</TableCell>
@@ -537,7 +537,7 @@ export default function StockReportPage() {
                         </TableCell>
                         <TableCell className="text-right">{formatCurrency(item.costPrice || 0)}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.sellingPrice || 0)}</TableCell>
-                        <TableCell className="text-right font-bold">{formatCurrency(item.currentStock * (item.costPrice || 0))}</TableCell>
+                        <TableCell className="text-right font-bold">{formatCurrency((item.currentStock ?? 0) * (item.costPrice || 0))}</TableCell>
                         <TableCell className="text-center font-semibold">
                           <Badge
                             className={cn(

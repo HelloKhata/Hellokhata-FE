@@ -106,7 +106,7 @@ export default function StockAdjustmentPage() {
     }
 
     // Check if decrease would result in negative stock
-    if (adjustmentType === 'decrease' && selectedProduct && qty > selectedProduct.currentStock) {
+    if (adjustmentType === 'decrease' && selectedProduct && qty > (selectedProduct.currentStock ?? 0)) {
       toast.error(isBangla ? 'স্টক নেতিবাচক হতে পারবে না' : 'Stock cannot go negative');
       return;
     }
@@ -308,7 +308,7 @@ export default function StockAdjustmentPage() {
                           </p>
                         </div>
                       </div>
-                      {selectedProduct.currentStock <= selectedProduct.minStock && (
+                      {(selectedProduct.currentStock ?? 0) <= (selectedProduct.minStock ?? 0) && (
                         <Badge variant="warning" className="whitespace-nowrap">
                           <AlertTriangle className="h-3 w-3 mr-1" />
                           {isBangla ? 'স্টক কম' : 'Low Stock'}
@@ -396,11 +396,11 @@ export default function StockAdjustmentPage() {
                       <span className={cn(
                         'text-lg font-bold',
                         adjustmentType === 'increase' ? 'text-emerald' : 
-                        (selectedProduct.currentStock - parseFloat(quantity) < selectedProduct.minStock) ? 'text-warning' : 'text-foreground'
+                        ((selectedProduct.currentStock ?? 0) - parseFloat(quantity) < (selectedProduct.minStock ?? 0) ? 'text-warning' : 'text-foreground')
                       )}>
                         {adjustmentType === 'increase' 
-                          ? selectedProduct.currentStock + parseFloat(quantity)
-                          : selectedProduct.currentStock - parseFloat(quantity)
+                          ? (selectedProduct.currentStock ?? 0) + parseFloat(quantity)
+                          : (selectedProduct.currentStock ?? 0) - parseFloat(quantity)
                         } {selectedProduct.unit}
                       </span>
                     </div>
@@ -415,7 +415,7 @@ export default function StockAdjustmentPage() {
             </Card>
 
             {/* Warning for decrease */}
-            {adjustmentType === 'decrease' && selectedProduct && quantity && parseFloat(quantity) > selectedProduct.currentStock && (
+            {adjustmentType === 'decrease' && selectedProduct && quantity && parseFloat(quantity) > (selectedProduct.currentStock ?? 0) && (
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
                 <div className="flex items-center gap-2 text-destructive mb-1">
                   <AlertTriangle className="h-4 w-4" />

@@ -2,6 +2,7 @@
 // হ্যালো খাতা - সেশন স্টোর
 
 import { create } from 'zustand';
+import type { BusinessType } from '@/types';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // ─── Domain Types ─────────────────────────────────────────────────────────────
@@ -23,7 +24,8 @@ export interface Business {
   id: string;
   name: string;
   logo: string | null;
-  currency: string; // e.g. "BDT"
+  currency: string;
+  type?: BusinessType;
 }
 
 export interface FeatureFlags {
@@ -44,9 +46,6 @@ export interface FeatureFlags {
   globalSearch: boolean;
 }
 
-// ─── Server Response Types ────────────────────────────────────────────────────
-// Matches the exact shape returned by /api/auth/verify-phone (and similar endpoints)
-
 export interface AuthResponse {
   success: boolean;
   message: string;
@@ -64,6 +63,7 @@ export interface AuthResponse {
     name: string;
     logo: string | null;
     currency: string;
+    type?: BusinessType;
   };
 }
 
@@ -220,6 +220,7 @@ export const useSessionStore = create<SessionState>()(
             name: response.business.name,
             logo: response.business.logo,
             currency: response.business.currency,
+            type: response.business.type,
           },
           plan: currentPlan,
           features: getDefaultFeatures(currentPlan),
