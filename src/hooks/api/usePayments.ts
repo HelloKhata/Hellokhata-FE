@@ -1,14 +1,6 @@
 
-import { getPaymentList, paymentSummary, createPaymentIn, createPaymentOut, adjustBalance, deletePayment } from "@/services/payments.services"
+import { getPaymentList, createPaymentIn, createPaymentOut, adjustBalance, deletePayment, getPaymentById, updatePayment } from "@/services/payments.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-
-export const usePaymentSummary = () => {
-    return useQuery({
-        queryKey: ["payment-summary"],
-        queryFn: () => paymentSummary(),
-        select: data => data.data
-    })
-}
 
 export const useCreatePaymentIn = () => {
     const queryClient = useQueryClient();
@@ -18,6 +10,7 @@ export const useCreatePaymentIn = () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+             queryClient.invalidateQueries({ queryKey: ['payment'] });
         }
     });
 };
@@ -30,9 +23,11 @@ export const useCreatePaymentOut = () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+            queryClient.invalidateQueries({queryKey:['payment']})
         }
     });
 };
+
 export const useAdjustBalance = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -43,23 +38,53 @@ export const useAdjustBalance = () => {
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     });
-}
-export const useGetPaymentList = (partyId?: string) => {
-    return useQuery({
-        queryKey: ['payment-plans', partyId],
-        queryFn: () => getPaymentList(partyId),
-        select: data => data.data
-    })
-}
+};
 
 export const useDeletePayment = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: deletePayment,
+        onSuccess: (_data, deletedId) => {
+            // Remove the specific payment query BEFORE invalidating,
+            // so React Query won't refetch a deleted resource (404).
+            queryClient.removeQueries({ queryKey: ['payment', deletedId] });
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+            queryClient.invalidateQueries({ queryKey: ['payment'] });
+        }
+    });
+};
+
+export const useGetPaymentById = (id: string) => {
+    console.log('id from useGetPaymentById', id)
+    return useQuery({
+        queryKey: ["payment", id],
+        queryFn: () => getPaymentById(id),
+        enabled: !!id,
+    })
+}; 
+
+export const useUpdatePayment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updatePayment,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+            queryClient.invalidateQueries({queryKey: ['payment']})
+      
         }
     });
 };
+
+
+
+export const useGetPaymentList = (type?: 'received' | 'paid') => {
+    return useQuery({
+        queryKey: ["payment", type],
+        queryFn: () => getPaymentList(type),
+        enabled: !!type,
+    })
+}       

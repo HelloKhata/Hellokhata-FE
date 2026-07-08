@@ -47,7 +47,10 @@ import { AddPaymentOutModal } from "./AddPaymentOutModal";
 import { AdjustBalanceModal } from "./AdjustBalanceModal";
 import { AddReminderModal } from "./AddReminderModal";
 import { PaginationHelper } from "@/components/shared/PaginationHelper";
-import { TransactionDetailsModal } from "./TransactionDetailsModal";
+import { SaleDetailsModal } from "./SaleDetailsModal";
+import { PurchaseDetailsModal } from "./PurchaseDetailsModal";
+import { PaymentDetailsModal } from "./PaymentDetailsModal";
+import { AdjustmentDetailsModal } from "./AdjustmentDetailsModal";
 
 interface PartyDetailsAndTransactionsProps {
   partyId: string;
@@ -81,6 +84,7 @@ export function PartyDetailsAndTransactions({
     setSelectedTransaction(null);
   }, [partyId]);
 
+  console.log('selectedTransaction',selectedTransaction)
   const {
     data: ledgerData,
     isLoading: isLedgerLoading,
@@ -435,11 +439,6 @@ export function PartyDetailsAndTransactions({
                         >
                           <td className="px-6 py-4 font-semibold text-foreground max-w-[180px] truncate text-xs">
                             {entry.description}
-                            {entry.referenceId && (
-                              <span className="block text-[10px] text-muted-foreground font-normal mt-0.5">
-                                Ref: #{entry.referenceId}
-                              </span>
-                            )}
                           </td>
                           <td className="px-6 py-4 text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(entry.date, "short")}
@@ -506,12 +505,40 @@ export function PartyDetailsAndTransactions({
         }
       />
 
-      <TransactionDetailsModal
-        isOpen={selectedTransaction !== null}
-        onClose={() => setSelectedTransaction(null)}
-        entry={selectedTransaction}
-        party={party}
-      />
+      {selectedTransaction && selectedTransaction.type === "sale" && (
+        <SaleDetailsModal
+          isOpen={selectedTransaction !== null}
+          onClose={() => setSelectedTransaction(null)}
+          saleId = {selectedTransaction.referenceId }
+        />
+      )}
+
+      {selectedTransaction && (selectedTransaction.type === "purchase" || selectedTransaction.referenceType === "purchase") && (
+        <PurchaseDetailsModal
+          isOpen={selectedTransaction !== null}
+          onClose={() => setSelectedTransaction(null)}
+          purchaseId = {selectedTransaction.referenceId }
+        />
+      )}
+  
+      {selectedTransaction && (
+        selectedTransaction.type === "payment" 
+      ) && (
+        <PaymentDetailsModal
+          isOpen={selectedTransaction !== null}
+          onClose={() => setSelectedTransaction(null)}
+          paymentId = {selectedTransaction?.referenceId}
+        />
+      )}
+
+      {selectedTransaction && (selectedTransaction.type === "adjustment" || selectedTransaction.type === "opening") && (
+        <AdjustmentDetailsModal
+          isOpen={selectedTransaction !== null}
+          onClose={() => setSelectedTransaction(null)}
+          entry={selectedTransaction}
+          party={party}
+        />
+      )}
     </div>
   );
 }

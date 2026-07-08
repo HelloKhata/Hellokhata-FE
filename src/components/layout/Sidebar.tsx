@@ -5,33 +5,14 @@ import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore, type PageRoute } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { navGroups, bottomNavItems, type NavItem, type SubnavItem } from '@/lib/nav-config';
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Receipt,
-  BarChart3,
-  Settings,
-  Sparkles,
   ChevronLeft,
   LogOut,
   Store,
-  HelpCircle,
   Zap,
-  FileText,
-  Truck,
-  RotateCcw,
-  Lock,
-  CheckCircle,
-  Trash2,
-  Icon,
-  CreditCard,
-  LayoutList,
-  Tag,
   ChevronDown,
   ChevronRight,
-  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -44,85 +25,6 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export interface SubnavItem {
-  page: string;
-  icon?: any;
-  labelKey: string;
-  labelBn: string;
-}
-
-export interface NavItem {
-  labelKey: string;
-  labelBn: string;
-  icon: any;
-  page?: string;
-  submenu?: SubnavItem[];
-}
-
-const navGroups: NavItem[] = [
-  { page: '/', icon: LayoutDashboard, labelKey: 'Dashboard', labelBn: 'ড্যাশবোর্ড' },
-  {
-    labelKey: 'Sales',
-    labelBn: 'বিক্রি',
-    icon: ShoppingCart,
-    submenu: [
-      { page: '/sales', icon: ShoppingCart, labelKey: 'Sales List', labelBn: 'বিক্রয় তালিকা' },
-      { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
-      { page: '/sales/payment-in', icon: CreditCard, labelKey: 'Payment In', labelBn: 'পেমেন্ট ইন' },
-      { page: '/returns/sales', icon: RotateCcw, labelKey: 'Sales Return', labelBn: 'বিক্রয় ফেরত' },
-    ],
-  },
-  {
-    labelKey: 'Purchases',
-    labelBn: 'ক্রয়',
-    icon: Truck,
-    submenu: [
-      { page: '/purchases', icon: Truck, labelKey: 'Purchase List', labelBn: 'ক্রয় তালিকা' },
-      { page: '/purchases/payment-out', icon: CreditCard, labelKey: 'Payment Out', labelBn: 'পেমেন্ট আউট' },
-      { page: '/returns/purchases', icon: RotateCcw, labelKey: 'Purchase Return', labelBn: 'ক্রয় ফেরত' },
-    ],
-  },
-  { page: '/parties', icon: Users, labelKey: 'Parties', labelBn: 'পার্টি' },
-  {
-    labelKey: 'Inventory',
-    labelBn: 'ইনভেন্টরি',
-    icon: Package,
-    submenu: [
-      { page: '/inventory', icon: Package, labelKey: 'Inventory List', labelBn: 'ইনভেন্টরি তালিকা' },
-      { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
-    ],
-  },
-  // {
-  //   labelKey: 'Finance',
-  //   labelBn: 'অর্থায়ন',
-  //   icon: Receipt,
-  //   submenu: [
-  //     { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
-  //     { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
-  //     { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
-  //   ],
-  // },
-  { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
-  { page: '/reminders', icon: Bell, labelKey: 'Reminders', labelBn: 'রিমাইন্ডার' },
-  {
-    labelKey: 'Reports',
-    labelBn: 'রিপোর্ট',
-    icon: BarChart3,
-    page: '/reports',
-    submenu: [
-      { page: '/reports/sales', icon: ShoppingCart, labelKey: 'Sales Report', labelBn: 'বিক্রয় রিপোর্ট' },
-      { page: '/reports/purchase', icon: Truck, labelKey: 'Purchase Reports', labelBn: 'ক্রয় রিপোর্ট' },
-      { page: '/reports/profit-loss', icon: Receipt, labelKey: 'Profit/Loss', labelBn: 'লাভ-লোকসান' },
-      { page: '/reports/stock', icon: Package, labelKey: 'Stock', labelBn: 'স্টক' },
-      { page: '/reports/health-score', icon: Sparkles, labelKey: 'Health Score', labelBn: 'হেলথ স্কোর' },
-    ],
-  },
-];
-
-const bottomNavItems = [
-  { page: '/ai', icon: Sparkles, labelKey: 'AI', labelBn: 'AI সহায়ক', isPro: true },
-  { page: '/settings/profile', icon: Settings, labelKey: 'Settings', labelBn: 'সেটিংস' },
-];
 
 export function Sidebar() {
   const { t, isBangla } = useAppTranslation();

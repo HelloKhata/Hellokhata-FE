@@ -1,17 +1,5 @@
 import client from "@/lib/axios"
 
-export const paymentSummary = () => {
-    return client.get('/api/payments/summary')
-}
-
-export const createPaymentPlans = (data: any) => {
-    return client.post('/api/payments/plans', data)
-};
-
-export const getPaymentList = (id?: string) => {
-    return client.get('/api/payments/plans/list', { params: { partyId: id } })
-}
-
 export const createPaymentIn = (data: any) => {
     return client.post('/api/parties/payment-in', data)
 }
@@ -26,5 +14,25 @@ export const adjustBalance = (data: any) => {
 
 export const deletePayment = async (id: string) => {
     const res = await client.delete(`/api/payments/${id}`);
+    console.log('delete response',res)
     return res.data;
+}
+
+
+
+// get all payments(payment in / payment out)
+export const getPaymentList = (type?: 'received' | 'paid') => {
+    return client.get('/api/payments', { params: { type } })
+}
+
+// for particular payment
+export const getPaymentById = async (id: string) => {
+    const res = await client.get(`/api/payments/${id}`);
+    return res.data;
+}
+
+
+// delete a payment(payment in/payment out)
+export const updatePayment = async ({id,data} ) =>{
+    const res = await client.patch(`/api/payments/${id}`,data)
 }

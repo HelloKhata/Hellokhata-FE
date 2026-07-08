@@ -69,7 +69,7 @@ export default function StockTransferPage() {
   // Validate transfer
   const isValidTransfer = fromBranchId && toBranchId && fromBranchId !== toBranchId && itemId && quantity;
   const quantityNum = parseFloat(quantity || '0');
-  const exceedsStock = selectedProduct && quantityNum > selectedProduct.currentStock;
+  const exceedsStock = selectedProduct && quantityNum > (selectedProduct.currentStock ?? 0);
 
   // Submit transfer
   const handleSubmit = async () => {

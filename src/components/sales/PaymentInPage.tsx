@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,26 +11,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  CreditCard,
   Plus,
   Search,
   Calendar,
   MoreVertical,
   FileText,
-  SlidersHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  Loader2,
 } from 'lucide-react';
 import { AddPaymentInModal } from '@/components/parties/AddPaymentInModal';
+import { PaymentDetailsModal } from '@/components/parties/PaymentDetailsModal';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-
-interface PaymentTransaction {
-  receiptNo: string;
-  partyName: string;
-  date: string;
-  paymentMode: string;
-  amount: number;
-  remarks: string;
-}
+import { useGetPaymentList } from '@/hooks/api/usePayments';
 
 export default function PaymentInPage() {
   const { isBangla } = useAppTranslation();
@@ -39,54 +31,54 @@ export default function PaymentInPage() {
   const [dateFilter, setDateFilter] = useState('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
 
-  // Mock Transactions for Payment In
-  const [transactions] = useState<PaymentTransaction[]>([
-    {
-      receiptNo: '3',
-      partyName: 'Sweet',
-      date: '28 Jun 2026',
-      paymentMode: 'Mobile Banking',
-      amount: 1500,
-      remarks: 'Invoice #1023 payment',
-    },
-    {
-      receiptNo: '2',
-      partyName: 'Robin',
-      date: '25 Jun 2026',
-      paymentMode: 'Cash',
-      amount: 800,
-      remarks: '--',
-    },
-    {
-      receiptNo: '1',
-      partyName: 'John',
-      date: '23 Jun 2026',
-      paymentMode: 'Card',
-      amount: 120,
-      remarks: 'Advance',
-    },
-  ]);
+  // Fetch payment list from API
+  const { data: paymentResponse, isLoading, isError } = useGetPaymentList('received');
+  const transactions = paymentResponse?.data?.data ?? paymentResponse?.data ?? [];
 
-  // Filtering
-  const filteredTransactions = transactions
-    .filter((tx) => {
-      const matchesSearch =
-        tx.partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tx.receiptNo.includes(searchTerm) ||
-        tx.remarks.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesMode =
-        paymentModeFilter === 'all' ||
-        tx.paymentMode.toLowerCase() === paymentModeFilter.toLowerCase();
-      
-      return matchesSearch && matchesMode;
-    })
-    .sort((a, b) => {
-      const numA = parseInt(a.receiptNo);
-      const numB = parseInt(b.receiptNo);
-      return sortOrder === 'desc' ? numB - numA : numA - numB;
-    });
+  // Helper to format date
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Filtering & sorting
+  const filteredTransactions = useMemo(() => {
+    if (!Array.isArray(transactions)) return [];
+
+    return transactions
+      .filter((tx: any) => {
+        const partyName = tx.party?.name || '';
+        const receiptNo = tx.reference || '';
+        const remarks = tx.notes || '';
+        const mode = tx.mode || '';
+
+        const matchesSearch =
+          partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          String(receiptNo).includes(searchTerm) ||
+          remarks.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesMode =
+          paymentModeFilter === 'all' ||
+          mode.toLowerCase() === paymentModeFilter.toLowerCase();
+
+        return matchesSearch && matchesMode;
+      })
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+      });
+  }, [transactions, searchTerm, paymentModeFilter, sortOrder]);
 
   return (
     <>
@@ -100,7 +92,7 @@ export default function PaymentInPage() {
           </div>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-2 h-10 px-4 rounded-lg"
+            className="bg-primary hover:bg-primary/90 text-white font-medium flex items-center gap-2 h-10 px-4 rounded-lg"
           >
             <Plus className="h-4 w-4" />
             <span>{isBangla ? 'পেমেন্ট গ্রহণ' : 'Add Payment In'}</span>
@@ -117,13 +109,13 @@ export default function PaymentInPage() {
                 placeholder={isBangla ? 'পেমেন্ট ইন খুঁজুন...' : 'Search Payment In...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 bg-[#0f0f10] border-border text-sm text-white rounded-lg focus-visible:ring-emerald-500"
+                className="pl-9 h-10 bg-[#0f0f10] border-border text-sm text-white rounded-lg focus-visible:ring-primary"
               />
             </div>
 
             {/* Payment Mode Filter */}
             <Select value={paymentModeFilter} onValueChange={setPaymentModeFilter}>
-              <SelectTrigger className="w-48 h-10 bg-[#0f0f10] border-emerald-500/30 text-white focus:ring-emerald-500 rounded-lg">
+              <SelectTrigger className="w-48 h-10 bg-[#0f0f10] border-primary/30 text-white focus:ring-primary rounded-lg">
                 <SelectValue placeholder="All Payment Modes" />
               </SelectTrigger>
               <SelectContent className="bg-[#0f0f10] border-border text-white">
@@ -177,26 +169,49 @@ export default function PaymentInPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        <span>{isBangla ? 'লোড হচ্ছে...' : 'Loading payments...'}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-rose-500">
+                      {isBangla ? 'ডেটা লোড করতে সমস্যা হয়েছে' : 'Failed to load payments'}
+                    </td>
+                  </tr>
+                ) : filteredTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-muted-foreground">
                       {isBangla ? 'কোনো লেনদেন পাওয়া যায়নি' : 'No transactions found'}
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((tx) => (
+                  filteredTransactions.map((tx: any) => (
                     <tr
-                      key={tx.receiptNo}
-                      className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors"
+                      key={tx.id}
+                      className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedPaymentId(tx.id)}
                     >
-                      <td className="p-4 text-muted-foreground font-medium">{tx.receiptNo}</td>
-                      <td className="p-4 font-bold text-white">{tx.partyName}</td>
-                      <td className="p-4 text-muted-foreground">{tx.date}</td>
-                      <td className="p-4 text-white">{tx.paymentMode}</td>
-                      <td className="p-4 font-bold text-white">Tk. {tx.amount}</td>
-                      <td className="p-4 text-muted-foreground">{tx.remarks}</td>
+                      <td className="p-4 text-muted-foreground font-medium">
+                        {tx.reference || '—'}
+                      </td>
+                      <td className="p-4 font-bold text-white">{tx.party?.name || '—'}</td>
+                      <td className="p-4 text-muted-foreground">{formatDate(tx.createdAt)}</td>
+                      <td className="p-4 text-white capitalize">{tx.mode || '—'}</td>
+                      <td className="p-4 font-bold text-white">Tk. {Math.abs(tx.amount)}</td>
+                      <td className="p-4 text-muted-foreground">{tx.notes || '—'}</td>
                       <td className="p-4 text-center flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white p-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-white p-0"
+                          onClick={() => setSelectedPaymentId(tx.id)}
+                        >
                           <FileText className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white p-0">
@@ -216,6 +231,15 @@ export default function PaymentInPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
       />
+
+      {selectedPaymentId && (
+        <PaymentDetailsModal
+          isOpen={!!selectedPaymentId}
+          onClose={() => setSelectedPaymentId(null)}
+          paymentId={selectedPaymentId}
+        />
+      )}
     </>
   );
 }
+

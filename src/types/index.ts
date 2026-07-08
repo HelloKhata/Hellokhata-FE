@@ -277,8 +277,8 @@ export interface Item {
   minimumPrice?: number;
   pricing?: ItemPricing;
   // Stock
-  currentStock: number;
-  minStock: number;
+  currentStock?: number;
+  minStock?: number;
   maxStock?: number;
   supplierId?: string;
   imageUrl?: string;
@@ -894,8 +894,8 @@ export interface ItemFormData {
   sellingPrice: number;
   wholesalePrice?: number;
   vipPrice?: number;
-  currentStock: number;
-  minStock: number;
+  currentStock?: number;
+  minStock?: number;
   maxStock?: number;
   supplierId?: string;
 }

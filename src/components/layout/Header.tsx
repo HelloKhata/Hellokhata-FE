@@ -35,8 +35,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: healthScoreData } = useHealthScore();
   const { data: notificationsData } = useNotifications();
-
-  console.log('notificationsData',notificationsData)
+  
   const notifications = Array.isArray(notificationsData)
     ? notificationsData
     : (Array.isArray((notificationsData as any)?.data) ? (notificationsData as any).data : []);
@@ -76,7 +75,6 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const unreadCount = localNotifications.filter(n => !n.isRead).length;
 
   const filteredNotifications = localNotifications.filter(n => {
-    console.log(n.isRead)
     if (filter === 'read') return n.isRead === true;
     if (filter === 'unread') return !n.isRead;
     return true;
