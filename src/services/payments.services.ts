@@ -36,3 +36,24 @@ export const getPaymentById = async (id: string) => {
 export const updatePayment = async ({id,data} ) =>{
     const res = await client.patch(`/api/payments/${id}`,data)
 }
+
+
+
+
+
+
+// opening balance
+export const getOpeningBalance  = async (id:string) =>{
+    const res = await client.get(`/api/parties/${id}/opening-balance`)
+    return res.data
+}
+
+export const updateOpeningBalance  = async ({id,data} ) =>{
+    const res = await client.patch(`/api/parties/${id}/opening-balance`,data)
+    return res.data
+}
+
+export const deleteOpeningBalance = async (id:string ) =>{
+    const res = await client.delete(`/api/parties/${id}/opening-balance`)
+    return res.data
+}

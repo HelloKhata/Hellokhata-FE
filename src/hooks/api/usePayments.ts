@@ -1,5 +1,5 @@
 
-import { getPaymentList, createPaymentIn, createPaymentOut, adjustBalance, deletePayment, getPaymentById, updatePayment } from "@/services/payments.services"
+import { getPaymentList, createPaymentIn, createPaymentOut, adjustBalance, deletePayment, getPaymentById, updatePayment, deleteOpeningBalance, updateOpeningBalance, getOpeningBalance } from "@/services/payments.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useCreatePaymentIn = () => {
@@ -88,3 +88,39 @@ export const useGetPaymentList = (type?: 'received' | 'paid') => {
         enabled: !!type,
     })
 }       
+
+
+
+// opening balance
+export const useGetOpeningBalance = (id:string) =>{
+    return useQuery({
+        queryKey: ["openingBalance", id],
+        queryFn: () => getOpeningBalance(id),
+        enabled: !!id,
+    })
+};
+
+
+export const useUpdateOpeningBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateOpeningBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    })
+};
+
+export const useDeleteOpeningBalance = ( ) =>{
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteOpeningBalance,
+        onSuccess: () =>{
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    })
+};

@@ -1,5 +1,5 @@
-// Hello Khata - Adjustment Details Modal
-// Modal to view/edit details of an adjustment transaction
+// Hello Khata - Opening Balance Details Modal
+// Modal to view/edit details of an opening balance transaction
 
 "use client";
 
@@ -32,7 +32,7 @@ import {
   Save,
   Calendar,
 } from "lucide-react";
-import { useDeletePayment, useUpdatePayment } from "@/hooks/api/usePayments";
+import { useDeleteOpeningBalance, useUpdateOpeningBalance } from "@/hooks/api/usePayments";
 import {
   useAppTranslation,
   useDateFormat,
@@ -40,19 +40,19 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface AdjustmentDetailsModalProps {
+interface OpeningBalanceDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   entry: any; // PartyLedgerEntry
   party?: any; // Party object passed from parent
 }
 
-export function AdjustmentDetailsModal({
+export function OpeningBalanceDetailsModal({
   isOpen,
   onClose,
   entry,
   party,
-}: AdjustmentDetailsModalProps) {
+}: OpeningBalanceDetailsModalProps) {
   const { isBangla } = useAppTranslation();
   const { formatDate } = useDateFormat();
 
@@ -63,10 +63,10 @@ export function AdjustmentDetailsModal({
   const [amount, setAmount] = useState("");
   const [remarks, setRemarks] = useState("");
   const [date, setDate] = useState<Date>(new Date());
-  const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>('add_balance');
+  const [balanceType, setBalanceType] = useState<'receive' | 'give'>('receive');
 
-  const { mutate: deletePayment, isPending: isDeleting } = useDeletePayment();
-  const { mutate: updatePayment, isPending: isUpdating } = useUpdatePayment();
+  const { mutate: deleteOpeningBalance, isPending: isDeleting } = useDeleteOpeningBalance();
+  const { mutate: updateOpeningBalance, isPending: isUpdating } = useUpdateOpeningBalance();
 
   // Reset form states when entry changes
   useEffect(() => {
@@ -74,7 +74,7 @@ export function AdjustmentDetailsModal({
       setAmount(Math.abs(entry.amount).toString());
       setRemarks(entry.remarks || "");
       setDate(entry.date ? new Date(entry.date) : new Date());
-      setAdjustmentType(entry.amount >= 0 ? 'add_balance' : 'reduce_balance');
+      setBalanceType(entry.amount >= 0 ? 'receive' : 'give');
       setIsEditing(false);
     }
   }, [entry, isOpen]);
@@ -82,19 +82,19 @@ export function AdjustmentDetailsModal({
   if (!entry) return null;
 
   const handleSaveChanges = () => {
-    const balanceAmount = (parseFloat(amount) || 0) * (adjustmentType === 'reduce_balance' ? -1 : 1);
-    const updatedData = {
-      amount: balanceAmount,
-      type: adjustmentType,
-      remarks: remarks || undefined,
-    };
-
-    updatePayment({ id: entry.id, data: updatedData }, {
+    const pId = party?.id || entry?.partyId;
+    if (!pId) {
+      toast.error(isBangla ? "পার্টি আইডি পাওয়া যায়নি" : "Party ID not found");
+      return;
+    }
+    const balanceAmount = (parseFloat(amount) || 0) * (balanceType === 'give' ? -1 : 1);
+    
+    updateOpeningBalance({ id: pId, data: { amount: balanceAmount } }, {
       onSuccess: () => {
         toast.success(
           isBangla
-            ? "সমন্বয় সফলভাবে আপডেট করা হয়েছে"
-            : "Adjustment updated successfully"
+            ? "প্রারম্ভিক ব্যালেন্স সফলভাবে আপডেট করা হয়েছে"
+            : "Opening balance updated successfully"
         );
         setIsEditing(false);
         onClose();
@@ -103,7 +103,7 @@ export function AdjustmentDetailsModal({
         toast.error(
           isBangla
             ? "আপডেট করতে ব্যর্থ হয়েছে"
-            : "Failed to update adjustment"
+            : "Failed to update opening balance"
         );
       }
     });
@@ -114,12 +114,17 @@ export function AdjustmentDetailsModal({
   };
 
   const handleConfirmDelete = () => {
-    deletePayment(entry.id, {
+    const pId = party?.id || entry?.partyId;
+    if (!pId) {
+      toast.error(isBangla ? "পার্টি আইডি পাওয়া যায়নি" : "Party ID not found");
+      return;
+    }
+    deleteOpeningBalance(pId, {
       onSuccess: () => {
         toast.success(
           isBangla
-            ? "সমন্বয় লেনদেনটি সফলভাবে মুছে ফেলা হয়েছে"
-            : "Adjustment transaction deleted successfully"
+            ? "প্রারম্ভিক ব্যালেন্স সফলভাবে মুছে ফেলা হয়েছে"
+            : "Opening balance deleted successfully"
         );
         setShowDeleteConfirm(false);
         onClose();
@@ -127,12 +132,12 @@ export function AdjustmentDetailsModal({
       onError: () => {
         toast.error(
           isBangla
-            ? "মুছে ফেলতে ব্যর্থ হয়েছে"
-            : "Failed to delete adjustment transaction"
+            ? "প্রারম্ভিক ব্যালেন্স মুছতে ব্যর্থ হয়েছে"
+            : "Failed to delete opening balance"
         );
         setShowDeleteConfirm(false);
         onClose();
-      },
+      }
     });
   };
 
@@ -145,7 +150,7 @@ export function AdjustmentDetailsModal({
               htmlFor="tx-amount"
               className="text-xs font-bold text-muted-foreground uppercase tracking-wider"
             >
-              {isBangla ? "সমন্বয় পরিমাণ" : "Adjustment Amount"}
+              {isBangla ? "প্রারম্ভিক পরিমাণ" : "Opening Amount"}
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-2.5 text-muted-foreground font-semibold">
@@ -185,23 +190,23 @@ export function AdjustmentDetailsModal({
 
         <div className="space-y-2">
           <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            {isBangla ? "সমন্বয়ের ধরন" : "Adjustment Type"}
+            {isBangla ? "ব্যালেন্সের ধরন" : "Balance Direction"}
           </Label>
           <div className="flex gap-2">
             {[
-              { value: 'add_balance', label: isBangla ? 'বৃদ্ধি করুন (Increase)' : 'Increase Balance' },
-              { value: 'reduce_balance', label: isBangla ? 'হ্রাস করুন (Decrease)' : 'Decrease Balance' },
+              { value: 'receive', label: isBangla ? 'পাওনা (To Receive)' : 'To Receive' },
+              { value: 'give', label: isBangla ? 'দেনা (To Give)' : 'To Give' },
             ].map((dir) => (
               <button
                 key={dir.value}
                 type="button"
                 disabled={!isEditing}
-                onClick={() => setAdjustmentType(dir.value as 'add_balance' | 'reduce_balance')}
+                onClick={() => setBalanceType(dir.value as 'receive' | 'give')}
                 className={cn(
                   'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all',
                   isEditing ? 'cursor-pointer' : 'cursor-not-allowed opacity-70',
-                  adjustmentType === dir.value
-                    ? dir.value === 'add_balance'
+                  balanceType === dir.value
+                    ? dir.value === 'receive'
                       ? 'border-primary/50 bg-primary/10 text-primary font-bold'
                       : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'
                     : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
@@ -298,7 +303,7 @@ export function AdjustmentDetailsModal({
           <div className="flex flex-col flex-1 min-h-0">
             <DialogHeader className="flex flex-row items-center justify-between pb-4 border-b border-border">
               <DialogTitle className="text-lg font-bold text-foreground">
-                {isBangla ? "ব্যালেন্স সমন্বয়" : "Adjust Balance"}
+                {isBangla ? "প্রারম্ভিক ব্যালেন্স" : "Opening Balance"}
               </DialogTitle>
             </DialogHeader>
 
