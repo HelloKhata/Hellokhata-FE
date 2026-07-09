@@ -51,6 +51,7 @@ import { SaleDetailsModal } from "./SaleDetailsModal";
 import { PurchaseDetailsModal } from "./PurchaseDetailsModal";
 import { PaymentDetailsModal } from "./PaymentDetailsModal";
 import { AdjustmentDetailsModal } from "./AdjustmentDetailsModal";
+import { EditPartyModal } from "./EditPartyModal";
 
 interface PartyDetailsAndTransactionsProps {
   partyId: string;
@@ -99,6 +100,7 @@ export function PartyDetailsAndTransactions({
   const [showPaymentOutModal, setShowPaymentOutModal] = useState(false);
   const [showAdjustBalanceModal, setShowAdjustBalanceModal] = useState(false);
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
+  const [showEditPartyModal, setShowEditPartyModal] = useState(false);
 
   const party = partyDetailData?.data;
   if (isLoading) {
@@ -238,7 +240,7 @@ export function PartyDetailsAndTransactions({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-40 text-xs">
               <DropdownMenuItem
-                onClick={() => router.push(`/parties/${party.id}/edit`)}
+                onClick={() => setShowEditPartyModal(true)}
               >
                 <Edit className="h-3.5 w-3.5 mr-2" />
                 {isBangla ? "সম্পাদনা করুন" : "Edit Party"}
@@ -539,6 +541,12 @@ export function PartyDetailsAndTransactions({
           party={party}
         />
       )}
+      {/* Edit Party Modal */}
+      <EditPartyModal
+        isOpen={showEditPartyModal}
+        onClose={() => setShowEditPartyModal(false)}
+        partyId={partyId}
+      />
     </div>
   );
 }

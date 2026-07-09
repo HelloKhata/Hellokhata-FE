@@ -363,34 +363,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Action Dock */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-6 scrollbar-hidden">
-        <ActionDockButton
-          icon={ShoppingCart}
-          label={isBangla ? 'নতুন বিক্রি' : 'New Sale'}
-          color="emerald"
-          onClick={() => router.push('/sales/new')}
-        />
-        <ActionDockButton
-          icon={CreditCard}
-          label={isBangla ? 'পেমেন্ট' : 'Payment'}
-          color="indigo"
-          onClick={() => router.push('/reports/credit-control')}
-        />
-        <ActionDockButton
-          icon={Receipt}
-          label={isBangla ? 'খরচ' : 'Expense'}
-          color="warning"
-          onClick={() => router.push('/expenses/new')}
-        />
-        <ActionDockButton
-          icon={Package}
-          label={isBangla ? 'ক্রয়' : 'Purchase'}
-          color="default"
-          onClick={() => router.push('/purchases/new')}
-        />
-      </div>
-
       {/* KPI Cards with Count-up */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICardAnimated
