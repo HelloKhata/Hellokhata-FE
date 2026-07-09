@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useUser } from "@/stores";
 import { useParty, useUpdateParty, useDeleteParty } from "@/hooks/api/useParties";
+import { useGetOpeningBalance, useUpdateOpeningBalance } from "@/hooks/api/usePayments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,8 +45,12 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
 
   const { data: partyResponse, isLoading } = useParty(partyId, { enabled: !!partyId && isOpen });
   const party = partyResponse?.data;
-  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty();
+  const { data: openingBalanceData } = useGetOpeningBalance(partyId);
+  const openingBalance = openingBalanceData?.data;
+
+  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty(partyId);
   const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
+  const { mutate: updateOpeningBalance } = useUpdateOpeningBalance();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -65,20 +70,29 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
   useEffect(() => {
     if (!party) return;
 
-    const balance = party.openingBalance ?? 0;
-
-    setFormData({
+    setFormData((prev) => ({
+      ...prev,
       name: party.name ?? '',
       phone: party.phone ?? '',
       email: party.email ?? '',
       address: party.address ?? '',
       type: party.type ?? 'customer',
-      openingBalance: String(Math.abs(balance)),
-      balanceType: balance < 0 ? 'give' : 'receive',
       creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
       notes: party.notes ?? '',
-    });
+    }));
   }, [party?.id, isOpen]);
+
+  // Pre-fill opening balance from dedicated API
+  useEffect(() => {
+    if (!openingBalance) return;
+
+    const balance = openingBalance.amount ?? 0;
+    setFormData((prev) => ({
+      ...prev,
+      openingBalance: String(Math.abs(balance)),
+      balanceType: balance < 0 ? 'give' : 'receive',
+    }));
+  }, [openingBalance?.id, isOpen]);
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -97,15 +111,21 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
       address: formData.address || undefined,
       type: formData.type,
       branchId: user?.branchId || '',
-      openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1),
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
       notes: formData.notes || undefined,
     };
 
+    // Update party info
     updateParty({ id: partyId, data: partyData }, {
       onSuccess: () => {
-        toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
-        onClose();
+        // Update opening balance via dedicated API
+        const balanceAmount = (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1);
+        updateOpeningBalance({ id: partyId, data: { amount: balanceAmount } }, {
+          onSuccess: () => {
+            toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
+            onClose();
+          },
+        });
       },
     });
   };

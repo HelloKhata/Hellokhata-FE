@@ -44,7 +44,9 @@ export default function PartiesPage() {
   const [selectedParty, setSelectedParty] = useState<Party | null>(null);
   const [showAddPartyModal, setShowAddPartyModal] = useState(false);
 
-  const { data: partiesData, isLoading } = useParties();
+  const { data: partiesData, isLoading } = useParties(
+    typeFilter !== 'both' ? { type: typeFilter } : {}
+  );
   const parties = partiesData?.data || [];
 
   const { data: partiesSearchData } = useSearch({ index: "parties", query: searchTerm });
@@ -53,14 +55,8 @@ export default function PartiesPage() {
 
   console.log("searchParties", partiesSearchData)
 
-  // Client-side filtering and searching
+  // Client-side filtering (payment status only, type is filtered by API)
   const filteredParties = parties.filter((party: any) => {
-    // Type Filter
-    if (typeFilter !== 'both') {
-      if (party.type !== typeFilter && party.type !== 'both') {
-        return false;
-      }
-    }
     // Payment status filter
     if (paymentFilter !== 'all') {
       if (paymentFilter === 'receivable' && party.currentBalance <= 0) return false;

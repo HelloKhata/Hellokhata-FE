@@ -51,6 +51,7 @@ import { SaleDetailsModal } from "./SaleDetailsModal";
 import { PurchaseDetailsModal } from "./PurchaseDetailsModal";
 import { PaymentDetailsModal } from "./PaymentDetailsModal";
 import { AdjustmentDetailsModal } from "./AdjustmentDetailsModal";
+import { OpeningBalanceDetailsModal } from "./OpeningBalanceDetailsModal";
 import { EditPartyModal } from "./EditPartyModal";
 
 interface PartyDetailsAndTransactionsProps {
@@ -139,30 +140,62 @@ export function PartyDetailsAndTransactions({
   };
 
   const getStatusContent = (entry: any) => {
-    if (entry.type === "sale") {
-      const isPartial =
-        Math.abs(entry.amount) > 100 && Math.floor(entry.amount) % 2 === 0;
-      if (isPartial) {
-        const unpaid = Math.round(Math.abs(entry.amount) * 0.3);
-        return (
-          <div className="flex flex-col items-start">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400">
-              PARTIAL
-            </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5">
-              Tk. {unpaid} Unpaid
-            </span>
-          </div>
-        );
+    let status = (entry.status || "").toLowerCase();
+
+    // Fallback calculation logic if status is not provided by the API
+    if (!status) {
+      if (entry.type === "payment") {
+        status = "paid";
+      } else if (entry.type === "sale" || entry.type === "purchase") {
+        const paid = entry.paidAmount ?? 0;
+        const due = entry.dueAmount ?? 0;
+        if (due <= 0) {
+          status = "paid";
+        } else if (paid > 0) {
+          status = "partial";
+        } else {
+          status = "unpaid";
+        }
       } else {
-        return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-            PAID
-          </span>
-        );
+        status = "completed";
       }
     }
-    return <span className="text-muted-foreground">—</span>;
+
+    const due = entry.dueAmount ?? 0;
+
+    let badgeClass = "bg-muted text-muted-foreground";
+    if (status === "paid" || status === "completed" || status === "received") {
+      badgeClass = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
+    } else if (status === "partial") {
+      badgeClass = "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
+    } else if (status === "unpaid" || status === "pending") {
+      badgeClass = "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400";
+    }
+
+    // Translate status labels
+    let label = status.toUpperCase();
+    if (isBangla) {
+      if (status === "paid" || status === "completed" || status === "received") label = "পরিশোধিত";
+      else if (status === "partial") label = "আংশিক";
+      else if (status === "unpaid" || status === "pending") label = "অপরিশোধিত";
+    } else {
+      if (status === "paid" || status === "completed" || status === "received") label = "PAID";
+      else if (status === "partial") label = "PARTIAL";
+      else if (status === "unpaid" || status === "pending") label = "UNPAID";
+    }
+
+    return (
+      <div className="flex flex-col items-start">
+        <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase", badgeClass)}>
+          {label}
+        </span>
+        {status === "partial" && due > 0 && (
+          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5 whitespace-nowrap">
+            {isBangla ? "বাকি" : "Unpaid"} {formatCurrency(due)}
+          </span>
+        )}
+      </div>
+    );
   };
 
   const ledgerEntries = ledgerData?.data?.entries || [];
@@ -420,14 +453,14 @@ export function PartyDetailsAndTransactions({
                       <th className="px-6 py-3 text-right">
                         {isBangla ? "মোট" : "Total"}
                       </th>
+                      <th className="px-6 py-3 text-right">
+                        {isBangla ? "পরিশোধিত" : "Paid Amount"}
+                      </th>
                       <th className="px-6 py-3">
                         {isBangla ? "স্ট্যাটাস" : "Status"}
                       </th>
                       <th className="px-6 py-3 text-right">
                         {isBangla ? "ব্যালেন্স" : "Balance"}
-                      </th>
-                      <th className="px-6 py-3">
-                        {isBangla ? "মন্তব্য" : "Remarks"}
                       </th>
                     </tr>
                   </thead>
@@ -448,14 +481,20 @@ export function PartyDetailsAndTransactions({
                           <td className="px-6 py-4 text-right font-medium whitespace-nowrap text-xs">
                             {formatCurrency(Math.abs(entry.amount))}
                           </td>
+                          <td className="px-6 py-4 text-right font-medium whitespace-nowrap text-xs">
+                            {entry.paidAmount !== undefined && entry.paidAmount !== null ? (
+                              formatCurrency(entry.paidAmount)
+                            ) : entry.type === "payment" ? (
+                              formatCurrency(Math.abs(entry.amount))
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getStatusContent(entry)}
                           </td>
                           <td className="px-6 py-4 text-right font-semibold text-foreground whitespace-nowrap text-xs">
                             {formatCurrency(entry.balance)}
-                          </td>
-                          <td className="px-6 py-4 text-xs text-muted-foreground truncate max-w-[120px]">
-                            {entry.remarks || "—"}
                           </td>
                         </tr>
                       );
@@ -533,8 +572,17 @@ export function PartyDetailsAndTransactions({
         />
       )}
 
-      {selectedTransaction && (selectedTransaction.type === "adjustment" || selectedTransaction.type === "opening") && (
+      {selectedTransaction && selectedTransaction.type === "adjustment" && (
         <AdjustmentDetailsModal
+          isOpen={selectedTransaction !== null}
+          onClose={() => setSelectedTransaction(null)}
+          entry={selectedTransaction}
+          party={party}
+        />
+      )}
+
+      {selectedTransaction && selectedTransaction.type === "opening" && (
+        <OpeningBalanceDetailsModal
           isOpen={selectedTransaction !== null}
           onClose={() => setSelectedTransaction(null)}
           entry={selectedTransaction}
