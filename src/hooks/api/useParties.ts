@@ -51,12 +51,14 @@ export const useDeleteParty = () => {
     })
 }
 
-export const useUpdateParty = () => {
+export const useUpdateParty = (id:string) => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: updateParty,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party',id] });
+            
         }
     })
 }

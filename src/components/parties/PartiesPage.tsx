@@ -4,6 +4,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AddPartyModal } from './AddPartyModal';
 import { PageHeader, EmptyState } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ export default function PartiesPage() {
   const [typeFilter, setTypeFilter] = useState<'customer' | 'supplier' | 'both'>('both');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'receivable' | 'payable' | 'settled'>('all');
   const [selectedParty, setSelectedParty] = useState<Party | null>(null);
+  const [showAddPartyModal, setShowAddPartyModal] = useState(false);
 
   const { data: partiesData, isLoading } = useParties();
   const parties = partiesData?.data || [];
@@ -77,7 +79,7 @@ export default function PartiesPage() {
           icon={Users}
           action={{
             label: t('parties.addParty'),
-            onClick: () => router.push('/parties/new'),
+            onClick: () => setShowAddPartyModal(true),
             icon: Plus,
           }}
         />
@@ -156,7 +158,7 @@ export default function PartiesPage() {
                   {isBangla ? `পার্টি (${partiesData?.summary?.total || 0})` : `Parties (${partiesData?.summary?.total || 0})`}
                 </h2>
                 <Button
-                  onClick={() => router.push('/parties/new')}
+                  onClick={() => setShowAddPartyModal(true)}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -236,7 +238,7 @@ export default function PartiesPage() {
                     description={isBangla ? 'নতুন পার্টি যোগ করুন' : 'Add your first party'}
                     action={{
                       label: t('parties.addParty'),
-                      onClick: () => router.push('/parties/new'),
+                      onClick: () => setShowAddPartyModal(true),
                       icon: Plus,
                     }}
                   />
@@ -285,6 +287,11 @@ export default function PartiesPage() {
           </div>
         </div>
       </div>
+      {/* Add Party Modal */}
+      <AddPartyModal
+        isOpen={showAddPartyModal}
+        onClose={() => setShowAddPartyModal(false)}
+      />
     </>
   );
 }

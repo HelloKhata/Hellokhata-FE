@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -66,24 +66,11 @@ function NewPurchaseContent() {
 
   // API Data
   const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
-  const [debouncedSupplierSearchQuery, setDebouncedSupplierSearchQuery] =
-    useState("");
-
-  // Debounce supplier search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSupplierSearchQuery(supplierSearchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [supplierSearchQuery]);
 
   const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
   const items = itemsData?.data || [];
 
-  const { data: suppliersData } = useParties({
-    type: "supplier",
-    search: debouncedSupplierSearchQuery,
-  });
+  const { data: suppliersData } = useParties({ type: "supplier" });
   const suppliers = suppliersData?.data || [];
 
   // Form State
