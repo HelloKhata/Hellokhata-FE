@@ -32,7 +32,7 @@ import {
   Save,
   Calendar,
 } from "lucide-react";
-import { useDeleteOpeningBalance, useUpdateOpeningBalance } from "@/hooks/api/usePayments";
+import { useDeleteOpeningBalance, useUpdateOpeningBalance, useGetOpeningBalance } from "@/hooks/api/usePayments";
 import {
   useAppTranslation,
   useDateFormat,
@@ -68,16 +68,20 @@ export function OpeningBalanceDetailsModal({
   const { mutate: deleteOpeningBalance, isPending: isDeleting } = useDeleteOpeningBalance();
   const { mutate: updateOpeningBalance, isPending: isUpdating } = useUpdateOpeningBalance();
 
-  // Reset form states when entry changes
+  const partyId = party?.id || entry?.partyId;
+  const { data: openingBalanceResponse } = useGetOpeningBalance(partyId);
+
+  // Reset form states when entry or openingBalanceResponse changes
   useEffect(() => {
-    if (entry) {
-      setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || "");
-      setDate(entry.date ? new Date(entry.date) : new Date());
-      setBalanceType(entry.amount >= 0 ? 'receive' : 'give');
-      setIsEditing(false);
-    }
-  }, [entry, isOpen]);
+    const ob = openingBalanceResponse?.data || openingBalanceResponse;
+    if (ob && (typeof ob.amount === 'number' || ob.amount != null)) {
+      setAmount(Math.abs(Number(ob.amount)).toString());
+      setRemarks(ob.remarks || ob.notes || "");
+      setDate(ob.date || ob.createdAt ? new Date(ob.date || ob.createdAt) : new Date());
+      setBalanceType(ob.balanceDirection);
+    } 
+    setIsEditing(false);
+  }, [entry, openingBalanceResponse, isOpen]);
 
   if (!entry) return null;
 
@@ -89,7 +93,7 @@ export function OpeningBalanceDetailsModal({
     }
     const balanceAmount = (parseFloat(amount) || 0) * (balanceType === 'give' ? -1 : 1);
     
-    updateOpeningBalance({ id: pId, data: { amount: balanceAmount } }, {
+    updateOpeningBalance({ id: pId, data: { amount: balanceAmount,balanceDirection:balanceType,remarks, } }, {
       onSuccess: () => {
         toast.success(
           isBangla
@@ -99,7 +103,8 @@ export function OpeningBalanceDetailsModal({
         setIsEditing(false);
         onClose();
       },
-      onError: () => {
+      onError: (err) => {
+        console.log(err)
         toast.error(
           isBangla
             ? "আপডেট করতে ব্যর্থ হয়েছে"

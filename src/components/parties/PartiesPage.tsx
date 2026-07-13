@@ -47,6 +47,8 @@ export default function PartiesPage() {
   const { data: partiesData, isLoading } = useParties(
     typeFilter !== 'both' ? { type: typeFilter } : {}
   );
+
+  console.log(partiesData, 'partiesData')
   const parties = partiesData?.data || [];
 
   const { data: partiesSearchData } = useSearch({ index: "parties", query: searchTerm });
