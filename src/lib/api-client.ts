@@ -17,6 +17,11 @@ export class ApiClientError extends Error {
   }
 }
 
+type SuccessfulApiResponse<T> = ApiResponse<T> & {
+  success: true;
+  data: T;
+};
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   branchId?: string | null;
@@ -25,7 +30,7 @@ interface RequestOptions extends RequestInit {
 async function apiRequest<T>(
   endpoint: string,
   options: RequestOptions = {},
-): Promise<ApiResponse<T>> {
+): Promise<SuccessfulApiResponse<T>> {
   const {
     params,
     branchId: overrideBranchId,
@@ -70,7 +75,17 @@ async function apiRequest<T>(
       );
     }
 
-    return data;
+    if (data.data === undefined) {
+      throw new ApiClientError(
+        {
+          code: 'INVALID_RESPONSE',
+          message: 'The API returned a successful response without data.',
+        },
+        response.status,
+      );
+    }
+
+    return { ...data, success: true, data: data.data };
   } catch (error) {
     if (error instanceof ApiClientError) throw error;
 

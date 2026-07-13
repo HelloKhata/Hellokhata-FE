@@ -102,11 +102,12 @@ export function useDateFormat() {
   const formatDate = (date: Date | string, format: 'short' | 'long' | 'full' = 'short'): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
     
-    const options: Intl.DateTimeFormatOptions = {
+    const formats: Record<'short' | 'long' | 'full', Intl.DateTimeFormatOptions> = {
       short: { day: 'numeric', month: 'short', year: 'numeric' },
       long: { day: 'numeric', month: 'long', year: 'numeric' },
       full: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
-    }[format];
+    };
+    const options = formats[format];
 
     return new Intl.DateTimeFormat(language === 'bn' ? 'bn-BD' : 'en-US', options).format(d);
   };

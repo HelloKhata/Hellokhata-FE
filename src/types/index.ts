@@ -420,7 +420,13 @@ export interface Purchase {
   businessId: string;
   branchId?: string;
   supplierId?: string;
+  supplier?: {
+    id: string;
+    name: string;
+    phone: string;
+  } | null;
   invoiceNo?: string;
+  grnNo?: string;
   items: PurchaseItem[];
   subtotal: number;
   discount: number;
@@ -443,6 +449,12 @@ export interface PurchaseItem {
   quantity: number;
   unitCost: number;
   total: number;
+  returnedQty?: number;
+  item: {
+    id: string;
+    name: string;
+    sku: string;
+  };
   createdAt: Date;
 }
 

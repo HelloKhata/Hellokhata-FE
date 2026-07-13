@@ -35,7 +35,7 @@ export function useAiInsights() {
   return useQuery({
     queryKey: queryKeys.aiInsights,
     queryFn: () => apiFunctions.getAiInsights(),
-    // Return the full health score object which contains suggestions
+    select: (response) => response.data,
     staleTime: 120000, // 2 minutes
   });
 }

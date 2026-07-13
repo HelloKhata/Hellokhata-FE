@@ -78,7 +78,7 @@ export default function EditPurchasePage({ params }: { params: Promise<{ id: str
     // Data fetching
     const { data: purchaseData, isLoading: isFetchingPurchase } = useGetPurchaseById(id);
     const { data: productsData } = useGetItems({ search: '' });
-    const { data: suppliersData } = useParties('supplier');
+    const { data: suppliersData } = useParties({ type: 'supplier' });
 
     // Mutations
     const { mutate: updatePurchase, isPending: isUpdating } = useUpdatePurchase(id);

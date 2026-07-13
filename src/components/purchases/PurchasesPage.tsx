@@ -51,6 +51,12 @@ import { useGetPurchases } from '@/hooks/api/usePurchases';
 import { toast } from 'sonner';
 
 // Purchase Order interface
+interface ReturnForm {
+  reason: string;
+  notes: string;
+  refundMethod: 'cash' | 'bank' | 'bkash' | 'credit_note';
+}
+
 interface PurchaseOrderItem {
   id: string;
   itemId: string;
@@ -495,13 +501,13 @@ export default function PurchasesPage() {
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
                   <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
-                    {selectedPurchase?.supplier.name.slice(0, 2).toUpperCase()}
+                    {selectedPurchase.supplier?.name.slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">{selectedPurchase?.supplier.name}</p>
-                  {selectedPurchase?.supplier.phone && (
-                    <p className="text-xs text-muted-foreground">{selectedPurchase?.supplier.phone}</p>
+                  <p className="text-sm font-medium text-foreground">{selectedPurchase.supplier?.name}</p>
+                  {selectedPurchase.supplier?.phone && (
+                    <p className="text-xs text-muted-foreground">{selectedPurchase.supplier?.phone}</p>
                   )}
                 </div>
               </div>
@@ -536,7 +542,7 @@ export default function PurchasesPage() {
       <DetailModal
         isOpen={!!selectedPO}
         onClose={() => setSelectedPO(null)}
-        title={selectedPO?.poNo || ''}
+        title={selectedPurchase?.grnNo || selectedPurchase?.invoiceNo || ''}
         subtitle={isBangla ? 'ক্রয় অর্ডারের বিবরণ' : 'Purchase Order Details'}
         width="lg"
       >
@@ -624,7 +630,7 @@ export default function PurchasesPage() {
       <DetailModal
         isOpen={!!isOpenRetrun}
         onClose={() => setIsOpenReturn(false)}
-        title={selectedPO?.poNo || ''}
+        title={selectedPurchase?.grnNo || selectedPurchase?.invoiceNo || ''}
         subtitle={isBangla ? 'ক্রয় অর্ডারের বিবরণ' : 'Purchase Order Details'}
         width="lg"
       >
@@ -634,16 +640,14 @@ export default function PurchasesPage() {
               <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                 <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center shrink-0">
                   <span className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                    {selectedPurchase?.party?.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
+                    {selectedPurchase?.supplier?.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground truncate">{selectedPurchase?.party?.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{selectedPurchase?.party?.phone}</p>
+                  <p className="font-medium text-foreground truncate">{selectedPurchase?.supplier?.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{selectedPurchase?.supplier?.phone}</p>
                 </div>
-                <span className="text-xs font-medium px-2 py-1 rounded-md bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300 capitalize shrink-0">
-                  {selectedPurchase?.party?.type}
-                </span>
+
               </div>
             </DetailSection>
 
@@ -658,17 +662,15 @@ export default function PurchasesPage() {
                       <p className="font-medium text-foreground truncate">{item.itemName}</p>
                       <p className="text-xs text-muted-foreground truncate">SKU: {item.item.sku}</p>
                       <p className="text-sm text-muted-foreground whitespace-nowrap">
-                        {item.quantity} × {formatCurrency(item.unitPrice)}
-                        {item.discount > 0 && (
-                          <span className="ml-2 text-amber-600">-{formatCurrency(item.discount)} off</span>
-                        )}
+                        {item.quantity} × {formatCurrency(item.unitCost)}
+
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end shrink-0 gap-1">
                     <p className="font-bold text-foreground">{formatCurrency(item.total)}</p>
-                    <p className="text-xs text-muted-foreground">Cost: {formatCurrency(item.costPrice)}</p>
-                    <p className="text-xs text-green-600 font-medium">+{formatCurrency(item.profit)} profit</p>
+                    <p className="text-xs text-muted-foreground">Cost: {formatCurrency(item.unitCost)}</p>
+
                   </div>
                 </div>
               ))}

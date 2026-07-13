@@ -172,7 +172,7 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Extract the health score data which contains suggestions
-  const aiInsightsData = aiInsightsResponse?.data || healthScoreData;
+  const aiInsightsData = aiInsightsResponse || healthScoreData;
 
   const isLoading = false; // Set to false to immediately render UI with mock fallbacks instead of blocking spinner
 

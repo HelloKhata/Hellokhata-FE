@@ -20,6 +20,8 @@ const buttonVariants = cva(
         default: 'bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.98]',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        warning: 'bg-warning text-warning-foreground hover:bg-warning/90',
+        success: 'bg-success text-success-foreground hover:bg-success/90',
         outline: 'border border-border bg-transparent hover:bg-muted hover:text-foreground',
         ghost: 'hover:bg-muted hover:text-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
@@ -241,6 +243,7 @@ const badgeVariants = cva(
         destructive: 'bg-destructive-subtle text-destructive',
         warning: 'bg-warning-subtle text-warning',
         success: 'bg-success-subtle text-success',
+        emerald: 'bg-emerald-subtle text-emerald',
         indigo: 'bg-indigo-subtle text-indigo',
         outline: 'border border-border text-foreground',
         ghost: 'text-muted-foreground',
@@ -293,7 +296,7 @@ export interface KPICardProps {
     isPositive: boolean;
   };
   icon?: ReactNode;
-  iconColor?: 'emerald' | 'indigo' | 'warning' | 'destructive';
+  iconColor?: 'default' | 'success' | 'emerald' | 'indigo' | 'warning' | 'destructive';
   isBangla?: boolean;
   className?: string;
   onClick?: () => void;
@@ -345,6 +348,8 @@ export function KPICard({
   }, [numericValue]);
   
   const iconColorClasses = {
+    default: 'text-primary bg-primary-subtle',
+    success: 'text-emerald bg-emerald-subtle',
     emerald: 'text-emerald bg-emerald-subtle',
     indigo: 'text-primary bg-primary-subtle',
     warning: 'text-warning bg-warning-subtle',

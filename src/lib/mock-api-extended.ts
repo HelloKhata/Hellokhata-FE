@@ -685,15 +685,16 @@ export const extendedMockApi = {
       };
     }
     
+    const creditLimit = report.creditLimit ?? 0;
     const newBalance = report.totalOutstanding + amount;
-    const withinLimit = newBalance <= report.creditLimit;
+    const withinLimit = creditLimit === 0 || newBalance <= creditLimit;
     
     return {
       success: true,
       data: {
         withinLimit,
         currentBalance: report.totalOutstanding,
-        creditLimit: report.creditLimit,
+        creditLimit,
         utilization: report.creditUtilization,
         warning: !withinLimit ? `Credit limit exceeded! Current: ৳${report.totalOutstanding}, Limit: ৳${report.creditLimit}` : undefined,
       },

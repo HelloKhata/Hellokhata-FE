@@ -38,7 +38,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
 
   const { data: partyResponse, isLoading } = useParty(id);
   const party = partyResponse?.data;
-  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty();
+  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty(id);
   const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

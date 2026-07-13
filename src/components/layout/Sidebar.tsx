@@ -100,9 +100,9 @@ export function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {business.nameBn || business.name}
+                  {business.name}
                 </p>
-                <p className="text-xs text-muted-foreground">{business.phone}</p>
+                <p className="text-xs text-muted-foreground">{business.currency}</p>
               </div>
             </div>
           </div>
