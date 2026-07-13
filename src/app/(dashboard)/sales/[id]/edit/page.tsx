@@ -78,37 +78,34 @@ export default function EditSalePage({ params }: { params: Promise<{ id: string 
   const availableItems = itemsData?.data || [];
   const parties = partiesData?.data || [];
   console.log('parties', parties)
-  // Prefill form when sale data is loaded
-  useEffect(() => {
-    if (saleData?.data && !initialized) {
-      const sale = saleData.data;
+  // Initialize the editable draft once when the query data arrives.
+  if (saleData?.data && !initialized) {
+    const sale = saleData.data;
+    const prefillItems: SaleItem[] = (sale.items || []).map((item: any) => {
+      const unitPrice = item.unitPrice ?? 0;
+      const costPrice = item.costPrice ?? 0;
+      const quantity = item.quantity ?? 1;
+      const itemDiscount = item.discount ?? 0;
+      return {
+        itemId: item.itemId,
+        itemName: item.itemName,
+        quantity,
+        unitPrice,
+        costPrice,
+        discount: itemDiscount,
+        total: quantity * unitPrice - itemDiscount,
+        profit: (unitPrice - costPrice) * quantity,
+      };
+    });
 
-      setSelectedPartyId(sale.partyId || '');
-      setPaymentMethod(sale.paymentMethod || 'cash');
-      setPaidAmount(sale.paidAmount?.toString() || '');
-      setDiscount(sale.discount?.toString() || '0');
-      setNotes(sale.notes || '');
-
-      const prefillItems: SaleItem[] = (sale.items || []).map((item: any) => {
-        const unitPrice = item.unitPrice ?? 0;
-        const costPrice = item.costPrice ?? 0;
-        const quantity = item.quantity ?? 1;
-        const itemDiscount = item.discount ?? 0;
-        return {
-          itemId: item.itemId,
-          itemName: item.itemName,
-          quantity,
-          unitPrice,
-          costPrice,
-          discount: itemDiscount,
-          total: quantity * unitPrice - itemDiscount,
-          profit: (unitPrice - costPrice) * quantity,
-        };
-      });
-      setItems(prefillItems);
-      setInitialized(true);
-    }
-  }, [saleData, initialized]);
+    setInitialized(true);
+    setSelectedPartyId(sale.partyId || '');
+    setPaymentMethod(sale.paymentMethod || 'cash');
+    setPaidAmount(sale.paidAmount?.toString() || '');
+    setDiscount(sale.discount?.toString() || '0');
+    setNotes(sale.notes || '');
+    setItems(prefillItems);
+  }
 
   // Totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);

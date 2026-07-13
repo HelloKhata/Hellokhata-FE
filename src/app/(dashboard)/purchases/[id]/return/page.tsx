@@ -73,27 +73,25 @@ export default function PurchaseReturnPage({ params }: { params: Promise<{ id: s
     const { data: purchaseData, isLoading: isFetchingPurchase } = useGetPurchaseById(id);
     const { mutate: returnPurchase, isPending: isSubmitting } = useReturnPurchase();
 
-    // Prefill items
-    useEffect(() => {
-        if (purchaseData?.data && !initialized) {
-            const purchase = purchaseData.data;
-            setSupplierId(purchase.supplierId || '');
-            setInitialized(true);
+    // Initialize the return draft once when the query data arrives.
+    if (purchaseData?.data && !initialized) {
+        const purchase = purchaseData.data;
+        const prefillItems: ReturnItem[] = (purchase.items || []).map((item: any) => ({
+            purchaseItemId: item.id,
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            maxQuantity: item.quantity,
+            unitCost: item.unitCost,
+            unit: item.unit || 'pcs',
+            total: item.quantity * item.unitCost,
+            reason: '',
+        }));
 
-            const prefillItems: ReturnItem[] = (purchase.items || []).map((item: any) => ({
-                purchaseItemId: item.id,
-                itemId: item.itemId,
-                itemName: item.itemName,
-                quantity: item.quantity,
-                maxQuantity: item.quantity,
-                unitCost: item.unitCost,
-                unit: item.unit || 'pcs',
-                total: item.quantity * item.unitCost,
-                reason: '',
-            }));
-            setItems(prefillItems);
-        }
-    }, [purchaseData, initialized]);
+        setInitialized(true);
+        setSupplierId(purchase.supplierId || '');
+        setItems(prefillItems);
+    }
 
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const totalRefund = subtotal - parseFloat(discount || '0') + parseFloat(tax || '0');

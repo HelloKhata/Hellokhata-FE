@@ -78,13 +78,15 @@ export function PartyDetailsAndTransactions({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
+  const [previousPartyId, setPreviousPartyId] = useState(partyId);
 
-  useEffect(() => {
+  if (partyId !== previousPartyId) {
+    setPreviousPartyId(partyId);
     setCurrentPage(1);
     setTxSearchTerm("");
     setShowTxSearch(false);
     setSelectedTransaction(null);
-  }, [partyId]);
+  }
 
   console.log('selectedTransaction',selectedTransaction)
   const {

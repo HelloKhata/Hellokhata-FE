@@ -40,16 +40,17 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
     ? notificationsData
     : (Array.isArray((notificationsData as any)?.data) ? (notificationsData as any).data : []);
 
-  const [localNotifications, setLocalNotifications] = useState<any[]>([]);
+  const [localNotifications, setLocalNotifications] = useState<any[]>(notifications);
+  const [notificationSource, setNotificationSource] = useState(notificationsData);
   const [filter, setFilter] = useState<'all' | 'read' | 'unread'>('all');
+
+  if (notificationsData !== notificationSource) {
+    setNotificationSource(notificationsData);
+    setLocalNotifications(notifications);
+  }
 
   const { mutate: readAllNotifications, isPending: isReadingAll } = useReadAllNotifications();
   const {mutate: markAsReadNotification} = useMarkAsReadNotification();
-  useEffect(() => {
-    if (notifications) {
-      setLocalNotifications(notifications);
-    }
-  }, [notificationsData]);
 
   const handleMarkAsRead = (id: string) => {
   markAsReadNotification(id,{

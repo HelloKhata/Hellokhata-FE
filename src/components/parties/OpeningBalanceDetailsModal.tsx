@@ -60,24 +60,26 @@ export function OpeningBalanceDetailsModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Form states
-  const [amount, setAmount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
-  const [balanceType, setBalanceType] = useState<'receive' | 'give'>('receive');
+  const [amount, setAmount] = useState(() => entry ? Math.abs(entry.amount).toString() : "");
+  const [remarks, setRemarks] = useState(() => entry?.remarks || "");
+  const [date, setDate] = useState<Date>(() => entry?.date ? new Date(entry.date) : new Date());
+  const [balanceType, setBalanceType] = useState<'receive' | 'give'>(() => entry?.amount < 0 ? 'give' : 'receive');
 
   const { mutate: deleteOpeningBalance, isPending: isDeleting } = useDeleteOpeningBalance();
   const { mutate: updateOpeningBalance, isPending: isUpdating } = useUpdateOpeningBalance();
 
-  // Reset form states when entry changes
-  useEffect(() => {
-    if (entry) {
-      setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || "");
-      setDate(entry.date ? new Date(entry.date) : new Date());
-      setBalanceType(entry.amount >= 0 ? 'receive' : 'give');
+  const formSource = isOpen ? entry : null;
+  const [previousFormSource, setPreviousFormSource] = useState(formSource);
+  if (formSource !== previousFormSource) {
+    setPreviousFormSource(formSource);
+    if (formSource) {
+      setAmount(Math.abs(formSource.amount).toString());
+      setRemarks(formSource.remarks || "");
+      setDate(formSource.date ? new Date(formSource.date) : new Date());
+      setBalanceType(formSource.amount >= 0 ? 'receive' : 'give');
       setIsEditing(false);
     }
-  }, [entry, isOpen]);
+  }
 
   if (!entry) return null;
 

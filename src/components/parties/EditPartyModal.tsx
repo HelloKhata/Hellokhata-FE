@@ -66,33 +66,37 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
     notes: '',
   });
 
-  // Pre-fill form when party data loads
-  useEffect(() => {
-    if (!party) return;
+  const partyFormSource = isOpen ? party : null;
+  const [previousPartyFormSource, setPreviousPartyFormSource] = useState(partyFormSource);
+  if (partyFormSource !== previousPartyFormSource) {
+    setPreviousPartyFormSource(partyFormSource);
+    if (partyFormSource) {
+      setFormData((prev) => ({
+        ...prev,
+        name: partyFormSource.name ?? '',
+        phone: partyFormSource.phone ?? '',
+        email: partyFormSource.email ?? '',
+        address: partyFormSource.address ?? '',
+        type: partyFormSource.type ?? 'customer',
+        creditLimit: partyFormSource.creditLimit != null ? String(partyFormSource.creditLimit) : '',
+        notes: partyFormSource.notes ?? '',
+      }));
+    }
+  }
 
-    setFormData((prev) => ({
-      ...prev,
-      name: party.name ?? '',
-      phone: party.phone ?? '',
-      email: party.email ?? '',
-      address: party.address ?? '',
-      type: party.type ?? 'customer',
-      creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
-      notes: party.notes ?? '',
-    }));
-  }, [party?.id, isOpen]);
-
-  // Pre-fill opening balance from dedicated API
-  useEffect(() => {
-    if (!openingBalance) return;
-
-    const balance = openingBalance.amount ?? 0;
-    setFormData((prev) => ({
-      ...prev,
-      openingBalance: String(Math.abs(balance)),
-      balanceType: balance < 0 ? 'give' : 'receive',
-    }));
-  }, [openingBalance?.id, isOpen]);
+  const balanceFormSource = isOpen ? openingBalance : null;
+  const [previousBalanceFormSource, setPreviousBalanceFormSource] = useState(balanceFormSource);
+  if (balanceFormSource !== previousBalanceFormSource) {
+    setPreviousBalanceFormSource(balanceFormSource);
+    if (balanceFormSource) {
+      const balance = balanceFormSource.amount ?? 0;
+      setFormData((prev) => ({
+        ...prev,
+        openingBalance: String(Math.abs(balance)),
+        balanceType: balance < 0 ? 'give' : 'receive',
+      }));
+    }
+  }
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));

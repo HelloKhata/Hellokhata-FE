@@ -77,26 +77,26 @@ export function PaymentDetailsModal({
 
   const { mutateAsync: deletePayment, isPending: isDeletingPayment } = useDeletePayment();
   const { mutate: updatePayment,isPending:isUpdatingPayment } = useUpdatePayment();
-  // Reset form states when entry changes
-  
-  useEffect(() => {
-    if (entry) {
-      setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || entry.notes || "");
-      setReceiptNumber(entry.receiptNumber || entry.receiptNo || entry.referenceId || entry.reference || "");
-      setDate(entry.date || entry.createdAt ? new Date(entry.date || entry.createdAt) : new Date());
-      
-      let method = entry.paymentMethod || entry.mode || "Cash";
+  const formSource = isOpen ? entry : null;
+  const [previousFormSource, setPreviousFormSource] = useState(formSource);
+  if (formSource !== previousFormSource) {
+    setPreviousFormSource(formSource);
+    if (formSource) {
+      let method = formSource.paymentMethod || formSource.mode || "Cash";
       if (method.toLowerCase() === "cash") method = "Cash";
       else if (method.toLowerCase() === "bank" || method.toLowerCase() === "bank_transfer") method = "Bank";
       else if (method.toLowerCase() === "bkash") method = "bKash";
       else if (method.toLowerCase() === "nagad") method = "Nagad";
       else if (method.toLowerCase() === "rocket") method = "Rocket";
-      
+
+      setAmount(Math.abs(formSource.amount).toString());
+      setRemarks(formSource.remarks || formSource.notes || "");
+      setReceiptNumber(formSource.receiptNumber || formSource.receiptNo || formSource.referenceId || formSource.reference || "");
+      setDate(formSource.date || formSource.createdAt ? new Date(formSource.date || formSource.createdAt) : new Date());
       setPaymentMethod(method);
       setIsEditing(false);
     }
-  }, [entry, isOpen]);
+  }
 
   // Log raw API data if any (as in original code)
   useEffect(() => {

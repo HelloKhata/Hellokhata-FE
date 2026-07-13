@@ -60,24 +60,26 @@ export function AdjustmentDetailsModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Form states
-  const [amount, setAmount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
-  const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>('add_balance');
+  const [amount, setAmount] = useState(() => entry ? Math.abs(entry.amount).toString() : "");
+  const [remarks, setRemarks] = useState(() => entry?.remarks || "");
+  const [date, setDate] = useState<Date>(() => entry?.date ? new Date(entry.date) : new Date());
+  const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>(() => entry?.amount < 0 ? 'reduce_balance' : 'add_balance');
 
   const { mutate: deletePayment, isPending: isDeleting } = useDeletePayment();
   const { mutate: updatePayment, isPending: isUpdating } = useUpdatePayment();
 
-  // Reset form states when entry changes
-  useEffect(() => {
-    if (entry) {
-      setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || "");
-      setDate(entry.date ? new Date(entry.date) : new Date());
-      setAdjustmentType(entry.amount >= 0 ? 'add_balance' : 'reduce_balance');
+  const formSource = isOpen ? entry : null;
+  const [previousFormSource, setPreviousFormSource] = useState(formSource);
+  if (formSource !== previousFormSource) {
+    setPreviousFormSource(formSource);
+    if (formSource) {
+      setAmount(Math.abs(formSource.amount).toString());
+      setRemarks(formSource.remarks || "");
+      setDate(formSource.date ? new Date(formSource.date) : new Date());
+      setAdjustmentType(formSource.amount >= 0 ? 'add_balance' : 'reduce_balance');
       setIsEditing(false);
     }
-  }, [entry, isOpen]);
+  }
 
   if (!entry) return null;
 

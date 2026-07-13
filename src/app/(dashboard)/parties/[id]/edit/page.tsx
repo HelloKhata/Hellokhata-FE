@@ -54,13 +54,11 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
     creditLimit: '',
     notes: '',
   });
+  const [hydratedPartyId, setHydratedPartyId] = useState<string | null>(null);
 
-  // Pre-fill form when party data loads
-  useEffect(() => {
-    if (!party) return;
-
+  if (party && hydratedPartyId !== party.id) {
     const balance = party.openingBalance ?? 0;
-
+    setHydratedPartyId(party.id);
     setFormData({
       name: party.name ?? '',
       phone: party.phone ?? '',
@@ -72,7 +70,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
       notes: party.notes ?? '',
     });
-  }, [party?.id]);
+  }
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
