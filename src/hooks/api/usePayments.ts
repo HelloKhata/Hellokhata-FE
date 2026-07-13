@@ -1,7 +1,8 @@
 
-import { getPaymentList, createPaymentIn, createPaymentOut, adjustBalance, deletePayment, getPaymentById, updatePayment, deleteOpeningBalance, updateOpeningBalance, getOpeningBalance } from "@/services/payments.services"
+import { getPaymentList, createPaymentIn, createPaymentOut, deletePayment, getPaymentById, updatePayment, deleteOpeningBalance, updateOpeningBalance, getOpeningBalance, createAdjustBalance, deleteAdjustBalance, updateAdjustBalance, getAdjustBalance } from "@/services/payments.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+// payments(payment in/payment out)
 export const useCreatePaymentIn = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -24,18 +25,6 @@ export const useCreatePaymentOut = () => {
             queryClient.invalidateQueries({ queryKey: ['party'] });
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
             queryClient.invalidateQueries({queryKey:['payment']})
-        }
-    });
-};
-
-export const useAdjustBalance = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: adjustBalance,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['parties'] });
-            queryClient.invalidateQueries({ queryKey: ['party'] });
-            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     });
 };
@@ -79,8 +68,6 @@ export const useUpdatePayment = () => {
     });
 };
 
-
-
 export const useGetPaymentList = (type?: 'received' | 'paid') => {
     return useQuery({
         queryKey: ["payment", type],
@@ -109,6 +96,7 @@ export const useUpdateOpeningBalance = () => {
             queryClient.invalidateQueries({ queryKey: ['parties'] });
             queryClient.invalidateQueries({ queryKey: ['party'] });
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+            queryClient.invalidateQueries({queryKey:['openingBalance']})
         }
     })
 };
@@ -123,4 +111,51 @@ export const useDeleteOpeningBalance = ( ) =>{
             queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
         }
     })
+};
+
+
+
+// adjustment balance
+export const useGetAdjustBalance = (id:string) =>{
+    return useQuery({
+        queryKey: ["adjustBalance", id],
+        queryFn: () => getAdjustBalance(id),
+        enabled: !!id,
+    })
+};
+
+export const useCreateAdjustBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createAdjustBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    });
+};
+
+export const useDeleteAdjustBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteAdjustBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    });
+};
+
+export const useUpdateAdjustBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateAdjustBalance,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['parties'] });
+            queryClient.invalidateQueries({ queryKey: ['party'] });
+            queryClient.invalidateQueries({ queryKey: ['partyLedger'] });
+        }
+    });
 };

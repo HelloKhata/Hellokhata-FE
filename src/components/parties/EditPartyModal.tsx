@@ -61,7 +61,7 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
     address: '',
     type: 'customer' as 'customer' | 'supplier' | 'both',
     openingBalance: '0',
-    balanceType: 'receive' as 'receive' | 'give',
+    balanceDirection: 'receive' as 'receive' | 'give',
     creditLimit: '',
     notes: '',
   });
@@ -77,22 +77,12 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
       email: party.email ?? '',
       address: party.address ?? '',
       type: party.type ?? 'customer',
+      openingBalance: String(Math.abs(party.openingBalance)),
       creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
       notes: party.notes ?? '',
     }));
   }, [party?.id, isOpen]);
 
-  // Pre-fill opening balance from dedicated API
-  useEffect(() => {
-    if (!openingBalance) return;
-
-    const balance = openingBalance.amount ?? 0;
-    setFormData((prev) => ({
-      ...prev,
-      openingBalance: String(Math.abs(balance)),
-      balanceType: balance < 0 ? 'give' : 'receive',
-    }));
-  }, [openingBalance?.id, isOpen]);
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -110,7 +100,9 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
       email: formData.email || undefined,
       address: formData.address || undefined,
       type: formData.type,
-      branchId: user?.branchId || '',
+      // branchId: user?.branchId || '',
+      openingBalance: formData.openingBalance,
+      balanceDirection: formData.balanceDirection,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
       notes: formData.notes || undefined,
     };
@@ -119,7 +111,7 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
     updateParty({ id: partyId, data: partyData }, {
       onSuccess: () => {
         // Update opening balance via dedicated API
-        const balanceAmount = (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1);
+        const balanceAmount = (parseFloat(formData.openingBalance) || 0) * (formData.balanceDirection === 'give' ? -1 : 1);
         updateOpeningBalance({ id: partyId, data: { amount: balanceAmount } }, {
           onSuccess: () => {
             toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
@@ -329,10 +321,10 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
                     <button
                       key={dir.value}
                       type="button"
-                      onClick={() => updateForm('balanceType', dir.value)}
+                      onClick={() => updateForm('balanceDirection', dir.value)}
                       className={cn(
                         'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
-                        formData.balanceType === dir.value
+                        formData.balanceDirection === dir.value
                           ? dir.value === 'receive'
                             ? 'border-primary/50 bg-primary/10 text-primary font-bold'
                             : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'

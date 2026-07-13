@@ -32,7 +32,7 @@ import {
   Save,
   Calendar,
 } from "lucide-react";
-import { useDeletePayment, useUpdatePayment } from "@/hooks/api/usePayments";
+import { useDeleteAdjustBalance, useUpdateAdjustBalance, useGetAdjustBalance } from "@/hooks/api/usePayments";
 import {
   useAppTranslation,
   useDateFormat,
@@ -43,14 +43,14 @@ import { cn } from "@/lib/utils";
 interface AdjustmentDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entry: any; // PartyLedgerEntry
+  id: string; // Recieve only id instead of full entry
   party?: any; // Party object passed from parent
 }
 
 export function AdjustmentDetailsModal({
   isOpen,
   onClose,
-  entry,
+  id,
   party,
 }: AdjustmentDetailsModalProps) {
   const { isBangla } = useAppTranslation();
@@ -65,31 +65,43 @@ export function AdjustmentDetailsModal({
   const [date, setDate] = useState<Date>(new Date());
   const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>('add_balance');
 
-  const { mutate: deletePayment, isPending: isDeleting } = useDeletePayment();
-  const { mutate: updatePayment, isPending: isUpdating } = useUpdatePayment();
+  // Fetch adjustment data
+  const { data: adjustResponse, isLoading: isAdjustLoading } = useGetAdjustBalance(id);
+  const entry = adjustResponse?.data;
+  console.log('entry',adjustResponse)
+  const { mutate: deleteAdjustBalance, isPending: isDeleting } = useDeleteAdjustBalance();
+  const { mutate: updateAdjustBalance, isPending: isUpdating } = useUpdateAdjustBalance();
 
   // Reset form states when entry changes
   useEffect(() => {
     if (entry) {
       setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || "");
+      setRemarks(entry.remarks || entry.description || "");
       setDate(entry.date ? new Date(entry.date) : new Date());
-      setAdjustmentType(entry.amount >= 0 ? 'add_balance' : 'reduce_balance');
+      const isReduce = entry.type === 'reduce_balance' || entry.amount < 0;
+      setAdjustmentType(isReduce ? 'reduce_balance' : 'add_balance');
       setIsEditing(false);
     }
   }, [entry, isOpen]);
 
-  if (!entry) return null;
-
   const handleSaveChanges = () => {
-    const balanceAmount = (parseFloat(amount) || 0) * (adjustmentType === 'reduce_balance' ? -1 : 1);
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error(
+        isBangla
+          ? "দয়া করে সঠিক পরিমাণ লিখুন"
+          : "Please enter a valid adjustment amount"
+      );
+      return;
+    }
+
     const updatedData = {
-      amount: balanceAmount,
+      amount: parsedAmount,
       type: adjustmentType,
       remarks: remarks || undefined,
     };
 
-    updatePayment({ id: entry.id, data: updatedData }, {
+    updateAdjustBalance({ id, data: updatedData }, {
       onSuccess: () => {
         toast.success(
           isBangla
@@ -114,7 +126,7 @@ export function AdjustmentDetailsModal({
   };
 
   const handleConfirmDelete = () => {
-    deletePayment(entry.id, {
+    deleteAdjustBalance(id, {
       onSuccess: () => {
         toast.success(
           isBangla
@@ -137,6 +149,27 @@ export function AdjustmentDetailsModal({
   };
 
   const renderAdjustmentView = () => {
+    if (isAdjustLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {isBangla ? "লোড হচ্ছে..." : "Loading details..."}
+          </p>
+        </div>
+      );
+    }
+
+    if (!entry) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-sm text-rose-500">
+            {isBangla ? "লেনদেন বিবরণ পাওয়া যায়নি" : "Adjustment details not found."}
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -241,6 +274,7 @@ export function AdjustmentDetailsModal({
   };
 
   const renderFooterButtons = () => {
+    if (isAdjustLoading || !entry) return null;
     return (
       <div className="flex flex-row items-center justify-between w-full gap-4">
         <div>

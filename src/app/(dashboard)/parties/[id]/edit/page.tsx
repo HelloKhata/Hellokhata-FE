@@ -50,7 +50,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
     address: '',
     type: 'customer' as 'customer' | 'supplier' | 'both',
     openingBalance: '0',
-    balanceType: 'receive' as 'receive' | 'give',
+    balanceDirection: 'receive' as 'receive' | 'give',
     creditLimit: '',
     notes: '',
   });
@@ -59,20 +59,19 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
   useEffect(() => {
     if (!party) return;
 
-    const balance = party.openingBalance ?? 0;
-
     setFormData({
       name: party.name ?? '',
       phone: party.phone ?? '',
       email: party.email ?? '',
       address: party.address ?? '',
       type: party.type ?? 'customer',
-      openingBalance: String(Math.abs(balance)),
-      balanceType: balance < 0 ? 'give' : 'receive',
+      openingBalance: party.openingBalance != null ? String(Math.abs(party.openingBalance)) : '0',
+      balanceDirection: (party.balanceDirection as 'receive' | 'give') ?? 'receive',
       creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
       notes: party.notes ?? '',
     });
   }, [party?.id]);
+
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -91,7 +90,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       address: formData.address || undefined,
       type: formData.type,
       branchId: user?.branchId || '',
-      openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1),
+      openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceDirection === 'give' ? -1 : 1),
+      balanceDirection: formData.balanceDirection,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
       notes: formData.notes || undefined,
     };
@@ -319,10 +319,10 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
                     <button
                       key={dir.value}
                       type="button"
-                      onClick={() => updateForm('balanceType', dir.value)}
+                      onClick={() => updateForm('balanceDirection', dir.value)}
                       className={cn(
                         'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
-                        formData.balanceType === dir.value
+                        formData.balanceDirection === dir.value
                           ? dir.value === 'receive'
                             ? 'border-primary/50 bg-primary/10 text-primary font-bold'
                             : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'

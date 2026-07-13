@@ -23,6 +23,7 @@ export interface Party {
   type: "customer" | "supplier" | 'both';
   branchId: string;
   openingBalance: number;
+  balanceDirection?: "receive" | "give";
   creditLimit?: number;
   notes?: string;
 }
@@ -64,6 +65,7 @@ export default function NewPartyPage() {
       type: formData.type,
       branchId: user?.branchId || '',
       openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1),
+      balanceDirection: formData.balanceType,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
       notes: formData.notes || undefined,
     }

@@ -576,7 +576,7 @@ export function PartyDetailsAndTransactions({
         <AdjustmentDetailsModal
           isOpen={selectedTransaction !== null}
           onClose={() => setSelectedTransaction(null)}
-          entry={selectedTransaction}
+          id={selectedTransaction?.id}
           party={party}
         />
       )}
