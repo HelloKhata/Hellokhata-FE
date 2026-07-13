@@ -140,8 +140,8 @@ const config: Config = {
          TYPOGRAPHY
          ============================================ */
       fontFamily: {
-        sans: ['var(--font-bengali)', 'var(--font-inter)', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['var(--font-inter-mono)', 'SF Mono', 'Fira Code', 'monospace'],
+        sans: ['Noto Sans Bengali', 'Nirmala UI', 'Vrinda', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['SFMono-Regular', 'Consolas', 'Liberation Mono', 'monospace'],
       },
       
       fontSize: {
