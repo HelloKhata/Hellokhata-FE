@@ -32,10 +32,10 @@ import { useItems, useBranches } from '@/hooks/queries';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useNavigation } from '@/stores/uiStore';
-import { useSessionStore } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import client from '@/lib/axios';
 
 type AdjustmentType = 'increase' | 'decrease';
 
@@ -43,7 +43,6 @@ export default function StockAdjustmentPage() {
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
   const { navigateTo } = useNavigation();
-  const { business } = useSessionStore();
   
   // Form state
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('increase');
@@ -114,24 +113,10 @@ export default function StockAdjustmentPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/inventory/adjustment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': business?.id || '',
-          'x-branch-id': branchId,
-        },
-        body: JSON.stringify({
-          branchId,
-          itemId,
-          adjustmentType,
-          quantity: qty,
-          reason,
-          notes,
-        }),
+      const { data } = await client.patch(`/api/items/${itemId}/stock-adjust`, {
+        stockAdjustment: adjustmentType === 'increase' ? qty : -qty,
+        adjustmentReason: notes ? `${reason}: ${notes}` : reason,
       });
-
-      const data = await response.json();
 
       if (data.success) {
         toast.success(isBangla ? 'স্টক সংশোধন সফল' : 'Stock adjusted successfully');

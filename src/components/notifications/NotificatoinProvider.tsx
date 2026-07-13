@@ -1,11 +1,12 @@
 'use client'
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { API_BASE_URL } from '@/lib/axios';
 
 const NotificatoinProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const eventSource = new EventSource(
-            "https://voiceerp.mapleitfirm.com/api/notifications/stream",
+            `${API_BASE_URL}/api/notifications/stream`,
             {
                 withCredentials: true,
             }

@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import type { BusinessType } from '@/types';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import client from '@/lib/axios';
 
 // ─── Domain Types ─────────────────────────────────────────────────────────────
 
@@ -64,17 +65,6 @@ export interface AuthResponse {
     logo: string | null;
     currency: string;
     type?: BusinessType;
-  };
-}
-
-// Shape returned by /api/auth/refresh-session
-export interface RefreshSessionResponse {
-  success: boolean;
-  data: {
-    plan: PlanType;
-    features?: FeatureFlags;
-    business?: Business;
-    user?: User;
   };
 }
 
@@ -202,7 +192,6 @@ export const useSessionStore = create<SessionState>()(
       // ✅ Primary action — call this right after a successful login/verify response
       setSessionFromAuthResponse: (response: AuthResponse) => {
         // Server doesn't return plan — keep existing plan or default to 'free'.
-        // Call refreshSession() afterward if you need the real plan from the server.
         const currentPlan = get().plan ?? 'free';
 
         set({
@@ -259,29 +248,23 @@ export const useSessionStore = create<SessionState>()(
 
       setLoading: (loading: boolean) => set({ isLoading: loading }),
 
-      // Call this after setSessionFromAuthResponse to sync real plan & features from server
+      // Refresh cookie-backed tokens and synchronize identity/business.
+      // Plan/features remain local until a subscription contract exists.
       refreshSession: async () => {
         const state = get();
-        if (!state.business?.id) return;
+        if (!state.isAuthenticated) return;
 
         try {
-          const response = await fetch('/api/auth/refresh-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-business-id': state.business.id,
-              'x-user-id': state.user?.id || '',
-            },
-          });
-
-          const data: RefreshSessionResponse = await response.json();
-
-          if (data.success && data.data) {
+          const { data } = await client.post<AuthResponse>('/api/auth/refresh', {});
+          if (data.success) {
             set({
-              plan: data.data.plan,
-              features: data.data.features ?? getDefaultFeatures(data.data.plan),
-              business: data.data.business ?? state.business,
-              user: data.data.user ?? state.user,
+              token: data.accessToken,
+              business: data.business,
+              user: {
+                ...data.user,
+                email: data.user.email ?? state.user?.email ?? '',
+              },
+              isAuthenticated: true,
             });
           }
         } catch (error) {

@@ -28,15 +28,14 @@ import {
 import { useItems, useBranches } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useNavigation } from '@/stores/uiStore';
-import { useSessionStore } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import client from '@/lib/axios';
 
 export default function StockTransferPage() {
   const { t, isBangla } = useAppTranslation();
   const { navigateTo } = useNavigation();
-  const { business } = useSessionStore();
   
   // Form state
   const [fromBranchId, setFromBranchId] = useState<string>('');
@@ -86,22 +85,13 @@ export default function StockTransferPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/inventory/transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': business?.id || '',
-        },
-        body: JSON.stringify({
-          fromBranchId,
-          toBranchId,
-          itemId,
-          quantity: quantityNum,
-          notes,
-        }),
+      const { data } = await client.post('/api/items/transfer', {
+        fromBranchId,
+        toBranchId,
+        itemId,
+        quantity: quantityNum,
+        notes: notes || undefined,
       });
-
-      const data = await response.json();
 
       if (data.success) {
         toast.success(isBangla ? 'স্টক স্থানান্তর সফল' : 'Stock transferred successfully');

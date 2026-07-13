@@ -43,6 +43,7 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import client from '@/lib/axios';
 import { format } from 'date-fns';
 
 // Types
@@ -170,18 +171,12 @@ export function SendReminderModal({
 
     setSending(true);
     try {
-      const response = await fetch('/api/collection/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          reminderType: channel,
-          message,
-          scheduledAt: scheduleLater && scheduledDate ? scheduledDate.toISOString() : null,
-        }),
+      await client.post('/api/collection/reminders', {
+        partyId: customer.id,
+        reminderType: channel,
+        message,
+        scheduledAt: scheduleLater && scheduledDate ? scheduledDate.toISOString() : null,
       });
-
-      if (!response.ok) throw new Error('Failed to send reminder');
 
       toast.success(
         scheduleLater

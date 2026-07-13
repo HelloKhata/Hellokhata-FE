@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import client from '@/lib/axios';
 
 // Types
 interface Category {
@@ -117,8 +118,7 @@ export default function CategoryManagementPage() {
   const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/categories');
-      const data = await response.json();
+      const { data } = await client.get('/api/settings/categories');
       if (data.success) {
         setCategories(data.data);
       }
@@ -159,17 +159,11 @@ export default function CategoryManagementPage() {
 
     setIsSaving(true);
     try {
-      const response = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          nameBn: formData.nameBn.trim() || null,
-          description: formData.description.trim() || null,
-        }),
+      const { data } = await client.post('/api/settings/categories', {
+        name: formData.name.trim(),
+        nameBn: formData.nameBn.trim() || undefined,
+        description: formData.description.trim() || undefined,
       });
-
-      const data = await response.json();
 
       if (data.success) {
         setCategories([...categories, { ...data.data, itemCount: 0 }]);
@@ -209,17 +203,14 @@ export default function CategoryManagementPage() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/categories/${editingId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data } = await client.patch(
+        `/api/settings/categories/${editingId}`,
+        {
           name: formData.name.trim(),
-          nameBn: formData.nameBn.trim() || null,
-          description: formData.description.trim() || null,
-        }),
-      });
-
-      const data = await response.json();
+          nameBn: formData.nameBn.trim() || undefined,
+          description: formData.description.trim() || undefined,
+        },
+      );
 
       if (data.success) {
         setCategories(
@@ -267,11 +258,7 @@ export default function CategoryManagementPage() {
 
     setIsSaving(true);
     try {
-      const response = await fetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
+      const { data } = await client.delete(`/api/settings/categories/${id}`);
 
       if (data.success) {
         setCategories(categories.filter((cat) => cat.id !== id));
