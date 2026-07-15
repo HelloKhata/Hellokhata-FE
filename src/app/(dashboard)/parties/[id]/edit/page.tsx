@@ -1,41 +1,19 @@
-// Hello Khata OS - Edit Party Page
-// Edit customer/supplier with Bengali/English language support
 
 'use client';
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui/premium';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Users,
-  ArrowLeft,
-  Save,
-  Trash2,
-  User,
-  Building2,
-  AlertTriangle,
-  Loader2,
-  Phone,
-  Mail,
-  MapPin,
-  CreditCard,
-  Calendar,
-  FileText,
-} from 'lucide-react';
+import { Users, Check, X, User, Building2, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useToast } from '@/hooks/use-toast';
-import { useSessionStore, useUser } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useUser } from '@/stores';
+import { useParty, useUpdateParty, useDeleteParty } from '@/hooks/api/useParties';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,140 +25,106 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useDeleteParty, useParty, useUpdateParty } from '@/hooks/api/useParties';
 
 interface EditPartyPageProps {
   params: Promise<{ id: string }>;
-}
-
-interface PartyData {
-  id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  type: 'customer' | 'supplier' | 'both';
-  customerTier: string | null;
-  currentBalance: number;
-  creditLimit: number | null;
-  paymentTerms: number | null;
-  notes: string | null;
-  isActive: boolean;
-  riskLevel: string | null;
-  categoryId: string | null;
-  category: { id: string; name: string; nameBn: string | null } | null;
 }
 
 export default function EditPartyPage({ params }: EditPartyPageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { t, isBangla } = useAppTranslation();
-  const { toast } = useToast();
-  const businessId = useSessionStore((s) => s.business?.id);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string; nameBn: string | null }>>([]);
+  const user = useUser();
 
-  const { data: party, isLoading: partyLoading } = useParty(id);
+  const { data: partyResponse, isLoading } = useParty(id);
+  const party = partyResponse?.data;
+  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty();
   const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
-  const { mutate: updateParty, isPending: isSaving } = useUpdateParty();
 
-  // Form state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: '',
     address: '',
     type: 'customer' as 'customer' | 'supplier' | 'both',
-    customerTier: 'regular',
-    categoryId: '__none__',
+    openingBalance: '0',
+    balanceDirection: 'receive' as 'receive' | 'give',
     creditLimit: '',
-    paymentTerms: '',
     notes: '',
-    isActive: true,
   });
 
-  const user = useUser();
+  // Pre-fill form when party data loads
+  useEffect(() => {
+    if (!party) return;
+
+    setFormData({
+      name: party.name ?? '',
+      phone: party.phone ?? '',
+      email: party.email ?? '',
+      address: party.address ?? '',
+      type: party.type ?? 'customer',
+      openingBalance: party.openingBalance != null ? String(Math.abs(party.openingBalance)) : '0',
+      balanceDirection: (party.balanceDirection as 'receive' | 'give') ?? 'receive',
+      creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
+      notes: party.notes ?? '',
+    });
+  }, [party?.id]);
 
 
-  const handleSave = async () => {
+  const updateForm = (key: keyof typeof formData, value: any) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      toast({
-        title: isBangla ? 'নাম প্রয়োজন' : 'Name required',
-        description: isBangla ? 'পার্টির নাম দিন' : 'Please enter party name',
-        variant: 'destructive',
-      });
+      toast.error(isBangla ? 'নাম প্রয়োজন' : 'Name is required');
       return;
     }
 
-    const data = {
+    const partyData = {
       name: formData.name,
-      phone: formData.phone || null,
-      email: formData.email || null,
-      address: formData.address || null,
+      phone: formData.phone || undefined,
+      email: formData.email || undefined,
+      address: formData.address || undefined,
       type: formData.type,
-      // customerTier: formData.customerTier === 'regular' ? null : formData.customerTier || null,
-      categoryId: formData.categoryId === '__none__' ? null : formData.categoryId || null,
-      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
-      paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : null,
-      notes: formData.notes || null,
-      // isActive: formData.isActive,
-    }
+      branchId: user?.branchId || '',
+      openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceDirection === 'give' ? -1 : 1),
+      balanceDirection: formData.balanceDirection,
+      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
+      notes: formData.notes || undefined,
+    };
 
-    updateParty({ id, data }, {
-      onSuccess: (data) => {
-        console.log(data)
-        toast({
-          title: isBangla ? 'পার্টি আপডেট হয়েছে' : 'Party updated successfully',
-        });
+    updateParty({ id, data: partyData }, {
+      onSuccess: () => {
+        toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
         router.push('/parties');
-      }
-    })
+      },
+    });
   };
 
   const handleDelete = () => {
     deleteParty(id, {
-      onSuccess: (data) => {
-        toast({
-          title: isBangla ? 'পার্টি মুছে ফেলা হয়েছে' : 'Party deleted successfully',
-        });
+      onSuccess: () => {
+        toast.success(isBangla ? 'পার্টি মুছে ফেলা হয়েছে!' : 'Party deleted successfully!');
         router.push('/parties');
-      }
-    })
+      },
+    });
   };
 
-  useEffect(() => {
-    if (!party?.data) return;
-    setFormData({
-      name: party.data.name || "",
-      phone: party.data.phone || "",
-      email: party.data.email || "",
-      address: party.data.address || "",
-      type: party.data.type ?? "customer",
-      customerTier: party.data.customerTier || "regular",
-      categoryId: party.data.categoryId || "__none__",
-      creditLimit: party.data.creditLimit?.toString() || "",
-      paymentTerms: party.data.paymentTerms?.toString() || "",
-      notes: party.data.notes || "",
-      isActive: party.data.isActive ?? true,
-    });
-
-  }, [party, user]);
-
-  if (partyLoading) {
+  // Loading state
+  if (isLoading) {
     return (
-
       <div className="flex items-center justify-center h-[60vh]">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
-
     );
   }
 
-
-
+  // Not found state
   if (!party) {
     return (
-
       <div className="flex flex-col items-center justify-center h-[60vh]">
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
         <p className="text-lg font-medium">{isBangla ? 'পার্টি পাওয়া যায়নি' : 'Party not found'}</p>
@@ -189,313 +133,266 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
           {isBangla ? 'ফিরে যান' : 'Go Back'}
         </Button>
       </div>
-
     );
   }
 
   return (
+    <>
+      {/* Centered Page Container */}
+      <div className="flex justify-center">
+        <div className="w-full" style={{ maxWidth: '700px' }}>
 
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/parties')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Users className="h-6 w-6 text-primary" />
-              {isBangla ? 'পার্টি সম্পাদনা' : 'Edit Party'}
-            </h1>
-            <p className="text-sm text-muted-foreground">{party.name}</p>
-          </div>
-        </div>
-        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              {isDeleting ?
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
-                <Trash2 className="h-4 w-4 mr-2" />}
-              {isBangla ? 'মুছুন' : 'Delete'}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className='w-[320px]'>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{isBangla ? 'পার্টি মুছবেন?' : 'Delete Party?'}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {isBangla
-                  ? 'এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। পার্টিটি স্থায়ীভাবে মুছে ফেলা হবে।'
-                  : 'This action cannot be undone. This party will be permanently deleted.'}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{isBangla ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-1 mb-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-sm">{isBangla ? 'পেছনে' : 'Back'}</span>
+          </button>
 
-                <Trash2 className="h-4 w-4 mr-2" />
-
-                {isBangla ? 'মুছুন' : 'Delete'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-
-      {/* Current Balance Card */}
-      <Card variant="elevated" padding="default">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                'h-10 w-10 rounded-xl flex items-center justify-center',
-                party.data.currentBalance > 0 ? 'bg-emerald/10' : party.data.currentBalance < 0 ? 'bg-destructive/10' : 'bg-muted'
-              )}>
-                <CreditCard className={cn(
-                  'h-5 w-5',
-                  party.data.currentBalance > 0 ? 'text-emerald' : party.data.currentBalance < 0 ? 'text-destructive' : 'text-muted-foreground'
-                )} />
+          {/* Page Title */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">
+                  {isBangla ? 'পার্টি সম্পাদনা' : 'Edit Party'}
+                </h1>
               </div>
+
+              {/* Delete Button */}
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isBangla ? 'মুছুন' : 'Delete'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className='max-w-[350px]'>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{isBangla ? 'পার্টি মুছবেন?' : 'Delete Party?'}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {isBangla
+                        ? 'এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। পার্টিটি স্থায়ীভাবে মুছে ফেলা হবে।'
+                        : 'This action cannot be undone. This party will be permanently deleted.'}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{isBangla ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4 mr-2" />
+                      )}
+                      {isBangla ? 'মুছুন' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isBangla ? 'পার্টির তথ্য পরিবর্তন করুন' : 'Modify party details'}
+            </p>
+          </div>
+
+          {/* Form Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {isBangla ? 'পার্টির তথ্য' : 'Party Information'}
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-5">
+              {/* Party Type */}
               <div>
-                <p className="text-sm text-muted-foreground">
-                  {isBangla ? 'বর্তমান ব্যালেন্স' : 'Current Balance'}
-                </p>
-                <p className={cn(
-                  'text-xl font-bold',
-                  party.data.currentBalance > 0 ? 'text-emerald' : party.data.currentBalance < 0 ? 'text-destructive' : 'text-foreground'
-                )}>
-                  ৳{Math.abs(party.data.currentBalance).toLocaleString()}
-                  {party.data.currentBalance > 0 && <span className="text-sm ml-1">({isBangla ? 'পাওনা' : 'Receivable'})</span>}
-                  {party.data.currentBalance < 0 && <span className="text-sm ml-1">({isBangla ? 'দেনা' : 'Payable'})</span>}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Form */}
-      <Card variant="elevated" padding="default">
-        <CardHeader>
-          <CardTitle className="text-base">{isBangla ? 'পার্টির তথ্য' : 'Party Information'}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {/* Party Type */}
-          <div>
-            <Label className="mb-2 block">
-              {isBangla ? 'ধরন' : 'Type'}
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: 'customer', icon: User, label: isBangla ? 'গ্রাহক' : 'Customer' },
-                { value: 'supplier', icon: Building2, label: isBangla ? 'সরবরাহকারী' : 'Supplier' },
-              ].map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, type: type.value as 'customer' | 'supplier' | 'both' })}
-                  className={cn(
-                    'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                    formData.type === type.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
-                  )}
-                >
-                  {type.icon && <type.icon className="h-4 w-4" />}
-                  {type.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Name */}
-          <div>
-            <Label className="mb-2 block">
-              {isBangla ? 'নাম' : 'Name'} <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder={isBangla ? 'পূর্ণ নাম লিখুন' : 'Enter full name'}
-              className="h-11"
-            />
-          </div>
-
-          {/* Phone & Email */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="mb-2 block flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5" />
-                {isBangla ? 'ফোন' : 'Phone'}
-              </Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="01XXXXXXXXX"
-                className="h-11"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5" />
-                {isBangla ? 'ইমেইল' : 'Email'}
-              </Label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@example.com"
-                className="h-11"
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <Label className="mb-2 block flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5" />
-              {isBangla ? 'ঠিকানা' : 'Address'}
-            </Label>
-            <Input
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder={isBangla ? 'ঠিকানা লিখুন' : 'Enter address'}
-              className="h-11"
-            />
-          </div>
-
-          {/* Category */}
-          {categories.length > 0 && (
-            <div>
-              <Label className="mb-2 block">{isBangla ? 'ক্যাটাগরি' : 'Category'}</Label>
-              <Select
-                value={formData.categoryId}
-                onValueChange={(v) => setFormData({ ...formData, categoryId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isBangla ? 'ক্যাটাগরি নির্বাচন' : 'Select category'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{isBangla ? 'কোনোটি নয়' : 'None'}</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.nameBn || cat.name}
-                    </SelectItem>
+                <Label className="mb-2 block">
+                  {isBangla ? 'ধরন' : 'Type'}
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'customer', icon: User, label: isBangla ? 'গ্রাহক' : 'Customer' },
+                    { value: 'supplier', icon: Building2, label: isBangla ? 'সরবরাহকারী' : 'Supplier' },
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => updateForm('type', type.value)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
+                        formData.type === type.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      {type.icon && <type.icon className="h-4 w-4" />}
+                      {type.label}
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              </div>
 
-      {/* Credit Settings Card */}
-      <Card variant="elevated" padding="default">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-primary" />
-            {isBangla ? 'ক্রেডিট সেটিংস' : 'Credit Settings'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="mb-2 block">
-                {isBangla ? 'ক্রেডিট লিমিট (৳)' : 'Credit Limit (৳)'}
-              </Label>
-              <Input
-                type="number"
-                value={formData.creditLimit}
-                onChange={(e) => setFormData({ ...formData, creditLimit: e.target.value })}
-                placeholder="0"
-                className="h-11"
-              />
-            </div>
-            <div>
-              <Label className="mb-2 block flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5" />
-                {isBangla ? 'পেমেন্ট পিরিয়ড (দিন)' : 'Payment Terms (days)'}
-              </Label>
-              <Input
-                type="number"
-                value={formData.paymentTerms}
-                onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
-                placeholder="30"
-                className="h-11"
-              />
-            </div>
-          </div>
+              {/* Name */}
+              <div>
+                <Label className="mb-2 block">
+                  {isBangla ? 'নাম' : 'Name'} <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => updateForm('name', e.target.value)}
+                  placeholder={isBangla ? 'পূর্ণ নাম লিখুন' : 'Enter full name'}
+                  className="h-11"
+                />
+              </div>
 
-          {/* Customer Tier */}
-          {formData.type === 'customer' && (
-            <div>
-              <Label className="mb-2 block">{isBangla ? 'গ্রাহক স্তর' : 'Customer Tier'}</Label>
-              <Select
-                value={formData.customerTier}
-                onValueChange={(v) => setFormData({ ...formData, customerTier: v })}
+              {/* Phone & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="mb-2 block">
+                    {isBangla ? 'ফোন' : 'Phone'}
+                  </Label>
+                  <Input
+                    value={formData.phone}
+                    onChange={(e) => updateForm('phone', e.target.value)}
+                    placeholder="01XXXXXXXXX"
+                    className="h-11"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-2 block">
+                    {isBangla ? 'ইমেইল' : 'Email'}
+                  </Label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateForm('email', e.target.value)}
+                    placeholder="email@example.com"
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <Label className="mb-2 block">
+                  {isBangla ? 'ঠিকানা' : 'Address'}
+                </Label>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => updateForm('address', e.target.value)}
+                  placeholder={isBangla ? 'ঠিকানা লিখুন' : 'Enter address'}
+                  className="h-11"
+                />
+              </div>
+
+              {/* Opening Balance */}
+              <div>
+                <Label className="mb-2 block">
+                  {isBangla ? 'ওপেনিং ব্যালেন্স (৳)' : 'Opening Balance (৳)'}
+                </Label>
+                <Input
+                  type="number"
+                  value={formData.openingBalance}
+                  onChange={(e) => updateForm('openingBalance', e.target.value)}
+                  placeholder="0"
+                  className="h-11"
+                />
+              </div>
+
+              {/* Balance Direction Toggle (To Receive / To Give) */}
+              <div>
+                <Label className="mb-2 block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  {isBangla ? 'ব্যালেন্সের ধরন' : 'Balance Direction'}
+                </Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'receive', label: isBangla ? 'পাওনা (To Receive)' : 'To Receive' },
+                    { value: 'give', label: isBangla ? 'দেনা (To Give)' : 'To Give' },
+                  ].map((dir) => (
+                    <button
+                      key={dir.value}
+                      type="button"
+                      onClick={() => updateForm('balanceDirection', dir.value)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
+                        formData.balanceDirection === dir.value
+                          ? dir.value === 'receive'
+                            ? 'border-primary/50 bg-primary/10 text-primary font-bold'
+                            : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      {dir.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Credit Limit */}
+              <div className="p-4 rounded-lg bg-muted/30 border">
+                <Label className="mb-2 block">
+                  {isBangla ? 'ক্রেডিট লিমিট (৳)' : 'Credit Limit (৳)'}
+                </Label>
+                <Input
+                  type="number"
+                  value={formData.creditLimit}
+                  onChange={(e) => updateForm('creditLimit', e.target.value)}
+                  placeholder="0"
+                  className="h-11"
+                />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <Label className="mb-2 block">
+                  {isBangla ? 'নোট' : 'Notes'}
+                </Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => updateForm('notes', e.target.value)}
+                  placeholder={isBangla ? 'অতিরিক্ত তথ্য...' : 'Additional notes...'}
+                  rows={2}
+                />
+              </div>
+            </CardContent>
+
+            <CardFooter className="flex gap-3">
+              <Button
+                className="flex-1 h-11"
+                onClick={handleSubmit}
+                disabled={isUpdating}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder={isBangla ? 'স্তর নির্বাচন' : 'Select tier'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="regular">{isBangla ? 'সাধারণ' : 'Regular'}</SelectItem>
-                  <SelectItem value="bronze">{isBangla ? 'ব্রোঞ্জ' : 'Bronze'}</SelectItem>
-                  <SelectItem value="silver">{isBangla ? 'সিলভার' : 'Silver'}</SelectItem>
-                  <SelectItem value="gold">{isBangla ? 'গোল্ড' : 'Gold'}</SelectItem>
-                  <SelectItem value="platinum">{isBangla ? 'প্লাটিনাম' : 'Platinum'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Notes Card */}
-      <Card variant="elevated" padding="default">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            {isBangla ? 'নোট' : 'Notes'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder={isBangla ? 'অতিরিক্ত তথ্য...' : 'Additional notes...'}
-            rows={3}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Status Warning */}
-      {!formData.isActive && (
-        <div className="p-4 rounded-lg bg-warning/10 border border-warning/20 flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-warning" />
-          <span className="text-sm text-warning">
-            {isBangla ? 'এই পার্টি নিষ্ক্রিয় আছে' : 'This party is currently inactive'}
-          </span>
+                {isUpdating ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isBangla ? 'আপডেট হচ্ছে...' : 'Updating...'}
+                  </span>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    {isBangla ? 'আপডেট করুন' : 'Update'}
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-11"
+                onClick={() => router.back()}
+              >
+                <X className="h-4 w-4 mr-2" />
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex justify-between items-center">
-        <Button variant="outline" onClick={() => router.push('/parties')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? 'ফিরে যান' : 'Go Back'}
-        </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          {isBangla ? 'সংরক্ষণ করুন' : 'Save Changes'}
-        </Button>
       </div>
-    </div>
-
+    </>
   );
 }

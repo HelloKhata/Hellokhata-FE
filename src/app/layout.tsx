@@ -4,10 +4,11 @@
 import type { Metadata, Viewport } from "next";
 import { Noto_Sans_Bengali, Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/Providers";
 
-// Bengali font for better Bangla text rendering
+// Bengali font for better Bangla text rendering`
 const notoSansBengali = Noto_Sans_Bengali({
   variable: "--font-bengali",
   subsets: ["bengali"],
@@ -22,8 +23,19 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Hello Khata - হ্যালো খাতা",
-  description: "বাংলাদেশি এসএমই ব্যবসার জন্য সম্পূর্ণ ব্যবস্থাপনা সমাধান - Complete management solution for Bangladesh SME businesses",
-  keywords: ["Hello Khata", "খাতা", "SME", "Bangladesh", "inventory", "sales", "accounting", "ব্যবসা", "হিসাব"],
+  description:
+    "বাংলাদেশি এসএমই ব্যবসার জন্য সম্পূর্ণ ব্যবস্থাপনা সমাধান - Complete management solution for Bangladesh SME businesses",
+  keywords: [
+    "Hello Khata",
+    "খাতা",
+    "SME",
+    "Bangladesh",
+    "inventory",
+    "sales",
+    "accounting",
+    "ব্যবসা",
+    "হিসাব",
+  ],
   authors: [{ name: "Hello Khata Team" }],
   openGraph: {
     title: "Hello Khata - হ্যালো খাতা",
@@ -50,7 +62,8 @@ export default function RootLayout({
       >
         <Providers>
           {children}
-          <Toaster position="top-right" richColors />
+          <SonnerToaster position="top-right" richColors />
+          <ShadcnToaster />
         </Providers>
       </body>
     </html>

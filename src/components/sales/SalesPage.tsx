@@ -3,7 +3,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, KPICard, Divider, EmptyState } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -80,6 +80,13 @@ export default function SalesPage() {
   const { data: salesSummary } = useGetSalesSummary();
   const sales = salesData?.data || [];
   const summary = salesSummary?.data;
+
+  const { formatDateTime } = useDateFormat();
+
+  const filteredSales = useMemo(() => {
+    if (statusFilter === 'all') return sales;
+    return sales.filter((s: Sale) => s.status === statusFilter);
+  }, [sales, statusFilter]);
 
   const router = useRouter()
   // Calculate stats
@@ -196,7 +203,7 @@ export default function SalesPage() {
           </div>
         </Card>
 
-        {/* Sales List */}
+        {/* Sales Table */}
         <Card variant="elevated" padding="none">
           <CardHeader className="px-6 pt-6 pb-3">
             <CardTitle className="text-base whitespace-nowrap">{t('sales.saleHistory')}</CardTitle>
@@ -207,7 +214,7 @@ export default function SalesPage() {
               <div className="flex items-center justify-center h-64">
                 <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
               </div>
-            ) : sales.length === 0 ? (
+            ) : filteredSales.length === 0 ? (
               <EmptyState
                 icon={<ShoppingCart className="h-8 w-8" />}
                 title={isBangla ? 'কোনো বিক্রি নেই' : 'No sales found'}
@@ -221,19 +228,105 @@ export default function SalesPage() {
                 }
               />
             ) : (
-              <ScrollArea className="h-[500px]">
-                <div className="divide-y divide-border-subtle">
-                  {sales.map((sale, index) => (
-                    <SaleRow
-                      key={sale.id}
-                      sale={sale}
-                      isBangla={isBangla}
-                      index={index}
-                      onView={() => { setSelectedSale(sale); setIsOpenDetail((prev) => !prev) }}
-                    />
-                  ))}
+              <div className="border border-border rounded-xl overflow-hidden bg-[#0f0f10]/80">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-[#18181b] text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+                        <th className="p-4">{isBangla ? 'ইনভয়েস নং' : 'Invoice No'}</th>
+                        <th className="p-4">{isBangla ? 'কাস্টমার' : 'Customer'}</th>
+                        <th className="p-4">{isBangla ? 'তারিখ' : 'Date'}</th>
+                        <th className="p-4">{isBangla ? 'পণ্য' : 'Items'}</th>
+                        <th className="p-4">{isBangla ? 'পেমেন্ট পদ্ধতি' : 'Payment Method'}</th>
+                        <th className="p-4">{isBangla ? 'মোট' : 'Total'}</th>
+                        <th className="p-4">{isBangla ? 'পরিশোধিত' : 'Paid'}</th>
+                        <th className="p-4">{isBangla ? 'বাকি' : 'Due'}</th>
+                        <th className="p-4">{isBangla ? 'স্ট্যাটাস' : 'Status'}</th>
+                        <th className="p-4 text-center">{isBangla ? 'অ্যাকশন' : 'Action'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSales.map((sale) => {
+                        const statusConfig = {
+                          completed: { label: isBangla ? 'সম্পন্ন' : 'Completed', variant: 'success' as const },
+                          pending: { label: isBangla ? 'অপেক্ষমান' : 'Pending', variant: 'warning' as const },
+                          cancelled: { label: isBangla ? 'বাতিল' : 'Cancelled', variant: 'destructive' as const },
+                          returned: { label: isBangla ? 'রিটার্ন' : 'Returned', variant: 'indigo' as const },
+                        };
+                        const status = statusConfig[sale.status] || statusConfig.completed;
+                        return (
+                          <tr
+                            key={sale.id}
+                            className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors cursor-pointer"
+                            onClick={() => {
+                              setSelectedSale(sale);
+                              setIsOpenDetail(true);
+                            }}
+                          >
+                            <td className="p-4 text-muted-foreground font-medium whitespace-nowrap">
+                              {sale.invoiceNo}
+                            </td>
+                            <td className="p-4 font-bold text-white whitespace-nowrap">
+                              {sale.party?.name || (isBangla ? 'খুচরা কাস্টমার' : 'Retail Customer')}
+                            </td>
+                            <td className="p-4 text-muted-foreground whitespace-nowrap">
+                              {formatDateTime(sale.createdAt)}
+                            </td>
+                            <td className="p-4 text-white whitespace-nowrap">
+                              {sale.items?.length || 0} {isBangla ? 'টি' : 'item(s)'}
+                            </td>
+                            <td className="p-4 text-white capitalize whitespace-nowrap">
+                              {sale.paymentMethod || '—'}
+                            </td>
+                            <td className="p-4 font-bold text-white whitespace-nowrap">
+                              {formatCurrency(sale.total)}
+                            </td>
+                            <td className="p-4 font-bold text-emerald-500 whitespace-nowrap">
+                              {formatCurrency(sale.paidAmount)}
+                            </td>
+                            <td className="p-4 font-bold text-rose-500 whitespace-nowrap">
+                              {formatCurrency(sale.dueAmount)}
+                            </td>
+                            <td className="p-4">
+                              <Badge variant={status.variant} size="sm" className="whitespace-nowrap">
+                                {status.label}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => {
+                                    setSelectedSale(sale);
+                                    setIsOpenDetail(true);
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => router.push(`/sales/${sale.id}/edit`)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => router.push(`/sales/${sale.id}/return`)}
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -513,73 +606,4 @@ export default function SalesPage() {
     </>
   );
 }
-
-// Sale Row Component
-function SaleRow({ sale, isBangla, index, onView }: { sale: Sale; isBangla: boolean; index: number; onView: () => void; }) {
-  const { formatCurrency } = useCurrency();
-  const { formatDateTime } = useDateFormat();
-  const router = useRouter();
-  const statusConfig = {
-    completed: { label: isBangla ? 'সম্পন্ন' : 'Completed', variant: 'success' as const },
-    pending: { label: isBangla ? 'অপেক্ষমান' : 'Pending', variant: 'warning' as const },
-    cancelled: { label: isBangla ? 'বাতিল' : 'Cancelled', variant: 'destructive' as const },
-    returned: { label: isBangla ? 'রিটার্ন' : 'Returned', variant: 'indigo' as const },
-  };
-
-  const status = statusConfig[sale.status] || statusConfig.completed;
-
-
-  return (
-    <div
-      className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer group stagger-item gap-4"
-      style={{ animationDelay: `${index * 30}ms` }}
-      onClick={onView}
-    >
-      <div className="flex items-center gap-4 min-w-0 flex-1">
-        <div className="h-12 w-12 rounded-xl bg-primary-subtle flex items-center justify-center shrink-0">
-          <ShoppingCart className="h-5 w-5 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-foreground truncate">{sale.invoiceNo}</p>
-            <Badge variant={status.variant} size="sm" className="whitespace-nowrap">{status.label}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-            {sale.items.length} {isBangla ? 'পণ্য' : 'items'} • {formatDateTime(sale.createdAt)}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4 shrink-0">
-        <div className="text-right min-w-0">
-          <p className="font-bold text-foreground text-lg truncate">
-            {formatCurrency(sale.total)}
-          </p>
-          <div className="flex items-center gap-2 justify-end flex-wrap">
-            {sale.dueAmount > 0 && (
-              <span className="text-xs text-destructive whitespace-nowrap">
-                {isBangla ? 'বাকি' : 'Due'}: {formatCurrency(sale.dueAmount)}
-              </span>
-            )}
-            {sale.profit > 0 && (
-              <span className="text-xs text-primary whitespace-nowrap">
-                {isBangla ? 'লাভ' : 'Profit'}: {formatCurrency(sale.profit)}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 transition-opacity shrink-0">
-          <Button variant="ghost" size="icon-sm" onClick={(e) => { e.stopPropagation(); onView(); }}>
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon-sm" onClick={(e) => { e.stopPropagation(); router.push(`/sales/${sale.id}/edit`); }}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon-sm" onClick={(e) => { e.stopPropagation(); router.push(`/sales/${sale.id}/return  `) }}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-        </div>
-        {/* <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" /> */}
-      </div>
-    </div>
-  );
-}
+

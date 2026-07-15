@@ -2,24 +2,70 @@ import axios from "axios";
 import { toast } from "sonner";
 
 const client = axios.create({
-  baseURL: 'https://voiceerp.mapleitfirm.com',
+  baseURL: "https://voiceerp.mapleitfirm.com",
   withCredentials: true,
 });
 
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, success = false) => {
+  failedQueue.forEach((prom) => {
+    if (success) prom.resolve();
+    else prom.reject(error);
+  });
+
+  failedQueue = [];
+};
 client.interceptors.response.use(
   (res) => res,
-  (error) => {
-    // console.log(error.response.data)
-    const message = error.response.data.message || "Something went wrong!";
-    if (error.response.status === 401) {
-      if (typeof window !== "undefined") {
-        toast.error(message);
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
-        }
+  async (error) => {
+      console.log("Request:", error.config?.method?.toUpperCase(), error.config?.url);
+    console.log("Status:", error.response?.status);
+    console.log("Response:", error.response?.data);
+    const originalRequest = error.config;
+    const message = error.response?.data?.message || "Something went wrong!";
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => client(originalRequest))
+          .catch((err) => Promise.reject(err));
       }
-      return Promise.reject(error);
+
+      isRefreshing = true;
+
+      try {
+        await axios.post(
+          "https://voiceerp.mapleitfirm.com/api/auth/refresh",
+          {},
+          { withCredentials: true },
+        );
+        processQueue(null, true);
+
+        return client(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, false);
+        if (typeof window !== "undefined") {
+          toast.error("Session expired. Please login again.");
+
+          const pathname = window.location.pathname;
+
+          if (pathname !== "/login" && pathname !== "/verify-forget-otp") {
+            window.location.href = "/login";
+          }
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    console.log('error',error.response?.data)
     toast.error(message);
     return Promise.reject(error);
   },

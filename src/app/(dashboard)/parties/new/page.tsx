@@ -23,8 +23,8 @@ export interface Party {
   type: "customer" | "supplier" | 'both';
   branchId: string;
   openingBalance: number;
+  balanceDirection?: "receive" | "give";
   creditLimit?: number;
-  paymentTerms?: number;
   notes?: string;
 }
 
@@ -42,12 +42,12 @@ export default function NewPartyPage() {
     address: '',
     type: 'customer' as 'customer' | 'supplier' | 'both',
     openingBalance: '0',
+    balanceType: 'receive' as 'receive' | 'give',
     creditLimit: '',
-    paymentTerms: '',
     notes: '',
   });
 
-  const updateForm = (key: keyof typeof formData, value: string) => {
+  const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -64,9 +64,9 @@ export default function NewPartyPage() {
       address: formData.address || undefined,
       type: formData.type,
       branchId: user?.branchId || '',
-      openingBalance: parseFloat(formData.openingBalance) || 0,
+      openingBalance: (parseFloat(formData.openingBalance) || 0) * (formData.balanceType === 'give' ? -1 : 1),
+      balanceDirection: formData.balanceType,
       creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : undefined,
-      paymentTerms: formData.paymentTerms ? parseInt(formData.paymentTerms) : undefined,
       notes: formData.notes || undefined,
     }
 
@@ -211,9 +211,35 @@ export default function NewPartyPage() {
                   placeholder="0"
                   className="h-11"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {isBangla ? 'পাওনা থাকলে ধনাত্মক, দেনা থাকলে ঋণাত্মক' : 'Positive for receivable, negative for payable'}
-                </p>
+              </div>
+
+              {/* Balance Direction Toggle (To Receive / To Give) */}
+              <div>
+                <Label className="mb-2 block text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  {isBangla ? 'ব্যালেন্সের ধরন' : 'Balance Direction'}
+                </Label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'receive', label: isBangla ? 'পাওনা (To Receive)' : 'To Receive' },
+                    { value: 'give', label: isBangla ? 'দেনা (To Give)' : 'To Give' },
+                  ].map((dir) => (
+                    <button
+                      key={dir.value}
+                      type="button"
+                      onClick={() => updateForm('balanceType', dir.value)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
+                        formData.balanceType === dir.value
+                          ? dir.value === 'receive'
+                            ? 'border-primary/50 bg-primary/10 text-primary font-bold'
+                            : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      {dir.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Credit Settings (for customers) */}
@@ -228,18 +254,6 @@ export default function NewPartyPage() {
                       value={formData.creditLimit}
                       onChange={(e) => updateForm('creditLimit', e.target.value)}
                       placeholder="0"
-                      className="h-11"
-                    />
-                  </div>
-                  <div>
-                    <Label className="mb-2 block">
-                      {isBangla ? 'পেমেন্ট পিরিয়ড (দিন)' : 'Payment Terms (days)'}
-                    </Label>
-                    <Input
-                      type="number"
-                      value={formData.paymentTerms}
-                      onChange={(e) => updateForm('paymentTerms', e.target.value)}
-                      placeholder="30"
                       className="h-11"
                     />
                   </div>

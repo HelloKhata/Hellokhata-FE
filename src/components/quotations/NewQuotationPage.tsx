@@ -1,10 +1,8 @@
 // Hello Khata OS - New Quotation Page
 // হ্যালো খাতা - নতুন কোটেশন পেজ
-
-'use client';
-
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+'use client'
+import { useState, useMemo, Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import {
   Card,
@@ -39,8 +37,8 @@ import {
   Search,
   Minus,
   Trash2,
-  User,
-  CalendarIcon,
+  Users,
+  Calendar as CalendarIcon,
   Check,
   X,
   ArrowLeft,
@@ -48,6 +46,7 @@ import {
   Send,
   Package,
   Loader2,
+  Camera,
 } from 'lucide-react';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
@@ -57,168 +56,282 @@ import { useParties } from '@/hooks/api/useParties';
 import { useGetItems } from '@/hooks/api/useItems';
 import { useCreateQuotation } from '@/hooks/api/useQuotations';
 
-interface QuotationItem {
+interface BillingItemRow {
+  id: string;
   itemId: string;
   itemName: string;
   quantity: number;
   unitPrice: number;
-  discount: number;
+  discountPercent: number;
+  discountFlat: number;
   total: number;
+  searchQuery: string;
+  showSuggestions: boolean;
 }
 
-export default function NewQuotationPage() {
+function NewQuotationContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const partyIdParam = searchParams.get('partyId') || '';
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
-  const [selectedPartyName, setSelectedPartyName] = useState<string>('');
+  // Form State
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
+  const [partySearchQuery, setPartySearchQuery] = useState('');
+  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
+
   const [validityDate, setValidityDate] = useState<Date>();
   const [quotationDate, setQuotationDate] = useState<Date>(new Date());
+
   const [discount, setDiscount] = useState<string>('0');
   const [tax, setTax] = useState<string>('0');
   const [notes, setNotes] = useState('');
-  const [items, setItems] = useState<QuotationItem[]>([]);
 
-  const { data: itemsData } = useGetItems({ search: searchTerm });
-  const { data: partiesData = [] } = useParties({ type: 'customer' });
+  // Billing Items Table Rows
+  const [items, setItems] = useState<BillingItemRow[]>([
+    {
+      id: 'initial-row',
+      itemId: '',
+      itemName: '',
+      quantity: 1,
+      unitPrice: 0,
+      discountPercent: 0,
+      discountFlat: 0,
+      total: 0,
+      searchQuery: '',
+      showSuggestions: false,
+    }
+  ]);
+
+  // Debounce party search query
+  const [debouncedPartySearchQuery, setDebouncedPartySearchQuery] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedPartySearchQuery(partySearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [partySearchQuery]);
+
+  // API Data
+  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
+  const { data: partiesData = [] } = useParties({ type: 'customer', search: debouncedPartySearchQuery });
   const availableItems = itemsData?.data || [];
   const parties = partiesData.data || [];
 
   const { mutate, isPending } = useCreateQuotation();
 
-  // Filter items based on search
-  const filteredItems = useMemo(() => {
-    if (!searchTerm) return availableItems.slice(0, 10);
-    return availableItems.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Parties Filtering
+  const filteredParties = useMemo(() => {
+    if (!partySearchQuery) return parties;
+    return parties.filter((p: any) =>
+      p.name.toLowerCase().includes(partySearchQuery.toLowerCase()) ||
+      p.phone?.includes(partySearchQuery)
     );
-  }, [searchTerm, availableItems]);
+  }, [parties, partySearchQuery]);
 
-  // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  // Selected Party Name
+  const selectedPartyName = useMemo(() => {
+    const party = parties.find((p: any) => p.id === selectedPartyId);
+    return party ? party.name : '';
+  }, [parties, selectedPartyId]);
+
+  // Calculations
+  const subtotal = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.total, 0);
+  }, [items]);
+
   const discountAmount = parseFloat(discount) || 0;
   const taxAmount = parseFloat(tax) || 0;
   const total = subtotal - discountAmount + taxAmount;
 
-  // Add item to quotation
-  const addItem = (item: typeof availableItems[0]) => {
-    const existing = items.find((i) => i.itemId === item.id);
-    if (existing) {
-      updateQuantity(existing.itemId, existing.quantity + 1);
-    } else {
-      setItems([
-        ...items,
-        {
-          itemId: item.id,
-          itemName: item.name,
-          quantity: 1,
-          unitPrice: item.sellingPrice,
-          discount: 0,
-          total: item.sellingPrice,
-        },
-      ]);
-    }
-    setSearchTerm('');
+  // Add Item Row
+  const addItemRow = () => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(),
+        itemId: '',
+        itemName: '',
+        quantity: 1,
+        unitPrice: 0,
+        discountPercent: 0,
+        discountFlat: 0,
+        total: 0,
+        searchQuery: '',
+        showSuggestions: false,
+      }
+    ]);
   };
 
-  // Update item quantity
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(itemId);
+  // Remove Item Row
+  const removeItemRow = (id: string) => {
+    if (items.length === 1) {
+      setItems([
+        {
+          id: 'initial-row',
+          itemId: '',
+          itemName: '',
+          quantity: 1,
+          unitPrice: 0,
+          discountPercent: 0,
+          discountFlat: 0,
+          total: 0,
+          searchQuery: '',
+          showSuggestions: false,
+        }
+      ]);
       return;
     }
-    setItems(
-      items.map((item) => {
-        if (item.itemId === itemId) {
-          const total = quantity * item.unitPrice - item.discount;
-          return { ...item, quantity, total };
-        }
-        return item;
-      })
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Calculate Row Total helper
+  const calculateRowTotal = (qty: number, price: number, flatDiscount: number) => {
+    return Math.max(0, qty * price - flatDiscount);
+  };
+
+  // Handle Name field input (search items)
+  const handleNameChange = (id: string, query: string) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          itemId: '',
+          itemName: '',
+          searchQuery: query,
+          showSuggestions: true
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle product selection from dropdown
+  const handleSelectProduct = (rowId: string, product: any) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id === rowId) {
+        const qty = item.quantity || 1;
+        const price = product.sellingPrice || 0;
+        const flatDiscount = item.discountFlat || 0;
+        const total = calculateRowTotal(qty, price, flatDiscount);
+        return {
+          ...item,
+          itemId: product.id,
+          itemName: product.name,
+          searchQuery: '',
+          unitPrice: price,
+          total,
+          showSuggestions: false
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle Quantity Change
+  const handleQuantityChange = (id: string, val: string) => {
+    const qty = parseFloat(val) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const price = item.unitPrice || 0;
+        const flat = parseFloat(((price * qty) * (item.discountPercent / 100)).toFixed(2)) || 0;
+        const total = calculateRowTotal(qty, price, flat);
+        return {
+          ...item,
+          quantity: qty,
+          discountFlat: flat,
+          total
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle Rate Change
+  const handleRateChange = (id: string, val: string) => {
+    const rate = parseFloat(val) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const qty = item.quantity || 0;
+        const flat = parseFloat(((rate * qty) * (item.discountPercent / 100)).toFixed(2)) || 0;
+        const total = calculateRowTotal(qty, rate, flat);
+        return {
+          ...item,
+          unitPrice: rate,
+          discountFlat: flat,
+          total
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle Row Discount % Change
+  const handleDiscountPercentChange = (id: string, val: string) => {
+    const percent = parseFloat(val) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const qty = item.quantity || 0;
+        const price = item.unitPrice || 0;
+        const flat = parseFloat(((price * qty) * (percent / 100)).toFixed(2)) || 0;
+        const total = calculateRowTotal(qty, price, flat);
+        return {
+          ...item,
+          discountPercent: percent,
+          discountFlat: flat,
+          total
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Handle Row Discount Flat Tk Change
+  const handleDiscountFlatChange = (id: string, val: string) => {
+    const flat = parseFloat(val) || 0;
+    setItems((prev) => prev.map((item) => {
+      if (item.id === id) {
+        const qty = item.quantity || 0;
+        const price = item.unitPrice || 0;
+        const totalCost = price * qty;
+        const percent = totalCost > 0 ? parseFloat(((flat / totalCost) * 100).toFixed(2)) : 0;
+        const total = calculateRowTotal(qty, price, flat);
+        return {
+          ...item,
+          discountPercent: percent,
+          discountFlat: flat,
+          total
+        };
+      }
+      return item;
+    }));
+  };
+
+  // Filter available items for inline suggestions dropdown
+  const getFilteredProducts = (query: string) => {
+    if (!query) return availableItems.slice(0, 10);
+    return availableItems.filter((item: any) =>
+      item.name.toLowerCase().includes(query.toLowerCase())
     );
   };
 
-  // Update item price
-  const updatePrice = (itemId: string, price: number) => {
-    setItems(
-      items.map((item) => {
-        if (item.itemId === itemId) {
-          const total = item.quantity * price - item.discount;
-          return { ...item, unitPrice: price, total };
+  // Handle row blur with delay to register suggestion clicks
+  const handleRowBlur = (id: string) => {
+    setTimeout(() => {
+      setItems((prev) => prev.map((item) => {
+        if (item.id === id) {
+          return { ...item, showSuggestions: false };
         }
         return item;
-      })
-    );
-  };
-
-  // Update item discount
-  const updateItemDiscount = (itemId: string, discount: number) => {
-    setItems(
-      items.map((item) => {
-        if (item.itemId === itemId) {
-          const total = item.quantity * item.unitPrice - discount;
-          return { ...item, discount, total };
-        }
-        return item;
-      })
-    );
-  };
-
-  // Remove item
-  const removeItem = (itemId: string) => {
-    setItems(items.filter((item) => item.itemId !== itemId));
-  };
-
-  // Handle party selection
-  const handlePartyChange = (partyId: string) => {
-    if (partyId === 'none') {
-      setSelectedPartyId('');
-      setSelectedPartyName('');
-    } else {
-      setSelectedPartyId(partyId);
-      const party = parties.find(p => p.id === partyId);
-      setSelectedPartyName(party?.name || '');
-    }
+      }));
+    }, 300);
   };
 
   // Handle save draft
   const handleSaveDraft = async () => {
-
-    if (!validityDate) {
-      toast.error(isBangla ? 'মেয়াদ উপযুক্তির তারিখ দিন' : 'Please select validity date');
-      return;
-    }
-
-    const draftData = {
-      partyId: selectedPartyId || undefined,
-      partyName: selectedPartyName || undefined,
-      items: items.map(item => ({
-        itemId: item.itemId,
-        itemName: item.itemName,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount,
-      })),
-      discount: discountAmount,
-      tax: taxAmount,
-      validityDate: validityDate.toISOString(),
-      quotationDate: quotationDate.toISOString(),
-      notes: notes || undefined,
-      status: 'draft',
-    }
-
-    mutate(draftData, {
-      onSuccess: () => {
-        toast.success(isBangla ? 'খসড়া সংরক্ষণ হয়েছে!' : 'Draft saved successfully!');
-        router.push('/sales/quotations');
-      },
-    });
-  }
-  // Handle mark as sent
-  const handleMarkAsSent = async () => {
-    if (items.length === 0) {
+    const validItems = items.filter((i) => i.itemId !== '');
+    if (validItems.length === 0) {
       toast.error(isBangla ? 'অন্তত একটি পণ্য যোগ করুন' : 'Add at least one item');
       return;
     }
@@ -228,363 +341,467 @@ export default function NewQuotationPage() {
       return;
     }
 
-    // try {
-    //   await createQuotation.mutateAsync({
-    //     partyId: selectedPartyId || undefined,
-    //     // partyName: selectedPartyName || undefined,
-    //     items: items.map(item => ({
-    //       itemId: item.itemId,
-    //       itemName: item.itemName,
-    //       quantity: item.quantity,
-    //       unitPrice: item.unitPrice,
-    //       discount: item.discount,
-    //     })),
-    //     discount: discountAmount,
-    //     tax: taxAmount,
-    //     validityDate: validityDate.toISOString(),
-    //     quotationDate: quotationDate.toISOString(),
-    //     notes: notes || undefined,
-    //     // status: 'sent',
-    //   });
+    const draftData = {
+      partyId: selectedPartyId || undefined,
+      partyName: selectedPartyName || undefined,
+      items: validItems.map(item => ({
+        itemId: item.itemId,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discountFlat,
+      })),
+      discount: discountAmount,
+      tax: taxAmount,
+      validityDate: validityDate.toISOString(),
+      quotationDate: quotationDate.toISOString(),
+      notes: notes || undefined,
+      status: 'draft',
+    };
 
-    //   toast.success(isBangla ? 'কোটেশন প্রেরিত হয়েছে!' : 'Quotation sent successfully!');
-    //   router.push('/sales/quotations');
-    // } catch (error) {
-    //   toast.error(isBangla ? 'প্রেরণে সমস্যা হয়েছে' : 'Failed to send');
-    // }
+    mutate(draftData, {
+      onSuccess: () => {
+        toast.success(isBangla ? 'কোটেশন খসড়া সফলভাবে সংরক্ষণ হয়েছে!' : 'Quotation draft saved successfully!');
+        router.push('/sales/quotations');
+      },
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Top Header Section */}
+      <div className="flex items-center justify-between pb-2">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <FileText className="h-6 w-6 text-primary" />
             {isBangla ? 'নতুন কোটেশন' : 'New Quotation'}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
             {isBangla ? 'একটি নতুন কোটেশন তৈরি করুন' : 'Create a new quotation'}
           </p>
         </div>
-        <Button variant="outline" onClick={() => router.back()}>
+        <Button variant="ghost" onClick={() => router.back()} className="text-muted-foreground hover:text-foreground shrink-0">
           <ArrowLeft className="h-4 w-4 mr-2" />
           {isBangla ? 'পেছনে' : 'Back'}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Item Search & Selection */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Customer Selection */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {isBangla ? 'গ্রাহক' : 'Customer'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedPartyId || 'none'} onValueChange={handlePartyChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={isBangla ? 'গ্রাহক নির্বাচন করুন (ঐচ্ছিক)' : 'Select customer (optional)'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{isBangla ? 'সাধারণ গ্রাহক' : 'Walk-in customer'}</SelectItem>
-                  {parties
-                    .filter((p) => p.type === 'customer' || p.type === 'both')
-                    .map((party) => (
-                      <SelectItem key={party.id} value={party.id}>
-                        {party.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+      <div className="space-y-6">
+        {/* Row 1 Layout: Select Party, Quotation Date, Valid Until */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          {/* Select Party */}
+          <div className="relative space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {isBangla ? 'গ্রাহক নির্বাচন করুন' : 'Select Customer'}
+            </Label>
+            <div className="relative">
+              <Input
+                value={selectedPartyName || partySearchQuery}
+                onChange={(e) => {
+                  setPartySearchQuery(e.target.value);
+                  if (selectedPartyId) setSelectedPartyId('');
+                  setShowPartySuggestions(true);
+                }}
+                onFocus={() => setShowPartySuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowPartySuggestions(false), 200);
+                }}
+                placeholder={isBangla ? 'গ্রাহক খুঁজুন...' : 'Search for customer'}
+                className="pr-10 h-11 bg-background/50 border-input"
+              />
+              <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
-          {/* Item Search */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                {isBangla ? 'পণ্য যোগ করুন' : 'Add Items'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder={isBangla ? 'পণ্যের নাম খুঁজুন...' : 'Search items...'}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Item Suggestions */}
-              {searchTerm && (
-                <div className="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-60 overflow-auto bg-card">
-                  {filteredItems.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground text-sm">
-                      {isBangla ? 'কোনো পণ্য পাওয়া যায়নি' : 'No items found'}
+              {showPartySuggestions && (
+                <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  {filteredParties.length === 0 ? (
+                    <div className="p-3 text-center text-sm text-muted-foreground">
+                      {isBangla ? 'কোনো গ্রাহক পাওয়া যায়নি' : 'No customers found'}
                     </div>
                   ) : (
-                    filteredItems.map((item) => (
+                    filteredParties.map((party: any) => (
                       <button
-                        key={item.id}
-                        className="w-full p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
-                        onClick={() => addItem(item)}
+                        key={party.id}
+                        type="button"
+                        className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedPartyId(party.id);
+                          setPartySearchQuery('');
+                          setShowPartySuggestions(false);
+                        }}
                       >
-                        <div className="text-left">
-                          <p className="font-medium text-sm text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatCurrency(item.sellingPrice)} • {isBangla ? 'স্টক' : 'Stock'}: {item.currentStock}
-                          </p>
-                        </div>
-                        <Plus className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-foreground">{party.name}</span>
+                        {party.phone && <span className="text-xs text-muted-foreground">{party.phone}</span>}
                       </button>
                     ))
                   )}
                 </div>
               )}
+            </div>
+          </div>
 
-              {/* Selected Items */}
-              {items.length > 0 ? (
-                <div className="border border-border-subtle rounded-lg divide-y divide-border-subtle">
-                  {items.map((item) => (
-                    <div key={item.itemId} className="p-4 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="font-medium text-foreground">{item.itemName}</p>
+          {/* Quotation Date */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {isBangla ? 'কোটেশনের তারিখ' : 'Quotation Date'}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted"
+                >
+                  <span>{format(quotationDate, 'dd MMM yyyy')}</span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={quotationDate}
+                  onSelect={(date) => date && setQuotationDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Validity Date */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {isBangla ? 'মেয়াদ উপযুক্তির তারিখ' : 'Valid Until'}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted",
+                    !validityDate && "text-muted-foreground"
+                  )}
+                >
+                  <span>{validityDate ? format(validityDate, 'dd MMM yyyy') : (isBangla ? 'তারিখ নির্বাচন করুন' : 'Pick date')}</span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={validityDate}
+                  onSelect={(date) => date && setValidityDate(date)}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Row 2: Billing Items Table */}
+        <div className="border border-border rounded-xl bg-card overflow-visible shadow-sm">
+          <div className="overflow-visible">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border text-muted-foreground text-xs font-semibold uppercase">
+                  <th className="px-4 py-3 w-[8%]">{isBangla ? 'ক্রমিক' : 'S.N.'}</th>
+                  <th className="px-4 py-3 w-[35%]">{isBangla ? 'নাম' : 'Name'}</th>
+                  <th className="px-4 py-3 w-[12%]">{isBangla ? 'পরিমাণ' : 'Quantity'}</th>
+                  <th className="px-4 py-3 w-[15%]">{isBangla ? 'দর' : 'Rate'}</th>
+                  <th className="px-4 py-3 w-[18%]">{isBangla ? 'ছাড়' : 'Discount'}</th>
+                  <th className="px-4 py-3 w-[12%] text-right">{isBangla ? 'মোট' : 'Amount'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {items.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+                    {/* SN */}
+                    <td className="px-4 py-4 font-bold text-amber-500 align-middle">
+                      {idx + 1}
+                    </td>
+
+                    {/* Name */}
+                    <td className="px-4 py-3 align-middle relative">
+                      <Input
+                        value={item.itemName || item.searchQuery}
+                        onChange={(e) => handleNameChange(item.id, e.target.value)}
+                        onFocus={() => {
+                          setItems((prev) => prev.map((it) => {
+                            if (it.id === item.id) {
+                              return { ...it, showSuggestions: true };
+                            }
+                            return it;
+                          }));
+                        }}
+                        onClick={() => {
+                          setItems((prev) => prev.map((it) => {
+                            if (it.id === item.id) {
+                              return { ...it, showSuggestions: true };
+                            }
+                            return it;
+                          }));
+                        }}
+                        onBlur={() => handleRowBlur(item.id)}
+                        placeholder={isBangla ? 'পণ্য নাম লিখুন' : 'Enter Item name'}
+                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
+                      />
+
+                      {item.showSuggestions && (
+                        <div className="absolute z-50 left-4 right-4 top-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                          {getFilteredProducts(item.searchQuery).length === 0 ? (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                              {isBangla ? 'কোনো পণ্য পাওয়া যায়নি' : 'No items found'}
+                            </div>
+                          ) : (
+                            getFilteredProducts(item.searchQuery).map((product: any) => (
+                              <button
+                                key={product.id}
+                                type="button"
+                                className="w-full text-left p-3 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                }}
+                                onClick={() => handleSelectProduct(item.id, product)}
+                              >
+                                <div>
+                                  <p className="font-semibold text-foreground">{product.name}</p>
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {isBangla ? 'স্টক' : 'Stock'}: {product.currentStock}
+                                  </p>
+                                </div>
+                                <span className="font-bold text-emerald-500">Tk. {product.sellingPrice}</span>
+                              </button>
+                            ))
+                          )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => removeItem(item.itemId)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      )}
+                    </td>
+
+                    {/* Quantity */}
+                    <td className="px-4 py-3 align-middle">
+                      <Input
+                        type="number"
+                        value={item.quantity || ''}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        className="bg-background/30 h-9 text-center border-input focus:ring-0"
+                        min="1"
+                      />
+                    </td>
+
+                    {/* Rate */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="relative flex items-center">
+                        <span className="absolute left-3 text-xs text-muted-foreground font-medium">Tk.</span>
+                        <Input
+                          type="number"
+                          value={item.unitPrice || ''}
+                          onChange={(e) => handleRateChange(item.id, e.target.value)}
+                          className="pl-9 bg-background/30 h-9 border-input focus:ring-0"
+                          min="0"
+                        />
                       </div>
-                      <div className="grid grid-cols-4 gap-3">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">{isBangla ? 'পরিমাণ' : 'Qty'}</Label>
-                          <div className="flex items-center border border-border-subtle rounded-lg mt-1">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => updateQuantity(item.itemId, item.quantity - 1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-8 text-center text-sm font-medium">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => updateQuantity(item.itemId, item.quantity + 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">{isBangla ? 'দর' : 'Price'}</Label>
+                    </td>
+
+                    {/* Discount (% and flat) */}
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex gap-1.5 items-center">
+                        <div className="relative flex-1 flex items-center">
                           <Input
                             type="number"
-                            value={item.unitPrice}
-                            onChange={(e) => updatePrice(item.itemId, parseFloat(e.target.value) || 0)}
-                            className="h-9 mt-1"
+                            value={item.discountPercent || ''}
+                            onChange={(e) => handleDiscountPercentChange(item.id, e.target.value)}
+                            placeholder="0"
+                            className="bg-background/30 h-9 text-right pr-6 border-input focus:ring-0"
+                            min="0"
+                            max="100"
                           />
+                          <span className="absolute right-2 text-xs text-muted-foreground font-semibold">%</span>
                         </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">{isBangla ? 'ছাড়' : 'Discount'}</Label>
+                        <div className="relative flex-1 flex items-center">
+                          <span className="absolute left-2.5 text-[10px] text-muted-foreground font-medium">Tk.</span>
                           <Input
                             type="number"
-                            value={item.discount}
-                            onChange={(e) => updateItemDiscount(item.itemId, parseFloat(e.target.value) || 0)}
-                            className="h-9 mt-1"
+                            value={item.discountFlat || ''}
+                            onChange={(e) => handleDiscountFlatChange(item.id, e.target.value)}
+                            placeholder="0"
+                            className="pl-7 bg-background/30 h-9 text-right border-input focus:ring-0"
                             min="0"
                           />
                         </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">{isBangla ? 'মোট' : 'Total'}</Label>
-                          <div className="h-9 px-3 py-2 mt-1 bg-muted/50 rounded-lg text-right font-medium text-foreground">
-                            {formatCurrency(item.total)}
-                          </div>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="border border-dashed border-border-subtle rounded-lg p-8 text-center">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground text-sm">
-                    {isBangla ? 'পণ্য খুঁজে যোগ করুন' : 'Search and add items'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </td>
+
+                    {/* Amount & Action */}
+                    <td className="px-4 py-3 align-middle text-right font-medium text-foreground">
+                      <div className="flex items-center justify-end gap-3">
+                        <span className="font-semibold text-foreground text-sm">Tk. {item.total.toFixed(2)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItemRow(item.id)}
+                          className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Bottom Add Action */}
+          <div className="flex justify-between items-center px-6 py-4 bg-muted/10 border-t border-border">
+            <button
+              type="button"
+              onClick={addItemRow}
+              className="text-emerald-500 font-semibold text-sm flex items-center gap-1.5 hover:text-emerald-600 transition-colors cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              {isBangla ? 'বিল আইটেম যোগ করুন' : 'Add Billing Item'}
+            </button>
+            <div className="flex items-center gap-8">
+              <span className="text-sm text-muted-foreground font-medium">{isBangla ? 'উপমোট' : 'Sub Total'}</span>
+              <span className="font-bold text-foreground text-base">Tk. {subtotal.toFixed(2)}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Right: Summary */}
-        <div className="space-y-6">
-          {/* Date Selection */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{isBangla ? 'তারিখ' : 'Dates'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Quotation Date */}
-              <div className="space-y-2">
-                <Label className="text-sm">{isBangla ? 'কোটেশনের তারিখ' : 'Quotation Date'}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal">
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      {quotationDate ? format(quotationDate, 'PPP') : <span>{isBangla ? 'তারিখ নির্বাচন' : 'Pick date'}</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={quotationDate}
-                      onSelect={(date) => date && setQuotationDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+        {/* Row 3 Layout: Notes, Attachments, Totals */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Notes and Attachments */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">
+                {isBangla ? 'নোট বা মন্তব্য' : 'Notes or Remarks'}
+              </Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={isBangla ? 'নোট লিখুন...' : 'Enter note or description...'}
+                className="min-h-[100px] bg-background/50 border-input resize-none"
+              />
+            </div>
 
-              {/* Validity Date */}
-              <div className="space-y-2">
-                <Label className="text-sm">{isBangla ? 'মেয়াদ উপযুক্তির তারিখ' : 'Valid Until'}</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !validityDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      {validityDate ? format(validityDate, 'PPP') : <span>{isBangla ? 'তারিখ নির্বাচন' : 'Pick date'}</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={validityDate}
-                      onSelect={setValidityDate}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+            {/* Attach Images */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-foreground">
+                {isBangla ? 'ছবি সংযুক্ত করুন' : 'Attach Images'}
+              </Label>
+              <div className="flex flex-wrap gap-3 items-center">
+                <button
+                  type="button"
+                  className="h-16 w-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center bg-background/30 hover:bg-muted/50 hover:border-emerald-500 transition-all text-muted-foreground hover:text-foreground"
+                >
+                  <Camera className="h-5 w-5 mb-1" />
+                  <span className="text-[10px]">{isBangla ? 'ক্যামেরা' : 'Upload'}</span>
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Summary Card */}
-          <Card variant="elevated" padding="default">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">{isBangla ? 'সারসংক্ষেপ' : 'Summary'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{isBangla ? 'উপমোট' : 'Subtotal'}</span>
-                <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
+          {/* Totals and Submit Actions */}
+          <div className="space-y-6 lg:pl-12">
+            {/* Subtotal */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-muted-foreground font-semibold">{isBangla ? 'উপমোট' : 'Subtotal'}</span>
+              <div className="relative w-48 flex items-center">
+                <span className="absolute left-3 text-xs text-muted-foreground font-medium">Tk.</span>
+                <Input
+                  value={subtotal.toFixed(2)}
+                  readOnly
+                  className="pl-9 h-10 bg-muted/30 border-input text-right font-medium text-foreground focus-visible:ring-0"
+                />
               </div>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{isBangla ? 'ছাড়' : 'Discount'}</span>
+            {/* Global Discount */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-muted-foreground font-semibold">{isBangla ? 'ছাড় (Discount)' : 'Global Discount'}</span>
+              <div className="relative w-48 flex items-center">
+                <span className="absolute left-3 text-xs text-muted-foreground font-medium">Tk.</span>
                 <Input
                   type="number"
                   value={discount}
                   onChange={(e) => setDiscount(e.target.value)}
-                  className="w-24 h-8 text-right"
+                  className="pl-9 h-10 bg-background/50 border-input text-right font-semibold text-foreground"
                   min="0"
                 />
               </div>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{isBangla ? 'ট্যাক্স' : 'Tax'}</span>
+            {/* Global Tax */}
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-muted-foreground font-semibold">{isBangla ? 'ট্যাক্স (Tax)' : 'Global Tax'}</span>
+              <div className="relative w-48 flex items-center">
+                <span className="absolute left-3 text-xs text-muted-foreground font-medium">Tk.</span>
                 <Input
                   type="number"
                   value={tax}
                   onChange={(e) => setTax(e.target.value)}
-                  className="w-24 h-8 text-right"
+                  className="pl-9 h-10 bg-background/50 border-input text-right font-semibold text-foreground"
                   min="0"
                 />
               </div>
+            </div>
 
-              <Divider />
-
-              <div className="flex justify-between">
-                <span className="font-semibold text-foreground">{isBangla ? 'মোট' : 'Total'}</span>
-                <span className="font-bold text-lg text-foreground">{formatCurrency(total)}</span>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label className="text-sm">{isBangla ? 'নোট' : 'Notes'}</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={isBangla ? 'অতিরিক্ত তথ্য...' : 'Additional notes...'}
-                  className="min-h-[80px] resize-none"
+            {/* Total Amount Output */}
+            <div className="flex items-center justify-between gap-4 pt-2 border-t border-border">
+              <span className="text-base font-bold text-foreground">{isBangla ? 'সর্বমোট পরিমাণ' : 'Total Amount'}</span>
+              <div className="relative w-48 flex items-center">
+                <span className="absolute left-3 text-sm text-muted-foreground font-bold">Tk.</span>
+                <Input
+                  value={total.toFixed(2)}
+                  readOnly
+                  className="pl-9 h-11 bg-muted/30 border-input text-right font-bold text-lg text-emerald-600 focus-visible:ring-0"
                 />
               </div>
-            </CardContent>
-            <CardFooter className="flex-col gap-2">
+            </div>
+
+            {/* Submit Action Buttons */}
+            <div className="flex gap-4 pt-4">
               <Button
-                className="w-full"
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex-1 h-11 border-input hover:bg-muted"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
+              <Button
+                type="button"
                 onClick={handleSaveDraft}
-                disabled={items.length === 0 || isPending}
+                disabled={items.filter(i => i.itemId !== '').length === 0 || isPending}
+                className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
                 {isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                     {isBangla ? 'সংরক্ষণ হচ্ছে...' : 'Saving...'}
                   </span>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isBangla ? 'খসড়া সংরক্ষণ' : 'Save Draft'}
+                    <Check className="h-4 w-4 mr-2" />
+                    {isBangla ? 'কোটেশন সংরক্ষণ করুন' : 'Save Quotation'}
                   </>
                 )}
               </Button>
-              {/* <Button
-                  variant="premium"
-                  className="w-full"
-                  onClick={handleMarkAsSent}
-                  disabled={items.length === 0 || isPending || !validityDate}
-                >
-                  {isPending ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {isBangla ? 'প্রেরণ হচ্ছে...' : 'Sending...'}
-                    </span>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      {isBangla ? 'প্রেরণ করুন' : 'Mark as Sent'}
-                    </>
-                  )}
-                </Button> */}
-              <Button variant="outline" className="w-full" onClick={() => router.back()}>
-                <X className="h-4 w-4 mr-2" />
-                {isBangla ? 'বাতিল' : 'Cancel'}
-              </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewQuotationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <NewQuotationContent />
+    </Suspense>
   );
 }

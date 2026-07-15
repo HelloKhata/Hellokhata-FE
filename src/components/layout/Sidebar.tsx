@@ -5,30 +5,12 @@ import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore, type PageRoute } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { navGroups, bottomNavItems, type NavItem, type SubnavItem } from '@/lib/nav-config';
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Package,
-  Receipt,
-  BarChart3,
-  Settings,
-  Sparkles,
   ChevronLeft,
   LogOut,
   Store,
-  HelpCircle,
   Zap,
-  FileText,
-  Truck,
-  RotateCcw,
-  Lock,
-  CheckCircle,
-  Trash2,
-  Icon,
-  CreditCard,
-  LayoutList,
-  Tag,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -43,69 +25,6 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export interface SubnavItem {
-  page: string;
-  icon?: any;
-  labelKey: string;
-  labelBn: string;
-}
-
-export interface NavItem {
-  labelKey: string;
-  labelBn: string;
-  icon: any;
-  page?: string;
-  submenu?: SubnavItem[];
-}
-
-const navGroups: NavItem[] = [
-  { page: '/', icon: LayoutDashboard, labelKey: 'Dashboard', labelBn: 'ড্যাশবোর্ড' },
-  {
-    labelKey: 'Sales',
-    labelBn: 'বিক্রি',
-    icon: ShoppingCart,
-    submenu: [
-      { page: '/sales', icon: ShoppingCart, labelKey: 'Sales List', labelBn: 'বিক্রয় তালিকা' },
-      { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
-      { page: '/returns/sales', icon: RotateCcw, labelKey: 'Sales Return', labelBn: 'বিক্রয় ফেরত' },
-    ],
-  },
-  {
-    labelKey: 'Purchases',
-    labelBn: 'ক্রয়',
-    icon: Truck,
-    submenu: [
-      { page: '/purchases', icon: Truck, labelKey: 'Purchase List', labelBn: 'ক্রয় তালিকা' },
-      { page: '/returns/purchases', icon: RotateCcw, labelKey: 'Purchase Return', labelBn: 'ক্রয় ফেরত' },
-    ],
-  },
-  { page: '/parties', icon: Users, labelKey: 'Parties', labelBn: 'পার্টি' },
-  {
-    labelKey: 'Inventory',
-    labelBn: 'ইনভেন্টরি',
-    icon: Package,
-    submenu: [
-      { page: '/inventory', icon: Package, labelKey: 'Inventory List', labelBn: 'ইনভেন্টরি তালিকা' },
-      { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
-    ],
-  },
-  {
-    labelKey: 'Finance',
-    labelBn: 'অর্থায়ন',
-    icon: Receipt,
-    submenu: [
-      { page: '/expenses', icon: Receipt, labelKey: 'Expenses', labelBn: 'খরচ' },
-      { page: '/collection', icon: LayoutList, labelKey: 'Collection Center', labelBn: 'কালেকশন সেন্টার' },
-      { page: '/payment-plans', icon: CreditCard, labelKey: 'Payment Plans', labelBn: 'পেমেন্ট প্ল্যান' },
-    ],
-  },
-  { page: '/reports', icon: BarChart3, labelKey: 'Reports', labelBn: 'রিপোর্ট' },
-];
-
-const bottomNavItems = [
-  { page: '/ai', icon: Sparkles, labelKey: 'AI', labelBn: 'AI সহায়ক', isPro: true },
-  { page: '/settings/profile', icon: Settings, labelKey: 'Settings', labelBn: 'সেটিংস' },
-];
 
 export function Sidebar() {
   const { t, isBangla } = useAppTranslation();
@@ -194,14 +113,20 @@ export function Sidebar() {
           <nav className="space-y-1.5">
             {navGroups.map((item, index) => {
               const isGroupActive = item.submenu
-                ? item.submenu.some((sub) => path === sub.page)
+                ? item.submenu.some((sub) => path === sub.page) || (item.page && path === item.page)
                 : path === item.page;
 
               const element = item.submenu ? (
                 // Group with submenu
                 <div className="space-y-1">
-                  <button
-                    onClick={() => toggleSubmenu(item.labelKey)}
+                  <Link
+                    href={item.page || '#'}
+                    onClick={(e) => {
+                      toggleSubmenu(item.labelKey);
+                      if (!item.page) {
+                        e.preventDefault();
+                      }
+                    }}
                     className={cn(
                       'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 w-full text-left',
                       'relative group',
@@ -230,7 +155,7 @@ export function Sidebar() {
                         </span>
                       </>
                     )}
-                  </button>
+                  </Link>
 
                   {/* Submenu list */}
                   {!sidebarCollapsed && openSubmenus[item.labelKey] && (

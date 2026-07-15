@@ -24,7 +24,6 @@ function VerifyOtpContent() {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const userId = searchParams.get("userId") || "";
     const phone = searchParams.get("phone") || "";
     const initialOtp = searchParams.get("otp") || "";
 
@@ -37,7 +36,6 @@ function VerifyOtpContent() {
     const { setSessionFromAuthResponse } = useSessionStore();
 
     const user = useUser();
-    console.log("user", user)
 
     useEffect(() => {
         if (countdown <= 0) return;
@@ -62,7 +60,7 @@ function VerifyOtpContent() {
         }
 
         verifyOTP.mutate(
-            { uuid: userId, code: otp },
+            { code: otp },
             {
                 onSuccess: (data) => {
                     if (data.success) {
@@ -82,11 +80,8 @@ function VerifyOtpContent() {
     };
 
     const handleResendOTP = () => {
-        if (!userId) {
-            toast.error("User identification missing.");
-            return;
-        }
-        const obj = { userId, purpose: "signup" };
+
+        const obj = { purpose: "signup" };
         resendOTP.mutate(obj, {
             onSuccess: (data) => {
                 if (data.success) {

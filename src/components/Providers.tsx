@@ -1,6 +1,3 @@
-// Hello Khata OS - Providers Component
-// হ্যালো খাতা - প্রোভাইডার কম্পোনেন্ট
-
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

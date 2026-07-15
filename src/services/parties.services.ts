@@ -16,6 +16,14 @@ export const getParty = async (id: string) => {
   return res.data;
 };
 
+export const getPartyLedger = async (
+  id: string,
+  params?: { page?: number; limit?: number; search?: string; sort?: string }
+) => {
+  const res = await client.get(`/api/parties/${id}/ledger`, { params });
+  return res.data;
+};
+
 export const deleteParty = async (id: string) => {
   const res = await client.delete(`/api/parties/${id}`);
   return res.data;

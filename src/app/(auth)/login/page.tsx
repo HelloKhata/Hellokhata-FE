@@ -230,6 +230,15 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+              <div className="flex justify-end -mt-2 shrink-0">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs md:text-sm hover:underline transition-colors"
+                  style={{ color: "#4F5BFF" }}
+                >
+                  Forgot Password?
+                </Link>
+              </div>
               <Button
                 type="submit"
                 disabled={loginUser.isPending || phone.length !== 11 || password.length < 8}

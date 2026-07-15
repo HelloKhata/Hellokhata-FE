@@ -138,9 +138,9 @@ export default function InventoryPage() {
   const sortedItems = [...priceFilteredItems].sort((a, b) => {
     switch (sortBy) {
       case 'low-stock':
-        return a.currentStock - b.currentStock;
+        return (a.currentStock ?? 0) - (b.currentStock ?? 0);
       case 'high-stock':
-        return b.currentStock - a.currentStock;
+        return (b.currentStock ?? 0) - (a.currentStock ?? 0);
       case 'price-asc':
         return a.sellingPrice - b.sellingPrice;
       case 'price-desc':
@@ -180,14 +180,12 @@ export default function InventoryPage() {
               <Settings className="h-4 w-4" />
             </Button>
 
-            {/* Stock Actions — disabled, coming soon */}
+            {/* Stock Actions */}
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
-                disabled
-                title={isBangla ? 'শীঘ্রই আসছে' : 'Coming soon'}
-                className="opacity-50 cursor-not-allowed"
+                onClick={() => router.push('/inventory/stock-adjustment')}
               >
                 <ArrowUpCircle className="h-4 w-4 mr-1" />
                 <span className="hidden sm:inline whitespace-nowrap">{isBangla ? 'সংশোধন' : 'Adjust'}</span>
@@ -482,10 +480,10 @@ export default function InventoryPage() {
                 value={
                   <span className={cn(
                     'text-xl font-bold',
-                    selectedItem.currentStock === 0 ? 'text-red-600' :
-                      selectedItem.currentStock <= selectedItem.minStock ? 'text-amber-600' : 'text-emerald-600'
+                    (selectedItem.currentStock ?? 0) === 0 ? 'text-red-600' :
+                      (selectedItem.currentStock ?? 0) <= (selectedItem.minStock ?? 0) ? 'text-amber-600' : 'text-emerald-600'
                   )}>
-                    {selectedItem.currentStock} {selectedItem.unit}
+                    {selectedItem.currentStock ?? 0} {selectedItem.unit}
                   </span>
                 }
                 icon={<Package className="h-5 w-5 text-emerald-600" />}
@@ -611,17 +609,17 @@ function ItemRow({
   const { formatCurrency } = useCurrency();
   const deleteItem = useDeleteItem()
   const getStockStatus = () => {
-    if (item.currentStock === 0) {
+    if ((item.currentStock ?? 0) === 0) {
       return { variant: 'destructive' as const, label: isBangla ? 'স্টক শেষ' : 'Out of Stock' };
     }
-    if (item.currentStock <= item.minStock) {
+    if ((item.currentStock ?? 0) <= (item.minStock ?? 0)) {
       return { variant: 'warning' as const, label: isBangla ? 'স্টক কম' : 'Low Stock' };
     }
     return { variant: 'success' as const, label: isBangla ? 'স্টক আছে' : 'In Stock' };
   };
 
   const stockStatus = getStockStatus();
-  const stockPercentage = Math.min((item.currentStock / (item.minStock * 3)) * 100, 100);
+  const stockPercentage = Math.min(((item.currentStock ?? 0) / ((item.minStock ?? 1) * 3)) * 100, 100);
 
   const hasWholesale = item.wholesalePrice && item.wholesalePrice > 0;
   const hasVip = item.vipPrice && item.vipPrice > 0;
@@ -738,7 +736,7 @@ function ItemRow({
               <Progress
                 value={stockPercentage}
                 size="sm"
-                color={item.currentStock === 0 ? 'destructive' : item.currentStock <= item.minStock ? 'warning' : 'emerald'}
+                color={(item.currentStock ?? 0) === 0 ? 'destructive' : (item.currentStock ?? 0) <= (item.minStock ?? 0) ? 'warning' : 'emerald'}
               />
             </div>
           </div>
