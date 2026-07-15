@@ -343,24 +343,24 @@ export interface StockMovement {
 // Sales Types
 // ============================================
 
-export type PaymentMethod = 'cash' | 'card' | 'mobile_banking' | 'credit';
+export type PaymentMethod = 'cash' | 'card' | 'mobile_banking' | 'credit' | string;
 export type SaleStatus = 'completed' | 'pending' | 'cancelled' | 'returned';
-export type PricingTier = 'retail' | 'wholesale' | 'vip' | 'custom';
+export type PricingTier = 'retail' | 'wholesale' | 'vip' | 'custom' | string;
 
 export interface Sale {
   id: string;
   businessId: string;
-  branchId?: string;
+  branchId?: string | null;
   invoiceNo: string;
-  partyId?: string;
+  partyId?: string | null;
   party?: {
     id: string;
     name: string;
     phone: string;
     type: string;
-  };
-  partyName?: string;
-  partyPhone?: string;
+  } | null;
+  partyName?: string | null;
+  partyPhone?: string | null;
   items: SaleItem[];
   subtotal: number;
   discount: number;
@@ -374,10 +374,10 @@ export interface Sale {
   profit: number;
   notes?: string | null;
   createdBy: string;
-  staffId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
+  staffId?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  deletedAt?: Date | string | null;
   paymentDetails?: {
     cashReceived?: number;
     changeReturned?: number;
@@ -388,7 +388,7 @@ export interface Sale {
     senderNumber?: string;
     transactionId?: string;
     dueDate?: string;
-  };
+  } | null;
 }
 export interface SaleItem {
   id: string;
@@ -401,11 +401,11 @@ export interface SaleItem {
   discount: number;
   total: number;
   profit: number;
-  createdAt: Date;
+  createdAt: Date | string;
   item: {
     id: string;
     name: string;
-    sku: string;
+    sku: string | null;
   };
 }
 
@@ -418,9 +418,11 @@ export type PurchaseStatus = 'received' | 'pending' | 'partial' | 'cancelled';
 export interface Purchase {
   id: string;
   businessId: string;
-  branchId?: string;
-  supplierId?: string;
-  invoiceNo?: string;
+  branchId?: string | null;
+  purchaseOrderId?: string | null;
+  supplierId?: string | null;
+  invoiceNo?: string | null;
+  grnNo?: string | null;
   items: PurchaseItem[];
   subtotal: number;
   discount: number;
@@ -429,21 +431,52 @@ export interface Purchase {
   paidAmount: number;
   dueAmount: number;
   status: PurchaseStatus;
-  notes?: string;
+  notes?: string | null;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  deletedAt?: Date | string | null;
+  supplier: {
+    id: string;
+    name: string;
+    phone?: string | null;
+  };
 }
 
 export interface PurchaseItem {
   id: string;
   purchaseId: string;
   itemId: string;
+  batchId?: string | null;
   itemName: string;
   quantity: number;
   unitCost: number;
   total: number;
-  createdAt: Date;
+  returnedQty?: number | null;
+  createdAt: Date | string;
+  deletedAt?: Date | string | null;
+  item?: {
+    id: string;
+    name: string;
+    sku: string | null;
+  } | null;
+  batch?: {
+    id: string;
+    businessId: string;
+    itemId: string;
+    batchNumber: string;
+    expiryDate: string | Date;
+    manufactureDate: string | Date;
+    quantity: number;
+    remainingQty: number;
+    costPrice: number;
+    mrp?: number | null;
+    location?: string | null;
+    isActive: boolean;
+    createdAt: string | Date;
+    updatedAt: string | Date;
+    deletedAt?: string | Date | null;
+  } | null;
 }
 
 // ============================================

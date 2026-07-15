@@ -56,7 +56,14 @@ import type { Expense } from '@/types';
 import { useDeletExpense, useExpenseSummary, useGetExpenseCategories, useGetExpenses } from '@/hooks/api/useExpense';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { QueryClient } from '@tanstack/react-query';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import NewExpensePage from './NewExpensePage';
+import { useQueryClient } from '@tanstack/react-query';
 
 const categoryIcons: Record<string, React.ReactNode> = {
   'Zap': <Zap className="h-5 w-5" />,
@@ -75,6 +82,8 @@ export default function ExpensesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [isNewExpenseOpen, setIsNewExpenseOpen] = useState(false);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { data: expenses = [], isLoading: expensesLoading } = useGetExpenses({search: searchTerm, categoryId: categoryFilter});
   const { data: categories } = useGetExpenseCategories();
@@ -89,7 +98,7 @@ export default function ExpensesPage() {
           icon={Receipt}
           action={{
             label: t('expenses.newExpense'),
-            onClick: () => router.push('/expenses/new'),
+            onClick: () => setIsNewExpenseOpen(true),
             icon: Plus,
           }}
         />
@@ -118,7 +127,7 @@ export default function ExpensesPage() {
             title={isBangla ? 'ক্যাটাগরি' : 'Categories'}
             value={expenseSummary?.categories?.length.toString() || '0'}
             icon={MoreHorizontal}
-            iconColor="text-emerald-600"
+            iconColor="text-primary"
           />
         </div>
 
@@ -160,7 +169,7 @@ export default function ExpensesPage() {
           <CardContent>
             {expensesLoading ? (
               <div className="flex items-center justify-center h-48">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : expenses.length === 0 ? (
               <EmptyState
@@ -169,7 +178,7 @@ export default function ExpensesPage() {
                 description={isBangla ? 'নতুন খরচ যোগ করুন' : 'Add your first expense'}
                 action={{
                   label: t('expenses.newExpense'),
-                  onClick: () => router.push('/expenses/new'),
+                  onClick: () => setIsNewExpenseOpen(true),
                   icon: Plus,
                 }}
               />
@@ -195,6 +204,29 @@ export default function ExpensesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Expense Modal */}
+      <Dialog open={isNewExpenseOpen} onOpenChange={setIsNewExpenseOpen}>
+        <DialogContent className="max-w-[500px] p-6 overflow-y-auto max-h-[92vh] bg-background">
+          <DialogHeader className="pb-3 border-b">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-primary" />
+              <span>{isBangla ? 'নতুন খরচ যোগ করুন' : 'Add New Expense'}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="pt-2">
+            <NewExpensePage
+              isModal={true}
+              onClose={() => setIsNewExpenseOpen(false)}
+              onSuccess={() => {
+                setIsNewExpenseOpen(false);
+                queryClient.invalidateQueries({ queryKey: ['expenses'] });
+                queryClient.invalidateQueries({ queryKey: ['expenseSummary'] });
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Expense Detail Modal */}
       <DetailModal
