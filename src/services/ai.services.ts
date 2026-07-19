@@ -131,6 +131,13 @@ export function formatAiProposalText(
   const missing = response.missingFields.length > 0
     ? response.missingFields.join(', ')
     : isBangla ? 'নেই' : 'None';
+  const expiryLine = response.expiresAt
+    ? (isBangla ? 'প্রস্তাবের মেয়াদ' : 'Proposal expires') +
+      ': ' +
+      new Date(response.expiresAt).toLocaleString(
+        isBangla ? 'bn-BD' : 'en-US',
+      )
+    : null;
   let statusLine: string;
   let safetyLine: string;
 
@@ -161,7 +168,8 @@ export function formatAiProposalText(
     statusLine,
     (isBangla ? 'আত্মবিশ্বাস' : 'Confidence') + ': ' + confidence + '%',
     (isBangla ? 'অসম্পূর্ণ তথ্য' : 'Missing fields') + ': ' + missing,
+    expiryLine,
     '',
     safetyLine,
-  ].join('\n');
+  ].filter((line): line is string => line !== null).join('\n');
 }

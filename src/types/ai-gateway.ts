@@ -40,8 +40,18 @@ export interface AiProposalResponse {
   };
   missingFields: string[];
   requiresConfirmation: true;
+  expiresAt?: string;
+  providerAttempt?: {
+    attempt: number;
+    status: 'SUCCEEDED' | 'FAILED';
+    durationMs: number;
+    errorCode: string | null;
+    retryable: boolean;
+  };
   provider: {
     id: string;
     model: string;
+    promptVersion: string;
+    parseRecoveryOutcome: 'NOT_NEEDED' | 'RECOVERED';
   };
 }
