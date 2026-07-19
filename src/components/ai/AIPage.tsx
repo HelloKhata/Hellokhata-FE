@@ -1,5 +1,5 @@
 // Hello Khata OS - Premium AI Assistant Page
-// Enterprise-grade chat interface with proper layout
+// Enterprise-grade chat interface with proposal-only safety
 
 'use client';
 
@@ -30,8 +30,8 @@ import {
 } from 'lucide-react';
 import { useAiInsights, useDashboardStats } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useFeatureAccess } from '@/stores/featureGateStore';
-import { useSessionStore } from '@/stores/sessionStore';
+import { formatAiProposalText, submitAiTextRequest } from '@/services/ai.services';
+import { AI_UI_ENABLED } from '@/lib/ai/config';
 
 interface Message {
   id: string;
@@ -56,7 +56,6 @@ export default function AIPage() {
   
   const { data: insights } = useAiInsights();
   const { data: dashboardStats } = useDashboardStats();
-  const featureAccess = useFeatureAccess('aiAssistant');
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -82,20 +81,17 @@ export default function AIPage() {
     setIsTyping(true);
 
     try {
-      // Call real AI API
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': useSessionStore.getState().business?.id || '',
+      const proposal = await submitAiTextRequest(textToSend, isBangla ? 'bn-BD' : 'en-US');
+      const data = {
+        success: true,
+        data: {
+          answer: formatAiProposalText(proposal, isBangla ? 'bn-BD' : 'en-US'),
+          insights: [] as string[],
+          risks: [] as string[],
+          recommendations: [] as string[],
+          tables: undefined,
         },
-        body: JSON.stringify({
-          query: textToSend,
-          language: isBangla ? 'bn' : 'en',
-        }),
-      });
-
-      const data = await response.json();
+      };
 
       if (data.success && data.data) {
         const aiResponse = data.data;
@@ -183,6 +179,8 @@ export default function AIPage() {
     { icon: Users, label: isBangla ? 'পার্টি সারসংক্ষেপ' : 'Party Summary', color: 'warning', action: 'query' },
     { icon: DollarSign, label: isBangla ? 'লাভের হিসাব' : 'Profit Calculation', color: 'default', action: 'query' },
   ];
+
+  if (!AI_UI_ENABLED) return null;
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 md:px-6">

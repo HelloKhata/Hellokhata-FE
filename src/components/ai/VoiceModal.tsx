@@ -7,8 +7,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useSessionStore } from '@/stores/sessionStore';
 import { Button } from '@/components/ui/premium';
+import { formatAiProposalText, submitAiTextRequest } from '@/services/ai.services';
+import { AI_UI_ENABLED } from '@/lib/ai/config';
 import { 
   Mic, 
   MicOff, 
@@ -44,7 +45,6 @@ interface VoiceResult {
 
 export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
   const { isBangla } = useAppTranslation();
-  const businessId = useSessionStore((state) => state.business?.id);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -143,46 +143,27 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
     // Get the full transcript including interim results
     const finalTranscript = (transcript + ' ' + interimTranscript).trim();
     
-    // Process the transcript with real AI API
+    // Browser speech recognition is non-authoritative capture only. The final
+    // text always goes through the authenticated ERP backend AI gateway.
     if (finalTranscript) {
       setIsProcessing(true);
       
       try {
-        console.log('Sending query to AI:', finalTranscript);
-        
-        const response = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-business-id': businessId || '',
-          },
-          body: JSON.stringify({
-            query: finalTranscript,
-            language: isBangla ? 'bn' : 'en',
-          }),
-        });
+        const language = isBangla ? 'bn-BD' : 'en-US';
+        const proposal = await submitAiTextRequest(finalTranscript, language);
 
-        const data = await response.json();
-        console.log('AI response:', data);
-
-        if (data.success && data.data) {
-          const aiResponse = data.data;
+        if (proposal) {
+          const answer = formatAiProposalText(proposal, language);
           setResult({
             id: Date.now().toString(),
             query: finalTranscript,
-            answer: isBangla ? (aiResponse.answerBn || aiResponse.answer) : aiResponse.answer,
-            answerBn: aiResponse.answerBn || aiResponse.answer,
-            data: aiResponse.tables?.[0] ? {
-              headers: aiResponse.tables[0].headers,
-              rows: aiResponse.tables[0].rows,
-            } : undefined,
-            actions: [
-              { id: '1', label: 'View Details', labelBn: 'বিস্তারিত দেখুন' },
-            ],
+            answer,
+            answerBn: answer,
+            actions: [],
           });
         } else {
           // API returned error
-          console.error('API error:', data);
+          console.error('AI proposal was unavailable:', proposal);
           setResult({
             id: Date.now().toString(),
             query: finalTranscript,
@@ -211,7 +192,7 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
       // No transcript captured
       setError('no-speech');
     }
-  }, [transcript, interimTranscript, isBangla, businessId]);
+  }, [transcript, interimTranscript, isBangla]);
 
   const handleCopy = () => {
     if (result) {
@@ -229,7 +210,7 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
     fullTranscriptRef.current = '';
   };
 
-  if (!isOpen) return null;
+  if (!AI_UI_ENABLED || !isOpen) return null;
 
   return (
     <AnimatePresence>
@@ -331,7 +312,9 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
                   ? (isBangla ? 'শুনছি... থামতে আবার ক্লিক করুন' : 'Listening... Click again to stop')
                   : isProcessing
                   ? (isBangla ? 'প্রসেসিং...' : 'Processing...')
-                  : (isBangla ? 'মাইক্রোফোনে ক্লিক করুন' : 'Click mic to speak')
+                  : (isBangla
+                    ? 'ব্রাউজার ভয়েস ক্যাপচার মাত্র — পাঠানোর আগে ট্রান্সক্রিপ্ট যাচাই করুন'
+                    : 'Browser speech capture only — verify the transcript before sending')
                 }
               </p>
             </div>
