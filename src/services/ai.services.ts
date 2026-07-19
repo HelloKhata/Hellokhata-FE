@@ -138,6 +138,7 @@ export function formatAiProposalText(
         isBangla ? 'bn-BD' : 'en-US',
       )
     : null;
+  const groundingLines = formatGroundingLines(response, isBangla);
   let statusLine: string;
   let safetyLine: string;
 
@@ -169,7 +170,61 @@ export function formatAiProposalText(
     (isBangla ? 'আত্মবিশ্বাস' : 'Confidence') + ': ' + confidence + '%',
     (isBangla ? 'অসম্পূর্ণ তথ্য' : 'Missing fields') + ': ' + missing,
     expiryLine,
+    ...groundingLines,
     '',
     safetyLine,
   ].filter((line): line is string => line !== null).join('\n');
+}
+
+function formatGroundingLines(
+  response: AiProposalResponse,
+  isBangla: boolean,
+): string[] {
+  if (!response.grounding) return [];
+
+  const lines = [
+    '',
+    (isBangla ? 'ERP à¦—à§à¦°à¦¾à¦‰à¦¨à§à¦¡à¦¿à¦‚' : 'ERP grounding') +
+      ': ' +
+      response.grounding.status,
+  ];
+
+  for (const resolution of response.grounding.resolutions) {
+    if (resolution.status === 'RESOLVED') continue;
+    const candidates = resolution.candidates
+      .map((candidate) => candidate.label)
+      .join(', ');
+    lines.push(
+      '- ' +
+        resolution.entityType +
+        ' "' +
+        resolution.input +
+        '": ' +
+        resolution.status +
+        (candidates ? ' (' + candidates + ')' : ''),
+    );
+  }
+
+  if (response.grounding.citations.length > 0) {
+    lines.push(isBangla ? 'à¦‰à§Žà¦¸:' : 'Sources:');
+  }
+  for (const citation of response.grounding.citations) {
+    const facts = citation.facts
+      .filter((fact) => fact.value !== null)
+      .slice(0, 4)
+      .map((fact) => fact.field + '=' + String(fact.value))
+      .join(', ');
+    lines.push(
+      '- [' +
+        citation.sourceType +
+        '] ' +
+        citation.label +
+        (facts ? ' â€” ' + facts : '') +
+        ' (' +
+        citation.href +
+        ')',
+    );
+  }
+
+  return lines;
 }
