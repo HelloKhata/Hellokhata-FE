@@ -25,6 +25,7 @@ type SuccessfulApiResponse<T> = ApiResponse<T> & {
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   branchId?: string | null;
+  timeoutMs?: number;
 }
 
 async function apiRequest<T>(
@@ -37,6 +38,8 @@ async function apiRequest<T>(
     headers,
     body,
     method = 'GET',
+    signal,
+    timeoutMs,
   } = options;
   const language = useUiStore.getState().language;
   const branchState = useBranchStore.getState();
@@ -62,6 +65,8 @@ async function apiRequest<T>(
       params,
       headers: requestHeaders,
       data: typeof body === 'string' ? JSON.parse(body) : body,
+      signal: signal ?? undefined,
+      timeout: timeoutMs,
     });
     const data = response.data;
 
@@ -115,7 +120,9 @@ export const api = {
   get: <T>(
     endpoint: string,
     params?: Record<string, string | number | boolean | undefined>,
-  ) => apiRequest<T>(endpoint, { method: 'GET', params }),
+    signal?: AbortSignal,
+    timeoutMs?: number,
+  ) => apiRequest<T>(endpoint, { method: 'GET', params, signal, timeoutMs }),
 
   post: <T>(endpoint: string, body?: unknown, branchId?: string | null) =>
     apiRequest<T>(endpoint, {

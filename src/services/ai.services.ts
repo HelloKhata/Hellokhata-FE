@@ -1,4 +1,4 @@
-import { api } from '@/lib/api-client';
+import { api, ApiClientError } from '@/lib/api-client';
 import {
   AI_CONTRACT_VERSION,
   type AiLanguage,
@@ -8,6 +8,85 @@ import {
 
 const AI_TEXT_MIN_LENGTH = 2;
 const AI_TEXT_MAX_LENGTH = 1000;
+const AI_RECOVERY_TIMEOUT_MS = 8_000;
+const AI_REQUEST_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export type AiRequestRecoveryResult =
+  | { kind: 'found'; proposal: AiProposalResponse }
+  | { kind: 'not-found' }
+  | { kind: 'not-ready' };
+
+interface AiRequestRecoveryOptions {
+  signal?: AbortSignal;
+  maxAttempts?: number;
+  retryDelayMs?: number;
+}
+
+export function isValidAiRequestId(requestId: string): boolean {
+  return AI_REQUEST_ID_PATTERN.test(requestId);
+}
+
+export async function getAiRequest(
+  requestId: string,
+  signal?: AbortSignal,
+): Promise<AiProposalResponse> {
+  if (!isValidAiRequestId(requestId)) {
+    throw new Error('Invalid AI request ID.');
+  }
+
+  const response = await api.get<AiProposalResponse>(
+    `/api/ai/requests/${encodeURIComponent(requestId)}`,
+    undefined,
+    signal,
+    AI_RECOVERY_TIMEOUT_MS,
+  );
+
+  return response.data;
+}
+
+function waitForRetry(delayMs: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Recovery cancelled.', 'AbortError'));
+      return;
+    }
+
+    const handleAbort = () => {
+      window.clearTimeout(timeoutId);
+      reject(new DOMException('Recovery cancelled.', 'AbortError'));
+    };
+    const timeoutId = window.setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort);
+      resolve();
+    }, delayMs);
+    signal?.addEventListener('abort', handleAbort, { once: true });
+  });
+}
+
+export async function recoverAiRequest(
+  requestId: string,
+  options: AiRequestRecoveryOptions = {},
+): Promise<AiRequestRecoveryResult> {
+  const { signal, maxAttempts = 3, retryDelayMs = 500 } = options;
+  const boundedAttempts = Math.max(1, Math.min(maxAttempts, 5));
+
+  for (let attempt = 1; attempt <= boundedAttempts; attempt += 1) {
+    try {
+      const proposal = await getAiRequest(requestId, signal);
+      return { kind: 'found', proposal };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      if (!(error instanceof ApiClientError)) throw error;
+      if (error.status === 404) return { kind: 'not-found' };
+      if (error.status !== 409) throw error;
+      if (attempt === boundedAttempts) return { kind: 'not-ready' };
+      await waitForRetry(retryDelayMs, signal);
+    }
+  }
+
+  return { kind: 'not-ready' };
+}
 
 export async function submitAiTextRequest(
   text: string,

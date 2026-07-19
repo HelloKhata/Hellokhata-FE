@@ -30,8 +30,14 @@ import {
 } from 'lucide-react';
 import { useAiInsights, useDashboardStats } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { formatAiProposalText, submitAiTextRequest } from '@/services/ai.services';
+import {
+  formatAiProposalText,
+  isValidAiRequestId,
+  recoverAiRequest,
+  submitAiTextRequest,
+} from '@/services/ai.services';
 import { AI_UI_ENABLED } from '@/lib/ai/config';
+import type { AiLanguage, AiProposalResponse } from '@/types/ai-gateway';
 
 interface Message {
   id: string;
@@ -44,6 +50,36 @@ interface Message {
   }>;
 }
 
+const AI_REQUEST_URL_PARAM = 'requestId';
+
+function replaceAiRequestIdInUrl(requestId?: string): void {
+  const url = new URL(window.location.href);
+  if (requestId) url.searchParams.set(AI_REQUEST_URL_PARAM, requestId);
+  else url.searchParams.delete(AI_REQUEST_URL_PARAM);
+  window.history.replaceState(window.history.state, '', url);
+}
+
+function proposalMessage(
+  proposal: AiProposalResponse,
+  language: AiLanguage,
+): Message {
+  return {
+    id: `proposal-${proposal.requestId}`,
+    role: 'assistant',
+    content: formatAiProposalText(proposal, language),
+    timestamp: new Date(),
+  };
+}
+
+function recoveryNotice(content: string): Message {
+  return {
+    id: `recovery-${Date.now()}`,
+    role: 'assistant',
+    content,
+    timestamp: new Date(),
+  };
+}
+
 export default function AIPage() {
   const { t, isBangla } = useAppTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -51,6 +87,9 @@ export default function AIPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [recoveryLanguage] = useState<AiLanguage>(() =>
+    isBangla ? 'bn-BD' : 'en-US',
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -64,10 +103,86 @@ export default function AIPage() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (!AI_UI_ENABLED) return;
+
+    const recoveryIsBangla =
+      recoveryLanguage === 'bn' || recoveryLanguage === 'bn-BD';
+
+    const requestId = new URL(window.location.href).searchParams.get(
+      AI_REQUEST_URL_PARAM,
+    );
+    if (!requestId) return;
+
+    if (!isValidAiRequestId(requestId)) {
+      replaceAiRequestIdInUrl();
+      setMessages([
+        recoveryNotice(
+          recoveryIsBangla
+            ? 'AI অনুরোধের লিংকটি সঠিক নয়। নতুন অনুরোধ করুন।'
+            : 'This AI request link is invalid. Please start a new request.',
+        ),
+      ]);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsTyping(true);
+
+    void recoverAiRequest(requestId, { signal: controller.signal })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+
+        if (result.kind === 'found') {
+          setMessages([
+            proposalMessage(result.proposal, recoveryLanguage),
+          ]);
+          return;
+        }
+
+        if (result.kind === 'not-found') {
+          replaceAiRequestIdInUrl();
+          setMessages([
+            recoveryNotice(
+              recoveryIsBangla
+                ? 'AI অনুরোধটি পাওয়া যায়নি বা এটি আপনার নয়।'
+                : 'The AI request was not found or is not available to you.',
+            ),
+          ]);
+          return;
+        }
+
+        setMessages([
+          recoveryNotice(
+            recoveryIsBangla
+              ? 'AI ফলাফলটি এখনও প্রস্তুত নয়। কিছুক্ষণ পরে আবার চেষ্টা করুন।'
+              : 'The AI result is not ready yet. Please try again shortly.',
+          ),
+        ]);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setMessages([
+          recoveryNotice(
+            recoveryIsBangla
+              ? 'AI ফলাফল পুনরুদ্ধার করা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।'
+              : 'The AI result could not be recovered. Check your connection and try again.',
+          ),
+        ]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsTyping(false);
+      });
+
+    return () => controller.abort();
+  }, [recoveryLanguage]);
+
   // Handle send message
   const handleSend = async (messageText?: string) => {
     const textToSend = messageText || input;
     if (!textToSend.trim()) return;
+
+    replaceAiRequestIdInUrl();
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -82,6 +197,7 @@ export default function AIPage() {
 
     try {
       const proposal = await submitAiTextRequest(textToSend, isBangla ? 'bn-BD' : 'en-US');
+      replaceAiRequestIdInUrl(proposal.requestId);
       const data = {
         success: true,
         data: {
