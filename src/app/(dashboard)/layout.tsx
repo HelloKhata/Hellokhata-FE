@@ -11,6 +11,7 @@ import client from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/api/useNotifications';
 import NotificatoinProvider from '@/components/notifications/NotificatoinProvider';
+import { AI_UI_ENABLED } from '@/lib/ai/config';
 
 // Simple store subscription for hydration
 const emptySubscribe = () => () => { };
@@ -35,7 +36,9 @@ const DashboardLayout = ({ children }) => {
   // Listen for command palette open event
   useEffect(() => {
     const handleOpenCommandPalette = () => setCommandPaletteOpen(true);
-    const handleOpenVoiceModal = () => setVoiceModalOpen(true);
+    const handleOpenVoiceModal = () => {
+      if (AI_UI_ENABLED) setVoiceModalOpen(true);
+    };
 
     window.addEventListener('openCommandPalette', handleOpenCommandPalette);
     window.addEventListener('openVoiceModal', handleOpenVoiceModal);
@@ -48,11 +51,11 @@ const DashboardLayout = ({ children }) => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === '\\') {
+      if (AI_UI_ENABLED && e.ctrlKey && e.key === '\\') {
         e.preventDefault();
         toggleAiDrawer();
       }
-      if (e.ctrlKey && e.key === 'm') {
+      if (AI_UI_ENABLED && e.ctrlKey && e.key === 'm') {
         e.preventDefault();
         setVoiceModalOpen(true);
       }
