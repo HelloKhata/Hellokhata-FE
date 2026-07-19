@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatAiProposalText, submitAiTextRequest } from '@/services/ai.services';
 import { AI_UI_ENABLED } from '@/lib/ai/config';
+import type { AiProposalResponse } from '@/types/ai-gateway';
+import { AiConfirmationCard } from './AiConfirmationCard';
 import {
   Sparkles,
   MessageSquare,
@@ -46,6 +48,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  proposal?: AiProposalResponse;
 }
 
 interface Insight {
@@ -318,6 +321,7 @@ export function AIDrawer() {
           role: 'assistant',
           content: result.data.answer,
           timestamp: new Date(),
+          proposal,
         };
         setChatMessages((prev) => [...prev, aiMessage]);
       } else {
@@ -440,6 +444,7 @@ export function AIDrawer() {
           role: 'assistant',
           content: result.data.answer,
           timestamp: new Date(),
+          proposal,
         };
         setChatMessages((prev) => [...prev, aiMessage]);
       } else {
@@ -638,7 +643,12 @@ export function AIDrawer() {
               ) : (
                 <div className="space-y-4">
                   {chatMessages.map((msg) => (
-                    <ChatBubble key={msg.id} message={msg} isBangla={isBangla} />
+                    <div key={msg.id}>
+                      <ChatBubble message={msg} isBangla={isBangla} />
+                      {msg.proposal
+                        ? <AiConfirmationCard proposal={msg.proposal} compact />
+                        : null}
+                    </div>
                   ))}
                   {isTyping && (
                     <div className="flex gap-2">
