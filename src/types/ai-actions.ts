@@ -26,9 +26,14 @@ export interface AiActionDraft {
 export interface AiActionReceipt {
   actionId: string;
   actionVersion: number;
-  status: 'BLOCKED';
-  errorCode: 'AI_EXECUTION_DISABLED';
-  committedEntity: null;
+  status: 'BLOCKED' | 'SUCCEEDED';
+  errorCode: 'AI_EXECUTION_DISABLED' | 'AI_ACTION_NOT_ALLOWED' | null;
+  committedEntity: {
+    type: 'SALE';
+    id: string;
+    invoiceNo: string;
+    href: string;
+  } | null;
   attempts: number;
   createdAt: string;
   updatedAt: string;

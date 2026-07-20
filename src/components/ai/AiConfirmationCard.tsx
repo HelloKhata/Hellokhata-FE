@@ -48,14 +48,31 @@ function ActionBody(props: {
     field: 'quantity' | 'unitPrice',
     value: number,
   ) => {
-    setDraft((current) => ({
-      ...current,
-      lineItems: current.lineItems.map((line, position) =>
+    setDraft((current) => {
+      const lineItems = current.lineItems.map((line, position) =>
         position === index ? { ...line, [field]: value } : line,
-      ),
-    }));
+      );
+      return {
+        ...current,
+        lineItems,
+        amount: Number(
+          lineItems
+            .reduce(
+              (total, line) => total + line.quantity * line.unitPrice,
+              0,
+            )
+            .toFixed(2),
+        ),
+      };
+    });
   };
   const terminal = action.status !== 'PENDING_CONFIRMATION';
+  const stockByRecord = new Map(
+    action.sourceEvidence.citations.map((citation) => [
+      citation.recordId,
+      citation.facts.find((fact) => fact.field === 'currentStock')?.value,
+    ]),
+  );
   return <section className={'mt-3 rounded-xl border border-border bg-background p-3 text-left'}>
     <p className={'text-xs font-semibold'}>Confirmation review</p>
     <p className={'text-[10px] text-muted-foreground'}>
@@ -68,7 +85,14 @@ function ActionBody(props: {
       <div key={line.recordId + index} className={compact
         ? 'mt-2 rounded bg-muted/40 p-2'
         : 'mt-2 grid grid-cols-[1fr_70px_80px] gap-2 rounded bg-muted/40 p-2'}>
-        <span className={'self-center text-xs'}>{line.label}</span>
+        <span className={'self-center text-xs'}>
+          {line.label}
+          {typeof stockByRecord.get(line.recordId) === 'number'
+            ? <small className={'block text-[10px] text-muted-foreground'}>
+                Stock: {String(stockByRecord.get(line.recordId))}
+              </small>
+            : null}
+        </span>
         {(['quantity', 'unitPrice'] as const).map((field) => (
           <label key={field} className={'text-[10px] text-muted-foreground'}>
             {field === 'quantity' ? 'Qty' : 'Price'}
@@ -87,12 +111,46 @@ function ActionBody(props: {
         ))}
       </div>
     ))}
+    <div className={'mt-3 grid gap-2 text-xs sm:grid-cols-2'}>
+      <label className={'text-muted-foreground'}>
+        Payment
+        <select
+          className={'mt-1 w-full rounded border bg-background px-2 py-1.5 text-xs'}
+          disabled={terminal || busy}
+          value={draft.paymentMethod ?? ''}
+          onChange={(event) =>
+            setDraft((current) => ({
+              ...current,
+              paymentMethod: event.target.value || null,
+            }))
+          }>
+          <option value={''}>Credit / unpaid</option>
+          <option value={'cash'}>Cash</option>
+          <option value={'card'}>Card</option>
+          <option value={'mobile_banking'}>Mobile banking</option>
+          <option value={'bank_transfer'}>Bank transfer</option>
+        </select>
+      </label>
+      <div className={'rounded border bg-muted/30 p-2'}>
+        <span className={'text-muted-foreground'}>Authoritative review total</span>
+        <strong className={'block text-sm'}>
+          ৳{(draft.amount ?? 0).toLocaleString()}
+        </strong>
+      </div>
+    </div>
     <ActionButtons action={action} draft={draft} busy={busy} run={run} />
-    {action.execution
-      ? <p className={'mt-3 rounded bg-warning/10 p-2 text-xs'}>
-          Confirmed; execution is disabled ({action.execution.errorCode}). No ERP entity was committed.
+    {action.execution?.status === 'SUCCEEDED' && action.execution.committedEntity
+      ? <p className={'mt-3 rounded bg-success/10 p-2 text-xs'}>
+          Sale committed exactly once as{' '}
+          <a className={'font-semibold underline'} href={action.execution.committedEntity.href}>
+            {action.execution.committedEntity.invoiceNo}
+          </a>.
         </p>
-      : null}
+      : action.execution
+        ? <p className={'mt-3 rounded bg-warning/10 p-2 text-xs'}>
+            Confirmed; execution was blocked ({action.execution.errorCode}). No ERP entity was committed.
+          </p>
+        : null}
     {action.status === 'REJECTED'
       ? <p className={'mt-3 text-xs'}>Rejected. Nothing was committed.</p>
       : null}
@@ -122,7 +180,8 @@ function CardBody(props: {
   return <section className={'mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-left'}>
     <p className={'text-xs font-semibold'}>Durable confirmation required</p>
     <p className={'mt-1 text-[11px] text-muted-foreground'}>
-      Open a versioned review draft. No ERP transaction will execute.
+      Opening the versioned draft never commits data. Confirmation can execute
+      only when the backend RECORD_SALE allowlist is explicitly enabled.
     </p>
     <Button className={'mt-2'} size={'sm'} disabled={busy}
       onClick={() => run(() => createOrRecoverAiAction(proposal.requestId))}>
