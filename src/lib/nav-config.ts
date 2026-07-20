@@ -16,6 +16,7 @@ import {
   CreditCard,
   Tag,
   Bell,
+  Plus,
 } from 'lucide-react';
 
 export interface SubnavItem {
@@ -40,6 +41,7 @@ export const navGroups: NavItem[] = [
     labelBn: 'বিক্রি',
     icon: ShoppingCart,
     submenu: [
+      { page: '/sales/new', icon: Plus , labelKey: 'New Sales', labelBn: 'নতুন বিক্রয়' },
       { page: '/sales', icon: ShoppingCart, labelKey: 'Sales List', labelBn: 'বিক্রয় তালিকা' },
       { page: '/sales/quotations', icon: FileText, labelKey: 'Quotations', labelBn: 'কোটেশন' },
       { page: '/sales/payment-in', icon: CreditCard, labelKey: 'Payment In', labelBn: 'পেমেন্ট ইন' },

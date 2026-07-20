@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { Bell, Search, Menu, Globe, LogOut, Sparkles, Loader2 } from 'lucide-react';
+import { Bell, Search, Menu, Globe, LogOut, Sparkles, Loader2, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -176,6 +176,14 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
       {/* Right Side Actions */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Health Score Badge */}
+        <button
+          onClick={() => window.location.href = '/sales/new'}
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 bg-primary rounded-xl hover:bg-primary/70 transition-colors  text-white"
+          title={isBangla ? 'পয়েন্ট অফ সেল (POS)' : 'Point of Sale (POS)'}
+        >
+          <ShoppingCart className="h-4 w-4" />
+          <span className="text-xs font-bold">POS</span>
+        </button>
         <button
           onClick={() => window.location.href = '/reports/health-score'}
           className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-primary-subtle hover:bg-primary/10 transition-colors"

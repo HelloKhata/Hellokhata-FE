@@ -1,3 +1,11 @@
-import SettingsPage from "@/components/settings/SettingsPage";
+import React from 'react'
+
+const SettingsPage = () => {
+  return (
+    <div>
+      Settings
+    </div>
+  )
+}
 
 export default SettingsPage

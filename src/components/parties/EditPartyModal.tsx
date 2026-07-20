@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useUser } from "@/stores";
 import { useParty, useUpdateParty, useDeleteParty } from "@/hooks/api/useParties";
-import { useGetOpeningBalance, useUpdateOpeningBalance } from "@/hooks/api/usePayments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,12 +44,10 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
 
   const { data: partyResponse, isLoading } = useParty(partyId, { enabled: !!partyId && isOpen });
   const party = partyResponse?.data;
-  const { data: openingBalanceData } = useGetOpeningBalance(partyId);
-  const openingBalance = openingBalanceData?.data;
 
   const { mutate: updateParty, isPending: isUpdating } = useUpdateParty(partyId);
   const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
-  const { mutate: updateOpeningBalance } = useUpdateOpeningBalance();
+
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -110,14 +107,8 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
     // Update party info
     updateParty({ id: partyId, data: partyData }, {
       onSuccess: () => {
-        // Update opening balance via dedicated API
-        const balanceAmount = (parseFloat(formData.openingBalance) || 0) * (formData.balanceDirection === 'give' ? -1 : 1);
-        updateOpeningBalance({ id: partyId, data: { amount: balanceAmount } }, {
-          onSuccess: () => {
-            toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
-            onClose();
-          },
-        });
+        toast.success(isBangla ? 'পার্টি আপডেট হয়েছে!' : 'Party updated successfully!');
+        onClose();
       },
     });
   };
@@ -289,9 +280,9 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
                   <Input
                     type="number"
                     value={formData.openingBalance}
-                    onChange={(e) => updateForm('openingBalance', e.target.value)}
+                    disabled
                     placeholder="0"
-                    className="h-11"
+                    className="h-11 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-60"
                   />
                 </div>
                 <div>
@@ -321,14 +312,14 @@ export function EditPartyModal({ isOpen, onClose, partyId }: EditPartyModalProps
                     <button
                       key={dir.value}
                       type="button"
-                      onClick={() => updateForm('balanceDirection', dir.value)}
+                      disabled
                       className={cn(
-                        'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-pointer',
+                        'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border text-xs font-medium transition-all cursor-not-allowed opacity-75',
                         formData.balanceDirection === dir.value
                           ? dir.value === 'receive'
                             ? 'border-primary/50 bg-primary/10 text-primary font-bold'
                             : 'border-red-500/50 bg-red-500/10 text-red-500 font-bold'
-                          : 'border-border bg-transparent text-muted-foreground hover:border-primary/50'
+                          : 'border-border bg-transparent text-muted-foreground'
                       )}
                     >
                       {dir.label}

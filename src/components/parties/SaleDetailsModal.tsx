@@ -1,9 +1,5 @@
-// Hello Khata - Sale Details Modal
-// Modal to view details of a sales transaction
-
 "use client";
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,23 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Loader2,
-  Trash2,
-  Edit,
   Printer,
 } from "lucide-react";
 import { useGetSaleById } from "@/hooks/api/useSales";
-import { useRouter } from "next/navigation";
 import {
   useAppTranslation,
   useCurrency,
@@ -60,34 +43,9 @@ export function SaleDetailsModal({
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
   const { formatDate } = useDateFormat();
-  const router = useRouter();
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   const { data: salesData, isLoading: isSaleLoading } = useGetSaleById(saleId);
 
-  const handleEditRedirect = () => {
-    onClose();
-    router.push(`/sales/${saleId}/edit`);
-  };
 
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    toast.warning(
-      isBangla
-        ? "সরাসরি লেনদেন ডিলিট করা অনুমোদিত নয়"
-        : "Direct deletion is not allowed",
-      {
-        description: isBangla
-          ? "হিসাবের ধারাবাহিকতা বজায় রাখার জন্য একটি ক্রেডিট নোট বা রিটার্ন তৈরি করুন।"
-          : "Please create a return or adjustment to reverse this transaction.",
-      },
-    );
-    setShowDeleteConfirm(false);
-  };
 
   const handlePrint = () => {
     toast.success(isBangla ? "প্রিন্ট হচ্ছে..." : "Connecting to printer...");
@@ -296,30 +254,19 @@ export function SaleDetailsModal({
     return (
       <div className="flex flex-row items-center justify-between w-full gap-4">
         <Button
-          variant="outline"
-          size="icon"
-          onClick={handleDeleteClick}
-          className="h-10 w-10 shrink-0 text-red-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 border-border"
+          onClick={handlePrint}
+          className="h-10 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold flex items-center gap-2 rounded-lg"
         >
-          <Trash2 className="h-4 w-4" />
+          <Printer className="h-4 w-4 shrink-0" />
+          {isBangla ? "প্রিন্ট" : "Print"}
         </Button>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleEditRedirect}
-            className="h-10 w-10 shrink-0 text-foreground hover:bg-muted border-border"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={handlePrint}
-            className="h-10 bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold flex items-center gap-2 rounded-lg"
-          >
-            <Printer className="h-4 w-4 shrink-0" />
-            {isBangla ? "প্রিন্ট" : "Print"}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="h-10 text-xs border-border"
+        >
+          {isBangla ? "বন্ধ করুন" : "Close"}
+        </Button>
       </div>
     );
   };
@@ -346,33 +293,7 @@ export function SaleDetailsModal({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Alert */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="w-[320px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isBangla ? "লেনদেন মুছবেন?" : "Delete Transaction?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {isBangla
-                ? "এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। লেনদেনটি স্থায়ীভাবে মুছে ফেলা হবে।"
-                : "This action cannot be undone. This transaction will be permanently deleted."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {isBangla ? "বাতিল" : "Cancel"}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isBangla ? "মুছুন" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </>
   );
 }
