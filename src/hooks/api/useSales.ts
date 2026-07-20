@@ -1,4 +1,4 @@
-import { createSales, getSaleById, getSales, getSalesSummary, updateSale } from "@/services/sales.services"
+import { createSales, getSaleById, getSales, getSalesSummary } from "@/services/sales.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useCreateSales = () => {
@@ -29,13 +29,5 @@ export const useGetSaleById = (id: string) => {
     })
 }
 
-export const useUpdateSale = (id: string) => {
-    const queryClient = useQueryClient()
-    return useMutation({
-        mutationFn: (data: any) => updateSale({ id, data }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['sales'] })
-        }
-    })
-}
+
 
