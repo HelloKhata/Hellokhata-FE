@@ -12,6 +12,8 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { Button, Badge } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatAiProposalText, submitAiTextRequest } from '@/services/ai.services';
+import { AI_UI_ENABLED } from '@/lib/ai/config';
 import {
   Sparkles,
   MessageSquare,
@@ -95,7 +97,7 @@ export function AILauncherButton() {
   );
 
   // Only show launcher when drawer is collapsed
-  if (!mounted || !isCollapsed) return null;
+  if (!AI_UI_ENABLED || !mounted || !isCollapsed) return null;
 
   // Button content
   const buttonElement = (
@@ -216,24 +218,43 @@ export function AIDrawer() {
 
     setIsLoadingBrief(true);
     try {
-      const response = await fetch('/api/ai/brief', {
-        headers: {
-          'x-business-id': business.id,
+      const language = isBangla ? 'bn-BD' : 'en-US';
+      const result = await submitAiTextRequest(
+        isBangla
+          ? 'আজকের ব্যবসার একটি সংক্ষিপ্ত, শুধু-পঠনযোগ্য সারসংক্ষেপ প্রস্তাব করুন।'
+          : 'Propose a concise, read-only brief of today\'s business.',
+        language,
+      );
+      const description = formatAiProposalText(result, language);
+
+      setBriefData({
+        insights: [{
+          id: result.requestId,
+          type: result.status === 'REJECTED' ? 'alert' : 'info',
+          title: 'Draft business brief',
+          titleBn: 'ব্যবসার খসড়া সারসংক্ষেপ',
+          description,
+          descriptionBn: description,
+          impact: result.status === 'NEEDS_CLARIFICATION' ? 'medium' : 'low',
+          action: 'Review draft',
+          actionBn: 'খসড়া পর্যালোচনা করুন',
+        }],
+        quickStats: [],
+        summary: {
+          todaySales: 0,
+          todayProfit: 0,
+          salesGrowth: 0,
+          lowStockCount: 0,
+          overdueCount: 0,
+          pendingPayments: 0,
         },
       });
-
-      if (!response.ok) throw new Error('Failed to fetch brief');
-
-      const result = await response.json();
-      if (result.success) {
-        setBriefData(result.data);
-      }
     } catch (error) {
       console.error('Error fetching brief:', error);
     } finally {
       setIsLoadingBrief(false);
     }
-  }, [business?.id]);
+  }, [business?.id, isBangla]);
 
   // Fetch brief on mount and when drawer opens
   useEffect(() => {
@@ -284,21 +305,12 @@ export function AIDrawer() {
     setIsTyping(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': business.id,
-        },
-        body: JSON.stringify({
-          query: queryText,
-          language: isBangla ? 'bn' : 'en',
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to get AI response');
-
-      const result = await response.json();
+      const language = isBangla ? 'bn-BD' : 'en-US';
+      const proposal = await submitAiTextRequest(queryText, language);
+      const result = {
+        success: true,
+        data: { answer: formatAiProposalText(proposal, language) },
+      };
 
       if (result.success && result.data?.answer) {
         const aiMessage: ChatMessage = {
@@ -415,21 +427,12 @@ export function AIDrawer() {
     setIsTyping(true);
 
     try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-business-id': business.id,
-        },
-        body: JSON.stringify({
-          query: chatInput,
-          language: isBangla ? 'bn' : 'en',
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to get AI response');
-
-      const result = await response.json();
+      const language = isBangla ? 'bn-BD' : 'en-US';
+      const proposal = await submitAiTextRequest(chatInput, language);
+      const result = {
+        success: true,
+        data: { answer: formatAiProposalText(proposal, language) },
+      };
 
       if (result.success && result.data?.answer) {
         const aiMessage: ChatMessage = {
@@ -457,6 +460,8 @@ export function AIDrawer() {
       setIsTyping(false);
     }
   };
+
+  if (!AI_UI_ENABLED) return null;
 
   return (
     <aside
