@@ -1,0 +1,104 @@
+*   [33mb855899[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m)[m pulled from main
+[31m|[m[32m\[m  
+[31m|[m * [33m9090ec1[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: connect AI UI to ERP gateway
+* [32m|[m [33m16ae618[m edit sales, purhcase, product details, create product
+* [32m|[m [33m8891b41[m pulled from main to dev
+[33m|[m[32m\[m[32m|[m 
+[33m|[m * [33m6cd72c2[m[33m ([m[1;32mmain[m[33m)[m purhcase modified
+[33m|[m *   [33m11f25d2[m Merge pull request #20 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [35m|[m[36m\[m  
+[33m|[m [35m|[m * [33me61fda6[m[33m ([m[1;31morigin/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details[m[33m, [m[1;32msweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details[m[33m)[m add adjust balance module
+[33m|[m * [36m|[m [33mc59231f[m Merge pull request #19 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [1;31m|[m[36m\[m[36m|[m 
+[33m|[m [1;31m|[m * [33mffaf6af[m fixed parties transaction
+[33m|[m * [1;32m|[m [33mf444287[m Merge pull request #18 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [1;33m|[m[1;32m\[m[1;32m|[m 
+[33m|[m [1;33m|[m * [33ma39fee0[m updated parties
+[33m|[m * [1;34m|[m [33m41a71a1[m Merge pull request #17 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [1;35m|[m[1;34m\[m[1;34m|[m 
+[33m|[m [1;35m|[m * [33mb2f512c[m complete parties transactions
+[33m|[m * [1;36m|[m [33ma1f00da[m Merge pull request #16 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [31m|[m[1;36m\[m[1;36m|[m 
+[33m|[m [31m|[m * [33mbfe1b1e[m party transactions details view
+[33m|[m * [32m|[m [33m19d6f15[m Merge pull request #15 from HelloKhata/sweetali0520/hel-105-fe-implement-transaction-list-filters-sorting-and-details
+[33m|[m [33m|[m[32m\[m[32m|[m 
+[33m|[m [33m|[m * [33maed6ed0[m implement parties transaction details and fix notification
+[33m|[m * [34m|[m [33m0c60b0e[m Merge pull request #14 from HelloKhata/sweetali0520/hel-95-fe-implement-party-list-search-and-details-view
+[33m|[m [35m|[m[34m\[m[34m|[m 
+[33m|[m [35m|[m * [33m3bbda55[m[33m ([m[1;31morigin/sweetali0520/hel-95-fe-implement-party-list-search-and-details-view[m[33m, [m[1;32msweetali0520/hel-95-fe-implement-party-list-search-and-details-view[m[33m)[m changes party details ui and behavior
+[33m|[m [35m|[m[35m/[m  
+[33m|[m * [33m57a1958[m[33m ([m[1;32msweetali0520/hel-103-fe-implement-party-payment-reminders-ui[m[33m)[m optize reminder page
+[33m|[m *   [33m863abe7[m Merge pull request #13 from HelloKhata/sweetali0520/hel-103-fe-implement-party-payment-reminders-ui
+[33m|[m [1;31m|[m[1;32m\[m  
+[33m|[m [1;31m|[m * [33m446b889[m[33m ([m[1;31morigin/sweetali0520/hel-103-fe-implement-party-payment-reminders-ui[m[33m)[m party reminder added
+[33m|[m [1;31m|[m[1;31m/[m  
+[33m|[m *   [33m985fced[m Merge pull request #12 from HelloKhata/sweetali0520/hel-64-fe-implement-notification-center
+[33m|[m [1;33m|[m[1;34m\[m  
+[33m|[m [1;33m|[m * [33m65d0006[m[33m ([m[1;31morigin/sweetali0520/hel-64-fe-implement-notification-center[m[33m)[m updated party modules
+[33m|[m * [1;34m|[m [33m4a33919[m Merge pull request #11 from HelloKhata/sweetali0520/hel-64-fe-implement-notification-center
+[33m|[m [1;35m|[m[1;34m\[m[1;34m|[m 
+[33m|[m [1;35m|[m * [33m814e46c[m parties, sales, purchase, quations, adjust balance
+[33m|[m [1;35m|[m[1;35m/[m  
+[33m|[m *   [33m4229eed[m Merge pull request #10 from HelloKhata/update-22-06-26
+[33m|[m [31m|[m[32m\[m  
+[33m|[m [31m|[m * [33m16c8b4d[m[33m ([m[1;31morigin/update-22-06-26[m[33m)[m show actual count
+[33m|[m [31m|[m * [33m7c46dd2[m parties count added
+[33m|[m * [32m|[m [33m4ed7372[m Merge pull request #9 from HelloKhata/update-22-06-26
+[33m|[m [33m|[m[32m\[m[32m|[m 
+[33m|[m [33m|[m * [33m11bb9c0[m show total partiess count
+[33m|[m * [34m|[m [33m02286a9[m Merge pull request #8 from HelloKhata/update-22-06-26
+[33m|[m [35m|[m[34m\[m[34m|[m 
+[33m|[m [35m|[m * [33m2f55f93[m check party search
+[33m|[m * [36m|[m [33m9709734[m Merge pull request #7 from HelloKhata/update-22-06-26
+[33m|[m [1;31m|[m[36m\[m[36m|[m 
+[33m|[m [1;31m|[m * [33mb3bdefd[m created reports pages & shared pagination
+[33m|[m [1;31m|[m[1;31m/[m  
+[33m|[m *   [33mb030676[m Merge pull request #6 from HelloKhata/sweetali0520/hel-64-fe-implement-notification-center
+[33m|[m [1;33m|[m[1;34m\[m  
+[33m|[m [1;33m|[m * [33m8478594[m show notification in appbar
+[33m|[m * [1;34m|[m [33m9f4c16d[m Merge pull request #5 from HelloKhata/sweetali0520/hel-64-fe-implement-notification-center
+[33m|[m [1;35m|[m[1;34m\[m[1;34m|[m 
+[33m|[m [1;35m|[m * [33mf1726fe[m check notification
+[33m|[m [1;35m|[m[1;35m/[m  
+[33m|[m * [33m8986524[m Delete src/app/api/auth directory
+[33m|[m *   [33mf4c414f[m Merge pull request #4 from HelloKhata/fixing-production-issue
+[33m|[m [31m|[m[32m\[m  
+[33m|[m * [32m\[m   [33mc08104c[m Merge pull request #3 from HelloKhata/sweetali0520/hel-57-fe-implement-dashboard-summary-ui
+[33m|[m [33m|[m[34m\[m [32m\[m  
+[33m|[m [33m|[m * [32m|[m [33m5b3c43c[m[33m ([m[1;31morigin/sweetali0520/hel-57-fe-implement-dashboard-summary-ui[m[33m)[m dashboard api
+[33m|[m [33m|[m * [32m|[m [33m36c98d4[m[33m ([m[1;31morigin/sweetali0520/hel-55-fe-implement-forgot-password-flow[m[33m)[m forgot & reset password
+[33m|[m * [34m|[m [32m|[m [33md65f2d3[m Merge pull request #1 from HelloKhata/sweetali0520/hel-53-fe-implement-registration-screen
+[33m|[m [35m|[m[34m\[m[34m|[m [32m|[m 
+[33m|[m * [34m|[m [32m|[m   [33ma70d05a[m Merge pull request #2 from HelloKhata/sweetali0520/hel-51-fe-implement-login-screen
+[33m|[m [1;31m|[m[1;32m\[m [34m\[m [32m\[m  
+* [1;31m|[m [1;32m\[m [34m\[m [32m\[m   [33mcf3e921[m everything pulled
+[1;33m|[m[34m\[m [1;31m\[m [1;32m\[m [34m\[m [32m\[m  
+[1;33m|[m [34m|[m [1;31m|[m[34m_[m[1;32m|[m[34m/[m [32m/[m  
+[1;33m|[m [34m|[m[34m/[m[1;31m|[m [1;32m|[m [32m|[m   
+[1;33m|[m * [1;31m|[m [1;32m|[m [32m|[m [33m23eb9ff[m[33m ([m[1;31morigin/sweetali0520/hel-53-fe-implement-registration-screen[m[33m)[m signup page success
+[1;33m|[m [1;32m|[m [1;31m|[m[1;32m/[m [32m/[m  
+[1;33m|[m [1;32m|[m[1;32m/[m[1;31m|[m [32m|[m   
+* [1;32m|[m [1;31m|[m [32m|[m [33mf06d075[m moved from others to dev branches
+[1;35m|[m[1;32m\[m[1;32m|[m [1;31m|[m [32m|[m 
+[1;35m|[m * [1;31m|[m [32m|[m [33m43fecc0[m[33m ([m[1;31morigin/sweetali0520/hel-51-fe-implement-login-screen[m[33m)[m push dashboard after successfully login
+[1;35m|[m * [1;31m|[m [32m|[m [33ma7b862c[m Remove unwanted files
+[1;35m|[m * [1;31m|[m [32m|[m [33m18e8944[m Login completed
+[1;35m|[m [1;31m|[m[1;31m/[m [32m/[m  
+* [1;31m|[m [32m/[m [33m4b48020[m[33m ([m[1;31morigin/fixing-production-issue[m[33m)[m fixing issues
+[32m|[m [1;31m|[m[32m/[m  
+[32m|[m[32m/[m[1;31m|[m   
+* [1;31m|[m [33m9ea9aac[m fixed issues
+[1;31m|[m[1;31m/[m  
+* [33ma1a74e8[m new sale updated
+* [33m064f2c3[m parties modified
+* [33m2741500[m submenu added
+* [33me1b2b63[m inventory settings updated
+* [33m89be323[m period lock
+* [33m5fcf122[m password settings updated
+* [33mf809347[m up to date
+* [33m8a0dba7[m settings profile updated
+* [33m2362873[m settings layout
+* [33m8409c51[m fetch payments plans and show
+* [33ma81c79c[m Payment Plans added
+* [33m866e7ed[m add readme.md
+* [33m8b2fc62[m payment plans create
