@@ -249,14 +249,12 @@ export function AddPaymentInModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">{isBangla ? "নগদ" : "Cash"}</SelectItem>
-                  <SelectItem value="card">{isBangla ? "কার্ড" : "Card"}</SelectItem>
                   <SelectItem value="mobile_banking">
                     {isBangla ? "মোবাইল ব্যাংকিং" : "Mobile Banking"}
                   </SelectItem>
-                  <SelectItem value="bank_transfer">
-                    {isBangla ? "ব্যাংক ট্রান্সফার" : "Bank Transfer"}
+                  <SelectItem value="bank">
+                    {isBangla ? "ব্যাংক" : "Bank"}
                   </SelectItem>
-                  <SelectItem value="cheque">{isBangla ? "চেক" : "Cheque"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

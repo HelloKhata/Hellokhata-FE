@@ -39,6 +39,10 @@ import {
   AlertTriangle,
   Edit,
   BellRing,
+  MessageSquare,
+  Send,
+  FileCheck,
+  FileX,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getInitials } from "./utils";
@@ -206,6 +210,21 @@ export function PartyDetailsAndTransactions({
 
   const isReceivable = party.currentBalance >= 0;
 
+  const advanceBalance = party.advanceBalance ?? party.advance ?? 0;
+
+  const totalPurchase = party.totalPurchase ?? party.totalPurchases ?? party.purchaseSummary?.total ?? 0;
+  const purchaseInvoice = party.purchaseInvoice ?? party.purchaseSummary?.invoice ?? 0;
+  const purchaseCustom = party.purchaseCustom ?? party.purchaseSummary?.custom ?? 0;
+
+  const totalPaid = party.totalPaid ?? party.totalPayments ?? party.paidSummary?.total ?? 0;
+  const paidInvoice = party.paidInvoice ?? party.paidSummary?.invoice ?? 0;
+  const paidCustom = party.paidCustom ?? party.paidSummary?.custom ?? 0;
+
+  const totalDue = party.totalDue ?? party.dueSummary?.total ?? (party.currentBalance < 0 ? Math.abs(party.currentBalance) : 0);
+  const dueInvoice = party.dueInvoice ?? party.dueSummary?.invoice ?? 0;
+  const dueEmi = party.dueEmi ?? party.dueSummary?.emi ?? 0;
+  const dueCustom = party.dueCustom ?? party.dueSummary?.custom ?? 0;
+
   return (
     <div className="space-y-6 flex flex-col h-full">
       {/* Top Details section */}
@@ -231,7 +250,13 @@ export function PartyDetailsAndTransactions({
                 {party.phone}
               </p>
             )}
+            {party.address && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {party.address}
+              </p>
+            )}
           </div>
+
         </div>
 
         <div className="text-right shrink-0">
@@ -300,6 +325,111 @@ export function PartyDetailsAndTransactions({
           <BellRing className="h-3.5 w-3.5" />
           {isBangla ? "তাগাদা পাঠান" : "Send Reminder"}
         </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        {/* Advance Balance Card */}
+        <div className="bg-[#f0f3ff] dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/30 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white dark:bg-indigo-900/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs shrink-0">
+                <MessageSquare className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-indigo-600 dark:text-indigo-400 font-medium text-xs">
+                {isBangla ? "এডভান্স ব্যালেন্স" : "Advance Balance"}
+              </span>
+            </div>
+            <span className="text-indigo-700 dark:text-indigo-300 font-bold text-sm">
+              {formatCurrency(advanceBalance)}
+            </span>
+          </div>
+        </div>
+
+        {/* Total Purchase Card */}
+        <div className="bg-[#f6f2fe] dark:bg-purple-950/20 border border-purple-100/60 dark:border-purple-900/30 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white dark:bg-purple-900/80 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-xs shrink-0">
+                <Send className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-purple-600 dark:text-purple-400 font-medium text-xs">
+                {isBangla ? "মোট ক্রয়" : "Total Purchase"}
+              </span>
+            </div>
+            <span className="text-purple-700 dark:text-purple-300 font-bold text-sm">
+              {formatCurrency(totalPurchase)}
+            </span>
+          </div>
+          <div className="mt-2.5 space-y-0.5 text-[11px] text-muted-foreground font-medium">
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "ইনভয়েস" : "Invoice"}</span>
+              <span>{formatCurrency(purchaseInvoice)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "কাস্টম" : "Custom"}</span>
+              <span>{formatCurrency(purchaseCustom)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Paid Card */}
+        <div className="bg-[#f0fdf4] dark:bg-emerald-950/20 border border-emerald-100/60 dark:border-emerald-900/30 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white dark:bg-emerald-900/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs shrink-0">
+                <FileCheck className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                {isBangla ? "মোট পরিশোধ" : "Total Paid"}
+              </span>
+            </div>
+            <span className="text-emerald-700 dark:text-emerald-300 font-bold text-sm">
+              {formatCurrency(totalPaid)}
+            </span>
+          </div>
+          <div className="mt-2.5 space-y-0.5 text-[11px] text-muted-foreground font-medium">
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "ইনভয়েস" : "Invoice"}</span>
+              <span>{formatCurrency(paidInvoice)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "কাস্টম" : "Custom"}</span>
+              <span>{formatCurrency(paidCustom)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Due Card */}
+        <div className="bg-[#fef2f2] dark:bg-rose-950/20 border border-rose-100/60 dark:border-rose-900/30 rounded-2xl p-3.5 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white dark:bg-rose-900/80 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-xs shrink-0">
+                <FileX className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-rose-600 dark:text-rose-400 font-medium text-xs">
+                {isBangla ? "মোট বাকি" : "Total Due"}
+              </span>
+            </div>
+            <span className="text-rose-700 dark:text-rose-300 font-bold text-sm">
+              {formatCurrency(totalDue)}
+            </span>
+          </div>
+          <div className="mt-2.5 space-y-0.5 text-[11px] text-muted-foreground font-medium">
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "ইনভয়েস" : "Invoice"}</span>
+              <span>{formatCurrency(dueInvoice)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "ইএমআই" : "EMI"}</span>
+              <span>{formatCurrency(dueEmi)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>{isBangla ? "কাস্টম" : "Custom"}</span>
+              <span>{formatCurrency(dueCustom)}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Delete Dialog */}
@@ -578,7 +708,7 @@ export function PartyDetailsAndTransactions({
         <AdjustmentDetailsModal
           isOpen={selectedTransaction !== null}
           onClose={() => setSelectedTransaction(null)}
-          entry={selectedTransaction}
+          id={selectedTransaction?.id}
           party={party}
         />
       )}

@@ -14,6 +14,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PopoverAnchor,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -24,6 +25,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
   Plus,
   Trash2,
   Calendar as CalendarIcon,
@@ -31,9 +46,9 @@ import {
   X,
   ArrowLeft,
   Camera,
-  Search,
   Users,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -41,12 +56,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGetItems } from "@/hooks/api/useItems";
 import { useParties, useParty } from "@/hooks/api/useParties";
+import { useGetBatches } from "@/hooks/api/useBatches";
 import { useCreateSales } from "@/hooks/api/useSales";
+import Image from "next/image";
 
 interface BillingItemRow {
   id: string;
   itemId: string;
   itemName: string;
+  batchNo?: string;
   quantity: number;
   unitPrice: number;
   costPrice: number;
@@ -55,6 +73,7 @@ interface BillingItemRow {
   total: number;
   searchQuery: string;
   showSuggestions: boolean;
+  imageUrl?: string;
 }
 
 function NewSaleContent() {
@@ -79,13 +98,17 @@ function NewSaleContent() {
   }, [partySearchQuery]);
 
   const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
-
   const items = itemsData?.data || [];
-  console.log("itemsData", itemsData);
-  console.log("items", items);
   const { data: partiesData } = useParties();
-
   const parties = partiesData?.data || [];
+
+  const { data: batchesData } = useGetBatches({ status: "active", limit: 1000 });
+  const batches = batchesData || [];
+
+  const getItemBatches = (itemId: string) => {
+    if (!itemId) return [];
+    return batches.filter((b: any) => b.itemId === itemId);
+  };
 
   // Form State
   const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
@@ -105,13 +128,36 @@ function NewSaleContent() {
     "cash" | "card" | "mobile_banking" | "credit"
   >("cash");
   const [paidAmount, setPaidAmount] = useState<string>("");
-  // Billing Items Table Rows
 
+  // New Fields (Tax, VAT, Additional Charge)
+  const [taxConfig, setTaxConfig] = useState<{ type: "flat" | "percent"; value: number }>({
+    type: "flat",
+    value: 0,
+  });
+  const [vatConfig, setVatConfig] = useState<{ type: "flat" | "percent"; value: number }>({
+    type: "flat",
+    value: 0,
+  });
+  const [additionalCharge, setAdditionalCharge] = useState<string>("0");
+
+  // Modal Controls
+  const [isEditTaxOpen, setIsEditTaxOpen] = useState(false);
+  const [isEditVatOpen, setIsEditVatOpen] = useState(false);
+
+  // Modal temporary values
+  const [tempTaxType, setTempTaxType] = useState<"flat" | "percent">("flat");
+  const [tempTaxValue, setTempTaxValue] = useState<string>("0");
+
+  const [tempVatType, setTempVatType] = useState<"flat" | "percent">("flat");
+  const [tempVatValue, setTempVatValue] = useState<string>("0");
+
+  // Billing Items Table Rows
   const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([
     {
       id: "initial-row",
       itemId: "",
       itemName: "",
+      batchNo: "",
       quantity: 1,
       unitPrice: 0,
       costPrice: 0,
@@ -120,6 +166,7 @@ function NewSaleContent() {
       total: 0,
       searchQuery: "",
       showSuggestions: false,
+      imageUrl: "",
     },
   ]);
 
@@ -144,22 +191,58 @@ function NewSaleContent() {
   }, [parties, selectedPartyId, singlePartyData]);
 
   // Calculations
-  const subtotal = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + item.total, 0);
+  const rawSubtotal = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   }, [selectedItems]);
 
   const totalDiscount = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + item.discountFlat, 0);
   }, [selectedItems]);
 
-  const total = subtotal; // In this mockup, total is sum of rows after row-level discounts
+  const subtotalAfterDiscount = useMemo(() => {
+    return Math.max(0, rawSubtotal - totalDiscount);
+  }, [rawSubtotal, totalDiscount]);
+
+  const taxVal = useMemo(() => {
+    if (taxConfig.type === "flat") {
+      return taxConfig.value;
+    } else {
+      return parseFloat((subtotalAfterDiscount * (taxConfig.value / 100)).toFixed(2)) || 0;
+    }
+  }, [taxConfig, subtotalAfterDiscount]);
+
+  const vatVal = useMemo(() => {
+    if (vatConfig.type === "flat") {
+      return vatConfig.value;
+    } else {
+      return parseFloat((subtotalAfterDiscount * (vatConfig.value / 100)).toFixed(2)) || 0;
+    }
+  }, [vatConfig, subtotalAfterDiscount]);
+
+  const additionalChargeVal = useMemo(() => {
+    return parseFloat(additionalCharge) || 0;
+  }, [additionalCharge]);
+
+  const grandTotal = useMemo(() => {
+    return Math.max(0, subtotalAfterDiscount + taxVal + vatVal + additionalChargeVal);
+  }, [subtotalAfterDiscount, taxVal, vatVal, additionalChargeVal]);
 
   const effectivePaidAmount = useMemo(() => {
     if (paymentMethod === "credit") return 0;
-    return paidAmount === "" ? total : parseFloat(paidAmount) || total;
-  }, [paymentMethod, paidAmount, total]);
+    if (paidAmount === "") return 0;
+    return parseFloat(paidAmount) || 0;
+  }, [paymentMethod, paidAmount]);
 
-  const due = Math.max(0, total - effectivePaidAmount);
+  const due = useMemo(() => {
+    return Math.max(0, grandTotal - effectivePaidAmount);
+  }, [grandTotal, effectivePaidAmount]);
+
+  // Validation
+  const isPaidAmountExceeded = useMemo(() => {
+    if (paymentMethod === "credit") return false;
+    const parsedPaid = parseFloat(paidAmount || "0");
+    return parsedPaid > grandTotal;
+  }, [paymentMethod, paidAmount, grandTotal]);
 
   // Add Item Row
   const addItemRow = () => {
@@ -169,6 +252,7 @@ function NewSaleContent() {
         id: Math.random().toString(),
         itemId: "",
         itemName: "",
+        batchNo: "",
         quantity: 1,
         unitPrice: 0,
         costPrice: 0,
@@ -177,6 +261,7 @@ function NewSaleContent() {
         total: 0,
         searchQuery: "",
         showSuggestions: false,
+        imageUrl: "",
       },
     ]);
   };
@@ -189,6 +274,7 @@ function NewSaleContent() {
           id: "initial-row",
           itemId: "",
           itemName: "",
+          batchNo: "",
           quantity: 1,
           unitPrice: 0,
           costPrice: 0,
@@ -197,6 +283,7 @@ function NewSaleContent() {
           total: 0,
           searchQuery: "",
           showSuggestions: false,
+          imageUrl: "",
         },
       ]);
       return;
@@ -225,6 +312,7 @@ function NewSaleContent() {
             itemName: "",
             searchQuery: query,
             showSuggestions: true,
+            imageUrl: "",
           };
         }
         return item;
@@ -250,6 +338,7 @@ function NewSaleContent() {
             costPrice: product.costPrice || 0,
             total,
             showSuggestions: false,
+            imageUrl: product.imageUrl,
           };
         }
         return item;
@@ -383,6 +472,31 @@ function NewSaleContent() {
     });
   };
 
+  // Modal Actions
+  const openEditTax = () => {
+    setTempTaxType(taxConfig.type);
+    setTempTaxValue(taxConfig.value.toString());
+    setIsEditTaxOpen(true);
+  };
+
+  const saveTax = () => {
+    const val = parseFloat(tempTaxValue) || 0;
+    setTaxConfig({ type: tempTaxType, value: val });
+    setIsEditTaxOpen(false);
+  };
+
+  const openEditVat = () => {
+    setTempVatType(vatConfig.type);
+    setTempVatValue(vatConfig.value.toString());
+    setIsEditVatOpen(true);
+  };
+
+  const saveVat = () => {
+    const val = parseFloat(tempVatValue) || 0;
+    setVatConfig({ type: tempVatType, value: val });
+    setIsEditVatOpen(false);
+  };
+
   // Handle submit form
   const handleSubmit = async () => {
     // Filter empty items
@@ -390,6 +504,13 @@ function NewSaleContent() {
     if (validItems.length === 0) {
       toast.error(
         isBangla ? "অন্তত একটি পণ্য যোগ করুন" : "Add at least one item",
+      );
+      return;
+    }
+
+    if (isPaidAmountExceeded) {
+      toast.error(
+        isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণ অতিক্রম করতে পারে না" : "Paid amount cannot exceed total amount.",
       );
       return;
     }
@@ -407,6 +528,10 @@ function NewSaleContent() {
       paidAmount: effectivePaidAmount,
       paymentMethod,
       notes: notes || undefined,
+      // New fields added to payload
+      tax: taxVal,
+      vat: vatVal,
+      additionalCharge: additionalChargeVal,
     };
 
     mutate(payload, {
@@ -424,7 +549,7 @@ function NewSaleContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between pb-2">
+      <div className="flex items-center justify-between pb-2 border-b border-border/40">
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           {isBangla ? "নতুন বিক্রি" : "New Sale"}
         </h1>
@@ -438,194 +563,263 @@ function NewSaleContent() {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        {/* Row 1 Layout: Select Party, Invoice No, Invoice Date */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          {/* Select Party */}
-          <div className="relative space-y-2">
-            <Label className="text-sm font-medium text-foreground">
-              {isBangla ? "পার্টি নির্বাচন করুন" : "Select Party"}
-            </Label>
-            <div className="relative">
-              <Input
-                value={selectedPartyName || partySearchQuery}
-                onChange={(e) => {
-                  setPartySearchQuery(e.target.value);
-                  if (selectedPartyId) setSelectedPartyId("");
-                  setShowPartySuggestions(true);
-                }}
-                onFocus={() => setShowPartySuggestions(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowPartySuggestions(false), 200);
-                }}
-                placeholder={isBangla ? "পার্টি খুঁজুন..." : "Search for party"}
-                className="pr-10 h-11 bg-background/50 border-input"
-              />
-              <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-              {showPartySuggestions && (
-                <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                  {filteredParties.length === 0 ? (
-                    <div className="p-3 text-center text-sm text-muted-foreground">
-                      {isBangla
-                        ? "কোনো পার্টি পাওয়া যায়নি"
-                        : "No parties found"}
-                    </div>
-                  ) : (
-                    filteredParties.map((party: any) => (
-                      <button
-                        key={party.id}
-                        type="button"
-                        className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setSelectedPartyId(party.id);
-                          setPartySearchQuery("");
-                          setShowPartySuggestions(false);
-                        }}
-                      >
-                        <span className="font-medium text-foreground">
-                          {party.name}
-                        </span>
-                        {party.phone && (
-                          <span className="text-xs text-muted-foreground">
-                            {party.phone}
-                          </span>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Invoice No */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
+      {/* 75% / 25% Split Layout Container */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        
+        {/* Left Side (75% on Desktop) */}
+        <div className="w-full lg:w-[75%] space-y-6">
+          
+          {/* Row 1 Layout: Select Party, Invoice No, Invoice Date */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+            {/* Select Party */}
+            <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "ইনভয়েস নম্বর" : "Invoice No"}
+                {isBangla ? "পার্টি নির্বাচন করুন" : "Select Party"}
               </Label>
-              <button
-                type="button"
-                onClick={() => setIsManualInvoiceNo(!isManualInvoiceNo)}
-                className="text-xs text-primary font-semibold hover:underline"
-              >
-                {isManualInvoiceNo
-                  ? isBangla
-                    ? "স্বয়ংক্রিয়"
-                    : "Auto"
-                  : isBangla
-                    ? "ম্যানুয়াল"
-                    : "Manual"}
-              </button>
-            </div>
-            <Input
-              value={invoiceNo}
-              onChange={(e) => setInvoiceNo(e.target.value)}
-              disabled={!isManualInvoiceNo}
-              placeholder={isBangla ? "স্বয়ংক্রিয় ইনভয়েস" : "Auto Generated"}
-              className="h-11 bg-background/50 border-input font-medium"
-            />
-          </div>
-
-          {/* Invoice Date */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">
-              {isBangla ? "ইনভয়েস তারিখ" : "Invoice Date"}
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted"
-                >
-                  <span>{format(invoiceDate, "dd MMM yyyy")}</span>
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={invoiceDate}
-                  onSelect={(date) => date && setInvoiceDate(date)}
-                  initialFocus
+              <div className="relative">
+                <Input
+                  value={selectedPartyName || partySearchQuery}
+                  onChange={(e) => {
+                    setPartySearchQuery(e.target.value);
+                    if (selectedPartyId) setSelectedPartyId("");
+                    setShowPartySuggestions(true);
+                  }}
+                  onFocus={() => setShowPartySuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowPartySuggestions(false), 200);
+                  }}
+                  placeholder={isBangla ? "পার্টি খুঁজুন..." : "Search for party"}
+                  className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1"
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
+                <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
-        {/* Row 2: Billing Items Table */}
-        <div className="border border-border rounded-xl bg-card overflow-visible shadow-sm">
-          <div className="overflow-visible">
-            <table className="w-full text-sm text-left border-collapse">
-              <thead>
-                <tr className="bg-muted/30 border-b border-border text-muted-foreground text-xs font-semibold uppercase">
-                  <th className="px-4 py-3 w-[8%]">
+                {showPartySuggestions && (
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                    {filteredParties.length === 0 ? (
+                      <div className="p-3 text-center text-sm text-muted-foreground">
+                        {isBangla
+                          ? "কোনো পার্টি পাওয়া যায়নি"
+                          : "No parties found"}
+                      </div>
+                    ) : (
+                      filteredParties.map((party: any) => (
+                        <button
+                          key={party.id}
+                          type="button"
+                          className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setSelectedPartyId(party.id);
+                            setPartySearchQuery("");
+                            setShowPartySuggestions(false);
+                          }}
+                        >
+                          <span className="font-medium text-foreground">
+                            {party.name}
+                          </span>
+                          {party.phone && (
+                            <span className="text-xs text-muted-foreground">
+                              {party.phone}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Invoice No */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-medium text-foreground">
+                  {isBangla ? "ইনভয়েস নম্বর" : "Invoice No"}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setIsManualInvoiceNo(!isManualInvoiceNo)}
+                  className="text-xs text-primary font-semibold hover:underline"
+                >
+                  {isManualInvoiceNo
+                    ? isBangla
+                      ? "স্বয়ংক্রিয়"
+                      : "Auto"
+                    : isBangla
+                      ? "ম্যানুয়াল"
+                      : "Manual"}
+                </button>
+              </div>
+              <Input
+                value={invoiceNo}
+                onChange={(e) => setInvoiceNo(e.target.value)}
+                disabled={!isManualInvoiceNo}
+                placeholder={isBangla ? "স্বয়ংক্রিয় ইনভয়েস" : "Auto Generated"}
+                className="h-11 bg-background/50 border-input font-medium focus-visible:ring-1"
+              />
+            </div>
+
+            {/* Invoice Date */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">
+                {isBangla ? "ইনভয়েস তারিখ" : "Invoice Date"}
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted"
+                  >
+                    <span>{format(invoiceDate, "dd MMM yyyy")}</span>
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={invoiceDate}
+                    onSelect={(date) => date && setInvoiceDate(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          {/* Customer Info Card (if selected) */}
+          {singlePartyData?.data && (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
+                <Users className="h-4 w-4" />
+                <span>{isBangla ? "গ্রাহক সংক্ষিপ্ত বিবরণ" : "Customer Overview"}</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "গ্রাহকের নাম" : "Customer Name"}</p>
+                  <p className="font-semibold text-foreground truncate mt-0.5">{singlePartyData.data.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "মোবাইল" : "Phone"}</p>
+                  <p className="font-semibold text-foreground truncate mt-0.5">{singlePartyData.data.phone || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-rose-400/80 uppercase tracking-wide">{isBangla ? "বর্তমান বাকি" : "Current Due"}</p>
+                  <p className="font-bold text-rose-500 mt-0.5">
+                    {formatCurrency(Math.abs(singlePartyData.data.currentBalance || 0))}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "ক্রেডিট লিমিট" : "Credit Limit"}</p>
+                  <p className="font-semibold text-foreground mt-0.5">
+                    {singlePartyData.data.creditLimit ? formatCurrency(singlePartyData.data.creditLimit) : (isBangla ? "সীমাহীন" : "Unlimited")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Row 2: Billing Items Table */}
+          <div className="border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
                     {isBangla ? "ক্রমিক" : "S.N."}
-                  </th>
-                  <th className="px-4 py-3 w-[35%]">
-                    {isBangla ? "নাম" : "Name"}
-                  </th>
-                  <th className="px-4 py-3 w-[12%]">
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
+                    {/* Thumbnail Image column */}
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[32%] text-xs font-semibold uppercase">
+                    {isBangla ? "প্রোডাক্ট" : "Product"}
+                  </TableHead>
+                    <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
+                    {isBangla ? "ব্যাচ নম্বর" : "Batch No"}
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
                     {isBangla ? "পরিমাণ" : "Quantity"}
-                  </th>
-                  <th className="px-4 py-3 w-[15%]">
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
                     {isBangla ? "দর" : "Rate"}
-                  </th>
-                  <th className="px-4 py-3 w-[18%]">
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[18%] text-xs font-semibold uppercase">
                     {isBangla ? "ছাড়" : "Discount"}
-                  </th>
-                  <th className="px-4 py-3 w-[12%] text-right">
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[11%] text-right text-xs font-semibold uppercase">
                     {isBangla ? "মোট" : "Amount"}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[11%] text-right text-xs font-semibold uppercase">
+                  
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
                 {selectedItems.map((item, idx) => (
-                  <tr
+                  <TableRow
                     key={item.id}
                     className="hover:bg-muted/10 transition-colors"
                   >
                     {/* SN */}
-                    <td className="px-4 py-4 font-bold text-amber-500 align-middle">
+                    <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
                       {idx + 1}
-                    </td>
+                    </TableCell>
+
+                    {/* Product Thumbnail */}
+                    <TableCell className="px-3 py-3 align-middle">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.itemName}
+                          className="h-8 w-8 rounded object-cover border border-border/80"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
+                          <Image src="/images/image.png" width={50} height={50} alt="Image" className="h-8 w-8 text-muted-foreground/60" />
+                        </div>
+                      )}
+                    </TableCell>
 
                     {/* Name */}
-                    <td className="px-4 py-3 align-middle relative">
-                      <Input
-                        value={
-                          item.showSuggestions
-                            ? item.searchQuery || ""
-                            : item.itemName
-                        }
-                        placeholder={
-                          isBangla ? "পণ্য নাম লিখুন" : "Search item..."
-                        }
-                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9"
-                        onFocus={() => {
-                          setSelectedItems((prev) =>
-                            prev.map((i) =>
-                              i.id === item.id
-                                ? {
-                                    ...i,
-                                    searchQuery: i.itemName,
-                                    showSuggestions: true,
-                                  }
-                                : i,
-                            ),
-                          );
-                        }}
-                        onChange={(e) =>
-                          handleNameChange(item.id, e.target.value)
-                        }
-                        onBlur={() => handleRowBlur(item.id)}
-                      />
+                    <TableCell className="px-4 py-3 align-middle relative w-[32%]">
+                      <Popover open={item.showSuggestions}>
+                        <PopoverAnchor asChild>
+                          <div className="w-full">
+                            <Input
+                              value={
+                                item.showSuggestions
+                                  ? item.searchQuery || ""
+                                  : item.itemName
+                              }
+                              placeholder={
+                                isBangla ? "পণ্য নাম লিখুন" : "Search item..."
+                              }
+                              className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 w-full"
+                              onFocus={() => {
+                                setSelectedItems((prev) =>
+                                  prev.map((i) =>
+                                    i.id === item.id
+                                      ? {
+                                          ...i,
+                                          searchQuery: i.itemName,
+                                          showSuggestions: true,
+                                        }
+                                      : i,
+                                  ),
+                                );
+                              }}
+                              onChange={(e) =>
+                                handleNameChange(item.id, e.target.value)
+                              }
+                              onBlur={() => handleRowBlur(item.id)}
+                            />
+                          </div>
+                        </PopoverAnchor>
 
-                      {item.showSuggestions && (
-                        <div className="absolute z-50 left-4 right-4 top-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                        <PopoverContent
+                          className="w-[380px] p-0 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border z-50 text-foreground"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                          onCloseAutoFocus={(e) => e.preventDefault()}
+                        >
                           {getFilteredProducts(item.searchQuery || "")
                             .length === 0 ? (
                             <div className="p-3 text-center text-sm text-muted-foreground">
@@ -639,29 +833,41 @@ function NewSaleContent() {
                                 <button
                                   key={product.id}
                                   type="button"
-                                  className="w-full text-left p-3 hover:bg-muted/80 transition-colors flex justify-between"
+                                  className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground"
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     handleSelectProduct(item.id, product);
                                   }}
                                 >
-                                  <div>
-                                    <p className="font-medium text-foreground">
-                                      {product.name}
-                                    </p>
-
-                                    <p className="text-xs text-muted-foreground">
-                                      SKU: {product.sku || "-"}
-                                    </p>
-
-                                    <p className="text-xs text-muted-foreground">
-                                      Stock: {product.currentStock}{" "}
-                                      {product.unit}
-                                    </p>
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    {/* Product image in suggestions list */}
+                                    {product.imageUrl ? (
+                                      <img
+                                        src={product.imageUrl}
+                                        alt={product.name}
+                                        className="h-10 w-10 rounded object-cover border border-border/80 shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                        <Image src="/images/image.png" width={20} height={20} alt={product.name} className="h-5 w-5 text-muted-foreground/60" />
+                                      </div>
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-foreground truncate text-xs leading-normal">
+                                        {product.name}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                        <span>SKU: {product.sku || "-"}</span>
+                                        <span>•</span>
+                                        <span>Barcode: {product.barcode || "-"}</span>
+                                        <span>•</span>
+                                        <span>Stock: {product.currentStock} {product.unit}</span>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  <div className="text-right">
-                                    <p className="font-semibold text-primary">
+                                  <div className="text-right shrink-0">
+                                    <p className="font-bold text-primary text-xs">
                                       Tk. {product.sellingPrice}
                                     </p>
                                   </div>
@@ -669,24 +875,58 @@ function NewSaleContent() {
                               ),
                             )
                           )}
-                        </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+
+                    {/* Batch No */}
+                    <TableCell className="px-4 py-3 align-middle w-[15%]">
+                      {item.itemId ? (
+                        <Select
+                          value={item.batchNo || "default"}
+                          onValueChange={(val) => {
+                            setSelectedItems((prev) =>
+                              prev.map((i) =>
+                                i.id === item.id
+                                  ? { ...i, batchNo: val === "default" ? "" : val }
+                                  : i
+                              )
+                            );
+                          }}
+                        >
+                          <SelectTrigger className="h-9 bg-background/50 border-input text-foreground text-xs focus-visible:ring-1">
+                            <SelectValue placeholder={isBangla ? "ব্যাচ নং" : "Batch No"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="default">
+                              {isBangla ? "ডিফল্ট ব্যাচ" : "Default Batch"}
+                            </SelectItem>
+                            {getItemBatches(item.itemId).map((b: any) => (
+                              <SelectItem key={b.id} value={b.batchNo}>
+                                {b.batchNo} {b.expiryDate ? `(${format(new Date(b.expiryDate), "MM/yy")})` : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
-                    </td>
+                    </TableCell>
                     {/* Quantity */}
-                    <td className="px-4 py-3 align-middle">
+                    <TableCell className="px-4 py-3 align-middle">
                       <Input
                         type="number"
                         value={item.quantity || ""}
                         onChange={(e) =>
                           handleQuantityChange(item.id, e.target.value)
                         }
-                        className="bg-background/30 h-9 text-center border-input focus:ring-0"
+                        className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
                         min="1"
                       />
-                    </td>
+                    </TableCell>
 
                     {/* Rate */}
-                    <td className="px-4 py-3 align-middle">
+                    <TableCell className="px-4 py-3 align-middle">
                       <div className="relative flex items-center">
                         <span className="absolute left-3 text-xs text-muted-foreground font-medium">
                           Tk.
@@ -697,14 +937,14 @@ function NewSaleContent() {
                           onChange={(e) =>
                             handleRateChange(item.id, e.target.value)
                           }
-                          className="pl-9 bg-background/30 h-9 border-input focus:ring-0"
+                          className="pl-9 bg-background/30 h-9 border-input focus:ring-1 focus-visible:ring-1"
                           min="0"
                         />
                       </div>
-                    </td>
+                    </TableCell>
 
                     {/* Discount (% and flat) */}
-                    <td className="px-4 py-3 align-middle">
+                    <TableCell className="px-4 py-3 align-middle">
                       <div className="flex gap-1.5 items-center">
                         <div className="relative flex-1 flex items-center">
                           <Input
@@ -717,7 +957,7 @@ function NewSaleContent() {
                               )
                             }
                             placeholder="0"
-                            className="bg-background/30 h-9 text-right pr-6 border-input focus:ring-0"
+                            className="bg-background/30 h-9 text-right pr-6 border-input focus:ring-1 focus-visible:ring-1"
                             min="0"
                             max="100"
                           />
@@ -736,59 +976,60 @@ function NewSaleContent() {
                               handleDiscountFlatChange(item.id, e.target.value)
                             }
                             placeholder="0"
-                            className="pl-7 bg-background/30 h-9 text-right border-input focus:ring-0"
+                            className="pl-7 bg-background/30 h-9 text-right border-input focus:ring-1 focus-visible:ring-1"
                             min="0"
                           />
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
 
                     {/* Amount & Action */}
-                    <td className="px-4 py-3 align-middle text-right font-medium text-foreground">
+                    <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
                       <div className="flex items-center justify-end gap-3">
                         <span className="font-semibold text-foreground text-sm">
                           Tk. {item.total.toFixed(2)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => removeItemRow(item.id)}
-                          className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 align-middle">
+                      <button
+                        type="button"
+                        onClick={() => removeItemRow(item.id)}
+                        className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
 
-          {/* Table Bottom Add Action */}
-          <div className="flex justify-between items-center px-6 py-4 bg-muted/10 border-t border-border">
-            <button
-              type="button"
-              onClick={addItemRow}
-              className="text-primary font-semibold text-sm flex items-center gap-1.5 hover:text-primary-hover transition-colors cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              {isBangla ? "বিল আইটেম যোগ করুন" : "Add Billing Item"}
-            </button>
-            <div className="flex items-center gap-8">
-              <span className="text-sm text-muted-foreground font-medium">
-                {isBangla ? "উপমোট" : "Sub Total"}
-              </span>
-              <span className="font-bold text-foreground text-base">
-                Tk. {subtotal.toFixed(2)}
-              </span>
+            {/* Table Bottom Add Action */}
+            <div className="flex justify-between items-center px-6 py-4 bg-muted/10 border-t border-border">
+              <button
+                type="button"
+                onClick={addItemRow}
+                className="text-primary font-semibold text-sm flex items-center gap-1.5 hover:text-primary-hover transition-colors cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                {isBangla ? "বিল আইটেম যোগ করুন" : "Add Billing Item"}
+              </button>
+              <div className="flex items-center gap-8">
+                <span className="text-sm text-muted-foreground font-medium">
+                  {isBangla ? "উপমোট" : "Sub Total"}
+                </span>
+                <span className="font-bold text-foreground text-base">
+                  Tk. {subtotalAfterDiscount.toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Row 3 Layout: Notes, Attachments, Totals and Payment */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Notes and Attachments */}
-          <div className="space-y-6">
+          {/* Row 3 Layout: Notes, Attachments */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+            {/* Notes Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
                 {isBangla ? "নোট বা মন্তব্য" : "Notes or Remarks"}
@@ -799,7 +1040,7 @@ function NewSaleContent() {
                 placeholder={
                   isBangla ? "নোট লিখুন..." : "Enter note or description..."
                 }
-                className="min-h-[100px] bg-background/50 border-input resize-none"
+                className="min-h-[100px] bg-background/50 border-input resize-none focus-visible:ring-1"
               />
             </div>
 
@@ -822,36 +1063,159 @@ function NewSaleContent() {
             </div>
           </div>
 
-          {/* Totals, Payment Mode and Submit Actions */}
-          <div className="space-y-6 lg:pl-12">
-            {/* Total Amount Output */}
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-base font-semibold text-foreground">
-                {isBangla ? "সর্বমোট পরিমাণ" : "Total Amount"}
-              </span>
-              <div className="relative w-48 flex items-center">
-                <span className="absolute left-3 text-sm text-muted-foreground font-semibold">
-                  Tk.
+        </div>
+
+        {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
+        <div className="w-full lg:w-[25%] lg:sticky lg:top-6">
+          <div className="bg-card border border-border/80 rounded-2xl shadow-md p-6 space-y-5">
+            <h2 className="text-lg font-bold tracking-tight text-foreground border-b border-border/50 pb-2">
+              {isBangla ? "অর্ডার সারাংশ" : "Order Summary"}
+            </h2>
+
+            {/* Financial Details */}
+            <div className="space-y-3">
+              {/* Subtotal */}
+              <div className="flex justify-between items-center text-sm font-medium">
+                <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
+                <span className="text-foreground">Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+
+              {/* Discount */}
+              <div className="flex justify-between items-center text-sm font-medium">
+                <span className="text-muted-foreground">{isBangla ? "ছাড়" : "Discount"}</span>
+                <span className="text-amber-600 dark:text-amber-500 font-medium">-Tk. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+
+              {/* Tax Display Row */}
+              <div className="flex justify-between items-center text-sm font-medium py-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">{isBangla ? "ট্যাক্স" : "Tax"}</span>
+                  <button
+                    type="button"
+                    onClick={openEditTax}
+                    className="text-primary hover:text-primary-hover p-0.5 rounded hover:bg-primary/10 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+                <span className="text-foreground text-xs font-semibold">
+                  {taxConfig.type === "percent"
+                    ? `${taxConfig.value}% (Tk. ${taxVal.toFixed(2)})`
+                    : `Tk. ${taxVal.toFixed(2)}`}
                 </span>
-                <Input
-                  value={total.toFixed(2)}
-                  readOnly
-                  className="pl-9 h-11 bg-muted/30 border-input text-right font-bold text-lg text-foreground focus-visible:ring-0"
-                />
+              </div>
+
+              {/* VAT Display Row */}
+              <div className="flex justify-between items-center text-sm font-medium py-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">{isBangla ? "ভ্যাট" : "VAT"}</span>
+                  <button
+                    type="button"
+                    onClick={openEditVat}
+                    className="text-primary hover:text-primary-hover p-0.5 rounded hover:bg-primary/10 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+                <span className="text-foreground text-xs font-semibold">
+                  {vatConfig.type === "percent"
+                    ? `${vatConfig.value}% (Tk. ${vatVal.toFixed(2)})`
+                    : `Tk. ${vatVal.toFixed(2)}`}
+                </span>
+              </div>
+
+              {/* Additional Charge Input */}
+              <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">{isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}</span>
+                  <span className="text-[10px] text-muted-foreground">{isBangla ? "শিপিং, ডেলিভারি ইত্যাদি" : "Shipping, Delivery etc."}</span>
+                </div>
+                <div className="relative w-28">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">Tk.</span>
+                  <Input
+                    type="number"
+                    value={additionalCharge}
+                    onChange={(e) => setAdditionalCharge(e.target.value)}
+                    className="pl-6 pr-1 h-8 text-right text-xs bg-background/50 border-input rounded-md focus-visible:ring-1"
+                    min="0"
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Payment Mode Selector */}
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-base font-semibold text-foreground">
-                {isBangla ? "পেমেন্ট মোড" : "Payment Mode"}
+          {/* total */}
+             <div className="flex items-center justify-between py-1">
+              <span className="text-base text-foreground">
+                {isBangla ? "মোট" : " Total"}
               </span>
-              <div className="w-48">
+              <span className="text-md font-medium text-primary">
+                Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            {/* overall discount */}
+            <div className="flex items-center justify-between py-1">
+               <span className="text-md text-muted-foreground font-medium">Overall Discount:</span>
+               <div className="flex w-full items-center justify-between gap-4">
+  {/* Percentage */}
+  <div className="relative flex-1">
+    <Input
+      type="number"
+      value={0}
+      placeholder="0"
+      min="0"
+      max="100"
+      className="w-16 h-9 bg-background/30 pr-5 text-right border-input"
+    />
+    <span className="absolute right-[50%] top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
+      %
+    </span>
+  </div>
+
+  {/* Flat Amount */}
+  <div className="relative flex flex-1 justify-end">
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
+        Tk.
+      </span>
+      <Input
+        type="number"
+        value="0"
+        placeholder="0"
+        min="0"
+        className="w-20 h-9 bg-background/30 pl-7 pr-2 text-right border-input"
+      />
+    </div>
+  </div>
+</div>
+            </div>
+            {/* Total Amount Output */}
+            <div className="flex items-center justify-between py-1">
+              <span className="text-base font-bold text-foreground">
+                {isBangla ? "সর্বমোট" : "Grand Total"}
+              </span>
+              <span className="text-lg font-extrabold text-primary">
+                Tk. {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            <hr className="border-border/60" />
+
+            {/* Dedicated Payment Section */}
+            <div className="space-y-4 pt-2 border-t border-border/40">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                {isBangla ? "পেমেন্ট" : "Payment"}
+              </h3>
+
+              {/* Payment Mode Selector */}
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isBangla ? "পেমেন্ট মোড" : "Payment Mode"}
+                </Label>
                 <Select
                   value={paymentMethod}
                   onValueChange={(val: any) => setPaymentMethod(val)}
                 >
-                  <SelectTrigger className="h-11 bg-background/50 border-input text-foreground">
+                  <SelectTrigger className="h-10 bg-background/50 border-input text-foreground text-sm focus-visible:ring-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -870,58 +1234,63 @@ function NewSaleContent() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Paid Amount Input */}
+              {paymentMethod !== "credit" && (
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {isBangla ? "পরিশোধিত পরিমাণ" : "Paid Amount"}
+                  </Label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-xs text-muted-foreground font-semibold">
+                      Tk.
+                    </span>
+                    <Input
+                      type="number"
+                      value={paidAmount}
+                      onChange={(e) => setPaidAmount(e.target.value)}
+                      placeholder="0.00"
+                      className={cn(
+                        "pl-9 h-10 bg-background/50 border-input text-right font-bold text-foreground text-sm focus-visible:ring-1",
+                        isPaidAmountExceeded && "border-destructive focus-visible:ring-destructive"
+                      )}
+                      min="0"
+                    />
+                  </div>
+                  {isPaidAmountExceeded && (
+                    <p className="text-[11px] text-destructive font-medium animate-pulse">
+                      {isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণ অতিক্রম করতে পারে না" : "Paid amount cannot exceed total amount."}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Due Amount Alert */}
+              {due > 0 && (paidAmount !== "" || paymentMethod === "credit") && (
+                <div className="pt-1">
+                  <div className="p-3 rounded-xl flex justify-between items-center text-xs font-semibold border transition-all duration-300 bg-rose-500/10 border-rose-500/20 text-rose-500">
+                    <span>
+                      {isBangla ? "বাকি পরিমাণ" : "Due Amount"}
+                    </span>
+                    <div className="text-right">
+                      <span className="font-extrabold text-sm block">
+                        Tk. {due.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Paid Amount Input (if not Credit) */}
-            {paymentMethod !== "credit" && (
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-base font-semibold text-foreground">
-                  {isBangla ? "পরিশোধিত পরিমাণ" : "Paid Amount"}
-                </span>
-                <div className="relative w-48 flex items-center">
-                  <span className="absolute left-3 text-sm text-muted-foreground font-semibold">
-                    Tk.
-                  </span>
-                  <Input
-                    type="number"
-                    value={paidAmount}
-                    onChange={(e) => setPaidAmount(e.target.value)}
-                    placeholder={total.toString()}
-                    className="pl-9 h-11 bg-background/50 border-input text-right font-bold text-foreground"
-                    min="0"
-                  />
-                </div>
-              </div>
-            )}
+            <hr className="border-border/60 pt-1" />
 
-            {/* Due Alert */}
-            {due > 0 && (
-              <div className="p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl flex justify-between items-center text-sm font-semibold">
-                <span className="text-destructive">
-                  {isBangla ? "বাকি পরিমাণ" : "Due Amount"}
-                </span>
-                <span className="text-destructive font-bold">
-                  Tk. {due.toFixed(2)}
-                </span>
-              </div>
-            )}
-
-            {/* Submit Action Buttons */}
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="flex-1 h-11 border-input hover:bg-muted"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {isBangla ? "বাতিল" : "Cancel"}
-              </Button>
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isPending}
-                className="flex-1 h-11 bg-primary hover:bg-primary-hover text-primary-foreground font-semibold"
+                disabled={isPending || isPaidAmountExceeded}
+                className="w-full h-10 text-sm bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-sm"
               >
                 {isPending ? (
                   <span className="flex items-center justify-center gap-2">
@@ -935,10 +1304,168 @@ function NewSaleContent() {
                   </>
                 )}
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="w-full h-10 text-sm border-input hover:bg-muted"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {isBangla ? "বাতিল" : "Cancel"}
+              </Button>
             </div>
           </div>
         </div>
+
       </div>
+
+      {/* Tax Edit Modal */}
+      <Dialog open={isEditTaxOpen} onOpenChange={setIsEditTaxOpen}>
+        <DialogContent className="sm:max-w-md p-6 space-y-4 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">
+              {isBangla ? "ট্যাক্স পরিবর্তন করুন" : "Edit Tax"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isBangla ? "হিসাবের ধরন" : "Calculation Type"}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={tempTaxType === "flat" ? "default" : "outline"}
+                  onClick={() => setTempTaxType("flat")}
+                  className="h-10 text-xs font-semibold"
+                >
+                  {isBangla ? "ফ্ল্যাট পরিমাণ (Flat)" : "Flat Amount"}
+                </Button>
+                <Button
+                  type="button"
+                  variant={tempTaxType === "percent" ? "default" : "outline"}
+                  onClick={() => setTempTaxType("percent")}
+                  className="h-10 text-xs font-semibold"
+                >
+                  {isBangla ? "শতকরা (%)" : "Percentage (%)"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isBangla ? "ট্যাক্স হার / পরিমাণ" : "Tax Rate / Amount"}
+              </Label>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-xs text-muted-foreground font-semibold">
+                  {tempTaxType === "flat" ? "Tk." : "%"}
+                </span>
+                <Input
+                  type="number"
+                  value={tempTaxValue}
+                  onChange={(e) => setTempTaxValue(e.target.value)}
+                  className="pl-10 h-10 bg-background/50 border-input font-bold text-sm"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 border-t border-border/40 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditTaxOpen(false)}
+              className="flex-1 h-10 text-xs font-semibold border-input"
+            >
+              {isBangla ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              onClick={saveTax}
+              className="flex-1 h-10 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* VAT Edit Modal */}
+      <Dialog open={isEditVatOpen} onOpenChange={setIsEditVatOpen}>
+        <DialogContent className="sm:max-w-md p-6 space-y-4 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">
+              {isBangla ? "ভ্যাট পরিবর্তন করুন" : "Edit VAT"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isBangla ? "হিসাবের ধরন" : "Calculation Type"}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={tempVatType === "flat" ? "default" : "outline"}
+                  onClick={() => setTempVatType("flat")}
+                  className="h-10 text-xs font-semibold"
+                >
+                  {isBangla ? "ফ্ল্যাট পরিমাণ (Flat)" : "Flat Amount"}
+                </Button>
+                <Button
+                  type="button"
+                  variant={tempVatType === "percent" ? "default" : "outline"}
+                  onClick={() => setTempVatType("percent")}
+                  className="h-10 text-xs font-semibold"
+                >
+                  {isBangla ? "শতকরা (%)" : "Percentage (%)"}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {isBangla ? "ভ্যাট হার / পরিমাণ" : "VAT Rate / Amount"}
+              </Label>
+              <div className="relative flex items-center">
+                <span className="absolute left-3 text-xs text-muted-foreground font-semibold">
+                  {tempVatType === "flat" ? "Tk." : "%"}
+                </span>
+                <Input
+                  type="number"
+                  value={tempVatValue}
+                  onChange={(e) => setTempVatValue(e.target.value)}
+                  className="pl-10 h-10 bg-background/50 border-input font-bold text-sm"
+                  min="0"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 border-t border-border/40 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditVatOpen(false)}
+              className="flex-1 h-10 text-xs font-semibold border-input"
+            >
+              {isBangla ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              onClick={saveVat}
+              className="flex-1 h-10 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

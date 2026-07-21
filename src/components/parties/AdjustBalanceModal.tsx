@@ -22,14 +22,14 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import client from "@/lib/axios";
-import { useAdjustBalance } from "@/hooks/api/usePayments";
+import { useCreateAdjustBalance } from "@/hooks/api/usePayments";
 
 interface AdjustBalanceComponentProps {
   isOpen: boolean;
   onClose: () => void;
   partyId: string;
   partyName: string;
-  currentBalance: number; // Positive is receivable, negative is payable
+  currentBalance: number; 
   onSuccess?: () => void;
 }
 
@@ -51,7 +51,7 @@ export function AdjustBalanceModal({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [remarks, setRemarks] = useState("");
 
-  const { mutate: adjustBalance, isPending } = useAdjustBalance();
+  const { mutate: adjustBalance, isPending } = useCreateAdjustBalance();
 
   // Calculate adjusted balance
   const parsedAmount = parseFloat(amount) || 0;
@@ -85,6 +85,10 @@ export function AdjustBalanceModal({
               ? "ব্যালেন্স সমন্বয় সফল হয়েছে!"
               : "Balance adjusted successfully!",
           );
+          setAdjustmentType('add_balance')
+          setAmount("");
+          setDate(new Date());
+          setRemarks("");
           if (onSuccess) onSuccess();
           onClose();
         },
