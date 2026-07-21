@@ -16,31 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Loader2,
-  Trash2,
-  Edit,
-  Save,
   Calendar,
   Printer,
 } from "lucide-react";
-import { useDeletePayment, useGetPaymentById, useUpdatePayment } from "@/hooks/api/usePayments";
+import { useGetPaymentById } from "@/hooks/api/usePayments";
 import { useParty } from "@/hooks/api/useParties";
 import {
   useAppTranslation,
   useCurrency,
   useDateFormat,
 } from "@/hooks/useAppTranslation";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface PaymentDetailsModalProps {
@@ -57,8 +43,7 @@ export function PaymentDetailsModal({
   const { isBangla } = useAppTranslation();
   const { formatDate } = useDateFormat();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
 
   // Form states
   const [amount, setAmount] = useState("");
@@ -75,8 +60,7 @@ export function PaymentDetailsModal({
   const { data: partyResponse } = useParty(partyId || "", { enabled: !!partyId });
   const party = partyResponse?.data;
 
-  const { mutateAsync: deletePayment, isPending: isDeletingPayment } = useDeletePayment();
-  const { mutate: updatePayment,isPending:isUpdatingPayment } = useUpdatePayment();
+
   const formSource = isOpen ? entry : null;
   const [previousFormSource, setPreviousFormSource] = useState(formSource);
   if (formSource !== previousFormSource) {
@@ -94,7 +78,6 @@ export function PaymentDetailsModal({
       setReceiptNumber(formSource.receiptNumber || formSource.receiptNo || formSource.referenceId || formSource.reference || "");
       setDate(formSource.date || formSource.createdAt ? new Date(formSource.date || formSource.createdAt) : new Date());
       setPaymentMethod(method);
-      setIsEditing(false);
     }
   }
 
@@ -105,53 +88,7 @@ export function PaymentDetailsModal({
     }
   }, [paymentResponse]);
 
-  const handleSaveChanges = () => {
-    const data = {
-  amount,
-  mode:paymentMethod,
-  accountId:entry.accountId,
-  notes:remarks,
-}
 
-updatePayment({id: paymentId, data},{
-  onSuccess: data => {
-    console.log(data)
-    toast.success(
-      isBangla
-        ? "পরিবর্তনগুলো সংরক্ষণ করা হয়েছে"
-        : "Changes saved successfully",
-      {
-        description: isBangla
-          ? "লেনদেন বিবরণ আপডেট করা হয়েছে"
-          : "Transaction details updated.",
-      },
-    );
-    setIsEditing(false);
-    onClose();
-  }
-})
-  
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    deletePayment(entry.id, {
-      onSuccess: (data) => {
-       if(data.success){
-         onClose();
-         setShowDeleteConfirm(false);
-         toast.success(
-          isBangla
-            ? "লেনদেনটি সফলভাবে মুছে ফেলা হয়েছে"
-            : "Transaction deleted successfully",
-        );
-       }
-      }
-    });
-  };
 
   const handlePrint = () => {
     toast.success(isBangla ? "প্রিন্ট হচ্ছে..." : "Connecting to printer...");
@@ -164,11 +101,11 @@ updatePayment({id: paymentId, data},{
     const isPaymentIn = entry?.type ? entry.type === 'received' : entry?.amount >= 0;
     return isPaymentIn
       ? isBangla
-        ? "পেমেন্ট ইন সম্পাদনা"
-        : "Edit Payment In"
+        ? "পেমেন্ট ইন বিবরণ"
+        : "Payment In Details"
       : isBangla
-        ? "পেমেন্ট আউট সম্পাদনা"
-        : "Edit Payment Out";
+        ? "পেমেন্ট আউট বিবরণ"
+        : "Payment Out Details";
   };
 
   const renderPaymentView = () => {
@@ -226,13 +163,8 @@ updatePayment({id: paymentId, data},{
               id="tx-receipt"
               value={receiptNumber}
               onChange={(e) => setReceiptNumber(e.target.value)}
-              disabled={!isEditing}
-              className={cn(
-                "h-11 text-sm border-border focus:border-primary font-semibold transition-colors duration-200",
-                isEditing
-                  ? "bg-background text-foreground"
-                  : "bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
-              )}
+              disabled
+              className="h-11 text-sm border-border font-semibold transition-colors duration-200 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
             />
           </div>
 
@@ -280,13 +212,8 @@ updatePayment({id: paymentId, data},{
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                disabled={!isEditing}
-                className={cn(
-                  "h-11 pl-10 text-sm border-border focus:border-primary font-bold font-mono transition-colors duration-200",
-                  isEditing
-                    ? "bg-background text-foreground"
-                    : "bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
-                )}
+                disabled
+                className="h-11 pl-10 text-sm border-border font-bold font-mono transition-colors duration-200 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
               />
             </div>
           </div>
@@ -298,27 +225,12 @@ updatePayment({id: paymentId, data},{
             >
               {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"}
             </Label>
-            {isEditing ? (
-              <select
-                id="tx-method"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="h-11 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
-              >
-                <option value="Cash">{isBangla ? "ক্যাশ" : "Cash"}</option>
-                <option value="Bank">{isBangla ? "ব্যাংক" : "Bank"}</option>
-                <option value="bKash">{isBangla ? "বিকাশ" : "bKash"}</option>
-                <option value="Nagad">{isBangla ? "নগদ" : "Nagad"}</option>
-                <option value="Rocket">{isBangla ? "রকেট" : "Rocket"}</option>
-              </select>
-            ) : (
               <Input
                 id="tx-method"
                 value={paymentMethod}
                 disabled
                 className="h-11 text-sm bg-zinc-100 dark:bg-zinc-900/60 border-border font-semibold text-zinc-400 dark:text-zinc-500 opacity-60 cursor-not-allowed capitalize"
               />
-            )}
           </div>
         </div>
 
@@ -333,16 +245,11 @@ updatePayment({id: paymentId, data},{
             id="tx-remarks"
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            disabled={!isEditing}
+            disabled
             placeholder={
               isBangla ? "এখানে মন্তব্য লিখুন..." : "Enter remarks here..."
             }
-            className={cn(
-              "text-sm border-border focus:border-primary resize-none h-24 transition-colors duration-200",
-              isEditing
-                ? "bg-background text-foreground"
-                : "bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
-            )}
+            className="text-sm border-border resize-none h-24 transition-colors duration-200 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 opacity-60 cursor-not-allowed"
           />
         </div>
       </div>
@@ -355,52 +262,19 @@ updatePayment({id: paymentId, data},{
       <div className="flex flex-row items-center justify-between w-full gap-4">
         <Button
           variant="outline"
-          onClick={handleDeleteClick}
-          className="h-10 border-rose-900/40 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-600 text-xs font-semibold flex items-center gap-1.5"
+          onClick={handlePrint}
+          className="h-10 text-xs font-semibold flex items-center gap-1.5 border-border text-foreground hover:bg-muted animate-in fade-in duration-200"
         >
-          <Trash2 className="h-4 w-4" />
-          {isBangla ? "মুছে ফেলুন" : "Delete"}
+          <Printer className="h-4 w-4" />
+          {isBangla ? "প্রিন্ট" : "Print"}
         </Button>
-
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(false)}
-                className="h-10 text-xs border-border"
-              >
-                {isBangla ? "বাতিল" : "Cancel"}
-              </Button>
-              <Button
-                onClick={handleSaveChanges}
-                className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5"
-              >
-                <Save className="h-4 w-4" />
-                {isUpdatingPayment ? "Saving..." : isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
-                
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                onClick={handlePrint}
-                className="h-10 text-xs font-semibold flex items-center gap-1.5 border-border text-foreground hover:bg-muted"
-              >
-                <Printer className="h-4 w-4" />
-                {isBangla ? "প্রিন্ট" : "Print"}
-              </Button>
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center gap-1.5"
-              >
-                <Edit className="h-4 w-4" />
-                {isBangla ? "বিবরণ সম্পাদনা" : "Edit Details"}
-              </Button>
-            </>
-          )}
-        </div>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="h-10 text-xs border-border"
+        >
+          {isBangla ? "বন্ধ করুন" : "Close"}
+        </Button>
       </div>
     );
   };
@@ -427,37 +301,7 @@ updatePayment({id: paymentId, data},{
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Alert */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="w-[320px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isBangla ? "লেনদেন মুছবেন?" : "Delete Transaction?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {isBangla
-                ? "এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। লেনদেনটি স্থায়ীভাবে মুছে ফেলা হবে।"
-                : "This action cannot be undone. This transaction will be permanently deleted."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {isBangla ? "বাতিল" : "Cancel"}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              {isDeletingPayment ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              {isBangla ? "মুছুন" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </>
   );
 }

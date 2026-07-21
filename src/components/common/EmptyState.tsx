@@ -50,7 +50,7 @@ export function EmptyState({
       {action && (
         <Button 
           onClick={action.onClick} 
-          className="bg-emerald-600 hover:bg-emerald-700 whitespace-nowrap shrink-0"
+          className="bg-primary hover:bg-primary/90 whitespace-nowrap shrink-0"
         >
           {action.icon && <action.icon className="h-4 w-4 mr-2 shrink-0" />}
           <span className="whitespace-nowrap">{action.label}</span>

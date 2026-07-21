@@ -20,10 +20,5 @@ export const getSaleById = async (id: string) => {
     return res.data
 }
 
-export const updateSale = async ({ id, data }: { id: string; data: any }) => {
-    console.log('Sale ID', id)
-    console.log('edited data', data)
-    const res = await client.patch(`/api/sales/${id}`, data);
-    return res.data
-}
+
 

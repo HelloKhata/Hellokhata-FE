@@ -2,6 +2,7 @@ import client from "@/lib/axios";
 
 export const getBatches = async (params?: {
     search?: string;
+    itemId?: string;
     status?: 'expired' | 'expiring' | 'active' | 'inactive';
     branchId?: string;
     page?: number;
@@ -10,6 +11,7 @@ export const getBatches = async (params?: {
     const query = new URLSearchParams();
 
     if (params?.search) query.append("search", params.search);
+    if (params?.itemId) query.append("itemId", params.itemId);
     if (params?.status) query.append("status", params.status);
     if (params?.branchId) query.append("branchId", params.branchId);
 

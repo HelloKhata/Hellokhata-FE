@@ -1,9 +1,9 @@
-
 import { getBatches, getBatchesStatus } from "@/services/batches.services";
 import {  useQuery } from "@tanstack/react-query";
 
 export const useGetBatches = (filters?: {
     search?: string;
+    itemId?: string;
     status?: |'expired' | 'expiring' | 'active' | 'inactive' | undefined;
     branchId?: string;
     page?: number;

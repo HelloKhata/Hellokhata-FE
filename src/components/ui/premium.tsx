@@ -86,12 +86,12 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.15)]',
-        elevated: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(35,46,60,1)] to-[rgba(33,43,56,1)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.15)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.2)] hover:-translate-y-0.5',
+        default: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-premium-default',
+        elevated: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(35,46,60,1)] to-[rgba(33,43,56,1)] shadow-premium-elevated hover:shadow-premium-elevated-hover hover:-translate-y-0.5',
         glass: 'bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl',
         ghost: 'bg-transparent',
         outline: 'border border-border rounded-xl',
-        glow: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]',
+        glow: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-premium-glow',
       },
       padding: {
         none: 'p-0',
@@ -122,9 +122,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cn(
           cardVariants({ variant, padding }),
-          glowColor === 'emerald' && 'shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_0_20px_rgba(15,191,159,0.06)]',
-          glowColor === 'indigo' && 'shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_0_20px_rgba(79,91,255,0.08)]',
-          glowColor === 'warning' && 'shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_0_20px_rgba(232,162,58,0.06)]',
+          glowColor === 'emerald' && 'shadow-premium-glow-emerald',
+          glowColor === 'indigo' && 'shadow-premium-glow-indigo',
+          glowColor === 'warning' && 'shadow-premium-glow-warning',
           className
         )}
         {...props}
