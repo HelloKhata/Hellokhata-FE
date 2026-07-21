@@ -68,31 +68,28 @@ export default function SaleReturnPage({ params }: { params: Promise<{ id: strin
     const { data: saleData, isLoading: isSaleLoading } = useGetSaleById(id);
     const { mutate, isPending } = useReturnSale();
 
-    // Prefill items when sale data is loaded
-    useEffect(() => {
-        if (saleData?.data && !initialized) {
-            const sale = saleData.data;
+    // Initialize the return draft once when the query data arrives.
+    if (saleData?.data && !initialized) {
+        const sale = saleData.data;
+        const prefillItems: ReturnItem[] = (sale.items || []).map((item: any) => {
+            const quantity = item.quantity ?? 1;
+            const unitPrice = item.unitPrice ?? 0;
+            const itemDiscount = item.discount ?? 0;
+            return {
+                saleItemId: item.id,
+                itemId: item.itemId,
+                itemName: item.itemName,
+                quantity,
+                maxQuantity: quantity,
+                unitPrice,
+                total: quantity * unitPrice - itemDiscount,
+                reason: '',
+            };
+        });
 
-            const prefillItems: ReturnItem[] = (sale.items || []).map((item: any) => {
-                const quantity = item.quantity ?? 1;
-                const unitPrice = item.unitPrice ?? 0;
-                const itemDiscount = item.discount ?? 0;
-                // Note: We're assuming the price here is the original price paid
-                return {
-                    saleItemId: item.id, // Assuming the sale item has an ID
-                    itemId: item.itemId,
-                    itemName: item.itemName,
-                    quantity: quantity,
-                    maxQuantity: quantity,
-                    unitPrice: unitPrice,
-                    total: quantity * unitPrice - itemDiscount,
-                    reason: '',
-                };
-            });
-            setItems(prefillItems);
-            setInitialized(true);
-        }
-    }, [saleData, initialized]);
+        setInitialized(true);
+        setItems(prefillItems);
+    }
 
     // Totals
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);

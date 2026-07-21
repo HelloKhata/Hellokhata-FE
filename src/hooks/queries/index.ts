@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFunctions, queryKeys } from '@/lib/api';
 import type { Party, Item, Sale, Purchase, Expense, AccountTransfer } from '@/types';
 import type { QuotationFormData, QuotationStatus } from '@/types/quotation';
+import client from '@/lib/axios';
 
 // ============================================
 // Dashboard hooks
@@ -34,7 +35,7 @@ export function useAiInsights() {
   return useQuery({
     queryKey: queryKeys.aiInsights,
     queryFn: () => apiFunctions.getAiInsights(),
-    // Return the full health score object which contains suggestions
+    select: (response) => response.data,
     staleTime: 120000, // 2 minutes
   });
 }
@@ -508,21 +509,12 @@ export function useSuppliers() {
 export function useStockLedger(params?: { itemId?: string; branchId?: string }) {
   return useQuery({
     queryKey: ['stockLedger', params],
+    enabled: Boolean(params?.itemId),
     queryFn: async () => {
-      const queryParams = new URLSearchParams();
-      if (params?.itemId) queryParams.set('itemId', params.itemId);
-      if (params?.branchId) queryParams.set('branchId', params.branchId);
-      
-      const response = await fetch(`/api/stock-ledger?${queryParams.toString()}`, {
-        headers: {
-          'x-business-id': localStorage.getItem('hello-khata-session') 
-            ? JSON.parse(localStorage.getItem('hello-khata-session') || '{}').state?.business?.id 
-            : '',
-        },
-      });
-      
-      if (!response.ok) throw new Error('Failed to fetch stock ledger');
-      const data = await response.json();
+      if (!params?.itemId) return [];
+      const { data } = await client.get(
+        `/api/items/${params.itemId}/stock-ledger`,
+      );
       return data.data || [];
     },
     staleTime: 30000,

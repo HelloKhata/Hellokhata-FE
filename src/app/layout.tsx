@@ -2,24 +2,10 @@
 // হ্যালো খাতা - রুট লেআউট
 
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Bengali, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { Providers } from "@/components/Providers";
-
-// Bengali font for better Bangla text rendering`
-const notoSansBengali = Noto_Sans_Bengali({
-  variable: "--font-bengali",
-  subsets: ["bengali"],
-  weight: ["400", "500", "600", "700"],
-});
-
-// Inter as fallback English font
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Hello Khata - হ্যালো খাতা",
@@ -58,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="bn" className="dark" suppressHydrationWarning>
       <body
-        className={`${notoSansBengali.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}
+        className="font-sans antialiased bg-background text-foreground"
       >
         <Providers>
           {children}

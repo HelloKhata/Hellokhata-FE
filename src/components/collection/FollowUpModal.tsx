@@ -44,6 +44,7 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import client from '@/lib/axios';
 import { format, addDays } from 'date-fns';
 
 // Types
@@ -213,19 +214,13 @@ export function FollowUpModal({
 
     setSaving(true);
     try {
-      const response = await fetch('/api/collection/follow-up', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          followUpType,
-          notes,
-          callOutcome: followUpType === 'call' ? callOutcome : undefined,
-          reminderDate: setReminder ? reminderDate.toISOString() : null,
-        }),
+      await client.post('/api/collection/follow-up', {
+        partyId: customer.id,
+        followUpType,
+        notes,
+        callOutcome: followUpType === 'call' ? callOutcome : undefined,
+        reminderDate: setReminder ? reminderDate.toISOString() : null,
       });
-
-      if (!response.ok) throw new Error('Failed to record follow-up');
 
       toast.success(isBangla ? 'ফলো-আপ রেকর্ড করা হয়েছে' : 'Follow-up recorded successfully');
       onRecorded();

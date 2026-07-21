@@ -39,6 +39,7 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import client from '@/lib/axios';
 import { format, addDays } from 'date-fns';
 
 // Types
@@ -122,20 +123,14 @@ export function PromiseToPayModal({
 
     setSaving(true);
     try {
-      const response = await fetch('/api/collection/promise', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          promiseAmount: amount,
-          promiseDate: promiseDate.toISOString(),
-          notes,
-          setReminder,
-          reminderDays: setReminder ? reminderDays : null,
-        }),
+      await client.post('/api/collection/promise', {
+        partyId: customer.id,
+        promiseAmount: amount,
+        promiseDate: promiseDate.toISOString(),
+        notes,
+        setReminder,
+        reminderDays: setReminder ? reminderDays : null,
       });
-
-      if (!response.ok) throw new Error('Failed to record promise');
 
       toast.success(isBangla ? 'প্রতিশ্রুতি রেকর্ড করা হয়েছে' : 'Promise recorded successfully');
       onRecorded();

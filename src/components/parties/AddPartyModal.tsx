@@ -42,9 +42,10 @@ export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
     creditLimit: '',
     notes: '',
   });
+  const [previousIsOpen, setPreviousIsOpen] = useState(isOpen);
 
-  // Reset form when modal opens
-  useEffect(() => {
+  if (isOpen !== previousIsOpen) {
+    setPreviousIsOpen(isOpen);
     if (isOpen) {
       setFormData({
         name: '',
@@ -58,7 +59,7 @@ export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
         notes: '',
       });
     }
-  }, [isOpen]);
+  }
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));

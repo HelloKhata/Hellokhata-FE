@@ -43,10 +43,10 @@ export function AdjustmentDetailsModal({
   const { formatDate } = useDateFormat();
 
   // Form states
-  const [amount, setAmount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
-  const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>('add_balance');
+  const [amount, setAmount] = useState(() => entry ? Math.abs(entry.amount).toString() : "");
+  const [remarks, setRemarks] = useState(() => entry?.remarks || "");
+  const [date, setDate] = useState<Date>(() => entry?.date ? new Date(entry.date) : new Date());
+  const [adjustmentType, setAdjustmentType] = useState<'add_balance' | 'reduce_balance'>(() => entry?.amount < 0 ? 'reduce_balance' : 'add_balance');
 
   // Fetch adjustment data
   const { data: adjustResponse, isLoading: isAdjustLoading } = useGetAdjustBalance(id);
@@ -57,12 +57,12 @@ export function AdjustmentDetailsModal({
   useEffect(() => {
     if (entry) {
       setAmount(Math.abs(entry.amount).toString());
-      setRemarks(entry.remarks || entry.description || "");
+      setRemarks(entry.remarks || "");
       setDate(entry.date ? new Date(entry.date) : new Date());
-      const isReduce = entry.type === 'reduce_balance' || entry.amount < 0;
-      setAdjustmentType(isReduce ? 'reduce_balance' : 'add_balance');
+      setAdjustmentType(entry.amount >= 0 ? 'add_balance' : 'reduce_balance');
+      setIsEditing(false);
     }
-  }, [entry, isOpen]);
+  }
 
 
 

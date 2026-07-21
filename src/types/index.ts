@@ -421,8 +421,14 @@ export interface Purchase {
   branchId?: string | null;
   purchaseOrderId?: string | null;
   supplierId?: string | null;
+  supplier?: {
+    id: string;
+    name: string;
+    phone: string;
+  } | null;
   invoiceNo?: string | null;
   grnNo?: string | null;
+  grnNo?: string;
   items: PurchaseItem[];
   subtotal: number;
   discount: number;
@@ -452,6 +458,12 @@ export interface PurchaseItem {
   quantity: number;
   unitCost: number;
   total: number;
+  returnedQty?: number;
+  item: {
+    id: string;
+    name: string;
+    sku: string;
+  };
   returnedQty?: number | null;
   createdAt: Date | string;
   deletedAt?: Date | string | null;

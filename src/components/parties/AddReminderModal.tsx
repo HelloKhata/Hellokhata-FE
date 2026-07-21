@@ -74,16 +74,15 @@ export function AddReminderModal({
 }: AddReminderModalProps) {
   const { isBangla } = useAppTranslation();
   // State Management
+  const initialDateValue = initialDateTime ? new Date(initialDateTime) : initialDate || new Date();
+  const initialTimeValue = initialTime || initialDateValue.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
   const [title, setTitle] = useState(initialTitle);
-  const [date, setDate] = useState<Date>(initialDate || new Date());
-  const [time, setTime] = useState(
-    initialTime ||
-      new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-  );
+  const [date, setDate] = useState<Date>(initialDateValue);
+  const [time, setTime] = useState(initialTimeValue);
 
   const [type, setType] = useState(initialType || "payment reminder");
   const [notes, setNotes] = useState(initialNotes);
@@ -101,21 +100,22 @@ export function AddReminderModal({
   const { mutate: updateReminder, isPending: isUpdating } = useUpdateReminder();
   const isPending = isCreating || isUpdating;
 
-  useEffect(() => {
+  const [previousInitialDateTime, setPreviousInitialDateTime] = useState(initialDateTime);
+  if (initialDateTime !== previousInitialDateTime) {
+    setPreviousInitialDateTime(initialDateTime);
     if (initialDateTime) {
       const dateObj = new Date(initialDateTime);
       setDate(dateObj);
-      const formattedTime = dateObj.toLocaleTimeString([], {
+      setTime(dateObj.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: true,
-      });
-      setTime(formattedTime);
+      }));
       setType(initialType || "payment reminder");
       setNotes(initialNotes || "");
       setTitle(initialTitle || "");
     }
-  }, [initialDateTime]);
+  }
 
   // Handle saving time from custom picker
   const handleTimeChange = (hour: string, minute: string, period: string) => {

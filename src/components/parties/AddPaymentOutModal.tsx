@@ -49,10 +49,10 @@ export function AddPaymentOutModal({
   const { data: partiesData } = useParties();
   const parties = partiesData?.data || [];
 
-  const [referenceNumber, setReferenceNumber] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState(() => isOpen ? String(Math.floor(Math.random() * 100) + 1) : "");
   const [date, setDate] = useState<Date>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [selectedPartyId, setSelectedPartyId] = useState<string>("");
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(defaultPartyId || "");
   const [paidAmount, setPaidAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [remarks, setRemarks] = useState("");
@@ -64,26 +64,20 @@ export function AddPaymentOutModal({
 
   const { mutate: createPayment, isPending } = useCreatePaymentOut();
 
-  // Set default party if provided
-  useEffect(() => {
-    if (defaultPartyId) {
-      setSelectedPartyId(defaultPartyId);
-    }
-  }, [defaultPartyId, isOpen]);
+  const resetIdentity = `${isOpen}:${defaultPartyId || ''}`;
+  const [previousResetIdentity, setPreviousResetIdentity] = useState(resetIdentity);
 
-  // Reset form when modal opens/closes
-  useEffect(() => {
+  if (resetIdentity !== previousResetIdentity) {
+    setPreviousResetIdentity(resetIdentity);
     if (isOpen) {
       setReferenceNumber(String(Math.floor(Math.random() * 100) + 1));
       setDate(new Date());
       setPaidAmount("");
       setPaymentMethod("cash");
       setRemarks("");
-      if (defaultPartyId) {
-        setSelectedPartyId(defaultPartyId);
-      }
+      setSelectedPartyId(defaultPartyId || "");
     }
-  }, [isOpen, defaultPartyId]);
+  }
 
   const handleSave = (shouldClose: boolean) => {
     if (!selectedPartyId) {

@@ -95,7 +95,7 @@ export function PurchaseDetailsModal({
     const txData = purchaseData?.data;
     return (
       (isBangla ? "ক্রয় বিল" : "Purchase Bill") +
-      ` #${txData?.invoiceNo || refId}`
+      ` #${txData?.invoiceNo || txData?.grnNo || purchaseId}`
     );
   };
 
@@ -115,14 +115,14 @@ export function PurchaseDetailsModal({
     }
 
     const partyName =
-      txData?.partyName || txData?.party?.name || party?.name || "—";
-    const invoiceNo = txData?.invoiceNo || refId || "—";
+      txData?.supplier?.name || "—";
+    const invoiceNo = txData?.invoiceNo || txData?.grnNo || purchaseId || "—";
     const invoiceDate = txData?.createdAt
       ? formatDate(txData.createdAt, "long")
-      : formatDate(entry.date, "long");
+      : "â€”";
     const paymentMode = txData?.paymentMethod || "—";
 
-    const balanceVal = party?.currentBalance ?? 0;
+    const balanceVal = txData?.dueAmount ?? 0;
     const balanceText = isBangla
       ? `৳ ${Math.abs(balanceVal).toLocaleString()} (${balanceVal >= 0 ? "পাওনা" : "দেনা"})`
       : `Tk. ${Math.abs(balanceVal).toLocaleString()} (${balanceVal >= 0 ? "To Receive" : "To Pay"})`;

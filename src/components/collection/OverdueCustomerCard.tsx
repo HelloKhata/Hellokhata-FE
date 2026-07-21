@@ -65,6 +65,7 @@ import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useSessionStore } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import client from '@/lib/axios';
 
 // Types
 interface OverdueInvoice {
@@ -211,16 +212,10 @@ export function OverdueCustomerCard({
     }
 
     try {
-      const response = await fetch('/api/collection/note', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          note: noteText,
-        }),
+      await client.post('/api/collection/note', {
+        partyId: customer.id,
+        note: noteText,
       });
-
-      if (!response.ok) throw new Error('Failed to add note');
 
       toast.success(isBangla ? 'নোট যোগ করা হয়েছে' : 'Note added successfully');
       setNoteModalOpen(false);
@@ -241,17 +236,11 @@ export function OverdueCustomerCard({
     }
 
     try {
-      const response = await fetch('/api/collection/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          amount,
-          note: paymentNote,
-        }),
+      await client.post('/api/collection/payment', {
+        partyId: customer.id,
+        amount,
+        note: paymentNote,
       });
-
-      if (!response.ok) throw new Error('Failed to record payment');
 
       toast.success(isBangla ? 'পেমেন্ট রেকর্ড করা হয়েছে' : 'Payment recorded successfully');
       setPaymentModalOpen(false);
@@ -267,16 +256,10 @@ export function OverdueCustomerCard({
   // Handle mark promise status
   const handleMarkPromise = async () => {
     try {
-      const response = await fetch('/api/collection/promise/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          partyId: customer.id,
-          status: markAsKept ? 'kept' : 'broken',
-        }),
+      await client.post('/api/collection/promise/status', {
+        partyId: customer.id,
+        status: markAsKept ? 'kept' : 'broken',
       });
-
-      if (!response.ok) throw new Error('Failed to update promise status');
 
       toast.success(
         markAsKept

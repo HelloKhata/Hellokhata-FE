@@ -42,24 +42,26 @@ export function OpeningBalanceDetailsModal({
   const { formatDate } = useDateFormat();
 
   // Form states
-  const [amount, setAmount] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
-  const [balanceType, setBalanceType] = useState<'receive' | 'give'>('receive');
+  const [amount, setAmount] = useState(() => entry ? Math.abs(entry.amount).toString() : "");
+  const [remarks, setRemarks] = useState(() => entry?.remarks || "");
+  const [date, setDate] = useState<Date>(() => entry?.date ? new Date(entry.date) : new Date());
+  const [balanceType, setBalanceType] = useState<'receive' | 'give'>(() => entry?.amount < 0 ? 'give' : 'receive');
 
   const partyId = party?.id || entry?.partyId;
   const { data: openingBalanceResponse } = useGetOpeningBalance(partyId);
 
-  // Reset form states when entry or openingBalanceResponse changes
-  useEffect(() => {
-    const ob = openingBalanceResponse?.data || openingBalanceResponse;
-    if (ob && (typeof ob.amount === 'number' || ob.amount != null)) {
-      setAmount(Math.abs(Number(ob.amount)).toString());
-      setRemarks(ob.remarks || ob.notes || "");
-      setDate(ob.date || ob.createdAt ? new Date(ob.date || ob.createdAt) : new Date());
-      setBalanceType(ob.balanceDirection);
-    } 
-  }, [entry, openingBalanceResponse, isOpen]);
+  const formSource = isOpen ? entry : null;
+  const [previousFormSource, setPreviousFormSource] = useState(formSource);
+  if (formSource !== previousFormSource) {
+    setPreviousFormSource(formSource);
+    if (formSource) {
+      setAmount(Math.abs(formSource.amount).toString());
+      setRemarks(formSource.remarks || "");
+      setDate(formSource.date ? new Date(formSource.date) : new Date());
+      setBalanceType(formSource.amount >= 0 ? 'receive' : 'give');
+      setIsEditing(false);
+    }
+  }
 
   if (!entry) return null;
 

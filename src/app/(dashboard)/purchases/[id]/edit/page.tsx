@@ -78,7 +78,7 @@ export default function EditPurchasePage({ params }: { params: Promise<{ id: str
     // Data fetching
     const { data: purchaseData, isLoading: isFetchingPurchase } = useGetPurchaseById(id);
     const { data: productsData } = useGetItems({ search: '' });
-    const { data: suppliersData } = useParties('supplier');
+    const { data: suppliersData } = useParties({ type: 'supplier' });
 
     // Mutations
     const { mutate: updatePurchase, isPending: isUpdating } = useUpdatePurchase(id);
@@ -86,33 +86,31 @@ export default function EditPurchasePage({ params }: { params: Promise<{ id: str
     const products = productsData?.data || [];
     const suppliers = suppliersData?.data || [];
 
-    // Prefill form
-    useEffect(() => {
-        if (purchaseData?.data && !initialized) {
-            const purchase = purchaseData.data;
-            setSupplierId(purchase.supplierId || 'none');
-            setInvoiceNo(purchase.invoiceNo || '');
-            setGrnNo(purchase.grnNo || '');
-            setPaymentMethod(purchase.paymentMethod || 'cash');
-            setPaidAmount(purchase.paidAmount?.toString() || '0');
-            setDiscount(purchase.discount?.toString() || '0');
-            setTax(purchase.tax?.toString() || '0');
-            setNotes(purchase.notes || '');
-            setStatus(purchase.status || 'completed');
+    // Initialize the editable draft once when the query data arrives.
+    if (purchaseData?.data && !initialized) {
+        const purchase = purchaseData.data;
+        const prefillItems: PurchaseItem[] = (purchase.items || []).map((item: any) => ({
+            tempId: item.id,
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quantity: item.quantity,
+            unitCost: item.unitCost,
+            unit: item.unit || 'pcs',
+            total: item.quantity * item.unitCost,
+        }));
 
-            const prefillItems: PurchaseItem[] = (purchase.items || []).map((item: any) => ({
-                tempId: Math.random().toString(36).substring(2, 9),
-                itemId: item.itemId,
-                itemName: item.itemName,
-                quantity: item.quantity,
-                unitCost: item.unitCost,
-                unit: item.unit || 'pcs',
-                total: item.quantity * item.unitCost,
-            }));
-            setItems(prefillItems);
-            setInitialized(true);
-        }
-    }, [purchaseData, initialized]);
+        setInitialized(true);
+        setSupplierId(purchase.supplierId || 'none');
+        setInvoiceNo(purchase.invoiceNo || '');
+        setGrnNo(purchase.grnNo || '');
+        setPaymentMethod(purchase.paymentMethod || 'cash');
+        setPaidAmount(purchase.paidAmount?.toString() || '0');
+        setDiscount(purchase.discount?.toString() || '0');
+        setTax(purchase.tax?.toString() || '0');
+        setNotes(purchase.notes || '');
+        setStatus(purchase.status || 'completed');
+        setItems(prefillItems);
+    }
 
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const total = subtotal - parseFloat(discount || '0') + parseFloat(tax || '0');

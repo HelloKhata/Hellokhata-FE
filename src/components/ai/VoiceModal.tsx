@@ -22,6 +22,37 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+interface SpeechRecognitionResultListLike {
+  length: number;
+  [index: number]: {
+    isFinal: boolean;
+    0: { transcript: string };
+  };
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: SpeechRecognitionResultListLike;
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error: string;
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
+
 interface VoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -53,7 +84,7 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const fullTranscriptRef = useRef('');
 
   // Update ref whenever transcript changes
@@ -476,8 +507,8 @@ export function VoiceButton({ onClick }: { onClick: () => void }) {
 // Add type declarations for Web Speech API
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 

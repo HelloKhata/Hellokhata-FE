@@ -177,7 +177,7 @@ export function sanitizeToolArguments(
         /('|")\s*;\s*(drop|delete|truncate|update|insert)/i,
         /union\s+select/i,
         /--\s*$/m,
-        /\/\*.*\*\//s,
+        /\/\*[\s\S]*?\*\//,
       ];
       
       for (const pattern of sqlPatterns) {

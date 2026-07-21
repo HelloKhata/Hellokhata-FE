@@ -96,7 +96,6 @@ export default function PeriodLockPage() {
     
     try {
       // In production, call API
-      // await fetch('/api/period-lock/global', { method: 'POST', body: JSON.stringify({ date: globalLockDate }) });
       alert(isBangla 
         ? `সফলভাবে ${format(new Date(globalLockDate), 'dd MMMM yyyy')} পর্যন্ত লক করা হয়েছে`
         : `Successfully locked until ${format(new Date(globalLockDate), 'dd MMMM yyyy')}`

@@ -42,6 +42,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import client from '@/lib/axios';
 
 interface PeriodLock {
   id: string;
@@ -53,30 +54,49 @@ interface PeriodLock {
   isActive: boolean;
 }
 
-// Fetch period locks
+interface PeriodLockResponse {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  lockedBy: string | null;
+  lockedAt: string;
+  notes?: string | null;
+}
+
+const normalizePeriodLock = (lock: PeriodLockResponse): PeriodLock => ({
+  ...lock,
+  lockedBy: lock.lockedBy ?? '',
+  reason: lock.notes ?? undefined,
+  isActive: true,
+});
+
 async function fetchPeriodLocks(): Promise<PeriodLock[]> {
-  const res = await fetch('/api/period-locks');
-  if (!res.ok) throw new Error('Failed to fetch period locks');
-  return res.json();
+  const { data } = await client.get<{
+    success: boolean;
+    data: PeriodLockResponse[];
+  }>('/api/settings/period-locks');
+  return data.data.map(normalizePeriodLock);
 }
 
-// Create period lock
-async function createPeriodLock(data: { periodStart: string; periodEnd: string; reason?: string }): Promise<PeriodLock> {
-  const res = await fetch('/api/period-locks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+async function createPeriodLock(input: {
+  periodStart: string;
+  periodEnd: string;
+  reason?: string;
+}): Promise<PeriodLock> {
+  const { data } = await client.post<{
+    success: boolean;
+    data: PeriodLockResponse;
+  }>('/api/settings/period-locks', {
+    periodStart: input.periodStart,
+    periodEnd: input.periodEnd,
+    notes: input.reason,
   });
-  if (!res.ok) throw new Error('Failed to create period lock');
-  return res.json();
+  return normalizePeriodLock(data.data);
 }
 
-// Unlock period
 async function unlockPeriod(id: string): Promise<void> {
-  const res = await fetch(`/api/period-locks/${id}/unlock`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to unlock period');
+  await client.delete(`/api/settings/period-locks/${id}`);
 }
-
 export default function PeriodLockSettingsPage() {
   const { isBangla } = useAppTranslation();
   const { toast } = useToast();

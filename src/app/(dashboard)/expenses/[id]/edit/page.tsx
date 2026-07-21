@@ -82,6 +82,7 @@ export default function EditExpensePage({ params }: EditExpensePageProps) {
     description:  '',
     date:  '',
   });
+  const [hydratedExpenseId, setHydratedExpenseId] = useState<string | null>(null);
 
 
   const handleSubmit = async () => {
@@ -122,9 +123,8 @@ export default function EditExpensePage({ params }: EditExpensePageProps) {
   };
 
 
-useEffect(() => {
-  if (!expense) return;
-
+if (expense && hydratedExpenseId !== expense.id) {
+  setHydratedExpenseId(expense.id);
   setFormData({
     categoryId: expense.categoryId ?? "__none__",
     amount: String(expense.amount ?? ""),
@@ -133,8 +133,7 @@ useEffect(() => {
       ? new Date(expense.date).toISOString().split("T")[0]
       : "",
   });
-
-}, [expense?.id]);
+}
 
   if (expenseLoading || categoriesLoading) {
     return (

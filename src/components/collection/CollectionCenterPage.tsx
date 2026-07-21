@@ -43,6 +43,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import client from '@/lib/axios';
 
 // Types
 export interface OverdueInvoice {
@@ -128,9 +129,7 @@ export function CollectionCenterPage() {
   const fetchOverdueCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/collection/overdue');
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
+      const { data } = await client.get('/api/collection/overdue');
       setCustomers(data.customers || []);
       setSummary(data.summary || summary);
     } catch (error) {

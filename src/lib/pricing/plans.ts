@@ -325,7 +325,7 @@ export function isFeatureAvailable(planId: PlanId, feature: keyof PlanLimits): b
   return false;
 }
 
-export function getFeatureLimit(planId: PlanId, feature: keyof PlanLimits): number | 'unlimited' | boolean {
+export function getFeatureLimit<K extends keyof PlanLimits>(planId: PlanId, feature: K): PlanLimits[K] {
   const limits = getPlanLimits(planId);
   return limits[feature];
 }

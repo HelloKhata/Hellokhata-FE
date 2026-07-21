@@ -154,7 +154,7 @@ export const apiFunctions = {
     entityId?: string;
     startDate?: string;
     endDate?: string;
-  }): Promise<{ success: boolean; data: AuditLog[]; meta: { total: number } }> => {
+  }): Promise<ApiResponse<AuditLog[]>> => {
     return api.get<AuditLog[]>('/audit-logs', params);
   },
 

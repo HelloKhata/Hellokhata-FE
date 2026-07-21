@@ -38,7 +38,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
 
   const { data: partyResponse, isLoading } = useParty(id);
   const party = partyResponse?.data;
-  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty();
+  const { mutate: updateParty, isPending: isUpdating } = useUpdateParty(id);
   const { mutate: deleteParty, isPending: isDeleting } = useDeleteParty();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -54,11 +54,9 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
     creditLimit: '',
     notes: '',
   });
+  const [hydratedPartyId, setHydratedPartyId] = useState<string | null>(null);
 
-  // Pre-fill form when party data loads
-  useEffect(() => {
-    if (!party) return;
-
+  if (party && hydratedPartyId !== party.id) {    setHydratedPartyId(party.id);
     setFormData({
       name: party.name ?? '',
       phone: party.phone ?? '',
@@ -70,7 +68,7 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
       creditLimit: party.creditLimit != null ? String(party.creditLimit) : '',
       notes: party.notes ?? '',
     });
-  }, [party?.id]);
+  }
 
 
   const updateForm = (key: keyof typeof formData, value: any) => {
