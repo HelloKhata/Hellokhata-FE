@@ -38,6 +38,7 @@ import {
 } from '@/services/ai.services';
 import { AI_UI_ENABLED } from '@/lib/ai/config';
 import type { AiLanguage, AiProposalResponse } from '@/types/ai-gateway';
+import { AiConfirmationCard } from './AiConfirmationCard';
 
 interface Message {
   id: string;
@@ -48,6 +49,7 @@ interface Message {
     headers: string[];
     rows: string[][];
   }>;
+  proposal?: AiProposalResponse;
 }
 
 const AI_REQUEST_URL_PARAM = 'requestId';
@@ -68,6 +70,7 @@ function proposalMessage(
     role: 'assistant',
     content: formatAiProposalText(proposal, language),
     timestamp: new Date(),
+    proposal,
   };
 }
 
@@ -245,6 +248,7 @@ export default function AIPage() {
           content,
           timestamp: new Date(),
           tables: aiResponse.tables,
+          proposal,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -433,6 +437,10 @@ export default function AIPage() {
                               </div>
                             ))}
                           </div>
+
+                          {message.proposal
+                            ? <AiConfirmationCard proposal={message.proposal} />
+                            : null}
                           
                           {/* Message Actions */}
                           <div className={cn(
