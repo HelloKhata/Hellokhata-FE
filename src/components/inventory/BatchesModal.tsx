@@ -222,7 +222,7 @@ export function BatchesModal({
               </div>
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-lg font-bold text-foreground truncate max-w-sm sm:max-w-md">
+                  <DialogTitle className="text-lg font-bold text-foreground  max-w-sm sm:max-w-md">
                     {item.name}
                   </DialogTitle>
                   <Badge variant="outline" className="text-xs font-mono">
@@ -252,79 +252,10 @@ export function BatchesModal({
                 </div>
               </div>
             </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
 
           {/* Modal Body with Scrollable Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
-            {/* Top Batch Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                <span className="text-[11px] font-medium text-muted-foreground block">
-                  {isBangla ? 'বর্তমান স্টক' : 'Current Stock'}
-                </span>
-                <p className="text-base font-bold text-foreground">
-                  {summary.totalCurrentStock} <span className="text-xs font-normal text-muted-foreground">{unit}</span>
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                <span className="text-[11px] font-medium text-muted-foreground block">
-                  {isBangla ? 'মোট ব্যাচ' : 'Total Batches'}
-                </span>
-                <p className="text-base font-bold text-foreground">
-                  {summary.totalBatches}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/60 space-y-1">
-                <span className="text-[11px] font-medium text-muted-foreground block">
-                  {isBangla ? 'ক্রয় মূল্য' : 'Purchase Value'}
-                </span>
-                <p className="text-base font-bold text-emerald-500 truncate" title={formatCurrency(summary.totalPurchaseVal)}>
-                  {formatCurrency(summary.totalPurchaseVal)}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
-                <span className="text-[11px] font-medium text-amber-500 block flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {isBangla ? 'শীঘ্রই মেয়াদউত্তীর্ণ' : 'Expiring Soon'}
-                </span>
-                <p className="text-base font-bold text-amber-500">
-                  {summary.expiringCount} {isBangla ? 'ব্যাচ' : 'Batch'}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 space-y-1">
-                <span className="text-[11px] font-medium text-red-500 block flex items-center gap-1">
-                  <XCircle className="h-3 w-3" />
-                  {isBangla ? 'মেয়াদউত্তীর্ণ' : 'Expired'}
-                </span>
-                <p className="text-base font-bold text-red-500">
-                  {summary.expiredCount}
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
-                <span className="text-[11px] font-medium text-amber-500 block flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {isBangla ? 'স্টক কম' : 'Low Stock'}
-                </span>
-                <p className="text-base font-bold text-amber-500">
-                  {summary.lowStockCount} {isBangla ? 'ব্যাচ' : 'Batch'}
-                </p>
-              </div>
-            </div>
-
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
             {/* Controls Bar: Search & Sort */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">

@@ -49,6 +49,8 @@ import {
   Users,
   Loader2,
   Pencil,
+  Sparkles,
+  Gift,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -58,6 +60,8 @@ import { useGetItems } from "@/hooks/api/useItems";
 import { useParties, useParty } from "@/hooks/api/useParties";
 import { useGetBatches } from "@/hooks/api/useBatches";
 import { useCreateSales } from "@/hooks/api/useSales";
+import { useGetOffers } from "@/hooks/api/useOffers";
+import { Offer, POSAppliedOffer, calculateBogoOffer, calculatePercentageOffer, calculateFlatOffer, calculateBundleOffer } from "@/types/offer.types";
 import Image from "next/image";
 
 interface BillingItemRow {
@@ -74,6 +78,11 @@ interface BillingItemRow {
   searchQuery: string;
   showSuggestions: boolean;
   imageUrl?: string;
+  // Offer fields
+  appliedOffer?: POSAppliedOffer | null;
+  chargedQuantity: number;
+  freeQuantity: number;
+  offerSavings: number;
 }
 
 function NewSaleContent() {
@@ -105,9 +114,64 @@ function NewSaleContent() {
   const { data: batchesData } = useGetBatches({ status: "active", limit: 1000 });
   const batches = batchesData || [];
 
+  // Fetch active offers for auto-detection
+  const { data: offersData } = useGetOffers({ status: "active" });
+  const activeOffers: Offer[] = offersData?.data || [];
+
+  // Find active offer for a product+batch combination
+  const findActiveOffer = (itemId: string, batchNo?: string): Offer | null => {
+    if (!itemId) return null;
+    const match = activeOffers.find(
+      (o) =>
+        o.productId === itemId &&
+        o.status === "active" &&
+        (!o.batchId || !batchNo || o.batchId === batchNo)
+    );
+    return match || null;
+  };
+
+  // Calculate offer for a cart item
+  const calculateOfferForItem = (item: BillingItemRow): POSAppliedOffer | null => {
+    if (!item.itemId || item.quantity <= 0) return null;
+    const offer = findActiveOffer(item.itemId, item.batchNo);
+    if (!offer) return null;
+
+    switch (offer.type) {
+      case 'bogo':
+        return calculateBogoOffer(
+          item.quantity,
+          offer.bogoConfig?.buyQuantity || 1,
+          offer.bogoConfig?.freeQuantity || 1,
+          item.unitPrice
+        );
+      case 'percentage':
+        return calculatePercentageOffer(
+          item.quantity,
+          offer.percentageConfig?.percentage || 0,
+          item.unitPrice
+        );
+      case 'flat':
+        return calculateFlatOffer(
+          item.quantity,
+          offer.flatConfig?.amount || 0,
+          offer.flatConfig?.scope || 'per_unit',
+          item.unitPrice
+        );
+      case 'bundle':
+        return calculateBundleOffer(
+          item.quantity,
+          offer.bundleConfig?.bundleQuantity || 2,
+          offer.bundleConfig?.bundlePrice || 0,
+          item.unitPrice
+        );
+      default:
+        return null;
+    }
+  };
+
   const getItemBatches = (itemId: string) => {
     if (!itemId) return [];
-    return batches.filter((b: any) => b.itemId === itemId);
+    return batches?.filter((b: any) => b.itemId === itemId);
   };
 
   // Form State
@@ -167,6 +231,10 @@ function NewSaleContent() {
       searchQuery: "",
       showSuggestions: false,
       imageUrl: "",
+      appliedOffer: null,
+      chargedQuantity: 0,
+      freeQuantity: 0,
+      offerSavings: 0,
     },
   ]);
 
@@ -197,6 +265,10 @@ function NewSaleContent() {
 
   const totalDiscount = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + item.discountFlat, 0);
+  }, [selectedItems]);
+
+  const totalOfferSavings = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + (item.offerSavings || 0), 0);
   }, [selectedItems]);
 
   const subtotalAfterDiscount = useMemo(() => {
@@ -262,6 +334,10 @@ function NewSaleContent() {
         searchQuery: "",
         showSuggestions: false,
         imageUrl: "",
+        appliedOffer: null,
+        chargedQuantity: 0,
+        freeQuantity: 0,
+        offerSavings: 0,
       },
     ]);
   };
@@ -284,6 +360,10 @@ function NewSaleContent() {
           searchQuery: "",
           showSuggestions: false,
           imageUrl: "",
+          appliedOffer: null,
+          chargedQuantity: 0,
+          freeQuantity: 0,
+          offerSavings: 0,
         },
       ]);
       return;
@@ -329,6 +409,56 @@ function NewSaleContent() {
           const price = product.sellingPrice || 0;
           const flatDiscount = item.discountFlat || 0;
           const total = calculateRowTotal(qty, price, flatDiscount);
+
+          // Auto-detect offer for this product
+          const offer = findActiveOffer(product.id, item.batchNo);
+          let appliedOffer: POSAppliedOffer | null = null;
+          let chargedQty = qty;
+          let freeQty = 0;
+          let offerSavings = 0;
+
+          if (offer) {
+            switch (offer.type) {
+              case 'bogo':
+                appliedOffer = calculateBogoOffer(
+                  qty,
+                  offer.bogoConfig?.buyQuantity || 1,
+                  offer.bogoConfig?.freeQuantity || 1,
+                  price
+                );
+                break;
+              case 'percentage':
+                appliedOffer = calculatePercentageOffer(
+                  qty,
+                  offer.percentageConfig?.percentage || 0,
+                  price
+                );
+                break;
+              case 'flat':
+                appliedOffer = calculateFlatOffer(
+                  qty,
+                  offer.flatConfig?.amount || 0,
+                  offer.flatConfig?.scope || 'per_unit',
+                  price
+                );
+                break;
+              case 'bundle':
+                appliedOffer = calculateBundleOffer(
+                  qty,
+                  offer.bundleConfig?.bundleQuantity || 2,
+                  offer.bundleConfig?.bundlePrice || 0,
+                  price
+                );
+                break;
+            }
+            if (appliedOffer) {
+              appliedOffer.offerId = offer.id;
+              chargedQty = appliedOffer.chargedQuantity;
+              freeQty = appliedOffer.freeQuantity;
+              offerSavings = appliedOffer.savings;
+            }
+          }
+
           return {
             ...item,
             itemId: product.id,
@@ -339,6 +469,10 @@ function NewSaleContent() {
             total,
             showSuggestions: false,
             imageUrl: product.imageUrl,
+            appliedOffer,
+            chargedQuantity: chargedQty,
+            freeQuantity: freeQty,
+            offerSavings,
           };
         }
         return item;
@@ -358,11 +492,67 @@ function NewSaleContent() {
               (price * qty * (item.discountPercent / 100)).toFixed(2),
             ) || 0;
           const total = calculateRowTotal(qty, price, flat);
+
+          // Recalculate offer with new quantity
+          let appliedOffer: POSAppliedOffer | null = null;
+          let chargedQty = qty;
+          let freeQty = 0;
+          let offerSavings = 0;
+
+          if (item.itemId && item.appliedOffer) {
+            const offer = findActiveOffer(item.itemId, item.batchNo);
+            if (offer) {
+              switch (offer.type) {
+                case 'bogo':
+                  appliedOffer = calculateBogoOffer(
+                    qty,
+                    offer.bogoConfig?.buyQuantity || 1,
+                    offer.bogoConfig?.freeQuantity || 1,
+                    price
+                  );
+                  break;
+                case 'percentage':
+                  appliedOffer = calculatePercentageOffer(
+                    qty,
+                    offer.percentageConfig?.percentage || 0,
+                    price
+                  );
+                  break;
+                case 'flat':
+                  appliedOffer = calculateFlatOffer(
+                    qty,
+                    offer.flatConfig?.amount || 0,
+                    offer.flatConfig?.scope || 'per_unit',
+                    price
+                  );
+                  break;
+                case 'bundle':
+                  appliedOffer = calculateBundleOffer(
+                    qty,
+                    offer.bundleConfig?.bundleQuantity || 2,
+                    offer.bundleConfig?.bundlePrice || 0,
+                    price
+                  );
+                  break;
+              }
+              if (appliedOffer) {
+                appliedOffer.offerId = offer.id;
+                chargedQty = appliedOffer.chargedQuantity;
+                freeQty = appliedOffer.freeQuantity;
+                offerSavings = appliedOffer.savings;
+              }
+            }
+          }
+
           return {
             ...item,
             quantity: qty,
             discountFlat: flat,
             total,
+            appliedOffer,
+            chargedQuantity: chargedQty,
+            freeQuantity: freeQty,
+            offerSavings,
           };
         }
         return item;
@@ -523,15 +713,23 @@ function NewSaleContent() {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: item.discountFlat,
+        // Offer data
+        ...(item.appliedOffer ? {
+          appliedOfferId: item.appliedOffer.offerId,
+          offerType: item.appliedOffer.offerType,
+          chargedQuantity: item.appliedOffer.chargedQuantity,
+          freeQuantity: item.appliedOffer.freeQuantity,
+          offerSavings: item.offerSavings,
+        } : {}),
       })),
-      discount: totalDiscount,
+      discount: totalDiscount + totalOfferSavings,
       paidAmount: effectivePaidAmount,
       paymentMethod,
       notes: notes || undefined,
-      // New fields added to payload
       tax: taxVal,
       vat: vatVal,
       additionalCharge: additionalChargeVal,
+      totalOfferSavings,
     };
 
     mutate(payload, {
@@ -811,6 +1009,24 @@ function NewSaleContent() {
                               }
                               onBlur={() => handleRowBlur(item.id)}
                             />
+                            {/* Inline Offer Badge */}
+                            {item.appliedOffer && (
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  {item.appliedOffer.title}
+                                </span>
+                                {item.freeQuantity > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                    <Gift className="h-2.5 w-2.5" />
+                                    {item.freeQuantity} Free
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-emerald-400 font-semibold">
+                                  Saved: ৳{(item.offerSavings || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </PopoverAnchor>
 
@@ -901,11 +1117,11 @@ function NewSaleContent() {
                             <SelectItem value="default">
                               {isBangla ? "ডিফল্ট ব্যাচ" : "Default Batch"}
                             </SelectItem>
-                            {getItemBatches(item.itemId).map((b: any) => (
+                            {/* {getItemBatches(item.itemId).map((b: any) => (
                               <SelectItem key={b.id} value={b.batchNo}>
                                 {b.batchNo} {b.expiryDate ? `(${format(new Date(b.expiryDate), "MM/yy")})` : ""}
                               </SelectItem>
-                            ))}
+                            ))} */}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -1086,6 +1302,19 @@ function NewSaleContent() {
                 <span className="text-amber-600 dark:text-amber-500 font-medium">-Tk. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
 
+              {/* Offer Savings */}
+              {totalOfferSavings > 0 && (
+                <div className="flex justify-between items-center text-sm font-medium bg-purple-500/5 -mx-2 px-2 py-1 rounded-lg border border-purple-500/10">
+                  <span className="text-purple-500 flex items-center gap-1.5 text-xs font-semibold">
+                    <Sparkles className="h-3 w-3" />
+                    {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
+                  </span>
+                  <span className="text-purple-400 font-bold text-xs">
+                    -Tk. {totalOfferSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
+
               {/* Tax Display Row */}
               <div className="flex justify-between items-center text-sm font-medium py-0.5">
                 <div className="flex items-center gap-1.5">
@@ -1164,6 +1393,7 @@ function NewSaleContent() {
       placeholder="0"
       min="0"
       max="100"
+      onChange={(e)=> console.log(e.target.value)}
       className="w-16 h-9 bg-background/30 pr-5 text-right border-input"
     />
     <span className="absolute right-[50%] top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
@@ -1181,6 +1411,7 @@ function NewSaleContent() {
         type="number"
         value="0"
         placeholder="0"
+         onChange={(e)=> console.log(e.target.value)}
         min="0"
         className="w-20 h-9 bg-background/30 pl-7 pr-2 text-right border-input"
       />

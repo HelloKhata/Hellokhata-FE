@@ -18,13 +18,15 @@ import {
   AlertCircle,
   Filter,
   Bell,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useGetBatches, useGetBatchesStatus } from '@/hooks/api/useBatches';
+import { useGetOffers } from '@/hooks/api/useOffers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Batch {
@@ -64,7 +66,17 @@ const {data:batchesData, isLoading:isLoadingBatches} = useGetBatches(
 )
 const batchesStatus = batchesStatusData?.data;
 const batches = batchesData?.data || [];
-  const router = useRouter();
+const { data: offersData } = useGetOffers();
+const activeOffers = offersData?.data || [];
+const router = useRouter();
+
+const getBatchActiveOffer = (batchId: string, itemId?: string) => {
+  return activeOffers.find(
+    (o) =>
+      o.status === 'active' &&
+      (o.batchId === batchId || (!o.batchId && o.productId === itemId))
+  );
+};
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -292,74 +304,107 @@ const batches = batchesData?.data || [];
           </Card>
         ) : (
           <div className="space-y-3">
-            {batches.map((batch) => (
-              <Card 
-                key={batch.id}
-                className={cn(
-                  "cursor-pointer hover:border-primary/50 transition-colors",
-                  batch.isExpired && "border-red-300 bg-red-50/50",
-                  batch.isExpiringSoon && !batch.isExpired && "border-amber-300 bg-amber-50/50"
-                )}
-                onClick={() => setSelectedBatch(batch)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className={cn(
-                        "h-12 w-12 rounded-lg flex items-center justify-center",
-                        batch.isExpired ? "bg-red-100" : batch.isExpiringSoon ? "bg-amber-100" : "bg-indigo-100"
-                      )}>
-                        <Package className={cn(
-                          "h-6 w-6",
-                          batch.isExpired ? "text-red-600" : batch.isExpiringSoon ? "text-amber-600" : "text-indigo-600"
-                        )} />
+            {batches.map((batch) => {
+              const activeOffer = getBatchActiveOffer(batch.id, batch.itemId);
+              return (
+                <Card
+                  key={batch.id}
+                  className={cn(
+                    "hover:border-primary/50 transition-colors",
+                    batch.isExpired && "border-red-300 bg-red-50/50",
+                    batch.isExpiringSoon && !batch.isExpired && "border-amber-300 bg-amber-50/50"
+                  )}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div
+                        className="flex items-start gap-4 cursor-pointer flex-1"
+                        onClick={() => setSelectedBatch(batch)}
+                      >
+                        <div className={cn(
+                          "h-12 w-12 rounded-lg flex items-center justify-center shrink-0",
+                          batch.isExpired ? "bg-red-100" : batch.isExpiringSoon ? "bg-amber-100" : "bg-indigo-100"
+                        )}>
+                          <Package className={cn(
+                            "h-6 w-6",
+                            batch.isExpired ? "text-red-600" : batch.isExpiringSoon ? "text-amber-600" : "text-indigo-600"
+                          )} />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold">{batch.batchNumber}</h3>
+                            {batch.isExpired ? (
+                              <Badge variant="destructive" size="sm">
+                                {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
+                              </Badge>
+                            ) : batch.isExpiringSoon ? (
+                              <Badge variant="warning" size="sm">
+                                {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'Expiring Soon'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="success" size="sm">
+                                {isBangla ? 'সক্রিয়' : 'Active'}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {batch.itemName || 'Unknown Item'}
+                          </p>
+
+                          <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>{batch.quantity} {batch.item?.unit || 'pcs'}</span>
+                            <span>৳{batch.costPrice}/unit</span>
+                            <span>
+                              {isBangla ? 'মোট' : 'Total'}: ৳{(batch.quantity * batch.costPrice).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{batch.batchNumber}</h3>
-                          {/*  {batches(batch)}  */}
-                          {batch.isExpired ? (
-                            <Badge variant="destructive" size="sm">
-                              {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
-                            </Badge>
-                          ) : batch.isExpiringSoon ? (
-                            <Badge variant="warning" size="sm">
-                              {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'Expiring Soon'}
-                            </Badge>
-                          ) : (
-                            <Badge variant="success" size="sm">
-                              {isBangla ? 'সক্রিয়' : 'Active'}
-                            </Badge>
-                          )}
+
+                      {/* Right side: Offer Action or Offer Badge */}
+                      <div className="flex flex-col items-end gap-2 ml-4 shrink-0">
+                        <div className="text-right">
+                          <p className="text-lg font-bold">
+                            ৳{(batch.quantity * batch.costPrice).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {batch.quantity} {batch.item?.unit || 'pcs'}
+                          </p>
                         </div>
-                        
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {batch.itemName || 'Unknown Item'}
-                        </p>
-                        
-                        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{batch.quantity} {batch.item?.unit || 'pcs'}</span>
-                          <span>৳{batch.costPrice}/unit</span>
-                          <span>
-                            {isBangla ? 'মোট' : 'Total'}: ৳{(batch.quantity * batch.costPrice).toLocaleString()}
-                          </span>
-                        </div>
+
+                        {/* Offer Active Badge / Apply Offer Button */}
+                        {activeOffer ? (
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/inventory/promotions/new?id=${activeOffer.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[11px] font-bold transition-colors cursor-pointer"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                            {isBangla ? 'অফার সক্রিয়' : 'Offer Active'}
+                          </button>
+                        ) : (batch.isExpiringSoon || batch.isExpired) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/inventory/promotions/new?productId=${batch.itemId || ''}&batchId=${batch.id}&type=bogo&buyQty=1&freeQty=1`
+                              );
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {isBangla ? 'অফার প্রযোগ করুন' : 'Apply Offer'}
+                          </button>
+                        ) : null}
                       </div>
                     </div>
-                    
-                    <div className="text-right">
-                      <p className="text-lg font-bold">
-                        ৳{(batch.quantity * batch.costPrice).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {batch.quantity} {batch.item?.unit || 'pcs'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

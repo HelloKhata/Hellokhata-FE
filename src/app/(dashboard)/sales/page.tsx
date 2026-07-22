@@ -38,6 +38,8 @@ import {
   Check,
   Edit2,
   Edit,
+  MoreVertical,
+  Layers,
 } from 'lucide-react';
 import { useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
@@ -203,12 +205,15 @@ export default function SalesPage() {
         </Card>
 
         {/* Sales Table */}
-        <Card variant="elevated" padding="none">
-          <CardHeader className="px-6 pt-6 pb-3">
-            <CardTitle className="text-base whitespace-nowrap">{t('sales.saleHistory')}</CardTitle>
-          </CardHeader>
-          <Divider />
-          <CardContent className="p-0">
+        <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-100 tracking-tight">{t('sales.saleHistory')}</h2>
+            <span className="text-xs font-medium text-[#718296]">
+              {filteredSales.length} {isBangla ? 'টি বিক্রি' : 'sales total'}
+            </span>
+          </div>
+
+          <div>
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -227,101 +232,116 @@ export default function SalesPage() {
                 }
               />
             ) : (
-              <div className="border border-border rounded-xl overflow-hidden bg-[#0f0f10]/80">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-[#18181b] text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
-                        <th className="p-4">{isBangla ? 'ইনভয়েস নং' : 'Invoice No'}</th>
-                        <th className="p-4">{isBangla ? 'কাস্টমার' : 'Customer'}</th>
-                        <th className="p-4">{isBangla ? 'তারিখ' : 'Date'}</th>
-                        <th className="p-4">{isBangla ? 'পণ্য' : 'Items'}</th>
-                        <th className="p-4">{isBangla ? 'পেমেন্ট পদ্ধতি' : 'Payment Method'}</th>
-                        <th className="p-4">{isBangla ? 'মোট' : 'Total'}</th>
-                        <th className="p-4">{isBangla ? 'পরিশোধিত' : 'Paid'}</th>
-                        <th className="p-4">{isBangla ? 'বাকি' : 'Due'}</th>
-                        <th className="p-4">{isBangla ? 'স্ট্যাটাস' : 'Status'}</th>
-                        <th className="p-4 text-center">{isBangla ? 'অ্যাকশন' : 'Action'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSales.map((sale) => {
-                        const statusConfig = {
-                          completed: { label: isBangla ? 'সম্পন্ন' : 'Completed', variant: 'success' as const },
-                          pending: { label: isBangla ? 'অপেক্ষমান' : 'Pending', variant: 'warning' as const },
-                          cancelled: { label: isBangla ? 'বাতিল' : 'Cancelled', variant: 'destructive' as const },
-                          returned: { label: isBangla ? 'রিটার্ন' : 'Returned', variant: 'indigo' as const },
-                        };
-                        const status = statusConfig[sale.status] || statusConfig.completed;
-                        return (
-                          <tr
-                            key={sale.id}
-                            className="border-b border-border last:border-0 hover:bg-[#18181b]/50 transition-colors cursor-pointer"
-                            onClick={() => {
-                              setSelectedSale(sale);
-                              setIsOpenDetail(true);
-                            }}
-                          >
-                            <td className="p-4 text-muted-foreground font-medium whitespace-nowrap">
-                              {sale.invoiceNo}
-                            </td>
-                            <td className="p-4 font-bold text-white whitespace-nowrap">
-                              {sale.party?.name || (isBangla ? 'খুচরা কাস্টমার' : 'Retail Customer')}
-                            </td>
-                            <td className="p-4 text-muted-foreground whitespace-nowrap">
-                              {formatDateTime(sale.createdAt)}
-                            </td>
-                            <td className="p-4 text-white whitespace-nowrap">
-                              {sale.items?.length || 0} {isBangla ? 'টি' : 'item(s)'}
-                            </td>
-                            <td className="p-4 text-white capitalize whitespace-nowrap">
-                              {sale.paymentMethod || '—'}
-                            </td>
-                            <td className="p-4 font-bold text-white whitespace-nowrap">
-                              {formatCurrency(sale.total)}
-                            </td>
-                            <td className="p-4 font-bold text-emerald-500 whitespace-nowrap">
-                              {formatCurrency(sale.paidAmount)}
-                            </td>
-                            <td className="p-4 font-bold text-rose-500 whitespace-nowrap">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'ক্রম' : 'SL.'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'ইনভয়েস নং' : 'Invoice No'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'কাস্টমার' : 'Customer'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'তারিখ' : 'Date'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'পণ্য' : 'Items'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'পেমেন্ট পদ্ধতি' : 'Payment Method'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'মোট' : 'Total'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'পরিশোধিত' : 'Paid'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'বাকি' : 'Due'}</th>
+                      <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'স্ট্যাটাস' : 'Status'}</th>
+                      <th className="px-4 py-3.5 text-right whitespace-nowrap">{isBangla ? 'অ্যাকশন' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                    {filteredSales.map((sale, index) => {
+                      const statusConfig = {
+                        completed: {
+                          label: isBangla ? 'সম্পন্ন' : 'Completed',
+                          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                        },
+                        pending: {
+                          label: isBangla ? 'অপেক্ষমান' : 'Pending',
+                          color: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                        },
+                        cancelled: {
+                          label: isBangla ? 'বাতিল' : 'Cancelled',
+                          color: 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+                        },
+                        returned: {
+                          label: isBangla ? 'রিটার্ন' : 'Returned',
+                          color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+                        },
+                      };
+                      const status = statusConfig[sale.status] || statusConfig.completed;
+                      const slNumber = String(index + 1).padStart(2, '0');
+
+                      return (
+                        <tr
+                          key={sale.id}
+                          className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/sales/${sale.id}`)}
+                        >
+                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                            {slNumber}
+                          </td>
+                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                            {sale.invoiceNo}
+                          </td>
+                          <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                            {sale.party?.name || (isBangla ? 'খুচরা কাস্টমার' : 'Retail Customer')}
+                          </td>
+                          <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                            {formatDateTime(sale.createdAt)}
+                          </td>
+                          <td className="px-4 py-4 text-slate-200 text-xs font-medium whitespace-nowrap">
+                            {sale.items?.length || 0} {isBangla ? 'টি' : 'item(s)'}
+                          </td>
+                          <td className="px-4 py-4 text-slate-300 text-xs capitalize whitespace-nowrap">
+                            {sale.paymentMethod || '—'}
+                          </td>
+                          <td className="px-4 py-4 font-bold text-slate-100 text-sm whitespace-nowrap">
+                            {formatCurrency(sale.total)}
+                          </td>
+                          <td className="px-4 py-4 font-bold text-emerald-400 text-sm whitespace-nowrap">
+                            {formatCurrency(sale.paidAmount)}
+                          </td>
+                          <td className="px-4 py-4 font-bold text-sm whitespace-nowrap">
+                            <span className={sale.dueAmount > 0 ? "text-rose-400" : "text-[#718296]"}>
                               {formatCurrency(sale.dueAmount)}
-                            </td>
-                            <td className="p-4">
-                              <Badge variant={status.variant} size="sm" className="whitespace-nowrap">
-                                {status.label}
-                              </Badge>
-                            </td>
-                            <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => {
-                                    setSelectedSale(sale);
-                                    setIsOpenDetail(true);
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => router.push(`/sales/${sale.id}/return`)}
-                                >
-                                  <RotateCcw className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border ${status.color}`}>
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                title={isBangla ? 'দেখুন' : 'View'}
+                                className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                onClick={() => router.push(`/sales/${sale.id}`)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                title={isBangla ? 'রিটার্ন' : 'Return'}
+                                className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                onClick={() => router.push(`/sales/${sale.id}/return`)}
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Sale Detail Modal */}

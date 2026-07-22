@@ -66,6 +66,7 @@ export const navGroups: NavItem[] = [
     submenu: [
       { page: '/inventory', icon: Package, labelKey: 'Inventory List', labelBn: 'ইনভেন্টরি তালিকা' },
       { page: '/inventory/batches', icon: Tag, labelKey: 'Batches', labelBn: 'ব্যাচ' },
+      { page: '/inventory/promotions', icon: Sparkles, labelKey: 'Promotions', labelBn: 'প্রমোশন ও অফার' },
     ],
   },
   // {

@@ -288,6 +288,8 @@ export interface KPICardProps {
   value: number | string;
   prefix?: string;
   suffix?: string;
+  subtext?: string;
+  subtextBn?: string;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -305,6 +307,8 @@ export function KPICard({
   value,
   prefix,
   suffix,
+  subtext,
+  subtextBn,
   trend,
   icon,
   iconColor = 'emerald',
@@ -345,10 +349,10 @@ export function KPICard({
   }, [numericValue]);
   
   const iconColorClasses = {
-    emerald: 'text-emerald bg-emerald-subtle',
-    indigo: 'text-primary bg-primary-subtle',
-    warning: 'text-warning bg-warning-subtle',
-    destructive: 'text-destructive bg-destructive-subtle',
+    emerald: 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.25)]',
+    indigo: 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.25)]',
+    warning: 'text-amber-400 bg-amber-500/10 border border-amber-500/20 group-hover:shadow-[0_0_15px_rgba(245,158,11,0.25)]',
+    destructive: 'text-rose-400 bg-rose-500/10 border border-rose-500/20 group-hover:shadow-[0_0_15px_rgba(244,63,94,0.25)]',
   };
   
   const formatValue = (val: number) => {
@@ -356,30 +360,34 @@ export function KPICard({
   };
   
   return (
-    <Card
-      variant="elevated"
+    <div
       className={cn(
-        'relative overflow-hidden cursor-pointer group',
+        'relative overflow-hidden cursor-default group rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-border/90 hover:-translate-y-1 transition-all duration-200',
         className
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground font-medium">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 min-w-0">
+          <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider truncate">
             {isBangla && titleBn ? titleBn : title}
           </p>
           <div className="flex items-baseline gap-1">
-            {prefix && <span className="text-lg font-medium text-muted-foreground">{prefix}</span>}
-            <span className="kpi-number text-foreground animate-count-up">
+            {prefix && <span className="text-lg font-semibold text-muted-foreground">{prefix}</span>}
+            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight animate-count-up">
               {typeof value === 'number' ? formatValue(displayValue) : value}
             </span>
-            {suffix && <span className="text-lg font-medium text-muted-foreground">{suffix}</span>}
+            {suffix && <span className="text-base font-medium text-muted-foreground">{suffix}</span>}
           </div>
+          {(subtext || subtextBn) && (
+            <p className="text-[11px] text-muted-foreground/70 font-medium truncate pt-0.5">
+              {isBangla && subtextBn ? subtextBn : subtext}
+            </p>
+          )}
           {trend && (
             <div className={cn(
-              'flex items-center gap-1 text-xs font-medium',
-              trend.isPositive ? 'text-primary' : 'text-destructive'
+              'flex items-center gap-1 text-xs font-medium pt-0.5',
+              trend.isPositive ? 'text-emerald-400' : 'text-rose-400'
             )}>
               <span>{trend.isPositive ? '↑' : '↓'}</span>
               <span>{new Intl.NumberFormat(isBangla ? 'bn-BD' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.abs(trend.value))}%</span>
@@ -388,14 +396,14 @@ export function KPICard({
         </div>
         {icon && (
           <div className={cn(
-            'h-10 w-10 rounded-xl flex items-center justify-center',
+            'h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
             iconColorClasses[iconColor]
           )}>
             {icon}
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 }
 

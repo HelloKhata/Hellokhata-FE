@@ -22,6 +22,8 @@ import {
   ArrowLeft,
   Users,
   Loader2,
+  Sparkles,
+  Gift,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -48,6 +50,7 @@ const mockTxData = {
   additionalCharge: 250,
   total: 15500,
   dueAmount: 3500,
+  totalOfferSavings: 500,
   items: [
     {
       id: "1",
@@ -58,6 +61,12 @@ const mockTxData = {
       discount: 200,
       total: 8000,
       imageUrl: "",
+      // Offer data
+      offerType: "bogo",
+      offerTitle: "Buy 1 Get 1 Free",
+      chargedQuantity: 1,
+      freeQuantity: 1,
+      offerSavings: 4200,
     },
     {
       id: "2",
@@ -104,6 +113,12 @@ function SaleDetailsContent() {
       discountFlat: item.discount || 0,
       total: item.total || (item.quantity * item.unitPrice - (item.discount || 0)),
       imageUrl: item.imageUrl || "",
+      // Offer fields
+      offerType: item.offerType || null,
+      offerTitle: item.offerTitle || null,
+      chargedQuantity: item.chargedQuantity || item.quantity || 0,
+      freeQuantity: item.freeQuantity || 0,
+      offerSavings: item.offerSavings || 0,
     }));
   }, [txData]);
 
@@ -275,11 +290,32 @@ function SaleDetailsContent() {
 
                     {/* Name */}
                     <TableCell className="px-4 py-3 align-middle relative w-[32%]">
-                      <Input
-                        value={item.itemName}
-                        readOnly
-                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 cursor-default"
-                      />
+                      <div className="w-full">
+                        <Input
+                          value={item.itemName}
+                          readOnly
+                          className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 cursor-default"
+                        />
+                        {/* Offer Breakdown for Receipt */}
+                        {item.offerTitle && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              {item.offerTitle}
+                            </span>
+                            {item.freeQuantity > 0 && (
+                              <span className="text-[10px] text-emerald-400 font-semibold">
+                                {item.chargedQuantity} Charged / {item.freeQuantity} Free
+                              </span>
+                            )}
+                            {item.offerSavings > 0 && (
+                              <span className="text-[10px] text-emerald-400 font-semibold">
+                                Saved: ৳{item.offerSavings.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Batch No */}
@@ -436,9 +472,22 @@ function SaleDetailsContent() {
 
               {/* Discount */}
               <div className="flex justify-between items-center text-sm font-medium">
-                <span className="text-muted-foreground">{isBangla ? "ছাড়" : "Discount"}</span>
+                <span className="text-muted-foreground">{isBangla ? "ছাড়" : "Discount"}</span>
                 <span className="text-amber-600 dark:text-amber-500 font-medium font-mono">-Tk. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
+
+              {/* Offer Savings */}
+              {(txData.totalOfferSavings || 0) > 0 && (
+                <div className="flex justify-between items-center text-sm font-medium bg-purple-500/5 -mx-2 px-2 py-1 rounded-lg border border-purple-500/10">
+                  <span className="text-purple-500 flex items-center gap-1.5 text-xs font-semibold">
+                    <Sparkles className="h-3 w-3" />
+                    {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
+                  </span>
+                  <span className="text-purple-400 font-bold text-xs font-mono">
+                    -Tk. {(txData.totalOfferSavings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
 
               {/* Tax Display Row */}
               <div className="flex justify-between items-center text-sm font-medium py-0.5">

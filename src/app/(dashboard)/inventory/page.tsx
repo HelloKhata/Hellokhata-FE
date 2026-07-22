@@ -172,42 +172,45 @@ export default function InventoryPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Package className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+              <Package className="h-7 w-7 text-primary shrink-0" />
               {t('inventory.title')}
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
+            <p className="text-xs sm:text-sm text-muted-foreground/80 mt-1 whitespace-nowrap">
               {isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {/* Settings Dropdown — disabled, coming soon */}
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               disabled
               title={isBangla ? 'শীঘ্রই আসছে' : 'Coming soon'}
-              className="opacity-50 cursor-not-allowed"
+              className="opacity-50 cursor-not-allowed h-10 w-10 rounded-xl"
             >
               <Settings className="h-4 w-4" />
             </Button>
 
-            <Button onClick={() => router.push('/inventory/new')} className="shrink-0">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button
+              onClick={() => router.push('/inventory/new')}
+              className="shrink-0 h-10 px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
               <span className="whitespace-nowrap">{t('inventory.addItem')}</span>
             </Button>
           </div>
         </div>
 
-        {/* KPI Cards */}
+        {/* Premium SaaS ERP KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statusLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-24 rounded-xl bg-muted/40 animate-pulse"
+                className="h-28 rounded-2xl bg-muted/30 animate-pulse border border-border/40"
               />
             ))
           ) : (
@@ -216,6 +219,8 @@ export default function InventoryPage() {
                 title="Total Items"
                 titleBn="মোট পণ্য"
                 value={totalItems}
+                subtext="Registered products"
+                subtextBn="নিবন্ধিত পণ্যসমূহ"
                 icon={<Package className="h-5 w-5" />}
                 iconColor="indigo"
                 isBangla={isBangla}
@@ -224,6 +229,8 @@ export default function InventoryPage() {
                 title="Total Stock"
                 titleBn="মোট স্টক"
                 value={totalStock}
+                subtext="Available units"
+                subtextBn="উপলব্ধ ইউনিট"
                 icon={<Box className="h-5 w-5" />}
                 iconColor="emerald"
                 isBangla={isBangla}
@@ -233,6 +240,8 @@ export default function InventoryPage() {
                 titleBn="স্টকের মূল্য"
                 value={stockValue}
                 prefix="৳"
+                subtext="Total cost valuation"
+                subtextBn="মোট ক্রয় মূল্যায়ন"
                 icon={<DollarSign className="h-5 w-5" />}
                 iconColor="emerald"
                 isBangla={isBangla}
@@ -241,26 +250,28 @@ export default function InventoryPage() {
                 title="Low Stock"
                 titleBn="স্টক কম"
                 value={lowStockCount}
+                subtext={lowStockCount > 0 ? 'Items below min stock' : 'Healthy inventory'}
+                subtextBn={lowStockCount > 0 ? 'রিঅর্ডার লেভেলের নিচে' : 'পর্যাপ্ত স্টক রয়েছে'}
                 icon={<AlertTriangle className="h-5 w-5" />}
-                iconColor={lowStockCount > 0 ? 'warning' : 'emerald'}
+                iconColor={lowStockCount > 0 ? 'destructive' : 'emerald'}
                 isBangla={isBangla}
               />
             </>
           )}
         </div>
 
-        {/* Multi-Price Summary */}
+        {/* Multi-Price Summary Container */}
         {multiPriceItems > 0 && (
-          <Card variant="elevated" padding="default">
+          <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold text-foreground whitespace-nowrap">
                   {isBangla ? 'মাল্টি-প্রাইস পণ্য' : 'Multi-Price Items'}
                 </h3>
-                <p className="text-xs text-muted-foreground whitespace-nowrap">
+                <p className="text-xs text-muted-foreground/80 whitespace-nowrap">
                   {isBangla
                     ? `${multiPriceItems}টি পণ্যে একাধিক মূল্য সেট করা আছে`
                     : `${multiPriceItems} items have multiple price tiers`}
@@ -268,14 +279,14 @@ export default function InventoryPage() {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 {wholesaleItems > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo/10 whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo/10 border border-indigo/20 whitespace-nowrap">
                     <Package className="h-3.5 w-3.5 text-indigo shrink-0" />
                     <span className="text-xs font-medium text-indigo">{wholesaleItems}</span>
                     <span className="text-xs text-muted-foreground">{isBangla ? 'পাইকারি' : 'Wholesale'}</span>
                   </div>
                 )}
                 {vipItems > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warning/10 whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warning/10 border border-warning/20 whitespace-nowrap">
                     <Crown className="h-3.5 w-3.5 text-warning shrink-0" />
                     <span className="text-xs font-medium text-warning">{vipItems}</span>
                     <span className="text-xs text-muted-foreground">VIP</span>
@@ -283,23 +294,23 @@ export default function InventoryPage() {
                 )}
               </div>
             </div>
-          </Card>
+          </div>
         )}
 
-        {/* Filters */}
-        <Card variant="elevated" padding="default">
+        {/* Filters Container */}
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 sm:p-5 shadow-sm space-y-3">
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground shrink-0" />
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70 shrink-0" />
               <Input
                 placeholder={isBangla ? 'পণ্যের নাম, SKU বা বারকোড খুঁজুন...' : 'Search by name, SKU or barcode...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm placeholder:text-muted-foreground/60"
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
+              <SelectTrigger className="w-full md:w-[180px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
                 <SelectValue placeholder={isBangla ? 'ক্যাটাগরি' : 'Category'} />
               </SelectTrigger>
               <SelectContent>
@@ -312,7 +323,7 @@ export default function InventoryPage() {
               </SelectContent>
             </Select>
             <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger className="w-full md:w-[150px]">
+              <SelectTrigger className="w-full md:w-[150px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
                 <SelectValue placeholder={isBangla ? 'স্টক' : 'Stock'} />
               </SelectTrigger>
               <SelectContent>
@@ -322,7 +333,7 @@ export default function InventoryPage() {
               </SelectContent>
             </Select>
             <Select value={priceFilter} onValueChange={setPriceFilter}>
-              <SelectTrigger className="w-full md:w-[170px]">
+              <SelectTrigger className="w-full md:w-[170px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
                 <SelectValue placeholder={isBangla ? 'মূল্য' : 'Price'} />
               </SelectTrigger>
               <SelectContent>
@@ -349,7 +360,7 @@ export default function InventoryPage() {
             </Select>
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-[170px]">
+              <SelectTrigger className="w-full md:w-[170px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
                 <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
                 <SelectValue placeholder={isBangla ? 'সাজান' : 'Sort by'} />
               </SelectTrigger>
@@ -394,98 +405,90 @@ export default function InventoryPage() {
               </SelectContent>
             </Select>
           </div>
-        </Card>
+        </div>
 
-        {/* Items List */}
-        <Card variant="elevated" padding="none">
-          <CardHeader className="px-6 pt-6 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base whitespace-nowrap">{isBangla ? 'পণ্য তালিকা' : 'Item List'}</CardTitle>
-              {sortBy !== 'default' && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <ArrowUpDown className="h-3 w-3" />
-                  {isBangla ? 'সাজানো হয়েছে' : 'Sorted'}
-                </span>
-              )}
-            </div>
-          </CardHeader>
-          <Divider />
-          <CardContent className="p-0">
-            {itemsLoading ? (
-              <div className="p-4 space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 animate-pulse gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
-                      <div className="space-y-2 flex-1 max-w-md">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-4 w-36 rounded" />
-                          <Skeleton className="h-4 w-16 rounded-full" />
-                        </div>
-                        <Skeleton className="h-3 w-48 rounded" />
-                        <Skeleton className="h-2 w-32 rounded-full" />
+        {/* Items List Container */}
+        <div className="rounded-2xl border border-border/60 bg-[#12161f] shadow-sm overflow-hidden">
+          <div className="px-6 pt-5 pb-3">
+            <h3 className="text-base font-bold text-foreground">
+              {isBangla ? 'পণ্য তালিকা' : 'Item List'}
+            </h3>
+          </div>
+
+          {itemsLoading ? (
+            <div className="p-4 space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 animate-pulse gap-4">
+                  <div className="flex items-center gap-4 flex-1">
+                    <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
+                    <div className="space-y-2 flex-1 max-w-md">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-36 rounded" />
+                        <Skeleton className="h-4 w-16 rounded-full" />
                       </div>
-                    </div>
-                    <div className="flex items-center gap-6 shrink-0">
-                      <div className="space-y-1 text-right">
-                        <Skeleton className="h-4 w-16 rounded ml-auto" />
-                        <Skeleton className="h-3 w-24 rounded ml-auto" />
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                      </div>
+                      <Skeleton className="h-3 w-48 rounded" />
+                      <Skeleton className="h-2 w-32 rounded-full" />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : sortedItems.length === 0 ? (
-              <EmptyState
-                icon={<Package className="h-8 w-8" />}
-                title={isBangla ? 'কোনো পণ্য নেই' : 'No items found'}
-                description={isBangla ? 'নতুন পণ্য যোগ করুন' : 'Add your first item'}
-                isBangla={isBangla}
-                action={
-                  <Button onClick={() => router.push('/inventory/new')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    <span className="whitespace-nowrap">{t('inventory.addItem')}</span>
-                  </Button>
-                }
-              />
-            ) : (
-              <div>
-                {/* Column Header Bar - Left Aligned Except Actions */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 text-xs font-semibold text-muted-foreground border-b border-border-subtle gap-4">
-                  <div className="w-8 text-left shrink-0">SL.</div>
-                  <div className="w-24 sm:w-28 text-left shrink-0">SKU</div>
-                  <div className="w-11 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
-                  <div className="flex-1 text-left min-w-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
-                  <div className="hidden md:block w-40 sm:w-48 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
-                  <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
-                  <div className="text-right w-36 sm:w-44 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
+                  <div className="flex items-center gap-6 shrink-0">
+                    <div className="space-y-1 text-right">
+                      <Skeleton className="h-4 w-16 rounded ml-auto" />
+                      <Skeleton className="h-3 w-24 rounded ml-auto" />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </div>
+                  </div>
                 </div>
-                <ScrollArea className="h-[500px]">
-                  <div className="divide-y divide-border-subtle">
-                    {sortedItems.map((item, index) => (
-                      <ItemRow
-                        key={item.id}
-                        item={item}
-                        isBangla={isBangla}
-                        index={index}
-                        categories={categories || []}
-                        onView={() => router.push(`/inventory/${item.id}`)}
-                        onViewBatches={() => setSelectedBatchItem(item)}
-                        refetchItems={refetch}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+              ))}
+            </div>
+          ) : sortedItems.length === 0 ? (
+            <EmptyState
+              icon={<Package className="h-8 w-8" />}
+              title={isBangla ? 'কোনো পণ্য নেই' : 'No items found'}
+              description={isBangla ? 'নতুন পণ্য যোগ করুন' : 'Add your first item'}
+              isBangla={isBangla}
+              action={
+                <Button onClick={() => router.push('/inventory/new')} className="rounded-xl">
+                  <Plus className="h-4 w-4 mr-2" />
+                  <span className="whitespace-nowrap">{t('inventory.addItem')}</span>
+                </Button>
+              }
+            />
+          ) : (
+            <div>
+              {/* Column Header Bar - Left Aligned Except Actions */}
+              <div className="flex items-center justify-between px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
+                <div className="w-10 text-left shrink-0">SL.</div>
+                <div className="w-24 sm:w-28 text-left shrink-0">SKU</div>
+                <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
+                <div className="flex-1 text-left min-w-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
+                <div className="hidden md:block w-44 sm:w-52 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
+                <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
+                <div className="text-right w-36 sm:w-44 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <ScrollArea className="h-[520px]">
+                <div className="divide-y divide-border/30">
+                  {sortedItems.map((item, index) => (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      isBangla={isBangla}
+                      index={index}
+                      categories={categories || []}
+                      onView={() => router.push(`/inventory/${item.id}`)}
+                      onViewBatches={() => setSelectedBatchItem(item)}
+                      refetchItems={refetch}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Item Detail Modal */}
@@ -507,97 +510,37 @@ export default function InventoryPage() {
                     (selectedItem.currentStock ?? 0) === 0 ? 'text-red-600' :
                       (selectedItem.currentStock ?? 0) <= (selectedItem.minStock ?? 0) ? 'text-amber-600' : 'text-emerald-600'
                   )}>
-                    {selectedItem.currentStock ?? 0} {selectedItem.unit}
+                    {selectedItem.currentStock ?? 0} {selectedItem.unit || 'pcs'}
                   </span>
                 }
-                icon={<Package className="h-5 w-5 text-emerald-600" />}
+              />
+              <DetailRow
+                label={isBangla ? 'ক্রয় মূল্য' : 'Purchase Price'}
+                value={formatCurrency(selectedItem.costPrice)}
               />
               <DetailRow
                 label={isBangla ? 'বিক্রয় মূল্য' : 'Selling Price'}
-                value={<span className="font-bold">{formatCurrency(selectedItem.sellingPrice)}</span>}
-                icon={<DollarSign className="h-5 w-5 text-blue-600" />}
+                value={formatCurrency(selectedItem.sellingPrice)}
               />
               <DetailRow
-                label={isBangla ? 'ক্রয় মূল্য' : 'Cost Price'}
-                value={formatCurrency(selectedItem.costPrice)}
-                icon={<Tag className="h-5 w-5 text-gray-600" />}
+                label={isBangla ? 'বারকোড' : 'Barcode'}
+                value={selectedItem.barcode || '—'}
               />
-              {selectedItem.margin !== undefined && (
-                <DetailRow
-                  label={isBangla ? 'মার্জিন' : 'Margin'}
-                  value={
-                    <span className={cn(
-                      'font-bold',
-                      selectedItem.margin > 20 ? 'text-emerald-600' :
-                        selectedItem.margin > 10 ? 'text-amber-600' : 'text-red-600'
-                    )}>
-                      {selectedItem.margin.toFixed(1)}%
-                    </span>
-                  }
-                  icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-                />
-              )}
             </DetailSection>
-
-            {/* Multi-Price Section */}
-            {(selectedItem.wholesalePrice || selectedItem.vipPrice || selectedItem.minimumPrice) && (
-              <DetailSection title={isBangla ? 'মাল্টি-প্রাইস' : 'Multi-Price'}>
-                {selectedItem.wholesalePrice && (
-                  <DetailRow
-                    label={isBangla ? 'পাইকারি মূল্য' : 'Wholesale Price'}
-                    value={<span className="font-bold text-indigo-600">{formatCurrency(selectedItem.wholesalePrice)}</span>}
-                    icon={<Package className="h-5 w-5 text-indigo" />}
-                  />
-                )}
-                {selectedItem.vipPrice && (
-                  <DetailRow
-                    label="VIP Price"
-                    value={<span className="font-bold text-amber-600">{formatCurrency(selectedItem.vipPrice)}</span>}
-                    icon={<Crown className="h-5 w-5 text-amber-600" />}
-                  />
-                )}
-                {selectedItem.minimumPrice && (
-                  <DetailRow
-                    label={isBangla ? 'সর্বনিম্ন মূল্য' : 'Minimum Price'}
-                    value={<span className="font-bold text-red-600">{formatCurrency(selectedItem.minimumPrice)}</span>}
-                    icon={<TrendingDown className="h-5 w-5 text-red-600" />}
-                  />
-                )}
-              </DetailSection>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
-              <Button
-                className="flex-1"
-                onClick={() => router.push(`/inventory/${selectedItem.id}/edit`)}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                <span className="whitespace-nowrap">{isBangla ? 'সম্পাদনা' : 'Edit'}</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  toast.info(isBangla ? 'স্টক ইতিহাস শীঘ্রই আসছে' : 'Stock history coming soon');
-                }}
-              >
-                <Layers className="h-4 w-4 mr-2" />
-                <span className="whitespace-nowrap">{isBangla ? 'স্টক ইতিহাস' : 'Stock History'}</span>
-              </Button>
-            </div>
           </>
         )}
       </DetailModal>
 
       {/* View Batches Modal */}
-      <BatchesModal
-        isOpen={!!selectedBatchItem}
-        onClose={() => setSelectedBatchItem(null)}
-        item={selectedBatchItem}
-        isBangla={isBangla}
-        categories={categories || []}
-      />
+      {selectedBatchItem && (
+        <BatchesModal
+          isOpen={!!selectedBatchItem}
+          onClose={() => setSelectedBatchItem(null)}
+          item={selectedBatchItem}
+          isBangla={isBangla}
+          categories={categories || []}
+        />
+      )}
 
       {/* Import Items Modal */}
       <ImportItemsModal
@@ -695,16 +638,6 @@ const ItemRow = memo(function ItemRow({
   };
 
   const stockStatus = getStockStatus();
-  const maxCapacity = Math.max((item.maxStock || minStock * 3), 1);
-  const stockPercentage = Math.min(((item.currentStock ?? 0) / maxCapacity) * 100, 100);
-
-  const progressColor = (item.currentStock ?? 0) === 0 || stockStatus.variant === 'destructive'
-    ? 'destructive'
-    : (item.currentStock ?? 0) <= minStock || stockStatus.variant === 'warning'
-      ? 'warning'
-      : 'emerald';
-
-  const marginVal = item.margin ?? (item.sellingPrice > 0 ? ((item.sellingPrice - item.costPrice) / item.sellingPrice) * 100 : 0);
 
   const hasWholesale = item.wholesalePrice && item.wholesalePrice > 0;
   const hasVip = item.vipPrice && item.vipPrice > 0;
@@ -759,17 +692,17 @@ const ItemRow = memo(function ItemRow({
               </DialogDescription>
             </div>
 
-            <div className="flex w-full gap-2 pt-1">
+            <div className="flex items-center gap-3 w-full pt-2">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 rounded-xl"
                 onClick={() => setDeleteOpen(false)}
               >
                 {isBangla ? 'বাতিল' : 'Cancel'}
               </Button>
               <Button
                 variant="destructive"
-                className="flex-1"
+                className="flex-1 rounded-xl"
                 onClick={handleConfirmDelete}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -781,129 +714,101 @@ const ItemRow = memo(function ItemRow({
       </Dialog>
 
       <div
-        className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-muted/40 transition-colors cursor-default group stagger-item gap-4"
+        className="flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors cursor-default group gap-4 border-b border-border/30"
         style={{ animationDelay: `${index * 30}ms` }}
         onClick={handleRowClick}
       >
         {/* 1. SL. (Left aligned) */}
-        <div className="w-8 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground">
+        <div className="w-10 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground/80">
           {String(index + 1).padStart(2, '0')}
         </div>
 
         {/* 2. Product SKU (Left aligned) */}
         <div className="w-24 sm:w-28 shrink-0 min-w-0 text-left">
-          <span className="text-xs font-mono text-muted-foreground/80 truncate block" title={item.sku}>
-            {item.sku ? `SKU: ${item.sku}` : '—'}
+          <span className="text-xs font-mono text-muted-foreground/60 truncate block" title={item.sku}>
+            {item.sku ? item.sku : '—'}
           </span>
         </div>
 
         {/* 3. Product Image (Left aligned) */}
-        <div className="w-11 shrink-0 text-left flex items-center justify-start">
-          <div className="h-11 w-11 rounded-sm bg-muted flex items-center justify-center overflow-hidden border border-border/80">
+        <div className="w-12 shrink-0 text-left flex items-center justify-start">
+          <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center overflow-hidden border border-border/40 p-1 shrink-0">
             {item.imageUrl ? (
               <img
                 src={item.imageUrl}
                 alt={item.name}
                 loading="lazy"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
             ) : (
-              <Package className="h-5 w-5 text-muted-foreground" />
+              <Package className="h-6 w-6 text-slate-400" />
             )}
           </div>
         </div>
 
         {/* 4. Product Name & Status (Left aligned, expanded) */}
-        <div className="flex-1 min-w-0 space-y-1 text-left">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-foreground text-sm ">{item.name}</p>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="font-bold text-foreground text-sm leading-snug">{item.name}</p>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Badge variant={stockStatus.variant} size="sm" className="whitespace-nowrap cursor-help">
-                    {stockStatus.label}
-                  </Badge>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{stockStatus.tooltip}</p>
-              </TooltipContent>
-            </Tooltip>
+            <span
+              className={cn(
+                "text-[11px] font-medium tracking-wide whitespace-nowrap",
+                stockStatus.variant === 'destructive' ? "text-rose-500" :
+                stockStatus.variant === 'warning' ? "text-amber-400" : "text-slate-300"
+              )}
+            >
+              {stockStatus.label}
+            </span>
 
             {hasMultiPrice && (
               <>
                 {hasWholesale && (
-                  <Badge variant="indigo" size="sm" icon={<Package className="h-3 w-3" />} className="whitespace-nowrap">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
                     {isBangla ? 'পাইকারি' : 'Wholesale'}
-                  </Badge>
+                  </span>
                 )}
                 {hasVip && (
-                  <Badge variant="warning" size="sm" icon={<Crown className="h-3 w-3" />} className="whitespace-nowrap">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
                     VIP
-                  </Badge>
+                  </span>
                 )}
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80 flex-wrap">
-            {categoryName && <span>{categoryName}</span>}
-            {brandName && (
-              <>
-                {categoryName && <span className="text-border">•</span>}
-                <span>{brandName}</span>
               </>
             )}
           </div>
         </div>
 
         {/* 5. Inventory (Batches, Left aligned) */}
-        <div className="hidden md:flex flex-col w-40 sm:w-48 shrink-0 text-left">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="h-auto py-1 px-2.5 text-foreground whitespace-nowrap text-xs font-medium bg-muted/50 hover:bg-muted border border-border/40 transition-colors w-fit cursor-pointer"
+        <div className="hidden md:flex flex-col w-44 sm:w-52 shrink-0 text-left">
+          <button
+            type="button"
+            className="h-auto py-1 px-3.5 text-foreground whitespace-nowrap text-xs font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded-full transition-colors w-fit cursor-pointer flex items-center"
             onClick={(e) => handleAction(e, onViewBatches)}
           >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs font-medium text-foreground whitespace-nowrap">
-                  {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} • {branchesCount} {branchesCount === 1 ? (isBangla ? 'শাখা' : 'Branch') : (isBangla ? 'শাখা' : 'Branches')}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isBangla ? 'ব্যাচসমূহ দেখুন' : 'View Batches'}</p>
-              </TooltipContent>
-            </Tooltip>
-          </Button>
+            <span className="text-xs font-medium text-slate-200">
+              {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} • {branchesCount} {branchesCount === 1 ? (isBangla ? 'শাখা' : 'Branch') : (isBangla ? 'শাখা' : 'Branches')}
+            </span>
+          </button>
         </div>
 
         {/* 6. Quantity (Left aligned) */}
         <div className="w-28 sm:w-36 shrink-0 min-w-0 text-left space-y-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className="font-bold text-foreground text-sm whitespace-nowrap cursor-help">
-                {item.currentStock ?? 0} <span className="text-xs font-normal text-muted-foreground">{unit}</span>
-              </p>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isBangla ? `মোট স্টক: ${item.currentStock ?? 0} ${unit}` : `Total Stock: ${item.currentStock ?? 0} ${unit}`}</p>
-            </TooltipContent>
-          </Tooltip>
-          <p className="text-xs text-muted-foreground/80 whitespace-nowrap">
+          <p className="text-sm font-extrabold text-foreground whitespace-nowrap">
+            {item.currentStock ?? 0} <span className="text-xs font-normal text-muted-foreground">{unit}</span>
+          </p>
+          <p className="text-xs text-muted-foreground/70 whitespace-nowrap">
             Purchase {formatCurrency(item.costPrice)}
           </p>
         </div>
 
         {/* 7. Action Buttons (Right aligned) */}
-        <div className="flex items-center justify-end gap-1 w-36 sm:w-44 shrink-0 text-right opacity-80 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-end gap-1 w-36 sm:w-44 shrink-0 text-right">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon-sm"
-                className="cursor-pointer"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 onClick={(e) => handleAction(e, onView)}
               >
                 <Eye className="h-4 w-4" />
@@ -918,8 +823,8 @@ const ItemRow = memo(function ItemRow({
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon-sm"
-                className="cursor-pointer"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 onClick={(e) => handleAction(e, onViewBatches)}
               >
                 <Layers className="h-4 w-4" />
@@ -934,8 +839,8 @@ const ItemRow = memo(function ItemRow({
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon-sm"
-                className="cursor-pointer"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
                 onClick={(e) => handleAction(e, () => router.push(`/inventory/${item.id}/edit`))}
               >
                 <Edit className="h-4 w-4" />
@@ -950,7 +855,11 @@ const ItemRow = memo(function ItemRow({
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="icon-sm" className="cursor-pointer">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -1003,6 +912,3 @@ const ItemRow = memo(function ItemRow({
     </TooltipProvider>
   );
 });
-
-
-

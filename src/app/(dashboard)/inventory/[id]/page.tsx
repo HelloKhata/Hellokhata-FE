@@ -192,6 +192,7 @@ function ProductDetailsContent() {
         <TabsContent value="batches">
           <BatchTable
             batches={mockBatches}
+            productId={product.id}
             onViewBatch={(bId) => alert(`View batch [${bId}]`)}
             onTransferStock={(bId) => alert(`Transfer batch stock [${bId}]`)}
             onAdjustStock={(bId) => alert(`Adjust batch stock [${bId}]`)}
