@@ -18,13 +18,7 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Users,
-  Loader2,
-  Sparkles,
-  Gift,
-} from "lucide-react";
+import { ArrowLeft, Users, Loader2, Sparkles, Gift } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { useGetSaleById } from "@/hooks/api/useSales";
@@ -41,7 +35,8 @@ const mockTxData = {
   invoiceNo: "HK-89324",
   createdAt: "2026-07-16T12:00:00Z",
   paymentMethod: "cash",
-  notes: "Thank you for shopping at Hello Khata! Please review our return policies in case of damaged packaging.",
+  notes:
+    "Thank you for shopping at Hello Khata! Please review our return policies in case of damaged packaging.",
   paidAmount: 12000,
   subtotal: 15000,
   discount: 500,
@@ -94,9 +89,14 @@ function SaleDetailsContent() {
   const txData = mockTxData;
   const party = txData.party;
 
-  const partyName = txData.partyName || party?.name || (isBangla ? "ক্যাশ কাস্টমার" : "Cash Customer");
+  const partyName =
+    txData.partyName ||
+    party?.name ||
+    (isBangla ? "ক্যাশ কাস্টমার" : "Cash Customer");
   const invoiceNo = txData.invoiceNo || "—";
-  const invoiceDate = txData.createdAt ? new Date(txData.createdAt) : new Date();
+  const invoiceDate = txData.createdAt
+    ? new Date(txData.createdAt)
+    : new Date();
   const paymentMethod = txData.paymentMethod || "cash";
   const notes = txData.notes || "";
   const paidAmount = txData.paidAmount || 0;
@@ -111,7 +111,8 @@ function SaleDetailsContent() {
       quantity: item.quantity || 0,
       unitPrice: item.unitPrice || 0,
       discountFlat: item.discount || 0,
-      total: item.total || (item.quantity * item.unitPrice - (item.discount || 0)),
+      total:
+        item.total || item.quantity * item.unitPrice - (item.discount || 0),
       imageUrl: item.imageUrl || "",
       // Offer fields
       offerType: item.offerType || null,
@@ -132,8 +133,6 @@ function SaleDetailsContent() {
   const grandTotal = txData?.total || 0;
   const due = txData?.dueAmount || 0;
 
-
-
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
@@ -153,10 +152,8 @@ function SaleDetailsContent() {
 
       {/* 75% / 25% Split Layout Container */}
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        
         {/* Left Side (75% on Desktop) */}
         <div className="w-full lg:w-[75%] space-y-6">
-          
           {/* Row 1 Layout: Select Party, Invoice No, Invoice Date */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
             {/* Party Name */}
@@ -204,27 +201,45 @@ function SaleDetailsContent() {
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-sm space-y-3">
               <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
                 <Users className="h-4 w-4" />
-                <span>{isBangla ? "গ্রাহক সংক্ষিপ্ত বিবরণ" : "Customer Overview"}</span>
+                <span>
+                  {isBangla ? "গ্রাহক সংক্ষিপ্ত বিবরণ" : "Customer Overview"}
+                </span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "গ্রাহকের নাম" : "Customer Name"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{party.name}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    {isBangla ? "গ্রাহকের নাম" : "Customer Name"}
+                  </p>
+                  <p className="font-semibold text-foreground truncate mt-0.5">
+                    {party.name}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "মোবাইল" : "Phone"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{party.phone || "—"}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    {isBangla ? "মোবাইল" : "Phone"}
+                  </p>
+                  <p className="font-semibold text-foreground truncate mt-0.5">
+                    {party.phone || "—"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-rose-400/80 uppercase tracking-wide">{isBangla ? "বর্তমান বাকি" : "Current Due"}</p>
+                  <p className="text-[10px] text-rose-400/80 uppercase tracking-wide">
+                    {isBangla ? "বর্তমান বাকি" : "Current Due"}
+                  </p>
                   <p className="font-bold text-rose-500 mt-0.5">
                     {formatCurrency(Math.abs(party.currentBalance || 0))}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "ক্রেডিট লিমিট" : "Credit Limit"}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    {isBangla ? "ক্রেডিট লিমিট" : "Credit Limit"}
+                  </p>
                   <p className="font-semibold text-foreground mt-0.5">
-                    {party.creditLimit ? formatCurrency(party.creditLimit) : (isBangla ? "সীমাহীন" : "Unlimited")}
+                    {party.creditLimit
+                      ? formatCurrency(party.creditLimit)
+                      : isBangla
+                        ? "সীমাহীন"
+                        : "Unlimited"}
                   </p>
                 </div>
               </div>
@@ -283,7 +298,13 @@ function SaleDetailsContent() {
                         />
                       ) : (
                         <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
-                          <Image src="/images/image.png" width={50} height={50} alt="Image" className="h-8 w-8 text-muted-foreground/60" />
+                          <Image
+                            src="/images/image.png"
+                            width={50}
+                            height={50}
+                            alt="Image"
+                            className="h-8 w-8 text-muted-foreground/60"
+                          />
                         </div>
                       )}
                     </TableCell>
@@ -305,7 +326,8 @@ function SaleDetailsContent() {
                             </span>
                             {item.freeQuantity > 0 && (
                               <span className="text-[10px] text-emerald-400 font-semibold">
-                                {item.chargedQuantity} Charged / {item.freeQuantity} Free
+                                {item.chargedQuantity} Charged /{" "}
+                                {item.freeQuantity} Free
                               </span>
                             )}
                             {item.offerSavings > 0 && (
@@ -452,7 +474,6 @@ function SaleDetailsContent() {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
@@ -466,14 +487,30 @@ function SaleDetailsContent() {
             <div className="space-y-3">
               {/* Subtotal */}
               <div className="flex justify-between items-center text-sm font-medium">
-                <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
-                <span className="text-foreground font-mono">Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-muted-foreground">
+                  {isBangla ? "উপমোট" : "Subtotal"}
+                </span>
+                <span className="text-foreground font-mono">
+                  Tk.{" "}
+                  {rawSubtotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
 
               {/* Discount */}
               <div className="flex justify-between items-center text-sm font-medium">
-                <span className="text-muted-foreground">{isBangla ? "ছাড়" : "Discount"}</span>
-                <span className="text-amber-600 dark:text-amber-500 font-medium font-mono">-Tk. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-muted-foreground">
+                  {isBangla ? "ছাড়" : "Discount"}
+                </span>
+                <span className="text-amber-600 dark:text-amber-500 font-medium font-mono">
+                  -Tk.{" "}
+                  {totalDiscount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
 
               {/* Offer Savings */}
@@ -484,14 +521,20 @@ function SaleDetailsContent() {
                     {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
                   </span>
                   <span className="text-purple-400 font-bold text-xs font-mono">
-                    -Tk. {(txData.totalOfferSavings || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    -Tk.{" "}
+                    {(txData.totalOfferSavings || 0).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               )}
 
               {/* Tax Display Row */}
               <div className="flex justify-between items-center text-sm font-medium py-0.5">
-                <span className="text-muted-foreground">{isBangla ? "ট্যাক্স" : "Tax"}</span>
+                <span className="text-muted-foreground">
+                  {isBangla ? "ট্যাক্স" : "Tax"}
+                </span>
                 <span className="text-foreground text-xs font-semibold font-mono">
                   Tk. {taxVal.toFixed(2)}
                 </span>
@@ -499,7 +542,9 @@ function SaleDetailsContent() {
 
               {/* VAT Display Row */}
               <div className="flex justify-between items-center text-sm font-medium py-0.5">
-                <span className="text-muted-foreground">{isBangla ? "ভ্যাট" : "VAT"}</span>
+                <span className="text-muted-foreground">
+                  {isBangla ? "ভ্যাট" : "VAT"}
+                </span>
                 <span className="text-foreground text-xs font-semibold font-mono">
                   Tk. {vatVal.toFixed(2)}
                 </span>
@@ -508,8 +553,14 @@ function SaleDetailsContent() {
               {/* Additional Charge */}
               <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">{isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}</span>
-                  <span className="text-[10px] text-muted-foreground">{isBangla ? "শিপিং, ডেলিভারি ইত্যাদি" : "Shipping, Delivery etc."}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {isBangla
+                      ? "শিপিং, ডেলিভারি ইত্যাদি"
+                      : "Shipping, Delivery etc."}
+                  </span>
                 </div>
                 <span className="text-foreground text-sm font-bold font-mono">
                   Tk. {additionalChargeVal.toFixed(2)}
@@ -523,7 +574,11 @@ function SaleDetailsContent() {
                 {isBangla ? "সর্বমোট" : "Grand Total"}
               </span>
               <span className="text-lg font-extrabold text-primary font-mono">
-                Tk. {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Tk.{" "}
+                {grandTotal.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </div>
 
@@ -543,12 +598,20 @@ function SaleDetailsContent() {
                 <Input
                   value={
                     paymentMethod === "cash"
-                      ? isBangla ? "নগদ (Cash)" : "Cash"
+                      ? isBangla
+                        ? "নগদ (Cash)"
+                        : "Cash"
                       : paymentMethod === "card"
-                      ? isBangla ? "কার্ড (Card)" : "Card"
-                      : paymentMethod === "mobile_banking"
-                      ? isBangla ? "মোবাইল ব্যাংকিং" : "Mobile Banking"
-                      : isBangla ? "বাকি (Credit)" : "Credit"
+                        ? isBangla
+                          ? "কার্ড (Card)"
+                          : "Card"
+                        : paymentMethod === "mobile_banking"
+                          ? isBangla
+                            ? "মোবাইল ব্যাংকিং"
+                            : "Mobile Banking"
+                          : isBangla
+                            ? "বাকি (Credit)"
+                            : "Credit"
                   }
                   readOnly
                   className="h-10 bg-background/50 border-input text-foreground text-sm cursor-default focus-visible:ring-0"
@@ -579,9 +642,7 @@ function SaleDetailsContent() {
               {due > 0 && (
                 <div className="pt-1">
                   <div className="p-3 rounded-xl flex justify-between items-center text-xs font-semibold border transition-all duration-300 bg-rose-500/10 border-rose-500/20 text-rose-500">
-                    <span>
-                      {isBangla ? "বাকি পরিমাণ" : "Due Amount"}
-                    </span>
+                    <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
                     <div className="text-right">
                       <span className="font-extrabold text-sm block font-mono">
                         Tk. {due.toFixed(2)}
@@ -608,7 +669,6 @@ function SaleDetailsContent() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

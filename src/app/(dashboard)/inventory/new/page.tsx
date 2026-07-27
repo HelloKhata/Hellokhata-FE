@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Boxes,
@@ -11,15 +12,161 @@ import {
   Tag,
   UploadCloud,
 } from "lucide-react";
+import { useGetTaxCategories } from "@/hooks/api/useTaxCategories";
+import { useGetUnits } from "@/hooks/api/useUnits";
+import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
+import { useCreateItem } from "@/hooks/api/useItems";
+import { useRouter } from "next/navigation";
 
 export default function AddProductPage() {
-  // State for Margin/Profit dynamic calculations (preserves business logic)
-  const [showAdvancePricing, setShowAdvancePricing] = useState(false);
-  const [purchaseCost, setPurchaseCost] = useState<number | "">(0);
+  // Form State matching API JSON schema
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [brand, setBrand] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [taxCategoryId, setTaxCategoryId] = useState("");
+  const [unitId, setUnitId] = useState("");
+  const [description, setDescription] = useState("");
+
+  const [costPrice, setCostPrice] = useState<number | "">(0);
   const [sellingPrice, setSellingPrice] = useState<number | "">(0);
+  const [wholesalePrice, setWholesalePrice] = useState<number | "">(0);
+  const [vipPrice, setVipPrice] = useState<number | "">(0);
+  const [minimumPrice, setMinimumPrice] = useState<number | "">(0);
+
+  const [currentStock, setCurrentStock] = useState<number | "">(0);
+  const [minStock, setMinStock] = useState<number | "">(10);
+  const [vatRate, setVatRate] = useState<number | "">(5);
+  const [lowStockAlert, setLowStockAlert] = useState(false);
+
+  const [trackExpiry, setTrackExpiry] = useState(false);
+  const [trackBatch, setTrackBatch] = useState(false);
+  const [status, setStatus] = useState("ACTIVE");
+  const [productType, setProductType] = useState("PRODUCT");
+  const [imageUrl, setImageUrl] = useState("");
+
+  const [manufactureDate, setManufactureDate] = useState<string>("");
+  const [expiryDate, setExpiryDate] = useState<string>("");
+
+  const [incomeRevenueAccount, setIncomeRevenueAccount] = useState("Sales Revenue");
+  const [showAdvancePricing, setShowAdvancePricing] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // fetch api's and get tax categories, units and others 
+  const { data: taxCategories } = useGetTaxCategories();
+  const { data: units } = useGetUnits();
+  const { data: itemCategories } = useGetItemsCategories();
+  const {mutate:saveProduct,isPending:isSaving} = useCreateItem();
+
+
+  // router 
+  const router = useRouter()
+  // Show date fields when batch tracking, expiry tracking is on and current stock has value
+  const showDateFields =
+    trackBatch &&
+    trackExpiry &&
+    typeof currentStock === "number" &&
+    currentStock > 0;
+
+  const handleTrackBatchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    setTrackBatch(isChecked);
+    if (!isChecked) {
+      setTrackExpiry(false);
+    }
+  };
+
+  const generateSku = () => {
+    const randomSku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
+    setSku(randomSku);
+  };
+
+  const generateBarcode = () => {
+    const randomBarcode = `890${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+    setBarcode(randomBarcode);
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!name.trim()) {
+      newErrors.name = "Product Name is required";
+    }
+
+    if (!unitId.trim()) {
+      newErrors.unitId = "Unit Measure is required";
+    }
+
+    if (costPrice === "") {
+      newErrors.costPrice = "Purchase Cost is required";
+    }
+
+    if (sellingPrice === "") {
+      newErrors.sellingPrice = "Retail Selling Price is required";
+    }
+
+    if (showDateFields) {
+      // if (!manufactureDate) {
+      //   newErrors.manufactureDate = "Manufacture Date is required";
+      // }
+      // if (!expiryDate) {
+      //   newErrors.expiryDate = "Expiry Date is required";
+      // }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveProduct = () => {
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const formData = {
+      name,
+      sku,
+      barcode,
+      brand,
+      categoryId,
+      taxCategoryId,
+      unitId,
+      description,
+      costPrice: costPrice === "" ? 0 : Number(costPrice),
+      sellingPrice: sellingPrice === "" ? 0 : Number(sellingPrice),
+      wholesalePrice: wholesalePrice === "" ? 0 : Number(wholesalePrice),
+      vipPrice: vipPrice === "" ? 0 : Number(vipPrice),
+      minimumPrice: minimumPrice === "" ? 0 : Number(minimumPrice),
+      currentStock: currentStock === "" ? 0 : Number(currentStock),
+      minStock: minStock === "" ? 0 : Number(minStock),
+      vatRate: vatRate === "" ? 0 : Number(vatRate),
+      lowStockAlert,
+      trackExpiry,
+      trackBatch,
+      status,
+      productType,
+      imageUrl,
+      expiryDate: showDateFields ? expiryDate : null,
+      manufactureDate: showDateFields ? manufactureDate : null,
+    };
+
+    saveProduct(formData,{
+      onSuccess:(data)=>{
+      if(data.success){
+        toast.success(data.message || "Product added successfully");
+        router.push("/inventory");
+      }else{
+        toast.error(data.message || "Failed to add product");
+      }
+    }
+    })
+    
+  };
 
   // Dynamic calculation logic
-  const cost = typeof purchaseCost === "number" ? purchaseCost : 0;
+  const cost = typeof costPrice === "number" ? costPrice : 0;
   const price = typeof sellingPrice === "number" ? sellingPrice : 0;
 
   const grossProfit = price - cost;
@@ -46,14 +193,6 @@ export default function AddProductPage() {
               settings.
             </p>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* <button className="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-lg transition-colors">
-              Discard Draft
-            </button> */}
-            <button className="px-4 py-2 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm shadow-primary/20">
-              Save Product
-            </button>
-          </div>
         </div>
 
         {/* Form Grid Section */}
@@ -77,9 +216,22 @@ export default function AddProductPage() {
                   </label>
                   <input
                     type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (errors.name)
+                        setErrors((prev) => ({ ...prev, name: "" }));
+                    }}
                     placeholder="e.g. Premium Jasmine Rice 5kg"
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 h-11 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                    className={`w-full bg-slate-900/90 border ${
+                      errors.name ? "border-red-500" : "border-slate-800"
+                    } rounded-lg px-3.5 h-11 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all`}
                   />
+                  {errors.name && (
+                    <p className="text-red-500 text-[11px] mt-1">
+                      {errors.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -88,12 +240,18 @@ export default function AddProductPage() {
                       <label className="text-xs font-medium text-slate-400">
                         SKU Code
                       </label>
-                      <button className="text-[11px] text-primary hover:underline font-medium">
+                      <button
+                        type="button"
+                        onClick={generateSku}
+                        className="text-[11px] text-primary hover:underline font-medium"
+                      >
                         Generate SKU
                       </button>
                     </div>
                     <input
                       type="text"
+                      value={sku}
+                      onChange={(e) => setSku(e.target.value)}
                       placeholder="e.g. JSM-RC-5KG"
                       className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
@@ -103,12 +261,18 @@ export default function AddProductPage() {
                       <label className="text-xs font-medium text-slate-400">
                         Barcode / EAN
                       </label>
-                      <button className="text-[11px] text-primary hover:underline font-medium">
+                      <button
+                        type="button"
+                        onClick={generateBarcode}
+                        className="text-[11px] text-primary hover:underline font-medium"
+                      >
                         Generate Barcode
                       </button>
                     </div>
                     <input
                       type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
                       placeholder="e.g. 8901030700812"
                       className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
@@ -125,10 +289,17 @@ export default function AddProductPage() {
                         + Add
                       </button>
                     </div>
-                    <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                      <option>Select Category</option>
-                      <option>Grains & Staples</option>
-                      <option>Packaged Food</option>
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                    >
+                      <option value="">Select Category</option>
+                      {itemCategories?.map((cat: any) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -143,6 +314,8 @@ export default function AddProductPage() {
                     </div>
                     <input
                       type="text"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
                       placeholder="e.g. Royal Harvest"
                       className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
@@ -152,64 +325,71 @@ export default function AddProductPage() {
                     <label className="block text-xs font-medium text-slate-400 mb-1">
                       Unit Measure <span className="text-primary">*</span>
                     </label>
-                    <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                      <option>Pcs (Pieces)</option>
-                      <option>Kg (Kilograms)</option>
-                      <option>Box</option>
+                    <select
+                      value={unitId}
+                      onChange={(e) => {
+                        setUnitId(e.target.value);
+                        if (errors.unitId)
+                          setErrors((prev) => ({ ...prev, unitId: "" }));
+                      }}
+                      className={`w-full bg-slate-900/90 border ${
+                        errors.unitId ? "border-red-500" : "border-slate-800"
+                      } rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all`}
+                    >
+                      <option value="">Select Unit</option>
+                      {units?.map((u: any) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                        </option>
+                      ))}
                     </select>
+                    {errors.unitId && (
+                      <p className="text-red-500 text-[11px] mt-1">
+                        {errors.unitId}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">
-                      Select Branch
-                    </label>
-                    <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                      <option>Select Branch</option>
-                      <option>Main Branch (Dhaka)</option>
-                      <option>Chittagong Depot</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
                       Product Type
                     </label>
-                    <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                      <option>Physical Product</option>
-                      <option>Digital Product</option>
-                      <option>Service</option>
+                    <select
+                      value={productType}
+                      onChange={(e) => setProductType(e.target.value)}
+                      className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                    >
+                      <option value="PRODUCT">Physical Product</option>
+                      <option value="DIGITAL">Digital Product</option>
+                      <option value="SERVICE">Service</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">
                       Initial Status
                     </label>
-                    <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                      <option>Active</option>
-                      <option>Draft</option>
-                      <option>Inactive</option>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
                     </select>
                   </div>
                 </div>
 
                 {/* Tightened Toggle Controls */}
-                <div className="pt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-800/50">
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
-                    <div>
-                      <span className="text-xs text-slate-300 font-medium block">
-                        Low Stock Alert
-                      </span>
-                      <span className="text-[10px] text-slate-500 block leading-tight">
-                        Notify when stock is below minimumf
-                      </span>
-                    </div>
-                  </label>
-
+                <div className="pt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-800/50">
                   <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input type="checkbox" className="sr-only peer" />
+                    <input
+                      type="checkbox"
+                      checked={trackBatch}
+                      onChange={handleTrackBatchChange}
+                      className="sr-only peer"
+                    />
                     <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
                     <div>
                       <span className="text-xs text-slate-300 font-medium block">
@@ -221,9 +401,21 @@ export default function AddProductPage() {
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
+                  <label
+                    className={`flex items-center gap-3 select-none ${
+                      !trackBatch
+                        ? "cursor-not-allowed opacity-50"
+                        : "cursor-pointer"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={trackExpiry}
+                      onChange={(e) => setTrackExpiry(e.target.checked)}
+                      disabled={!trackBatch}
+                      className="sr-only peer"
+                    />
+                    <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative peer-disabled:bg-slate-800/50"></div>
                     <div>
                       <span className="text-xs text-slate-300 font-medium block">
                         Expiry Tracking
@@ -263,18 +455,29 @@ export default function AddProductPage() {
                         </span>
                         <input
                           type="number"
-                          value={purchaseCost}
-                          onChange={(e) =>
-                            setPurchaseCost(
+                          value={costPrice}
+                          onChange={(e) => {
+                            setCostPrice(
                               e.target.value === ""
                                 ? ""
                                 : Number(e.target.value),
-                            )
-                          }
+                            );
+                            if (errors.costPrice)
+                              setErrors((prev) => ({ ...prev, costPrice: "" }));
+                          }}
                           placeholder="0.00"
-                          className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                          className={`w-full bg-slate-900/90 border ${
+                            errors.costPrice
+                              ? "border-red-500"
+                              : "border-slate-800"
+                          } rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                       </div>
+                      {errors.costPrice && (
+                        <p className="text-red-500 text-[11px] mt-1">
+                          {errors.costPrice}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -289,17 +492,31 @@ export default function AddProductPage() {
                         <input
                           type="number"
                           value={sellingPrice}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setSellingPrice(
                               e.target.value === ""
                                 ? ""
                                 : Number(e.target.value),
-                            )
-                          }
+                            );
+                            if (errors.sellingPrice)
+                              setErrors((prev) => ({
+                                ...prev,
+                                sellingPrice: "",
+                              }));
+                          }}
                           placeholder="0.00"
-                          className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                          className={`w-full bg-slate-900/90 border ${
+                            errors.sellingPrice
+                              ? "border-red-500"
+                              : "border-slate-800"
+                          } rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                       </div>
+                      {errors.sellingPrice && (
+                        <p className="text-red-500 text-[11px] mt-1">
+                          {errors.sellingPrice}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button
@@ -324,6 +541,14 @@ export default function AddProductPage() {
                           </span>
                           <input
                             type="number"
+                            value={wholesalePrice}
+                            onChange={(e) =>
+                              setWholesalePrice(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value),
+                              )
+                            }
                             placeholder="0.00"
                             className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
@@ -340,6 +565,14 @@ export default function AddProductPage() {
                           </span>
                           <input
                             type="number"
+                            value={vipPrice}
+                            onChange={(e) =>
+                              setVipPrice(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value),
+                              )
+                            }
                             placeholder="0.00"
                             className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
@@ -348,7 +581,7 @@ export default function AddProductPage() {
 
                       <div>
                         <label className="block text-xs font-medium text-slate-400 mb-1">
-                          Dealer Price
+                          Min Price
                         </label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono">
@@ -356,6 +589,14 @@ export default function AddProductPage() {
                           </span>
                           <input
                             type="number"
+                            value={minimumPrice}
+                            onChange={(e) =>
+                              setMinimumPrice(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value),
+                              )
+                            }
                             placeholder="0.00"
                             className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-7 pr-3 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
@@ -418,7 +659,12 @@ export default function AddProductPage() {
                     </label>
                     <input
                       type="number"
-                      defaultValue={0}
+                      value={currentStock}
+                      onChange={(e) =>
+                        setCurrentStock(
+                          e.target.value === "" ? "" : Number(e.target.value),
+                        )
+                      }
                       className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                     />
                   </div>
@@ -428,19 +674,33 @@ export default function AddProductPage() {
                     </label>
                     <input
                       type="number"
-                      defaultValue={10}
+                      value={minStock}
+                      onChange={(e) =>
+                        setMinStock(
+                          e.target.value === "" ? "" : Number(e.target.value),
+                        )
+                      }
                       className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                      Max Capacity
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={lowStockAlert}
+                        onChange={(e) => setLowStockAlert(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
+                      <div>
+                        <span className="text-xs text-slate-300 font-medium block">
+                          Low Stock Alert
+                        </span>
+                        <span className="text-[10px] text-slate-500 block leading-tight">
+                          Notify when stock is below minimum
+                        </span>
+                      </div>
                     </label>
-                    <input
-                      type="number"
-                      defaultValue={500}
-                      className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                    />
                   </div>
                 </div>
 
@@ -452,14 +712,80 @@ export default function AddProductPage() {
                   <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-slate-500">Opening Balance:</span>
-                      <span className="font-mono text-slate-200">0 pcs</span>
+                      <span className="font-mono text-slate-200">
+                        {currentStock || 0} pcs
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Min Alert Level:</span>
-                      <span className="font-mono text-amber-400">10 pcs</span>
+                      <span className="font-mono text-amber-400">
+                        {minStock || 0} pcs
+                      </span>
                     </div>
                   </div>
                 </div>
+
+                {/* Manufacture Date and Expiry Date - appear when Opening Stock > 0 and tracking enabled */}
+                {showDateFields && (
+                  <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-3 border-t border-slate-800/50">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">
+                        Manufacture Date <span className="text-primary">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={manufactureDate}
+                        onChange={(e) => {
+                          setManufactureDate(e.target.value);
+                          if (errors.manufactureDate)
+                            setErrors((prev) => ({
+                              ...prev,
+                              manufactureDate: "",
+                            }));
+                        }}
+                        className={`w-full bg-slate-900/90 border ${
+                          errors.manufactureDate
+                            ? "border-red-500"
+                            : "border-slate-800"
+                        } rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
+                      />
+                      {errors.manufactureDate && (
+                        <p className="text-red-500 text-[11px] mt-1">
+                          {errors.manufactureDate}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">
+                        Expiry Date <span className="text-primary">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={expiryDate}
+                        onChange={(e) => {
+                          setExpiryDate(e.target.value);
+                          if (errors.expiryDate)
+                            setErrors((prev) => ({
+                              ...prev,
+                              expiryDate: "",
+                            }));
+                        }}
+                        className={`w-full bg-slate-900/90 border ${
+                          errors.expiryDate
+                            ? "border-red-500"
+                            : "border-slate-800"
+                        } rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
+                      />
+                      {errors.expiryDate && (
+                        <p className="text-red-500 text-[11px] mt-1">
+                          {errors.expiryDate}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -477,10 +803,26 @@ export default function AddProductPage() {
                   <label className="block text-xs font-medium text-slate-400 mb-1">
                     Tax Category
                   </label>
-                  <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
-                    <option>Standard Rate</option>
-                    <option>Zero Rated</option>
-                    <option>Exempt</option>
+                  <select
+                    value={taxCategoryId}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      setTaxCategoryId(selectedId);
+                      const selected = taxCategories?.find(
+                        (tc: any) => tc.id === selectedId,
+                      );
+                      if (selected && typeof selected.rate === "number") {
+                        setVatRate(selected.rate);
+                      }
+                    }}
+                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                  >
+                    <option value="">Select Tax Category</option>
+                    {taxCategories?.map((tc: any) => (
+                      <option key={tc.id} value={tc.id}>
+                        {tc.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -489,7 +831,12 @@ export default function AddProductPage() {
                   </label>
                   <input
                     type="number"
-                    defaultValue={5}
+                    value={vatRate}
+                    onChange={(e) =>
+                      setVatRate(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
                     className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                   />
                 </div>
@@ -497,7 +844,11 @@ export default function AddProductPage() {
                   <label className="block text-xs font-medium text-slate-400 mb-1">
                     Income Revenue Account
                   </label>
-                  <select className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all">
+                  <select
+                    value={incomeRevenueAccount}
+                    onChange={(e) => setIncomeRevenueAccount(e.target.value)}
+                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                  >
                     <option>Sales Revenue</option>
                     <option>Other Income</option>
                   </select>
@@ -520,6 +871,8 @@ export default function AddProductPage() {
                 </label>
                 <textarea
                   rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter full product details, specifications, packaging notes, tags, or internal metadata..."
                   className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all resize-none"
                 />
@@ -601,10 +954,11 @@ export default function AddProductPage() {
           <button className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 rounded-lg transition-colors">
             Cancel
           </button>
-          {/* <button className="px-3.5 py-1.5 text-xs font-medium text-slate-300 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition-colors">
-            Save Draft
-          </button> */}
-          <button className="px-8 py-4 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm shadow-primary/20">
+          <button
+            type="button"
+            onClick={handleSaveProduct}
+            className="px-8 py-4 text-xs font-semibold text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm shadow-primary/20"
+          >
             Save Product
           </button>
         </div>

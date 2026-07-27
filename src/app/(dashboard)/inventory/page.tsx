@@ -8,6 +8,7 @@ import { useState, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, KPICard, Divider, EmptyState, Progress, Skeleton } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
 import {
   Select,
   SelectContent,
@@ -79,7 +80,7 @@ import { ExportItemsModal } from '@/components/inventory/ExportItemsModal';
 import { CategoriesModal } from '@/components/inventory/CategoriesModal';
 import { BatchesModal } from '@/components/inventory/BatchesModal';
 import { useRouter } from 'next/navigation';
-import { useDeleteItem, useGetItems, useGetItemsCategories, useGetItemsStatus } from '@/hooks/api/useItems';
+import { useDeleteItem, useGetItems, useGetItemsStatus } from '@/hooks/api/useItems';
 
 import {
   Dialog,
@@ -89,6 +90,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
 
 export default function InventoryPage() {
   const { t, isBangla } = useAppTranslation();
@@ -463,7 +465,7 @@ export default function InventoryPage() {
               {/* Column Header Bar - Left Aligned Except Actions */}
               <div className="flex items-center justify-between px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
                 <div className="w-10 text-left shrink-0">SL.</div>
-                <div className="w-24 sm:w-28 text-left shrink-0">SKU</div>
+                <div className="w-28 sm:w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
                 <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
                 <div className="flex-1 text-left min-w-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
                 <div className="hidden md:block w-44 sm:w-52 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
@@ -496,7 +498,7 @@ export default function InventoryPage() {
         isOpen={!!selectedItem}
         onClose={() => setSelectedItem(null)}
         title={selectedItem?.name || ''}
-        subtitle={selectedItem?.sku || ''}
+        subtitle={selectedItem?.barcode || selectedItem?.sku || ''}
         width="lg"
       >
         {selectedItem && (
@@ -723,11 +725,11 @@ const ItemRow = memo(function ItemRow({
           {String(index + 1).padStart(2, '0')}
         </div>
 
-        {/* 2. Product SKU (Left aligned) */}
-        <div className="w-24 sm:w-28 shrink-0 min-w-0 text-left">
-          <span className="text-xs font-mono text-muted-foreground/60 truncate block" title={item.sku}>
-            {item.sku ? item.sku : '—'}
-          </span>
+        {/* 2. Product Barcode / SKU (Left aligned) */}
+        <div className="w-28 sm:w-32 shrink-0 min-w-0 text-left">
+            <span className="text-xs font-mono text-slate-200 truncate block" title={item.barcode}>
+            {item.barcode}
+            </span>
         </div>
 
         {/* 3. Product Image (Left aligned) */}
