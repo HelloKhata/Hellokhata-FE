@@ -1,15 +1,40 @@
-// Hello Khata OS - Branch Management Page Component
-// হ্যালো খাতা - ব্রাঞ্চ ম্যানেজমেন্ট পেজ কম্পোনেন্ট
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { PageHeader, ProBadge } from '@/components/common';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { useToast } from "@/hooks/use-toast";
+import { useBranchStore } from "@/stores/branchStore";
+import { Branch } from "@/types";
+import {
+  Building2,
+  CheckCircle2,
+  Save,
+  Loader2,
+  RotateCcw,
+  AlertCircle,
+  Plus,
+  Edit2,
+  Eye,
+  Trash2,
+  MapPin,
+  Phone,
+  Store,
+  Warehouse,
+  X,
+} from "lucide-react";
+import { Button, Input } from "@/components/ui/premium";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -17,14 +42,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,677 +52,955 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useBranches } from '@/hooks/queries';
-import { useBranchStore } from '@/stores/branchStore';
-import { useSessionStore } from '@/stores/sessionStore';
-import { useNavigation } from '@/stores/uiStore';
-import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/api-client';
-import {
-  Building2,
-  MapPin,
-  Phone,
-  Plus,
-  Trash2,
-  Edit2,
-  Crown,
-  AlertTriangle,
-  Loader2,
-  ArrowLeft,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Branch } from '@/types';
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+
+// Schema for Branch Settings
+const branchSettingsSchema = z.object({
+  name: z.string().min(2, "Branch name is required"),
+  code: z.string().min(2, "Branch code is required"),
+  email: z.string().email("Invalid email address").or(z.literal("")),
+  phone: z.string().min(6, "Valid phone number is required"),
+  address: z.string().min(2, "Address is required"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().optional(),
+  country: z.string().default("Bangladesh"),
+  postalCode: z.string().optional(),
+  status: z.enum(["active", "inactive"]).default("active"),
+  openingDate: z.string().optional(),
+  timeZone: z.string().default("Asia/Dhaka"),
+  currency: z.string().default("BDT"),
+  language: z.string().default("bn"),
+});
+
+type BranchSettingsFormValues = z.infer<typeof branchSettingsSchema>;
+
+const EMPTY_BRANCH_VALUES: BranchSettingsFormValues = {
+  name: "",
+  code: "",
+  email: "",
+  phone: "",
+  address: "",
+  city: "Dhaka",
+  state: "Dhaka Division",
+  country: "Bangladesh",
+  postalCode: "1200",
+  status: "active",
+  openingDate: new Date().toISOString().split("T")[0],
+  timeZone: "Asia/Dhaka",
+  currency: "BDT",
+  language: "bn",
+};
+
+const INITIAL_BRANCHES: Branch[] = [
+  {
+    id: "br-01",
+    businessId: "biz-01",
+    name: "Dhanmondi Main Branch",
+    nameBn: "ধানমন্ডি প্রধান শাখা",
+    type: "main",
+    address: "House 42, Road 7, Dhanmondi, Dhaka",
+    phone: "01711223344",
+    isActive: true,
+    isMain: true,
+    openingCash: 50000,
+    currentCash: 125000,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2026-07-01"),
+  },
+  {
+    id: "br-02",
+    businessId: "biz-01",
+    name: "Gulshan Retail Store",
+    nameBn: "গুলশান রিটেইল স্টোর",
+    type: "retail",
+    address: "Plot 12, Block SE(C), Gulshan 1, Dhaka",
+    phone: "01811998877",
+    isActive: true,
+    isMain: false,
+    openingCash: 30000,
+    currentCash: 84000,
+    createdAt: new Date("2024-06-15"),
+    updatedAt: new Date("2026-07-10"),
+  },
+  {
+    id: "br-03",
+    businessId: "biz-01",
+    name: "Tejgaon Central Depot",
+    nameBn: "তেজগাঁও কেন্দ্রীয় গোডাউন",
+    type: "warehouse",
+    address: "244 Tejgaon Industrial Area, Dhaka",
+    phone: "01911445566",
+    isActive: true,
+    isMain: false,
+    openingCash: 10000,
+    currentCash: 45000,
+    createdAt: new Date("2025-02-01"),
+    updatedAt: new Date("2026-07-20"),
+  },
+];
 
 export default function BranchManagementPage() {
   const { isBangla } = useAppTranslation();
-  const { data: branches, isLoading, refetch } = useBranches();
-  const { setCurrentBranch, currentBranchId } = useBranchStore();
-  const { plan, features, refreshSession } = useSessionStore();
-  const { navigateTo } = useNavigation();
   const { toast } = useToast();
+  const {
+    branches: storeBranches,
+    addBranch: addBranchToStore,
+    updateBranch: updateBranchInStore,
+    removeBranch: removeBranchFromStore,
+  } = useBranchStore();
 
-  // Refresh session on mount to get latest plan data
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
+  // Branches list
+  const [branchesList, setBranchesList] = useState<Branch[]>(
+    storeBranches.length > 0 ? storeBranches : INITIAL_BRANCHES
+  );
 
-  // Dialog states
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  // Form Visibility State: null (hidden) | "create" | "edit"
+  const [activeFormMode, setActiveFormMode] = useState<"create" | "edit" | null>(null);
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+
+  // Modals for View Details and Delete
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [targetBranch, setTargetBranch] = useState<Branch | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    nameBn: '',
-    type: 'retail',
-    address: '',
-    phone: '',
-    openingCash: '',
+  const [isSaving, setIsSaving] = useState(false);
+
+  // React Hook Form
+  const form = useForm<BranchSettingsFormValues>({
+    resolver: zodResolver(branchSettingsSchema),
+    defaultValues: EMPTY_BRANCH_VALUES,
+    mode: "onChange",
   });
 
-  // Check if user has multi-branch feature
-  const hasMultiBranch = features.multiBranch;
-  
-  // Branch limits based on plan
-  const getBranchLimit = () => {
-    switch (plan) {
-      case 'intelligence': return 'unlimited';
-      case 'growth': return 3;
-      default: return 1;
-    }
-  };
-  
-  const branchLimit = getBranchLimit();
-  const currentBranchCount = branches?.length || 0;
-  
-  // Check if we're still loading branches (to prevent false positives on limit check)
-  const isBranchesLoading = isLoading || branches === undefined;
-  
-  // canAddMore is false if loading (we don't know the count yet) or if limit is reached
-  const canAddMore = !isBranchesLoading && (branchLimit === 'unlimited' || currentBranchCount < branchLimit);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors, isDirty },
+  } = form;
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      nameBn: '',
-      type: 'retail',
-      address: '',
-      phone: '',
-      openingCash: '',
+  // Open Form in CREATE mode with empty fields
+  const handleOpenCreateForm = () => {
+    if (isDirty && activeFormMode) {
+      const confirmLeave = window.confirm(
+        isBangla
+          ? "আপনার অসংরক্ষিত পরিবর্তন রয়েছে। নতুন ফর্ম খুলবেন?"
+          : "You have unsaved changes. Open empty create form anyway?"
+      );
+      if (!confirmLeave) return;
+    }
+
+    setActiveFormMode("create");
+    setEditingBranchId(null);
+
+    const nextCode = `BR-0${branchesList.length + 1}`;
+    reset({
+      ...EMPTY_BRANCH_VALUES,
+      code: nextCode,
     });
-    setSelectedBranch(null);
+
+    scrollToForm();
   };
 
-  const handleAddBranch = async () => {
-    // Validate required fields
-    if (!formData.name.trim()) {
-      toast({
-        title: isBangla ? 'তথ্য অসম্পূর্ণ' : 'Missing Information',
-        description: isBangla ? 'শাখার নাম দিন' : 'Branch name is required',
-        variant: 'destructive',
-      });
-      return;
+  // Open Form in EDIT mode with branch details pre-filled
+  const handleOpenEditForm = (branch: Branch) => {
+    if (isDirty && activeFormMode) {
+      const confirmLeave = window.confirm(
+        isBangla
+          ? "আপনার অসংরক্ষিত পরিবর্তন রয়েছে। অন্য ফর্ম খুলবেন?"
+          : "You have unsaved changes. Switch editing branch anyway?"
+      );
+      if (!confirmLeave) return;
     }
 
-    // Double check plan limits before API call
-    if (!isBranchesLoading && branchLimit !== 'unlimited' && currentBranchCount >= branchLimit) {
-      toast({
-        title: isBangla ? 'সীমা পূর্ণ' : 'Limit Reached',
-        description: isBangla 
-          ? `আপনার ${plan} প্ল্যানে সর্বোচ্চ ${branchLimit}টি শাখা আছে।`
-          : `Your ${plan} plan allows maximum ${branchLimit} branches.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    // If branches are loading, show a message and wait
-    if (isBranchesLoading) {
-      toast({
-        title: isBangla ? 'লোড হচ্ছে' : 'Loading',
-        description: isBangla ? 'শাখার তথ্য লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন' : 'Branch data is loading, please wait',
-      });
-      return;
-    }
+    setActiveFormMode("edit");
+    setEditingBranchId(branch.id);
 
-    setIsSubmitting(true);
-    try {
-      const response = await api.post<Branch>('/branches', {
-        name: formData.name.trim(),
-        nameBn: formData.nameBn.trim(),
-        type: formData.type,
-        address: formData.address.trim(),
-        phone: formData.phone.trim(),
-        openingCash: formData.openingCash ? parseFloat(formData.openingCash) : 0,
-      });
-
-      // Show success message
-      toast({
-        title: isBangla ? 'সফল হয়েছে' : 'Success',
-        description: isBangla ? 'নতুন শাখা যোগ হয়েছে' : 'Branch added successfully',
-      });
-      
-      // Close dialog and reset form
-      setIsAddDialogOpen(false);
-      resetForm();
-      
-      // Refresh branch list
-      await refetch();
-    } catch (error: any) {
-      // Handle ApiClientError with detailed message
-      const errorMessage = error?.message || (error instanceof Error ? error.message : (isBangla ? 'কিছু ভুল হয়েছে' : 'Something went wrong'));
-      const errorDetails = error?.details;
-      
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: errorDetails 
-          ? Object.values(errorDetails).flat().join(', ')
-          : errorMessage,
-        variant: 'destructive',
-      });
-      // Refresh branches to ensure UI is in sync
-      refetch();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEditBranch = async () => {
-    if (!selectedBranch || !formData.name.trim()) {
-      toast({
-        title: isBangla ? 'তথ্য অসম্পূর্ণ' : 'Missing Information',
-        description: isBangla ? 'শাখার নাম দিন' : 'Branch name is required',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await api.patch<Branch>(`/branches/${selectedBranch.id}`, {
-        name: formData.name.trim(),
-        nameBn: formData.nameBn.trim(),
-        type: formData.type,
-        address: formData.address.trim(),
-        phone: formData.phone.trim(),
-      });
-
-      toast({
-        title: isBangla ? 'সফল হয়েছে' : 'Success',
-        description: isBangla ? 'শাখা আপডেট হয়েছে' : 'Branch updated successfully',
-      });
-      setIsEditDialogOpen(false);
-      resetForm();
-      await refetch();
-    } catch (error: any) {
-      const errorMessage = error?.message || (error instanceof Error ? error.message : (isBangla ? 'কিছু ভুল হয়েছে' : 'Something went wrong'));
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteBranch = async () => {
-    if (!selectedBranch) return;
-
-    setIsSubmitting(true);
-    try {
-      const response = await api.delete<{ id: string; message?: string }>(`/branches/${selectedBranch.id}`);
-
-      toast({
-        title: isBangla ? 'সফল হয়েছে' : 'Success',
-        description: response.data?.message || (isBangla ? 'শাখা মুছে ফেলা হয়েছে' : 'Branch deleted successfully'),
-      });
-      setIsDeleteDialogOpen(false);
-      resetForm();
-      await refetch();
-    } catch (error: any) {
-      const errorMessage = error?.message || (error instanceof Error ? error.message : (isBangla ? 'কিছু ভুল হয়েছে' : 'Something went wrong'));
-      toast({
-        title: isBangla ? 'সমস্যা হয়েছে' : 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const openEditDialog = (branch: Branch) => {
-    setSelectedBranch(branch);
-    setFormData({
+    const index = branchesList.findIndex((b) => b.id === branch.id);
+    reset({
       name: branch.name,
-      nameBn: branch.nameBn || '',
-      type: branch.type || 'retail',
-      address: branch.address || '',
-      phone: branch.phone || '',
-      openingCash: branch.openingCash?.toString() || '',
+      code: `BR-${branch.name.substring(0, 2).toUpperCase()}-0${index >= 0 ? index + 1 : 1}`,
+      email: `${branch.name.toLowerCase().replace(/\s+/g, "")}@smartstore.com`,
+      phone: branch.phone || "",
+      address: branch.address || "",
+      city: "Dhaka",
+      state: "Dhaka Division",
+      country: "Bangladesh",
+      postalCode: "1200",
+      status: branch.isActive ? "active" : "inactive",
+      openingDate: "2024-01-01",
+      timeZone: "Asia/Dhaka",
+      currency: "BDT",
+      language: "bn",
     });
-    setIsEditDialogOpen(true);
+
+    scrollToForm();
   };
 
-  const openDeleteDialog = (branch: Branch) => {
-    setSelectedBranch(branch);
+  // Close Form
+  const handleCloseForm = () => {
+    if (isDirty) {
+      const confirmClose = window.confirm(
+        isBangla ? "আপনার অসংরক্ষিত পরিবর্তন রয়েছে। ফর্মটি বন্ধ করবেন?" : "Discard unsaved changes?"
+      );
+      if (!confirmClose) return;
+    }
+    setActiveFormMode(null);
+    setEditingBranchId(null);
+    reset(EMPTY_BRANCH_VALUES);
+  };
+
+  const scrollToForm = () => {
+    setTimeout(() => {
+      const el = document.getElementById("branch-config-form");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
+  };
+
+  // Open View Details Modal
+  const openViewDetailsModal = (branch: Branch) => {
+    setTargetBranch(branch);
+    setIsViewDetailsOpen(true);
+  };
+
+  // Open Delete Modal
+  const openDeleteModal = (branch: Branch) => {
+    setTargetBranch(branch);
     setIsDeleteDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600" />
-      </div>
-    );
-  }
+  // Submit Delete Branch
+  const handleDeleteBranchSubmit = async () => {
+    if (!targetBranch || targetBranch.isMain) return;
 
-  // Show upgrade message if user doesn't have multi-branch feature
-  // if (!hasMultiBranch) {
-  //   return (
-  //     <div className="space-y-6">
-  //       <PageHeader
-  //         title={isBangla ? 'শাখা পরিচালনা' : 'Branch Management'}
-  //         subtitle={isBangla ? 'আপনার সকল শাখা পরিচালনা করুন' : 'Manage all your branches'}
-  //         icon={Building2}
-  //       >
-  //         <Button variant="outline" onClick={() => navigateTo('settings')}>
-  //           <ArrowLeft className="w-4 h-4 mr-2" />
-  //           {isBangla ? 'ফিরে যান' : 'Go Back'}
-  //         </Button>
-  //       </PageHeader>
+    setIsSaving(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
-  //       {/* Premium Feature Gate */}
-  //       <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
-  //         <CardContent className="pt-6">
-  //           <div className="text-center py-8">
-  //             <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center mb-4">
-  //               <Crown className="h-8 w-8 text-white" />
-  //             </div>
-  //             <h3 className="text-lg font-bold mb-2">
-  //               {isBangla ? 'প্রিমিয়াম ফিচার' : 'Premium Feature'}
-  //             </h3>
-  //             <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-  //               {isBangla
-  //                 ? 'মাল্টি-ব্রাঞ্চ সাপোর্ট Growth বা Intelligence প্ল্যানে উপলব্ধ। আপগ্রেড করে একাধিক শাখা পরিচালনা করুন।'
-  //                 : 'Multi-branch support is available on Growth or Intelligence plan. Upgrade to manage multiple branches.'}
-  //             </p>
-  //             <Button 
-  //               className="bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700"
-  //               onClick={() => navigateTo('settings')}
-  //             >
-  //               <Crown className="w-4 h-4 mr-2" />
-  //               {isBangla ? 'আপগ্রেড করুন' : 'Upgrade Now'}
-  //             </Button>
-  //           </div>
-  //         </CardContent>
-  //       </Card>
-  //     </div>
-  //   );
-  // }
+      setBranchesList((prev) => prev.filter((b) => b.id !== targetBranch.id));
+      removeBranchFromStore(targetBranch.id);
+
+      if (editingBranchId === targetBranch.id) {
+        setActiveFormMode(null);
+        setEditingBranchId(null);
+      }
+
+      toast({
+        title: isBangla ? "শাখা মুছে ফেলা হয়েছে" : "Branch Deleted",
+        description: isBangla
+          ? `"${targetBranch.name}" মুছে ফেলা হয়েছে`
+          : `"${targetBranch.name}" has been deleted.`,
+      });
+
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Submit Form (Handles both CREATE and EDIT)
+  const onSaveBranchForm = async (data: BranchSettingsFormValues) => {
+    setIsSaving(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      if (activeFormMode === "create") {
+        // CREATE NEW BRANCH
+        const newBranch: Branch = {
+          id: `br-${Date.now()}`,
+          businessId: "biz-01",
+          name: data.name.trim(),
+          nameBn: data.name.trim(),
+          type: "retail",
+          address: data.address.trim(),
+          phone: data.phone.trim(),
+          openingCash: 0,
+          currentCash: 0,
+          isActive: data.status === "active",
+          isMain: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        setBranchesList((prev) => [...prev, newBranch]);
+        addBranchToStore(newBranch);
+
+        toast({
+          title: isBangla ? "নতুন শাখা তৈরি হয়েছে" : "Branch Created",
+          description: isBangla
+            ? `"${newBranch.name}" সফলভাবে তৈরি হয়েছে`
+            : `"${newBranch.name}" created successfully.`,
+        });
+      } else if (activeFormMode === "edit" && editingBranchId) {
+        // EDIT EXISTING BRANCH
+        const updatedFields: Partial<Branch> = {
+          name: data.name.trim(),
+          address: data.address.trim(),
+          phone: data.phone.trim(),
+          isActive: data.status === "active",
+        };
+
+        setBranchesList((prev) =>
+          prev.map((b) => (b.id === editingBranchId ? { ...b, ...updatedFields } : b))
+        );
+        updateBranchInStore(editingBranchId, updatedFields);
+
+        toast({
+          title: isBangla ? "শাখা সংফিগারেশন সেভ হয়েছে" : "Branch Saved",
+          description: isBangla
+            ? `"${data.name}" এর তথ্য আপডেট হয়েছে`
+            : `Updated configuration for ${data.name}.`,
+        });
+      }
+
+      reset(data);
+    } catch (error: any) {
+      toast({
+        title: isBangla ? "ত্রুটি ঘটেছে" : "Save Error",
+        description: error?.message || "Failed to save branch.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const editingBranchObj = branchesList.find((b) => b.id === editingBranchId);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={isBangla ? 'শাখা পরিচালনা' : 'Branch Management'}
-        subtitle={isBangla 
-          ? `আপনার সকল শাখা পরিচালনা করুন (${currentBranchCount}/${branchLimit === 'unlimited' ? '∞' : branchLimit})`
-          : `Manage all your branches (${currentBranchCount}/${branchLimit === 'unlimited' ? '∞' : branchLimit})`
-        }
-        icon={Building2}
-      >
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigateTo('settings')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {isBangla ? 'ফিরে যান' : 'Go Back'}
-          </Button>
-          <Button 
-            className="bg-emerald-600 hover:bg-emerald-700"
-            onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}
-            disabled={!canAddMore}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {isBangla ? 'নতুন শাখা' : 'Add Branch'}
-          </Button>
-        </div>
-      </PageHeader>
-
-      {/* Limit Warning */}
-      {!canAddMore && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-          <AlertTriangle className="w-5 h-5 text-amber-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-              {isBangla ? 'শাখার সীমা পূর্ণ' : 'Branch Limit Reached'}
-            </p>
-            <p className="text-xs text-amber-600 dark:text-amber-300">
-              {isBangla 
-                ? `আপনার ${plan} প্ল্যানে সর্বোচ্চ ${branchLimit}টি শাখা আছে। আরো শাখা যোগ করতে আপগ্রেড করুন।`
-                : `Your ${plan} plan allows maximum ${branchLimit} branches. Upgrade to add more.`
-              }
-            </p>
+    <div className="space-y-6 mx-auto pb-24">
+      {/* Top Header Card */}
+      <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 border border-primary/20">
+              <Building2 className="h-7 w-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold tracking-tight text-foreground">
+                  {isBangla ? "শাখা পরিচালনা ও সেটিংস" : "Branch Settings & Management"}
+                </h1>
+                <Badge
+                  variant="outline"
+                  className="bg-primary/10 text-primary border-primary/20 text-[10px]"
+                >
+                  {branchesList.length} {isBangla ? "টি শাখা" : "Branches"}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isBangla
+                  ? "নতুন শাখা তৈরি করুন, বিদ্যমান শাখা সম্পাদনা করুন এবং সিলেক্ট করা শাখার কনফিগারেশন আপডেট করুন"
+                  : "Create new branches, edit existing locations, view details, and manage branch configurations"}
+              </p>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigateTo('settings')}>
-            <Crown className="w-4 h-4 mr-2" />
-            {isBangla ? 'আপগ্রেড' : 'Upgrade'}
+
+          {/* Add Branch Button */}
+          <Button
+            onClick={handleOpenCreateForm}
+            className="rounded-xl shadow-xs shrink-0 font-medium cursor-pointer"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {isBangla ? "নতুন শাখা তৈরি করুন" : "Create a new branch"}
           </Button>
         </div>
-      )}
 
-      {/* Branch Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {branches?.map((branch) => (
-          <BranchCard 
-            key={branch.id} 
-            branch={branch} 
-            onEdit={() => openEditDialog(branch)}
-            onDelete={() => openDeleteDialog(branch)}
-          />
-        ))}
+        {/* Existing Branches Grid Card List */}
+        <div className="space-y-3 pt-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {isBangla ? "সকল শাখার তালিকা" : "All Branches List"}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {branchesList.map((branch) => {
+              const isSelectedForEdit = activeFormMode === "edit" && editingBranchId === branch.id;
+              const isRetail = branch.type === "retail";
+              const isWarehouse = branch.type === "warehouse";
+
+              return (
+                <div
+                  key={branch.id}
+                  className={cn(
+                    "rounded-xl border p-4 transition-all relative flex flex-col justify-between space-y-3",
+                    isSelectedForEdit
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/30 shadow-xs"
+                      : "border-border/70 bg-background/60 hover:border-border hover:bg-muted/30"
+                  )}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {isWarehouse ? (
+                          <Warehouse className="h-4 w-4 text-indigo-500 shrink-0" />
+                        ) : isRetail ? (
+                          <Store className="h-4 w-4 text-emerald-500 shrink-0" />
+                        ) : (
+                          <Building2 className="h-4 w-4 text-primary shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-sm text-foreground truncate">
+                          {isBangla && branch.nameBn ? branch.nameBn : branch.name}
+                        </h3>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {branch.isMain && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          >
+                            Main
+                          </Badge>
+                        )}
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] capitalize px-1.5 py-0"
+                        >
+                          {branch.type || "Retail"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                      <span className="truncate">{branch.address || "No address provided"}</span>
+                    </p>
+
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                      <span>{branch.phone || "N/A"}</span>
+                    </p>
+                  </div>
+
+                  {/* Actions for Branch */}
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isSelectedForEdit ? "default" : "outline"}
+                      onClick={() => handleOpenEditForm(branch)}
+                      className="h-8 rounded-lg text-xs flex-1 cursor-pointer"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 mr-1" />
+                      {isSelectedForEdit
+                        ? isBangla ? "সম্পাদনা চলছে" : "Editing..."
+                        : isBangla ? "কনফিগার ও সম্পাদনা" : "Configure & Edit"}
+                    </Button>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openViewDetailsModal(branch)}
+                        title={isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+                        className="h-8 w-8 rounded-lg cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                      </Button>
+
+                      {!branch.isMain && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDeleteModal(branch)}
+                          title={isBangla ? "মুছে ফেলুন" : "Delete Branch"}
+                          className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      {/* Empty State */}
-      {branches?.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
-            {isBangla ? 'কোনো শাখা নেই' : 'No branches found'}
-          </p>
-          <Button 
-            className="mt-4" 
-            onClick={() => {
-              resetForm();
-              setIsAddDialogOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {isBangla ? 'প্রথম শাখা যোগ করুন' : 'Add Your First Branch'}
-          </Button>
-        </div>
+      {/* Main General Branch Configuration Form (HIDDEN BY DEFAULT until user clicks Configure/Edit or Create) */}
+      {activeFormMode !== null && (
+        <form
+          id="branch-config-form"
+          onSubmit={handleSubmit(onSaveBranchForm)}
+          className="rounded-2xl border border-border bg-card p-6 shadow-xs space-y-6 scroll-mt-6 animate-in fade-in slide-in-from-top-4 duration-300"
+        >
+          <div className="flex items-center justify-between pb-4 border-b border-border/40">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                {activeFormMode === "create" ? (
+                  <Plus className="h-5 w-5" />
+                ) : (
+                  <Building2 className="h-5 w-5" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  {activeFormMode === "create"
+                    ? isBangla ? "নতুন শাখা তৈরি করুন (Create a new branch)" : "Create a new branch"
+                    : isBangla
+                    ? `শাখা কনফিগার ও সম্পাদনা: ${editingBranchObj?.name || ""}`
+                    : `Configure & Edit Branch: ${editingBranchObj?.name || ""}`}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {activeFormMode === "create"
+                    ? isBangla
+                      ? "নতুন শাখার নাম, কোড, ঠিকানা ও যোগাযোগের তথ্য দিয়ে নিচের ফর্মটি পূরণ করুন"
+                      : "Fill in the general information form below to create a new branch"
+                    : isBangla
+                    ? "শাখার নাম, কোড, স্থান এবং আঞ্চলিক সেটিংস আপডেট করুন"
+                    : "Update core identity, location, and regional settings for this branch"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {isDirty && (
+                <span className="text-[10px] font-medium text-amber-600 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                  {isBangla ? "পরিবর্তিত" : "Unsaved Changes"}
+                </span>
+              )}
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleCloseForm}
+                className="h-8 w-8 rounded-lg"
+                title={isBangla ? "ফর্ম বন্ধ করুন" : "Close Form"}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Input Fields Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Branch Name */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ব্রাঞ্চের নাম *" : "Branch Name *"}
+              </Label>
+              <Input
+                {...register("name")}
+                placeholder={isBangla ? "ব্রাঞ্চের নাম (যেমন: উত্তরা শাখা)" : "Enter branch name (e.g. Uttara Branch)"}
+                className="h-10 text-xs"
+              />
+              {errors.name && (
+                <p className="text-[11px] text-destructive">{errors.name.message}</p>
+              )}
+            </div>
+
+            {/* Branch Code */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ব্রাঞ্চ কোড *" : "Branch Code *"}
+              </Label>
+              <Input
+                {...register("code")}
+                placeholder="BR-04"
+                className="h-10 text-xs font-mono"
+              />
+              {errors.code && (
+                <p className="text-[11px] text-destructive">{errors.code.message}</p>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "স্ট্যাটাস" : "Status"}
+              </Label>
+              <Select
+                value={watch("status")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive", {
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <SelectTrigger className="h-10 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">
+                    {isBangla ? "সক্রিয় (Active)" : "Active"}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {isBangla ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ইমেইল" : "Branch Email"}
+              </Label>
+              <Input
+                type="email"
+                {...register("email")}
+                placeholder="branch@example.com"
+                className="h-10 text-xs"
+              />
+              {errors.email && (
+                <p className="text-[11px] text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ফোন নম্বর *" : "Phone Number *"}
+              </Label>
+              <Input
+                {...register("phone")}
+                placeholder="01XXXXXXXXX"
+                className="h-10 text-xs"
+              />
+              {errors.phone && (
+                <p className="text-[11px] text-destructive">{errors.phone.message}</p>
+              )}
+            </div>
+
+            {/* Opening Date */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "উদ্বোধনের তারিখ" : "Opening Date"}
+              </Label>
+              <Input
+                type="date"
+                {...register("openingDate")}
+                className="h-10 text-xs"
+              />
+            </div>
+
+            {/* Address (Span 2) */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ঠিকানা *" : "Street Address *"}
+              </Label>
+              <Input
+                {...register("address")}
+                placeholder={isBangla ? "ঠিকানা লিখুন" : "Enter street address"}
+                className="h-10 text-xs"
+              />
+              {errors.address && (
+                <p className="text-[11px] text-destructive">
+                  {errors.address.message}
+                </p>
+              )}
+            </div>
+
+            {/* City */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "শহর *" : "City *"}
+              </Label>
+              <Input
+                {...register("city")}
+                placeholder="Dhaka"
+                className="h-10 text-xs"
+              />
+              {errors.city && (
+                <p className="text-[11px] text-destructive">{errors.city.message}</p>
+              )}
+            </div>
+
+            {/* State */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "বিভাগ / রাজ্য" : "State / Division"}
+              </Label>
+              <Input
+                {...register("state")}
+                placeholder="Dhaka Division"
+                className="h-10 text-xs"
+              />
+            </div>
+
+            {/* Country */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "দেশ *" : "Country *"}
+              </Label>
+              <Input
+                {...register("country")}
+                placeholder="Bangladesh"
+                className="h-10 text-xs"
+              />
+            </div>
+
+            {/* Postal Code */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "পোস্টাল কোড" : "Postal Code"}
+              </Label>
+              <Input
+                {...register("postalCode")}
+                placeholder="1205"
+                className="h-10 text-xs"
+              />
+            </div>
+
+            {/* Time Zone */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "টাইম জোন" : "Time Zone"}
+              </Label>
+              <Select
+                value={watch("timeZone")}
+                onValueChange={(val) => setValue("timeZone", val, { shouldDirty: true })}
+              >
+                <SelectTrigger className="h-10 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Asia/Dhaka">Asia/Dhaka (GMT+6)</SelectItem>
+                  <SelectItem value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</SelectItem>
+                  <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Currency */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "মুদ্রা (Currency)" : "Currency"}
+              </Label>
+              <Select
+                value={watch("currency")}
+                onValueChange={(val) => setValue("currency", val, { shouldDirty: true })}
+              >
+                <SelectTrigger className="h-10 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BDT">BDT (৳ - Bangladeshi Taka)</SelectItem>
+                  <SelectItem value="USD">USD ($ - US Dollar)</SelectItem>
+                  <SelectItem value="EUR">EUR (€ - Euro)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Language */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">
+                {isBangla ? "ডিফল্ট ভাষা" : "Default Language"}
+              </Label>
+              <Select
+                value={watch("language")}
+                onValueChange={(val) => setValue("language", val, { shouldDirty: true })}
+              >
+                <SelectTrigger className="h-10 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCloseForm}
+              className="rounded-xl text-xs"
+            >
+              {isBangla ? "বাতিল করুন" : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSaving}
+              className="rounded-xl text-xs font-medium"
+            >
+              {isSaving ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : activeFormMode === "create" ? (
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+              ) : (
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {activeFormMode === "create"
+                ? isBangla ? "শাখা তৈরি করুন" : "Create Branch"
+                : isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
+            </Button>
+          </div>
+        </form>
       )}
 
-      {/* Add Branch Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-emerald-600" />
-              {isBangla ? 'নতুন শাখা যোগ করুন' : 'Add New Branch'}
-            </DialogTitle>
-            <DialogDescription>
-              {isBangla ? 'আপনার ব্যবসার নতুন শাখার তথ্য দিন' : 'Enter details for your new branch'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{isBangla ? 'শাখার নাম *' : 'Branch Name *'}</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={isBangla ? 'শাখার নাম লিখুন' : 'Enter branch name'}
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isBangla ? 'নাম (বাংলা)' : 'Name (Bengali)'}</Label>
-              <Input
-                value={formData.nameBn}
-                onChange={(e) => setFormData({ ...formData, nameBn: e.target.value })}
-                placeholder={isBangla ? 'বাংলায় নাম' : 'Name in Bengali'}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ধরন' : 'Type'}</Label>
-              <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="main">{isBangla ? 'প্রধান শাখা' : 'Main Branch'}</SelectItem>
-                  <SelectItem value="retail">{isBangla ? 'রিটেইল' : 'Retail'}</SelectItem>
-                  <SelectItem value="warehouse">{isBangla ? 'গোডাউন' : 'Warehouse'}</SelectItem>
-                  <SelectItem value="wholesale">{isBangla ? 'হোলসেল' : 'Wholesale'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ঠিকানা' : 'Address'}</Label>
-              <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder={isBangla ? 'ঠিকানা লিখুন' : 'Enter address'}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ফোন' : 'Phone'}</Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="01XXXXXXXXX"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>{isBangla ? 'প্রারম্ভিক নগদ' : 'Opening Cash'}</Label>
-              <Input
-                type="number"
-                value={formData.openingCash}
-                onChange={(e) => setFormData({ ...formData, openingCash: e.target.value })}
-                placeholder="0"
-              />
-            </div>
+      {/* Sticky Bottom Save Bar */}
+      <div
+        className={cn(
+          "fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 z-50 transition-all duration-300 transform",
+          isDirty && activeFormMode !== null
+            ? "translate-y-0 opacity-100"
+            : "translate-y-12 opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="bg-card/95 backdrop-blur-md border border-primary/30 shadow-xl rounded-2xl p-3 sm:px-5 flex items-center justify-between gap-4 max-w-xl">
+          <div className="flex items-center gap-2 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>
+              {isBangla
+                ? "আপনার পরিবর্তনসমূহ সেভ করা হয়নি"
+                : "Unsaved changes in branch form"}
+            </span>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
-              {isBangla ? 'বাতিল' : 'Cancel'}
-            </Button>
-            <Button 
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
               type="button"
-              onClick={handleAddBranch} 
-              disabled={isSubmitting}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              variant="outline"
+              size="sm"
+              onClick={() => reset()}
+              disabled={isSaving}
+              className="rounded-xl text-xs"
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isBangla ? 'যোগ করুন' : 'Add Branch'}
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              {isBangla ? "পুনরায় সেট" : "Reset"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmit(onSaveBranchForm)}
+              disabled={isSaving}
+              className="rounded-xl text-xs font-medium"
+            >
+              {isSaving ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5 mr-1" />
+              )}
+              {isBangla ? "সংরক্ষণ করুন" : "Save"}
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Edit Branch Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* MODAL 1: View Branch Details Dialog */}
+      <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-primary" />
-              {isBangla ? 'শাখা সম্পাদনা' : 'Edit Branch'}
+              <Eye className="h-5 w-5 text-primary" />
+              {isBangla ? "শাখার বিস্তারিত বিবরণ" : "Branch Details Overview"}
             </DialogTitle>
             <DialogDescription>
-              {isBangla ? 'শাখার তথ্য আপডেট করুন' : 'Update branch details'}
+              {targetBranch?.name}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{isBangla ? 'শাখার নাম *' : 'Branch Name *'}</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={isBangla ? 'শাখার নাম লিখুন' : 'Enter branch name'}
-              />
-            </div>
+          {targetBranch && (
+            <div className="space-y-4 py-2 text-xs">
+              <div className="p-4 rounded-xl bg-muted/40 border border-border/50 space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                  <span className="text-muted-foreground">{isBangla ? "শাখার নাম:" : "Branch Name:"}</span>
+                  <span className="font-semibold text-foreground">{targetBranch.name}</span>
+                </div>
 
-            <div className="space-y-2">
-              <Label>{isBangla ? 'নাম (বাংলা)' : 'Name (Bengali)'}</Label>
-              <Input
-                value={formData.nameBn}
-                onChange={(e) => setFormData({ ...formData, nameBn: e.target.value })}
-                placeholder={isBangla ? 'বাংলায় নাম' : 'Name in Bengali'}
-              />
-            </div>
+                {targetBranch.nameBn && (
+                  <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                    <span className="text-muted-foreground">{isBangla ? "নাম (বাংলা):" : "Name (Bangla):"}</span>
+                    <span className="font-medium text-foreground">{targetBranch.nameBn}</span>
+                  </div>
+                )}
 
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ধরন' : 'Type'}</Label>
-              <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="main">{isBangla ? 'প্রধান শাখা' : 'Main Branch'}</SelectItem>
-                  <SelectItem value="retail">{isBangla ? 'রিটেইল' : 'Retail'}</SelectItem>
-                  <SelectItem value="warehouse">{isBangla ? 'গোডাউন' : 'Warehouse'}</SelectItem>
-                  <SelectItem value="wholesale">{isBangla ? 'হোলসেল' : 'Wholesale'}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                  <span className="text-muted-foreground">{isBangla ? "শাখার ধরন:" : "Branch Type:"}</span>
+                  <Badge variant="secondary" className="capitalize text-[10px]">
+                    {targetBranch.type || "Retail"}
+                  </Badge>
+                </div>
 
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ঠিকানা' : 'Address'}</Label>
-              <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder={isBangla ? 'ঠিকানা লিখুন' : 'Enter address'}
-              />
-            </div>
+                <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                  <span className="text-muted-foreground">{isBangla ? "ফোন নম্বর:" : "Phone:"}</span>
+                  <span className="font-mono text-foreground">{targetBranch.phone || "N/A"}</span>
+                </div>
 
-            <div className="space-y-2">
-              <Label>{isBangla ? 'ফোন' : 'Phone'}</Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="01XXXXXXXXX"
-              />
+                <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                  <span className="text-muted-foreground">{isBangla ? "ঠিকানা:" : "Address:"}</span>
+                  <span className="text-right max-w-[200px] truncate text-foreground">
+                    {targetBranch.address || "N/A"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center pb-2 border-b border-border/40">
+                  <span className="text-muted-foreground">{isBangla ? "বর্তমান ক্যাশ:" : "Current Cash:"}</span>
+                  <span className="font-bold text-emerald-600">
+                    ৳{(targetBranch.currentCash || 0).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">{isBangla ? "তৈরির তারিখ:" : "Created At:"}</span>
+                  <span className="text-muted-foreground">
+                    {new Date(targetBranch.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              {isBangla ? 'বাতিল' : 'Cancel'}
-            </Button>
-            <Button onClick={handleEditBranch} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isBangla ? 'আপডেট করুন' : 'Update'}
+            <Button
+              type="button"
+              onClick={() => setIsViewDetailsOpen(false)}
+              className="rounded-xl w-full"
+            >
+              {isBangla ? "বন্ধ করুন" : "Close"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* MODAL 2: Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-destructive" />
-              {isBangla ? 'শাখা মুছে ফেলুন' : 'Delete Branch'}
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              {isBangla ? "শাখা মুছে ফেলবেন?" : "Delete Branch?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {selectedBranch?.isMain
-                ? (isBangla ? 'প্রধান শাখা মুছে ফেলা যাবে না।' : 'Cannot delete the main branch.')
-                : (isBangla 
-                    ? `আপনি কি "${selectedBranch?.name}" শাখা মুছে ফেলতে চান? এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।`
-                    : `Are you sure you want to delete "${selectedBranch?.name}" branch? This action cannot be undone.`
-                  )
-              }
+              {targetBranch?.isMain
+                ? isBangla
+                  ? "প্রধান শাখা মুছে ফেলা যাবে না।"
+                  : "The main branch cannot be deleted."
+                : isBangla
+                  ? `আপনি কি "${targetBranch?.name}" শাখা মুছে ফেলতে চান? এই কাজটি পরিবর্তন করা যাবে না।`
+                  : `Are you sure you want to delete "${targetBranch?.name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{isBangla ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="rounded-xl">
+              {isBangla ? "বাতিল" : "Cancel"}
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteBranch}
-              disabled={isSubmitting || selectedBranch?.isMain}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteBranchSubmit}
+              disabled={isSaving || targetBranch?.isMain}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isBangla ? 'মুছে ফেলুন' : 'Delete'}
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isBangla ? "মুছে ফেলুন" : "Delete Branch"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-// Branch Card Component
-function BranchCard({ 
-  branch, 
-  onEdit, 
-  onDelete 
-}: { 
-  branch: Branch; 
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const { isBangla } = useAppTranslation();
-  const { setCurrentBranch, currentBranchId } = useBranchStore();
-  const isActive = currentBranchId === branch.id;
-
-  return (
-    <Card className={cn(
-      'transition-all',
-      isActive && 'ring-2 ring-emerald-500 border-emerald-200',
-      !branch.isActive && 'opacity-60'
-    )}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-lg">{branch.nameBn || branch.name}</CardTitle>
-            {branch.isMain && (
-              <Badge variant="secondary" className="text-xs">
-                {isBangla ? 'প্রধান' : 'Main'}
-              </Badge>
-            )}
-            {!branch.isActive && (
-              <Badge variant="outline" className="text-xs text-muted-foreground">
-                {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={onEdit}>
-              <Edit2 className="w-4 h-4" />
-            </Button>
-            {!branch.isMain && (
-              <Button variant="ghost" size="icon" onClick={onDelete} className="text-muted-foreground hover:text-destructive">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {/* Branch Info */}
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <MapPin className="w-4 h-4" />
-            <span>{branch.address || (isBangla ? 'ঠিকানা নেই' : 'No address')}</span>
-          </div>
-          {branch.phone && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Phone className="w-4 h-4" />
-              <span>{branch.phone}</span>
-            </div>
-          )}
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded text-center">
-              <p className="text-xs text-gray-500">{isBangla ? 'ক্যাশ' : 'Cash'}</p>
-              <p className="font-bold">৳{(branch.currentCash || 0).toLocaleString()}</p>
-            </div>
-            <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded text-center">
-              <p className="text-xs text-gray-500">{isBangla ? 'ধরন' : 'Type'}</p>
-              <p className="font-medium capitalize">{branch.type}</p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <Button
-            variant={isActive ? 'default' : 'outline'}
-            className={cn('w-full mt-2', isActive && 'bg-emerald-600 hover:bg-emerald-700')}
-            onClick={() => setCurrentBranch(branch.id)}
-            disabled={!branch.isActive}
-          >
-            {isActive 
-              ? (isBangla ? 'বর্তমান শাখা' : 'Current Branch')
-              : (isBangla ? 'নির্বাচন করুন' : 'Select Branch')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

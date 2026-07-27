@@ -47,12 +47,6 @@ export const useGetItemsStatus = () => {
   });
 };
 
-export const useGetItemsCategories = () => {
-  return useQuery({
-    queryKey: ["itemsCategory"],
-    queryFn: getItemsCategories,
-  });
-};
 
 export const useUpdateItem = () => {
   const queryClient = useQueryClient();

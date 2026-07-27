@@ -43,9 +43,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useGetItemsCategories, useGetSingleItem, useUpdateItem } from '@/hooks/api/useItems';
+import {  useGetSingleItem, useUpdateItem } from '@/hooks/api/useItems';
 import { dataTagErrorSymbol } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
 
 interface EditItemPageProps {
   params: Promise<{ id: string }>;

@@ -1,6 +1,7 @@
 import {
   getPurchaseReturns,
   getSalesReturns,
+  getSalesReturnById,
   returnSale,
   returnPurchase,
 } from "@/services/returns.services";
@@ -35,6 +36,15 @@ export const useGetSalesReturns = () => {
   });
 };
 
+export const useGetSalesReturnById = (id: string) => {
+  return useQuery({
+    queryKey: ["sales-returns", id],
+    queryFn: () => getSalesReturnById(id),
+    enabled: !!id,
+    select: (data) => data?.data || data,
+  });
+};
+
 export const useGetPurchaseReturns = () => {
   return useQuery({
     queryKey: ["purchase-returns"],
@@ -42,3 +52,4 @@ export const useGetPurchaseReturns = () => {
     select: (data) => data.data,
   });
 };
+

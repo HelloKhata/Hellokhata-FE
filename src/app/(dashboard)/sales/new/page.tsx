@@ -51,6 +51,7 @@ import {
   Pencil,
   Sparkles,
   Gift,
+  Search,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -182,6 +183,9 @@ function NewSaleContent() {
     enabled: !!selectedPartyId,
   });
   const [showPartySuggestions, setShowPartySuggestions] = useState(false);
+
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
 
   const [invoiceNo, setInvoiceNo] = useState("8");
   const [isManualInvoiceNo, setIsManualInvoiceNo] = useState(false);
@@ -317,6 +321,160 @@ function NewSaleContent() {
   }, [paymentMethod, paidAmount, grandTotal]);
 
   // Add Item Row
+  // Add Product to Table from top search bar
+  const handleAddProductToTable = (product: any) => {
+    setSelectedItems((prev) => {
+      const existingIndex = prev.findIndex((i) => i.itemId === product.id);
+
+      if (existingIndex > -1) {
+        return prev.map((item, idx) => {
+          if (idx === existingIndex) {
+            const newQty = item.quantity + 1;
+            const price = item.unitPrice || product.sellingPrice || 0;
+            const flatDiscount = item.discountFlat || 0;
+            const total = calculateRowTotal(newQty, price, flatDiscount);
+
+            const offer = findActiveOffer(product.id, item.batchNo);
+            let appliedOffer: POSAppliedOffer | null = null;
+            let chargedQty = newQty;
+            let freeQty = 0;
+            let offerSavings = 0;
+
+            if (offer) {
+              switch (offer.type) {
+                case "bogo":
+                  appliedOffer = calculateBogoOffer(
+                    newQty,
+                    offer.bogoConfig?.buyQuantity || 1,
+                    offer.bogoConfig?.freeQuantity || 1,
+                    price,
+                  );
+                  break;
+                case "percentage":
+                  appliedOffer = calculatePercentageOffer(
+                    newQty,
+                    offer.percentageConfig?.percentage || 0,
+                    price,
+                  );
+                  break;
+                case "flat":
+                  appliedOffer = calculateFlatOffer(
+                    newQty,
+                    offer.flatConfig?.amount || 0,
+                    offer.flatConfig?.scope || "per_unit",
+                    price,
+                  );
+                  break;
+                case "bundle":
+                  appliedOffer = calculateBundleOffer(
+                    newQty,
+                    offer.bundleConfig?.bundleQuantity || 2,
+                    offer.bundleConfig?.bundlePrice || 0,
+                    price,
+                  );
+                  break;
+              }
+              if (appliedOffer) {
+                chargedQty = appliedOffer.chargedQuantity;
+                freeQty = appliedOffer.freeQuantity;
+                offerSavings = appliedOffer.savings;
+              }
+            }
+
+            return {
+              ...item,
+              quantity: newQty,
+              total,
+              appliedOffer,
+              chargedQuantity: chargedQty,
+              freeQuantity: freeQty,
+              offerSavings,
+            };
+          }
+          return item;
+        });
+      }
+
+      const price = product.sellingPrice || 0;
+      const offer = findActiveOffer(product.id, "");
+      let appliedOffer: POSAppliedOffer | null = null;
+      let chargedQty = 1;
+      let freeQty = 0;
+      let offerSavings = 0;
+
+      if (offer) {
+        switch (offer.type) {
+          case "bogo":
+            appliedOffer = calculateBogoOffer(
+              1,
+              offer.bogoConfig?.buyQuantity || 1,
+              offer.bogoConfig?.freeQuantity || 1,
+              price,
+            );
+            break;
+          case "percentage":
+            appliedOffer = calculatePercentageOffer(
+              1,
+              offer.percentageConfig?.percentage || 0,
+              price,
+            );
+            break;
+          case "flat":
+            appliedOffer = calculateFlatOffer(
+              1,
+              offer.flatConfig?.amount || 0,
+              offer.flatConfig?.scope || "per_unit",
+              price,
+            );
+            break;
+          case "bundle":
+            appliedOffer = calculateBundleOffer(
+              1,
+              offer.bundleConfig?.bundleQuantity || 2,
+              offer.bundleConfig?.bundlePrice || 0,
+              price,
+            );
+            break;
+        }
+        if (appliedOffer) {
+          chargedQty = appliedOffer.chargedQuantity;
+          freeQty = appliedOffer.freeQuantity;
+          offerSavings = appliedOffer.savings;
+        }
+      }
+
+      const newItemRow = {
+        id: Math.random().toString(),
+        itemId: product.id,
+        itemName: product.name,
+        batchNo: "",
+        quantity: 1,
+        unitPrice: price,
+        costPrice: product.costPrice || 0,
+        discountPercent: 0,
+        discountFlat: 0,
+        total: price,
+        searchQuery: "",
+        showSuggestions: false,
+        imageUrl: product.imageUrl || "",
+        appliedOffer,
+        chargedQuantity: chargedQty,
+        freeQuantity: freeQty,
+        offerSavings,
+      };
+
+      const emptyRowIndex = prev.findIndex((i) => i.itemId === "");
+      if (emptyRowIndex > -1 && prev.length === 1) {
+        return [newItemRow];
+      }
+
+      return [...prev.filter((i) => i.itemId !== ""), newItemRow];
+    });
+
+    setProductSearchQuery("");
+    setShowProductSuggestions(false);
+  };
+
   const addItemRow = () => {
     setSelectedItems((prev) => [
       ...prev,
@@ -761,14 +919,96 @@ function NewSaleContent() {
         </Button>
       </div>
 
-      {/* 75% / 25% Split Layout Container */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        
-        {/* Left Side (75% on Desktop) */}
-        <div className="w-full lg:w-[75%] space-y-6">
+
+        <div className="w-full lg:flex-[3] min-w-0 space-y-6">
           
-          {/* Row 1 Layout: Select Party, Invoice No, Invoice Date */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+          {/* Row 1 Layout: Search Product, Select Party, Invoice Date */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+            {/* Search Product (Search Or Scan Bar Code) */}
+            <div className="relative space-y-2">
+              <Label className="text-sm font-medium text-foreground">
+                {isBangla ? "পণ্য খুঁজুন" : "Search Product"}
+              </Label>
+              <div className="relative">
+                <Input
+                  value={productSearchQuery}
+                  onChange={(e) => {
+                    setProductSearchQuery(e.target.value);
+                    setShowProductSuggestions(true);
+                  }}
+                  onFocus={() => setShowProductSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowProductSuggestions(false), 200);
+                  }}
+                  placeholder={
+                    isBangla
+                      ? "পণ্য সার্চ বা বারকোড স্ক্যান করুন"
+                      : "Search Or Scan Bar Code"
+                  }
+                  className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1 text-sm font-medium"
+                />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+                {showProductSuggestions && (
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                    {getFilteredProducts(productSearchQuery).length === 0 ? (
+                      <div className="p-3 text-center text-sm text-muted-foreground">
+                        {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
+                      </div>
+                    ) : (
+                      getFilteredProducts(productSearchQuery).map((product: any) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddProductToTable(product);
+                          }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {product.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="h-9 w-9 rounded object-cover border border-border/80 shrink-0"
+                              />
+                            ) : (
+                              <div className="h-9 w-9 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                <Image
+                                  src="/images/image.png"
+                                  width={20}
+                                  height={20}
+                                  alt={product.name}
+                                  className="h-5 w-5 text-muted-foreground/60"
+                                />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate text-xs">
+                                {product.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                <span>SKU: {product.sku || "-"}</span>
+                                <span>•</span>
+                                <span>Stock: {product.currentStock} {product.unit || ""}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className="font-bold text-primary text-xs">
+                              {formatCurrency(product.sellingPrice || 0)}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Select Party */}
             <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
@@ -826,35 +1066,6 @@ function NewSaleContent() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Invoice No */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label className="text-sm font-medium text-foreground">
-                  {isBangla ? "ইনভয়েস নম্বর" : "Invoice No"}
-                </Label>
-                <button
-                  type="button"
-                  onClick={() => setIsManualInvoiceNo(!isManualInvoiceNo)}
-                  className="text-xs text-primary font-semibold hover:underline"
-                >
-                  {isManualInvoiceNo
-                    ? isBangla
-                      ? "স্বয়ংক্রিয়"
-                      : "Auto"
-                    : isBangla
-                      ? "ম্যানুয়াল"
-                      : "Manual"}
-                </button>
-              </div>
-              <Input
-                value={invoiceNo}
-                onChange={(e) => setInvoiceNo(e.target.value)}
-                disabled={!isManualInvoiceNo}
-                placeholder={isBangla ? "স্বয়ংক্রিয় ইনভয়েস" : "Auto Generated"}
-                className="h-11 bg-background/50 border-input font-medium focus-visible:ring-1"
-              />
             </div>
 
             {/* Invoice Date */}
@@ -917,7 +1128,7 @@ function NewSaleContent() {
           )}
 
           {/* Row 2: Billing Items Table */}
-          <div className="border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
+          <div className="w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
@@ -930,14 +1141,11 @@ function NewSaleContent() {
                   <TableHead className="px-4 py-3 w-[32%] text-xs font-semibold uppercase">
                     {isBangla ? "প্রোডাক্ট" : "Product"}
                   </TableHead>
-                    <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
-                    {isBangla ? "ব্যাচ নম্বর" : "Batch No"}
+                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
+                    {isBangla ? "দর" : "Rate"}
                   </TableHead>
                   <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
                     {isBangla ? "পরিমাণ" : "Quantity"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
-                    {isBangla ? "দর" : "Rate"}
                   </TableHead>
                   <TableHead className="px-4 py-3 w-[18%] text-xs font-semibold uppercase">
                     {isBangla ? "ছাড়" : "Discount"}
@@ -976,169 +1184,36 @@ function NewSaleContent() {
                       )}
                     </TableCell>
 
-                    {/* Name */}
-                    <TableCell className="px-4 py-3 align-middle relative w-[32%]">
-                      <Popover open={item.showSuggestions}>
-                        <PopoverAnchor asChild>
-                          <div className="w-full">
-                            <Input
-                              value={
-                                item.showSuggestions
-                                  ? item.searchQuery || ""
-                                  : item.itemName
-                              }
-                              placeholder={
-                                isBangla ? "পণ্য নাম লিখুন" : "Search item..."
-                              }
-                              className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 w-full"
-                              onFocus={() => {
-                                setSelectedItems((prev) =>
-                                  prev.map((i) =>
-                                    i.id === item.id
-                                      ? {
-                                          ...i,
-                                          searchQuery: i.itemName,
-                                          showSuggestions: true,
-                                        }
-                                      : i,
-                                  ),
-                                );
-                              }}
-                              onChange={(e) =>
-                                handleNameChange(item.id, e.target.value)
-                              }
-                              onBlur={() => handleRowBlur(item.id)}
-                            />
-                            {/* Inline Offer Badge */}
-                            {item.appliedOffer && (
-                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
-                                  <Sparkles className="h-2.5 w-2.5" />
-                                  {item.appliedOffer.title}
+                    {/* Product Name */}
+                    <TableCell className="px-4 py-3 align-middle font-medium">
+                      {item.itemName ? (
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">
+                            {item.itemName}
+                          </p>
+                          {item.appliedOffer && (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                                <Sparkles className="h-2.5 w-2.5" />
+                                {item.appliedOffer.title}
+                              </span>
+                              {item.freeQuantity > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                  <Gift className="h-2.5 w-2.5" />
+                                  {item.freeQuantity} Free
                                 </span>
-                                {item.freeQuantity > 0 && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                                    <Gift className="h-2.5 w-2.5" />
-                                    {item.freeQuantity} Free
-                                  </span>
-                                )}
-                                <span className="text-[10px] text-emerald-400 font-semibold">
-                                  Saved: ৳{(item.offerSavings || 0).toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </PopoverAnchor>
-
-                        <PopoverContent
-                          className="w-[380px] p-0 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border z-50 text-foreground"
-                          align="start"
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                          onCloseAutoFocus={(e) => e.preventDefault()}
-                        >
-                          {getFilteredProducts(item.searchQuery || "")
-                            .length === 0 ? (
-                            <div className="p-3 text-center text-sm text-muted-foreground">
-                              {isBangla
-                                ? "কোনো পণ্য পাওয়া যায়নি"
-                                : "No items found"}
+                              )}
+                              <span className="text-[10px] text-emerald-400 font-semibold">
+                                Saved: ৳{(item.offerSavings || 0).toFixed(2)}
+                              </span>
                             </div>
-                          ) : (
-                            getFilteredProducts(item.searchQuery || "").map(
-                              (product: any) => (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleSelectProduct(item.id, product);
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    {/* Product image in suggestions list */}
-                                    {product.imageUrl ? (
-                                      <img
-                                        src={product.imageUrl}
-                                        alt={product.name}
-                                        className="h-10 w-10 rounded object-cover border border-border/80 shrink-0"
-                                      />
-                                    ) : (
-                                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                        <Image src="/images/image.png" width={20} height={20} alt={product.name} className="h-5 w-5 text-muted-foreground/60" />
-                                      </div>
-                                    )}
-                                    <div className="min-w-0">
-                                      <p className="font-semibold text-foreground truncate text-xs leading-normal">
-                                        {product.name}
-                                      </p>
-                                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                                        <span>SKU: {product.sku || "-"}</span>
-                                        <span>•</span>
-                                        <span>Barcode: {product.barcode || "-"}</span>
-                                        <span>•</span>
-                                        <span>Stock: {product.currentStock} {product.unit}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="text-right shrink-0">
-                                    <p className="font-bold text-primary text-xs">
-                                      Tk. {product.sellingPrice}
-                                    </p>
-                                  </div>
-                                </button>
-                              ),
-                            )
                           )}
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-
-                    {/* Batch No */}
-                    <TableCell className="px-4 py-3 align-middle w-[15%]">
-                      {item.itemId ? (
-                        <Select
-                          value={item.batchNo || "default"}
-                          onValueChange={(val) => {
-                            setSelectedItems((prev) =>
-                              prev.map((i) =>
-                                i.id === item.id
-                                  ? { ...i, batchNo: val === "default" ? "" : val }
-                                  : i
-                              )
-                            );
-                          }}
-                        >
-                          <SelectTrigger className="h-9 bg-background/50 border-input text-foreground text-xs focus-visible:ring-1">
-                            <SelectValue placeholder={isBangla ? "ব্যাচ নং" : "Batch No"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="default">
-                              {isBangla ? "ডিফল্ট ব্যাচ" : "Default Batch"}
-                            </SelectItem>
-                            {/* {getItemBatches(item.itemId).map((b: any) => (
-                              <SelectItem key={b.id} value={b.batchNo}>
-                                {b.batchNo} {b.expiryDate ? `(${format(new Date(b.expiryDate), "MM/yy")})` : ""}
-                              </SelectItem>
-                            ))} */}
-                          </SelectContent>
-                        </Select>
+                        </div>
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground italic">
+                          {isBangla ? "উপরে পণ্য সার্চ করুন" : "Select product above"}
+                        </span>
                       )}
-                    </TableCell>
-                    {/* Quantity */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <Input
-                        type="number"
-                        value={item.quantity || ""}
-                        onChange={(e) =>
-                          handleQuantityChange(item.id, e.target.value)
-                        }
-                        className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
-                        min="1"
-                      />
                     </TableCell>
 
                     {/* Rate */}
@@ -1157,6 +1232,19 @@ function NewSaleContent() {
                           min="0"
                         />
                       </div>
+                    </TableCell>
+
+                    {/* Quantity */}
+                    <TableCell className="px-4 py-3 align-middle">
+                      <Input
+                        type="number"
+                        value={item.quantity || ""}
+                        onChange={(e) =>
+                          handleQuantityChange(item.id, e.target.value)
+                        }
+                        className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
+                        min="1"
+                      />
                     </TableCell>
 
                     {/* Discount (% and flat) */}
@@ -1242,9 +1330,14 @@ function NewSaleContent() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Row 3 Layout: Notes, Attachments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+
+      {/* 75% / 25% Split Layout Container */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+        {/* left side */}
+        {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
+          <div className="w-full flex flex-col gap-5 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
             {/* Notes Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
@@ -1261,7 +1354,7 @@ function NewSaleContent() {
             </div>
 
             {/* Attach Images */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
                 {isBangla ? "ছবি সংযুক্ত করুন" : "Attach Images"}
               </Label>
@@ -1276,13 +1369,11 @@ function NewSaleContent() {
                   </span>
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
 
-        </div>
-
         {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
-        <div className="w-full lg:w-[25%] lg:sticky lg:top-6">
+        <div className="w-full lg:flex-[1] lg:min-w-[460px] lg:max-w-[320px] lg:sticky lg:top-6">
           <div className="bg-card border border-border/80 rounded-2xl shadow-md p-6 space-y-5">
             <h2 className="text-lg font-bold tracking-tight text-foreground border-b border-border/50 pb-2">
               {isBangla ? "অর্ডার সারাংশ" : "Order Summary"}
@@ -1432,11 +1523,7 @@ function NewSaleContent() {
             <hr className="border-border/60" />
 
             {/* Dedicated Payment Section */}
-            <div className="space-y-4 pt-2 border-t border-border/40">
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                {isBangla ? "পেমেন্ট" : "Payment"}
-              </h3>
-
+            <div className="flex items-center justify-between border-t border-border/40">
               {/* Payment Mode Selector */}
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -1496,7 +1583,9 @@ function NewSaleContent() {
                 </div>
               )}
 
-              {/* Due Amount Alert */}
+             
+            </div>
+ {/* Due Amount Alert */}
               {due > 0 && (paidAmount !== "" || paymentMethod === "credit") && (
                 <div className="pt-1">
                   <div className="p-3 rounded-xl flex justify-between items-center text-xs font-semibold border transition-all duration-300 bg-rose-500/10 border-rose-500/20 text-rose-500">
@@ -1511,8 +1600,6 @@ function NewSaleContent() {
                   </div>
                 </div>
               )}
-            </div>
-
             <hr className="border-border/60 pt-1" />
 
             {/* Action Buttons */}

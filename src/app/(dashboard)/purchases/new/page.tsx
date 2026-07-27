@@ -29,6 +29,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
 import {
   Plus,
   Trash2,
@@ -86,6 +87,7 @@ interface BillingItemRow {
   taxAmount: number;
   trackBatch: boolean;
   batchNumber: string;
+  trackExpiry: boolean;
   manufactureDate?: Date;
   expiryDate?: Date;
   rowNote: string;
@@ -205,6 +207,7 @@ function NewPurchaseContent() {
       taxAmount: 0,
       trackBatch: false,
       batchNumber: "",
+      trackExpiry: false,
       rowNote: "",
       isExpanded: false,
     },
@@ -534,8 +537,10 @@ function NewPurchaseContent() {
           return {
             ...item,
             trackBatch: enabled,
-            // default batch number if enabled
-            batchNumber: enabled && !item.batchNumber ? `BATCH-${format(new Date(), "yyyyMMdd")}-${Math.floor(Math.random()*100)}` : item.batchNumber,
+            isExpanded: enabled,
+            // reset trackExpiry when disabling batch tracking
+            trackExpiry: enabled ? item.trackExpiry : false,
+            expiryDate: enabled ? item.expiryDate : undefined,
           };
         }
         return item;
@@ -710,6 +715,7 @@ function NewPurchaseContent() {
               taxAmount: 0,
               trackBatch: false,
               batchNumber: "",
+              trackExpiry: false,
               rowNote: "",
               isExpanded: false,
             },
@@ -885,9 +891,9 @@ function NewPurchaseContent() {
       </div>
 
       {/* Main Responsive Grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="">
         {/* Left Form Content (2 Columns wide) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div>
 
           {/* Desktop Purchase Info (Row 1 & Row 2) */}
           <div className="hidden lg:block bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
@@ -1299,7 +1305,7 @@ function NewPurchaseContent() {
 
           {/* Supplier Info Card (if selected) */}
           {singleSupplierData?.data && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-2xs space-y-3">
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-2xs space-y-3 my-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
                 <Users className="h-4 w-4" />
                 <span>{isBangla ? "সরবরাহকারী সংক্ষিপ্ত বিবরণ" : "Supplier Overview"}</span>
@@ -1351,11 +1357,10 @@ function NewPurchaseContent() {
             <table className="w-full text-xs text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-muted/30 border-b border-border text-muted-foreground font-semibold uppercase">
-                  <th className="px-4 py-3 w-[5%]"></th>
-                  <th className="px-3 py-3 w-[6%]">
+                  <th className="px-3 py-3 w-[5%]">
                     {isBangla ? "ক্রমিক" : "S.N."}
                   </th>
-                  <th className="px-3 py-3 w-[26%]">
+                  <th className="px-3 py-3 w-[30%]">
                     {isBangla ? "পণ্য নাম" : "Item Name"}
                   </th>
                   <th className="px-3 py-3 w-[10%]">
@@ -1373,7 +1378,7 @@ function NewPurchaseContent() {
                   <th className="px-3 py-3 w-[10%]">
                     {isBangla ? "ছাড়" : "Discount (Flat)"}
                   </th>
-                  <th className="px-4 py-3 w-[10%] text-right">
+                  <th className="px-4 py-3 w-[12%] text-right">
                     {isBangla ? "মোট" : "Amount"}
                   </th>
                 </tr>
@@ -1387,35 +1392,20 @@ function NewPurchaseContent() {
                   const isCostAlert = Math.abs(priceDiffPercent) >= 15;
 
                   return (
-                    <Suspense key={item.id} fallback={<tr><td colSpan={9}>Loading Row...</td></tr>}>
+                    <Suspense key={item.id} fallback={<tr><td colSpan={8}>Loading Row...</td></tr>}>
                       <tr className="hover:bg-muted/10 transition-colors">
-                        {/* Expand Button */}
-                        <td className="px-3 py-3 text-center align-middle">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleExpandRow(item.id)}
-                            className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors"
-                          >
-                            {item.isExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-primary" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </button>
-                        </td>
-
                         {/* SN */}
                         <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle">
                           {idx + 1}
                         </td>
 
-                        {/* Name & SKU */}
+                        {/* Name & SKU & Track Batch */}
                         <td className="px-3 py-3 align-middle relative">
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
                             <Input
                               value={item.showSuggestions ? item.searchQuery || "" : item.itemName}
                               placeholder={isBangla ? "পণ্য খুঁজুন..." : "Search item..."}
-                              className="bg-transparent border-none outline-none focus-visible:ring-0 p-0 h-8 font-medium text-xs text-foreground placeholder:text-muted-foreground"
+                              className="bg-transparent border-none outline-none focus-visible:ring-0 p-0 h-7 font-medium text-xs text-foreground placeholder:text-muted-foreground"
                               onFocus={() => {
                                 setSelectedItems((prev) =>
                                   prev.map((i) =>
@@ -1432,11 +1422,25 @@ function NewPurchaseContent() {
                               onChange={(e) => handleNameChange(item.id, e.target.value)}
                               onBlur={() => handleRowBlur(item.id)}
                             />
-                            {item.sku && (
-                              <span className="text-[10px] text-muted-foreground block">
-                                SKU: {item.sku}
-                              </span>
-                            )}
+
+                            <div className="flex items-center justify-between gap-2 text-[10px]">
+                              {item.sku ? (
+                                <span className="text-muted-foreground">SKU: {item.sku}</span>
+                              ) : (
+                                <span />
+                              )}
+
+                              {/* Track Batch Checkbox after Item Name */}
+                              <label className="inline-flex items-center gap-1.5 font-medium text-muted-foreground hover:text-foreground cursor-pointer select-none shrink-0">
+                                <input
+                                  type="checkbox"
+                                  checked={item.trackBatch}
+                                  onChange={(e) => handleToggleTrackBatch(item.id, e.target.checked)}
+                                  className="rounded border-input text-primary focus:ring-primary h-3.5 w-3.5"
+                                />
+                                <span>{isBangla ? "ট্র্যাক ব্যাচ" : "Track Batch"}</span>
+                              </label>
+                            </div>
                           </div>
 
                           {item.showSuggestions && (
@@ -1585,103 +1589,57 @@ function NewPurchaseContent() {
                         </td>
                       </tr>
 
-                      {/* Expandable Sub-Row */}
-                      {item.isExpanded && (
+                      {/* Expandable Batch Details Sub-Row */}
+                      {item.trackBatch && (
                         <tr className="bg-muted/15">
-                          <td colSpan={9} className="px-6 py-4 border-t border-border">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                              {/* Batch Tracking */}
-                              <div className="space-y-3 p-4 bg-background/40 border border-border/50 rounded-lg shadow-2xs">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.trackBatch}
-                                      onChange={(e) => handleToggleTrackBatch(item.id, e.target.checked)}
-                                      className="rounded border-input text-primary focus:ring-primary h-3.5 w-3.5"
-                                    />
-                                    {isBangla ? "ব্যাচ ট্র্যাকিং সক্রিয়" : "Track Batch"}
+                          <td colSpan={8} className="px-6 py-3.5 border-t border-border">
+                            <div className="bg-background/40 border border-border/50 rounded-xl p-4 shadow-2xs space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                                {/* Track Expiry Toggle */}
+                                <div className="space-y-1">
+                                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    {isBangla ? "মেয়াদ ট্র্যাক করুন" : "Track Expiry"}
                                   </Label>
-                                </div>
-                                {item.trackBatch && (
-                                  <div className="space-y-2.5 pt-1.5">
-                                    <div>
-                                      <Label className="text-[10px] font-semibold text-muted-foreground uppercase">{isBangla ? "ব্যাচ নম্বর" : "Batch Number"}</Label>
-                                      <Input
-                                        value={item.batchNumber}
-                                        onChange={(e) => handleRowFieldChange(item.id, "batchNumber", e.target.value)}
-                                        placeholder="e.g. BAT-2026-001"
-                                        className="h-8 text-xs bg-background/50 border-input mt-1"
-                                      />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div>
-                                        <Label className="text-[10px] font-semibold text-muted-foreground uppercase">{isBangla ? "উৎপাদন" : "Mfg Date"}</Label>
-                                        <Input
-                                          type="date"
-                                          value={item.manufactureDate ? format(item.manufactureDate, "yyyy-MM-dd") : ""}
-                                          onChange={(e) => handleRowFieldChange(item.id, "manufactureDate", e.target.value ? new Date(e.target.value) : undefined)}
-                                          className="h-8 text-xs bg-background/50 border-input mt-1"
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label className="text-[10px] font-semibold text-muted-foreground uppercase">{isBangla ? "মেয়াদোত্তীর্ণ" : "Exp Date"}</Label>
-                                        <Input
-                                          type="date"
-                                          value={item.expiryDate ? format(item.expiryDate, "yyyy-MM-dd") : ""}
-                                          onChange={(e) => handleRowFieldChange(item.id, "expiryDate", e.target.value ? new Date(e.target.value) : undefined)}
-                                          className="h-8 text-xs bg-background/50 border-input mt-1"
-                                        />
-                                      </div>
-                                    </div>
+                                  <div className="flex items-center gap-2 h-8">
+                                    <Switch
+                                      id={`track-expiry-${item.id}`}
+                                      checked={item.trackExpiry}
+                                      onCheckedChange={(checked) => handleRowFieldChange(item.id, "trackExpiry", checked)}
+                                    />
+                                    <span className="text-xs text-muted-foreground">
+                                      {item.trackExpiry
+                                        ? (isBangla ? "চালু" : "On")
+                                        : (isBangla ? "বন্ধ" : "Off")}
+                                    </span>
                                   </div>
-                                )}
-                              </div>
+                                </div>
 
-                              {/* Row Notes */}
-                              <div className="space-y-3 p-4 bg-background/40 border border-border/50 rounded-lg shadow-2xs flex flex-col justify-between">
-                                <div>
-                                  <Label className="text-xs font-semibold text-foreground">{isBangla ? "আইটেম নোট" : "Item Notes"}</Label>
-                                  <Textarea
-                                    value={item.rowNote || ""}
-                                    onChange={(e) => handleRowFieldChange(item.id, "rowNote", e.target.value)}
-                                    placeholder={isBangla ? "এই পণ্যের কোনো মন্তব্য..." : "Any notes for this specific item..."}
-                                    className="min-h-[70px] text-xs bg-background/50 border-input mt-1 resize-none flex-1"
+                                {/* Mfg Date */}
+                                <div className="space-y-1">
+                                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    {isBangla ? "উৎপাদন তারিখ (Mfg Date)" : "Manufacture Date"}
+                                  </Label>
+                                  <Input
+                                    type="date"
+                                    value={item.manufactureDate ? format(item.manufactureDate, "yyyy-MM-dd") : ""}
+                                    onChange={(e) => handleRowFieldChange(item.id, "manufactureDate", e.target.value ? new Date(e.target.value) : undefined)}
+                                    className="h-8 text-xs bg-background/50 border-input"
                                   />
                                 </div>
-                              </div>
 
-                              {/* Inventory Info */}
-                              <div className="space-y-2 p-4 bg-background/40 border border-border/50 rounded-lg shadow-2xs text-[11px]">
-                                <p className="font-semibold text-foreground border-b border-border/50 pb-1 flex items-center gap-1">
-                                  <Store className="h-3.5 w-3.5 text-primary shrink-0" />
-                                  <span>{isBangla ? "ইনভেন্টরি বিশ্লেষণ" : "Inventory Analysis"}</span>
-                                </p>
-                                {item.itemId ? (
-                                  <div className="grid grid-cols-2 gap-y-2 gap-x-3 pt-1">
-                                    <div>
-                                      <p className="text-muted-foreground">{isBangla ? "উপলব্ধ স্টক" : "Available Stock"}</p>
-                                      <p className="font-semibold text-foreground mt-0.5">{item.currentStock} {item.unit}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">{isBangla ? "সর্বশেষ ক্রয় মূল্য" : "Last Cost"}</p>
-                                      <p className="font-semibold text-foreground mt-0.5">{formatCurrency(item.lastPurchasePrice || 0)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">{isBangla ? "গড় ক্রয় মূল্য" : "Avg Cost"}</p>
-                                      <p className="font-semibold text-foreground mt-0.5">{formatCurrency(item.averageCost || 0)}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-muted-foreground">{isBangla ? "পূর্ববর্তী সরবরাহকারী" : "Prev Supplier"}</p>
-                                      <p className="font-semibold text-foreground truncate mt-0.5" title={item.previousSupplierName}>
-                                        {item.previousSupplierName || "—"}
-                                      </p>
-                                    </div>
+                                {/* Exp Date — only shown when trackExpiry is on */}
+                                {item.trackExpiry && (
+                                  <div className="space-y-1">
+                                    <Label className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                      {isBangla ? "মেয়াদোত্তীর্ণ তারিখ (Exp Date)" : "Expiry Date"}
+                                    </Label>
+                                    <Input
+                                      type="date"
+                                      value={item.expiryDate ? format(item.expiryDate, "yyyy-MM-dd") : ""}
+                                      onChange={(e) => handleRowFieldChange(item.id, "expiryDate", e.target.value ? new Date(e.target.value) : undefined)}
+                                      className="h-8 text-xs bg-background/50 border-input"
+                                    />
                                   </div>
-                                ) : (
-                                  <p className="text-muted-foreground italic text-center pt-4">
-                                    {isBangla ? "কোনো পণ্য নির্বাচিত নেই" : "No product selected"}
-                                  </p>
                                 )}
                               </div>
                             </div>
@@ -1716,7 +1674,13 @@ function NewPurchaseContent() {
           </div>
         </div>
 
-          {/* Payment Section */}
+          
+        </div>
+
+       <div className="grid grid-cols-3 gap-6 bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs">
+           {/*Payments, Notes and Attachments */}
+          <div className="colspace-y-6 col-span-2">
+           
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
@@ -1734,7 +1698,7 @@ function NewPurchaseContent() {
 
             <div className="space-y-4">
               {payments.map((p, index) => (
-                <div key={p.id} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end bg-background/20 p-3.5 rounded-lg border border-border/40 relative">
+                <div key={p.id} className="flex items-center justify-between gap-3 items-end bg-background/20 p-3.5 rounded-lg border border-border/40 relative">
                   {/* Payment Method */}
                   <div className="space-y-1.5 md:col-span-1">
                     <Label className="text-[10px] font-semibold text-muted-foreground uppercase">{isBangla ? "পদ্ধতি" : "Method"}</Label>
@@ -1828,11 +1792,8 @@ function NewPurchaseContent() {
               {errors.payments && <p className="text-[10px] text-destructive font-medium">{errors.payments}</p>}
             </div>
           </div>
-
-          {/* Notes and Attachments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs">
-            {/* Notes */}
-            <div className="space-y-2">
+              {/* Notes */}
+            <div className="space-y-2 my-3">
               <Label className="text-xs font-semibold text-foreground">
                 {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
               </Label>
@@ -1896,10 +1857,8 @@ function NewPurchaseContent() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Right Section: Purchase Summary Sticky Panel */}
-        <div className="lg:col-span-1 lg:sticky lg:top-6 space-y-6">
+          {/* Right Section: Purchase Summary Sticky Panel */}
+        <div className="space-y-6">
           {/* Purchase Summary Card */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
@@ -2104,6 +2063,8 @@ function NewPurchaseContent() {
             </div>
           )}
         </div>
+                </div>
+        
       </div>
     </div>
   );
