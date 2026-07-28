@@ -19,16 +19,20 @@ import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useUser } from "@/stores";
-import { useCreateParty } from "@/hooks/api/useParties";
+import { useCreateParty, useUpdateParty } from "@/hooks/api/useParties";
+import type { Party } from "@/types";
 
 interface AddPartyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  partyToEdit?: Party | null;
 }
 
-export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
+export function AddPartyModal({ isOpen, onClose, partyToEdit }: AddPartyModalProps) {
   const { t, isBangla } = useAppTranslation();
-  const { mutate, isPending } = useCreateParty();
+  const createMutation = useCreateParty();
+  const updateMutation = useUpdateParty(partyToEdit?.id || "");
+  const isPending = createMutation.isPending || updateMutation.isPending;
   const user = useUser();
 
   const [formData, setFormData] = useState({
@@ -43,22 +47,36 @@ export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
     notes: '',
   });
 
-  // Reset form when modal opens
+  // Populate form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        type: 'customer',
-        openingBalance: '0',
-        balanceType: 'receive',
-        creditLimit: '',
-        notes: '',
-      });
+      if (partyToEdit) {
+        setFormData({
+          name: partyToEdit.name || '',
+          phone: partyToEdit.phone || '',
+          email: partyToEdit.email || '',
+          address: partyToEdit.address || '',
+          type: (partyToEdit.type as any) || 'customer',
+          openingBalance: Math.abs(partyToEdit.openingBalance || 0).toString(),
+          balanceType: (partyToEdit.openingBalance || 0) < 0 ? 'give' : 'receive',
+          creditLimit: partyToEdit.creditLimit ? partyToEdit.creditLimit.toString() : '',
+          notes: partyToEdit.notes || '',
+        });
+      } else {
+        setFormData({
+          name: '',
+          phone: '',
+          email: '',
+          address: '',
+          type: 'customer',
+          openingBalance: '0',
+          balanceType: 'receive',
+          creditLimit: '',
+          notes: '',
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, partyToEdit]);
 
   const updateForm = (key: keyof typeof formData, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -83,12 +101,21 @@ export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
       notes: formData.notes || undefined,
     };
 
-    mutate(partyItem, {
-      onSuccess: () => {
-        toast.success(isBangla ? 'পার্টি তৈরি হয়েছে!' : 'Party created successfully!');
-        onClose();
-      },
-    });
+    if (partyToEdit) {
+      updateMutation.mutate(partyItem, {
+        onSuccess: () => {
+          toast.success(isBangla ? 'পার্টি তথ্য আপডেট হয়েছে!' : 'Party updated successfully!');
+          onClose();
+        },
+      });
+    } else {
+      createMutation.mutate(partyItem, {
+        onSuccess: () => {
+          toast.success(isBangla ? 'পার্টি তৈরি হয়েছে!' : 'Party created successfully!');
+          onClose();
+        },
+      });
+    }
   };
 
   return (
@@ -101,10 +128,22 @@ export function AddPartyModal({ isOpen, onClose }: AddPartyModalProps) {
             </div>
             <div>
               <DialogTitle className="text-xl font-bold">
-                {isBangla ? 'নতুন পার্টি যোগ' : 'Add Party'}
+                {partyToEdit
+                  ? isBangla
+                    ? 'পার্টি সম্পাদন করুন'
+                    : 'Edit Party'
+                  : isBangla
+                  ? 'নতুন পার্টি যোগ'
+                  : 'Add Party'}
               </DialogTitle>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {isBangla ? 'নতুন গ্রাহক বা সরবরাহকারী যোগ করুন' : 'Add a new customer or supplier'}
+                {partyToEdit
+                  ? isBangla
+                    ? 'পার্টির তথ্য সংশোধন করুন'
+                    : 'Modify party information'
+                  : isBangla
+                  ? 'নতুন গ্রাহক বা সরবরাহকারী যোগ করুন'
+                  : 'Add a new customer or supplier'}
               </p>
             </div>
           </div>

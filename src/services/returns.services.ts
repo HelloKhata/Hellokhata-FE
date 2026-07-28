@@ -24,3 +24,8 @@ export const returnPurchase = async (data: any) => {
     const res = await client.post('/api/purchases/returns', data);
     return res.data;
 }
+
+export const getPurchaseReturnById = async (id: string) => {
+    const res = await client.get(`/api/purchases/returns/${id}`);
+    return res.data;
+}

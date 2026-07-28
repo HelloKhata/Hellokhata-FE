@@ -1,5 +1,6 @@
 import {
   getPurchaseReturns,
+  getPurchaseReturnById,
   getSalesReturns,
   getSalesReturnById,
   returnSale,
@@ -52,4 +53,14 @@ export const useGetPurchaseReturns = () => {
     select: (data) => data.data,
   });
 };
+
+export const useGetPurchaseReturnById = (id: string) => {
+  return useQuery({
+    queryKey: ["purchase-returns", id],
+    queryFn: () => getPurchaseReturnById(id),
+    enabled: !!id,
+    select: (data) => data?.data || data,
+  });
+};
+
 
