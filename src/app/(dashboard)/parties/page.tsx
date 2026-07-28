@@ -30,10 +30,11 @@ import { useCurrency, useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import type { Party } from '@/types';
 import { useRouter } from 'next/navigation';
-import { useParties } from '@/hooks/api/useParties';
+import { useParties, useDeleteParty } from '@/hooks/api/useParties';
 import { useSearch } from '@/hooks/api/useSearch';
 import { PartyCard } from '@/components/parties/PartyCard';
 import { PartyDetailsAndTransactions } from '@/components/parties/PartyDetailsAndTransactions';
+import { toast } from 'sonner';
 
 export default function PartiesPage() {
   const { t, isBangla } = useAppTranslation();
@@ -43,19 +44,36 @@ export default function PartiesPage() {
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'receivable' | 'payable' | 'settled'>('all');
   const [selectedParty, setSelectedParty] = useState<Party | null>(null);
   const [showAddPartyModal, setShowAddPartyModal] = useState(false);
+  const [partyToEdit, setPartyToEdit] = useState<Party | null>(null);
+
+  const deletePartyMutation = useDeleteParty();
+
+  const handleEditParty = (party: Party) => {
+    router.push(`/parties/new?id=${party.id}`);
+  };
+
+  const handleDeleteParty = (partyId: string, partyName: string) => {
+    if (confirm(isBangla ? `আপনি কি নিশ্চিত "${partyName}" ডিলিট করতে চান?` : `Are you sure you want to delete "${partyName}"?`)) {
+      deletePartyMutation.mutate(partyId, {
+        onSuccess: () => {
+          toast.success(isBangla ? 'পার্টি মুছে ফেলা হয়েছে' : 'Party deleted successfully');
+          if (selectedParty?.id === partyId) {
+            setSelectedParty(null);
+          }
+        },
+      });
+    }
+  };
 
   const { data: partiesData, isLoading } = useParties(
     typeFilter !== 'both' ? { type: typeFilter } : {}
   );
 
-  console.log(partiesData, 'partiesData')
   const parties = partiesData?.data || [];
 
   const { data: partiesSearchData } = useSearch({ index: "parties", query: searchTerm });
   const searchParties = partiesSearchData?.data.hits;
   const router = useRouter();
-
-  console.log("searchParties", partiesSearchData)
 
   // Client-side filtering (payment status only, type is filtered by API)
   const filteredParties = parties.filter((party: any) => {
@@ -77,7 +95,7 @@ export default function PartiesPage() {
           icon={Users}
           action={{
             label: t('parties.addParty'),
-            onClick: () => setShowAddPartyModal(true),
+            onClick: () => router.push('/parties/new'),
             icon: Plus,
           }}
         />
@@ -156,8 +174,8 @@ export default function PartiesPage() {
                   {isBangla ? `পার্টি (${partiesData?.summary?.total || 0})` : `Parties (${partiesData?.summary?.total || 0})`}
                 </h2>
                 <Button
-                  onClick={() => setShowAddPartyModal(true)}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5"
+                  onClick={() => router.push('/parties/new')}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-4 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   {isBangla ? 'পার্টি যোগ করুন' : 'Add Party'}
@@ -174,7 +192,7 @@ export default function PartiesPage() {
                     className="pl-9 h-9 text-xs bg-background border-input"
                   />
                 </div>
-                <Button variant="outline" size="icon" className="h-9 w-9 border-input hover:bg-accent hover:text-accent-foreground text-foreground shrink-0">
+                <Button variant="outline" size="icon" className="h-9 w-9 border-input hover:bg-accent hover:text-accent-foreground text-foreground shrink-0 cursor-pointer">
                   <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </div>
@@ -186,7 +204,7 @@ export default function PartiesPage() {
                   size="sm"
                   onClick={() => setTypeFilter(typeFilter === 'customer' ? 'both' : 'customer')}
                   className={cn(
-                    "rounded-full px-4 h-8 text-xs font-medium border-input",
+                    "rounded-full px-4 h-8 text-xs font-medium border-input cursor-pointer",
                     typeFilter === 'customer'
                       ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30"
                       : "text-muted-foreground bg-transparent hover:bg-accent hover:text-accent-foreground"
@@ -199,7 +217,7 @@ export default function PartiesPage() {
                   size="sm"
                   onClick={() => setTypeFilter(typeFilter === 'supplier' ? 'both' : 'supplier')}
                   className={cn(
-                    "rounded-full px-4 h-8 text-xs font-medium border-input",
+                    "rounded-full px-4 h-8 text-xs font-medium border-input cursor-pointer",
                     typeFilter === 'supplier'
                       ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 dark:bg-primary/20 dark:text-primary dark:border-primary/30"
                       : "text-muted-foreground bg-transparent hover:bg-accent hover:text-accent-foreground"
@@ -212,7 +230,7 @@ export default function PartiesPage() {
                   value={paymentFilter}
                   onValueChange={(value: any) => setPaymentFilter(value)}
                 >
-                  <SelectTrigger className="w-auto h-8 rounded-full px-4 text-xs font-medium border-input bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:ring-0">
+                  <SelectTrigger className="w-auto h-8 rounded-full px-4 text-xs font-medium border-input bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:ring-0 cursor-pointer">
                     <SelectValue placeholder={isBangla ? 'সব পেমেন্ট' : 'All Payment'} />
                   </SelectTrigger>
                   <SelectContent className="text-xs">
@@ -236,27 +254,31 @@ export default function PartiesPage() {
                     description={isBangla ? 'নতুন পার্টি যোগ করুন' : 'Add your first party'}
                     action={{
                       label: t('parties.addParty'),
-                      onClick: () => setShowAddPartyModal(true),
+                      onClick: () => router.push('/parties/new'),
                       icon: Plus,
                     }}
                   />
                 </div>
               ) : (
                 <ScrollArea className="flex-1 max-h-[550px] pr-2">
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {searchTerm !== '' ? searchParties?.map((party: any) => (
                       <PartyCard
                         key={party.id}
                         party={party}
                         isSelected={selectedParty?.id === party.id}
                         onView={() => setSelectedParty(party)}
+                        onEdit={() => handleEditParty(party)}
+                        onDelete={() => handleDeleteParty(party.id, party.name)}
                       />
-                    )) : parties.map((party: any) => (
+                    )) : filteredParties.map((party: any) => (
                       <PartyCard
                         key={party.id}
                         party={party}
                         isSelected={selectedParty?.id === party.id}
                         onView={() => setSelectedParty(party)}
+                        onEdit={() => handleEditParty(party)}
+                        onDelete={() => handleDeleteParty(party.id, party.name)}
                       />
                     ))}
                   </div>
@@ -285,11 +307,6 @@ export default function PartiesPage() {
           </div>
         </div>
       </div>
-      {/* Add Party Modal */}
-      <AddPartyModal
-        isOpen={showAddPartyModal}
-        onClose={() => setShowAddPartyModal(false)}
-      />
     </>
   );
 }

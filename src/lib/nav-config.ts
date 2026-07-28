@@ -81,12 +81,6 @@ export const navGroups: NavItem[] = [
         labelBn: "কোটেশন",
       },
       {
-        page: "/sales/payment-in",
-        icon: CreditCard,
-        labelKey: "Payment In",
-        labelBn: "পেমেন্ট ইন",
-      },
-      {
         page: "/sales/returns",
         icon: RotateCcw,
         labelKey: "Sales Return",
@@ -106,20 +100,38 @@ export const navGroups: NavItem[] = [
         labelBn: "ক্রয় তালিকা",
       },
       {
-        page: "/purchases/payment-out",
-        icon: CreditCard,
-        labelKey: "Payment Out",
-        labelBn: "পেমেন্ট আউট",
-      },
-      {
-        page: "/returns/purchases",
+        page: "/purchases/returns",
         icon: RotateCcw,
         labelKey: "Purchase Return",
         labelBn: "ক্রয় ফেরত",
       },
     ],
   },
-  { page: "/parties", icon: Users, labelKey: "Parties", labelBn: "পার্টি" },
+  {
+    labelKey: "Parties",
+    labelBn: "পার্টি",
+    icon: Users,
+    submenu: [
+      {
+        page: "/parties",
+        icon: Users,
+        labelKey: "Parties List",
+        labelBn: "পার্টি তালিকা",
+      },
+      {
+        page: "/parties/payment-in",
+        icon: CreditCard,
+        labelKey: "Payment In",
+        labelBn: "পেমেন্ট ইন",
+      },
+      {
+        page: "/parties/payment-out",
+        icon: CreditCard,
+        labelKey: "Payment Out",
+        labelBn: "পেমেন্ট আউট",
+      },
+    ],
+  },
   {
     labelKey: "Inventory",
     labelBn: "ইনভেন্টরি",

@@ -22,6 +22,12 @@ export const deleteQuotation = async (id: string) => {
     return res.data;
 }
 
+export const getQuotationById = async (id: string) => {
+    const res = await client.get(`/api/quotations/${id}`);
+    return res.data;
+}
+
+
 // export const updateQuotation = async ({ id, data }: { id: string, data: any }) => {
 //     const res = await client.patch(`/api/quotations/${id}`, data);
 //     return res.data;

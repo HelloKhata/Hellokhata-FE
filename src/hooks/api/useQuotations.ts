@@ -1,5 +1,5 @@
 
-import { createQuotation, deleteQuotation, getQuotations, getQuotationSummary } from "@/services/quotations.services"
+import { createQuotation, deleteQuotation, getQuotationById, getQuotations, getQuotationSummary } from "@/services/quotations.services"
 import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useGetQuotations = (search:string) => {
@@ -8,6 +8,14 @@ export const useGetQuotations = (search:string) => {
         queryFn: () => getQuotations(search),
     })
 }   
+
+export const useGetQuotationById = (id: string) => {
+    return useQuery({
+        queryKey: ['quotation', id],
+        queryFn: () => getQuotationById(id),
+        enabled: !!id,
+    })
+}
 
 export const useGetQoutationSummary = () => {
     return useQuery({
