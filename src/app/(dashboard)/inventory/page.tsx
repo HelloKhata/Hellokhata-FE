@@ -59,6 +59,7 @@ import {
   QrCode,
   FileText,
   Receipt,
+  Delete,
 } from 'lucide-react';
 import { useItems, useCategories } from '@/hooks/queries';
 import { useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
@@ -788,7 +789,7 @@ const ItemRow = memo(function ItemRow({
             onClick={(e) => handleAction(e, onViewBatches)}
           >
             <span className="text-xs font-medium text-slate-200">
-              {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} • {branchesCount} {branchesCount === 1 ? (isBangla ? 'শাখা' : 'Branch') : (isBangla ? 'শাখা' : 'Branches')}
+              {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 
             </span>
           </button>
         </div>
@@ -805,7 +806,7 @@ const ItemRow = memo(function ItemRow({
 
         {/* 7. Action Buttons (Right aligned) */}
         <div className="flex items-center justify-end gap-1 w-36 sm:w-44 shrink-0 text-right">
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -819,9 +820,9 @@ const ItemRow = memo(function ItemRow({
             <TooltipContent side="top">
               <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
             </TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
 
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -835,8 +836,8 @@ const ItemRow = memo(function ItemRow({
             <TooltipContent side="top">
               <p>{isBangla ? 'ব্যাচসমূহ দেখুন' : 'View Batches'}</p>
             </TooltipContent>
-          </Tooltip>
-
+          </Tooltip> */}
+   
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -852,63 +853,21 @@ const ItemRow = memo(function ItemRow({
               <p>{isBangla ? 'সম্পাদনা' : 'Edit'}</p>
             </TooltipContent>
           </Tooltip>
-
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>{isBangla ? 'আরও' : 'More'}</p>
-              </TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, onViewBatches)}>
-                <Layers className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'ব্যাচসমূহ দেখুন' : 'View Batches'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'পণ্যটি ডুপ্লিকেট করা হয়েছে' : 'Product duplicated'))}>
-                <Copy className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'ডুপ্লিকেট' : 'Duplicate'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'পণ্যটি আর্কাইভ করা হয়েছে' : 'Product archived'))}>
-                <Archive className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'আর্কাইভ' : 'Archive'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => router.push(`/reports/purchase`))}>
-                <FileText className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'ক্রয় ইতিহাস' : 'Purchase History'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => router.push(`/reports/sales`))}>
-                <Receipt className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'বিক্রয় ইতিহাস' : 'Sales History'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'বারকোড প্রিন্ট প্রস্তুত' : 'Printing Barcode...'))}>
-                <Printer className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'বারকোড প্রিন্ট' : 'Print Barcode'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'কিউআর কোড প্রিন্ট প্রস্তুত' : 'Printing QR Code...'))}>
-                <QrCode className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'QR কোড প্রিন্ট' : 'Print QR Code'}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive cursor-pointer"
-                onClick={handleDeleteButtonClick}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-red-500 hover:text-red-400 hover:bg-muted/60 transition-colors cursor-pointer"
+                onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'পণ্যটি ডিলিট করা হয়েছে' : 'Product deleted'))}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                <span>{isBangla ? 'মুছে ফেলুন' : 'Delete'}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>{isBangla ? 'ডিলিট' : 'Delete'}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </TooltipProvider>

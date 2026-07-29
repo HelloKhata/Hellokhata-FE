@@ -3,7 +3,7 @@
 
 "use client";
 
-import { useState, useMemo, Suspense, useEffect } from "react";
+import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import {
   Layers,
   Barcode,
   Package,
+  Upload,
 } from "lucide-react";
 import {
   Dialog,
@@ -142,6 +143,7 @@ function NewPurchaseContent() {
   const [showTopProductSuggestions, setShowTopProductSuggestions] = useState(false);
   const [selectedSearchProduct, setSelectedSearchProduct] = useState<any | null>(null);
   const [searchQty, setSearchQty] = useState<number>(1);
+  const [searchUnitPrice, setSearchUnitPrice] = useState<number>(0);
   const [searchAmount, setSearchAmount] = useState<number>(0);
 
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
@@ -182,10 +184,29 @@ function NewPurchaseContent() {
       setBranch(defaultMainBranch);
     }
     if (userName && !responsiblePerson) setResponsiblePerson(userName);
-    if (warehousesList.length > 0 && !warehouseId) setWarehouseId(warehousesList[0].id);
+    if (warehousesList.length > 0 && !warehouseId) setWarehouseId(String(warehousesList[0].id));
   }, [defaultMainBranch, branch.id, userName, responsiblePerson, warehousesList, warehouseId]);
 
   const [notes, setNotes] = useState("");
+  const [invoiceImage, setInvoiceImage] = useState<File | null>(null);
+  const [invoiceImagePreview, setInvoiceImagePreview] = useState<string | null>(null);
+
+  const handleInvoiceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInvoiceImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setInvoiceImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveInvoiceImage = () => {
+    setInvoiceImage(null);
+    setInvoiceImagePreview(null);
+  };
 
   // Payment states
   const [payments, setPayments] = useState<PaymentRow[]>([
@@ -232,6 +253,38 @@ function NewPurchaseContent() {
       isExpanded: false,
     },
   ]);
+
+  // Track open Expiry Settings row ID
+  const [openExpiryRowId, setOpenExpiryRowId] = useState<string | null>(null);
+
+  // Close expiry settings when clicking outside or empty spaces
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-expiry-container]")) {
+        if (openExpiryRowId) {
+          const activeItem = selectedItems.find((i) => i.id === openExpiryRowId);
+          if (activeItem && activeItem.trackExpiry && !activeItem.expiryDate) {
+            toast.error(
+              isBangla
+                ? `"${activeItem.itemName}"-এর মেয়াদের তারিখ নির্বাচন করা আবশ্যক`
+                : `Expiry date is required for "${activeItem.itemName}"`
+            );
+            return;
+          }
+        }
+        setOpenExpiryRowId(null);
+      }
+    };
+
+    if (openExpiryRowId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openExpiryRowId, selectedItems, isBangla]);
 
   // Suppliers Filtering
   const filteredSuppliers = useMemo(() => {
@@ -458,20 +511,25 @@ function NewPurchaseContent() {
     );
   };
 
-  const handleSelectProductFromTopSearch = (product: any) => {
-    setSelectedSearchProduct(product);
-    setSearchQty(1);
-    setSearchAmount(product.costPrice || product.purchasePrice || 0);
+  const handleSelectProductFromTopSearch = async (product: any) => {
+    // Check if any existing item has Track Expiry ON but no expiry date selected
+    const invalidItem = selectedItems.find((i) => i.itemId && i.trackExpiry && !i.expiryDate);
+    if (invalidItem) {
+      setOpenExpiryRowId(invalidItem.id);
+      toast.error(
+        isBangla
+          ? `নতুন পণ্য যোগ করার আগে "${invalidItem.itemName}"-এর মেয়াদের তারিখ সিলেক্ট করুন`
+          : `Please select expiry date for "${invalidItem.itemName}" before adding a new item`
+      );
+      return;
+    }
+
     setTopProductSearchQuery("");
     setShowTopProductSuggestions(false);
-  };
+    setSelectedSearchProduct(null);
 
-  const handleConfirmAddFromSearch = async () => {
-    if (!selectedSearchProduct) return;
-
-    const product = selectedSearchProduct;
-    const qty = Math.max(1, searchQty || 1);
-    const unitCost = Math.max(0, searchAmount || 0);
+    const qty = 1;
+    const unitCost = product.costPrice || product.purchasePrice || 0;
     const taxPct = product.taxPercent || 0;
 
     let availableBatches: any[] = [];
@@ -496,7 +554,7 @@ function NewPurchaseContent() {
       if (existingIndex !== -1) {
         return prev.map((item, index) => {
           if (index === existingIndex) {
-            const newQty = item.quantity + qty;
+            const newQty = item.quantity + 1;
             const newBase = newQty * unitCost;
             const newTaxAmt = Math.max(0, newBase) * (item.taxPercent / 100);
             const newTotal = Math.max(0, newBase + newTaxAmt);
@@ -529,10 +587,10 @@ function NewPurchaseContent() {
         total: total,
         searchQuery: "",
         showSuggestions: false,
-        trackBatch: !!batchNo || product.trackBatch,
+        trackBatch: false,
         batchNumber: batchNo,
-        trackExpiry: product.trackExpiry || !!selectedBatchObj?.expiryDate,
-        expiryDate: selectedBatchObj?.expiryDate ? new Date(selectedBatchObj.expiryDate) : undefined,
+        trackExpiry: false,
+        expiryDate: undefined,
         rowNote: "",
         isExpanded: false,
         lastPurchasePrice: product.lastPurchasePrice || unitCost,
@@ -548,11 +606,9 @@ function NewPurchaseContent() {
 
     toast.success(
       isBangla
-        ? `${product.name} (${qty} ${product.unit?.name || product.unit || "Pcs"}) সফলভাবে টেবিলে যোগ করা হয়েছে`
-        : `Added ${product.name} (${qty} ${product.unit?.name || product.unit || "Pcs"}) to items table`
+        ? `${product.name} সফলভাবে টেবিলে যোগ করা হয়েছে`
+        : `Added ${product.name} to items table`
     );
-
-    setSelectedSearchProduct(null);
   };
 
   const handleSubmitWithStatus = () => {
@@ -575,6 +631,10 @@ function NewPurchaseContent() {
         }
         if (item.unitCost <= 0) {
           newErrors[`cost-${item.id}`] = isBangla ? "ক্রয় মূল্য ০ এর বেশি হতে হবে" : "Rate must be > 0";
+        }
+        if (item.trackExpiry && !item.expiryDate) {
+          newErrors[`expiry-${item.id}`] = isBangla ? `"${item.itemName}"-এর মেয়াদের তারিখ নির্বাচন করা আবশ্যক` : `Expiry date is required for "${item.itemName}"`;
+          setOpenExpiryRowId(item.id);
         }
       }
     });
@@ -768,203 +828,125 @@ function NewPurchaseContent() {
         </Button>
       </div>
 
-      {/* Main Responsive Grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Form Content (9 Columns wide) */}
-        <div className="lg:col-span-9 space-y-6">
 
-          {/* Top Product Autocomplete Search & Barcode Scanner Card (At Very Top of Purchase Info) */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Search className="h-4 w-4 text-primary" />
-                <span>{isBangla ? "পণ্য খুঁজুন বা স্ক্যান করুন" : "Search Product / Scan Barcode"}</span>
-              </Label>
-              {selectedSearchProduct && (
-                <span className="text-[11px] text-primary font-medium">
-                  {isBangla ? "পরিমাণ ও দর নির্ধারণ করুন" : "Set Quantity & Amount"}
-                </span>
-              )}
-            </div>
-
-            {selectedSearchProduct ? (
-              <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 space-y-4 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between border-b border-primary/20 pb-2.5">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {selectedSearchProduct.imageUrl ? (
-                      <img
-                        src={selectedSearchProduct.imageUrl}
-                        alt={selectedSearchProduct.name}
-                        className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-foreground truncate">
-                        {selectedSearchProduct.name}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                        <span>SKU: {selectedSearchProduct.sku || "—"}</span>
-                        <span>•</span>
-                        <span>Stock: {selectedSearchProduct.currentStock || 0} {selectedSearchProduct.unit?.name || selectedSearchProduct.unit || "Pcs"}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedSearchProduct(null)}
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                  {/* Quantity Field */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">
-                      {isBangla ? "পরিমাণ *" : "Quantity *"}
-                    </Label>
-                    <Input
-                      type="number"
-                      value={searchQty || ""}
-                      onChange={(e) => setSearchQty(parseFloat(e.target.value) || 0)}
-                      onKeyDown={(e) => e.key === "Enter" && handleConfirmAddFromSearch()}
-                      min="1"
-                      placeholder="1"
-                      className="h-10 text-xs font-bold bg-background border-input text-center focus-visible:ring-1"
-                      autoFocus
-                    />
-                  </div>
-
-                  {/* Amount / Rate Field */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-foreground">
-                      {isBangla ? "মোট মূল্য *" : "Total Amount*"}
-                    </Label>
-                    <div className="relative flex items-center">
-                      <span className="absolute left-2.5 text-xs text-muted-foreground font-medium">Tk.</span>
-                      <Input
-                        type="number"
-                        value={searchAmount || ""}
-                        onChange={(e) => setSearchAmount(parseFloat(e.target.value) || 0)}
-                        onKeyDown={(e) => e.key === "Enter" && handleConfirmAddFromSearch()}
-                        min="0"
-                        placeholder="0"
-                        className="h-10 text-xs font-bold bg-background border-input text-right pl-8 focus-visible:ring-1"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Add Button */}
-                  <Button
-                    type="button"
-                    onClick={handleConfirmAddFromSearch}
-                    className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs gap-1.5 w-full cursor-pointer shadow-xs"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>{isBangla ? "টেবিলে যোগ করুন" : "Add to Table"}</span>
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative">
-                <Input
-                  value={topProductSearchQuery}
-                  onChange={(e) => {
-                    setTopProductSearchQuery(e.target.value);
-                    setShowTopProductSuggestions(true);
-                  }}
-                  onFocus={() => setShowTopProductSuggestions(true)}
-                  onBlur={() => {
-                    setTimeout(() => setShowTopProductSuggestions(false), 200);
-                  }}
-                  placeholder={
-                    isBangla
-                      ? "পণ্য সার্চ বা বারকোড স্ক্যান করুন..."
-                      : "Search product by name, SKU or scan barcode..."
-                  }
-                  className="pr-10 h-11 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-                {showTopProductSuggestions && (
-                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                    {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
-                      <div className="p-3 text-center text-xs text-muted-foreground">
-                        {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
-                      </div>
-                    ) : (
-                      getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
-                        <button
-                          key={product.id}
-                          type="button"
-                          className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleSelectProductFromTopSearch(product);
-                          }}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {product.imageUrl ? (
-                              <img
-                                src={product.imageUrl}
-                                alt={product.name}
-                                className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="font-semibold text-foreground truncate text-xs">
-                                {product.name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                                <span>SKU: {product.sku || "—"}</span>
-                                <span>•</span>
-                                <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <p className="font-bold text-primary text-xs">
-                              {formatCurrency(product.costPrice || product.purchasePrice || 0)}
-                            </p>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Purchase Info Card */}
+          {/* Merged Purchase Information Card */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {isBangla ? "শাখা ও বিবরণ নির্বাচন করুন" : "Manage branch and details"}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <Label className="text-xs font-semibold text-foreground shrink-0 whitespace-nowrap">
+                  {isBangla ? "তারিখ:" : "Date:"}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-8 w-[130px] justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5 shrink-0"
+                    >
+                      <span className="truncate">{format(invoiceDate, "dd MMM yyyy")}</span>
+                      <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={invoiceDate}
+                      onSelect={(date) => date && setInvoiceDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
 
-            {/* Row 1: Supplier, Purchase Date, Purchase Type (Each taking 1/3 equal full width) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              {/* Select Supplier */}
-              <div className="relative space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "সরবরাহকারী *" : "Supplier *"}
+            {/* Single Row: Purchase Item (40%), Supplier Name (30%), Purchase Type (10%), Branch/Warehouse (20%) */}
+            <div className="grid grid-cols-1 md:grid-cols-10 gap-3 items-end">
+              {/* 1. Purchase Item (40% width -> 4/10 cols) */}
+              <div className="space-y-2 col-span-1 md:col-span-4 relative">
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
+                  <Search className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    value={topProductSearchQuery}
+                    onChange={(e) => {
+                      setTopProductSearchQuery(e.target.value);
+                      setShowTopProductSuggestions(true);
+                    }}
+                    onFocus={() => setShowTopProductSuggestions(true)}
+                    onBlur={() => {
+                      setTimeout(() => setShowTopProductSuggestions(false), 200);
+                    }}
+                    placeholder={
+                      isBangla
+                        ? "পণ্য সার্চ / স্ক্যান..."
+                        : "Search item / barcode..."
+                    }
+                    className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
+                  />
+                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+
+                  {showTopProductSuggestions && (
+                    <div className="absolute z-50 left-0 top-full mt-1 w-[280px] sm:w-[360px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                      {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
+                        <div className="p-3 text-center text-xs text-muted-foreground">
+                          {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
+                        </div>
+                      ) : (
+                        getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectProductFromTopSearch(product);
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
+                                  alt={product.name}
+                                  className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate text-xs">
+                                  {product.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                  <span>SKU: {product.sku || "—"}</span>
+                                  <span>•</span>
+                                  <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <p className="font-bold text-primary text-xs">
+                                {formatCurrency(product.costPrice || product.purchasePrice || 0)}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Party Name / Phone (30% width -> 3/10 cols) */}
+              <div className="relative space-y-2 col-span-1 md:col-span-3">
+                <Label className="text-xs font-semibold text-foreground truncate">
+                  {isBangla ? "সরবরাহকারী *" : "Supplier Name *"}
                 </Label>
                 <div className="relative">
                   <Input
@@ -978,13 +960,13 @@ function NewPurchaseContent() {
                     onBlur={() => {
                       setTimeout(() => setShowSupplierSuggestions(false), 200);
                     }}
-                    placeholder={isBangla ? "খুঁজুন..." : "Search supplier"}
+                    placeholder={isBangla ? "নাম / ফোন দিয়ে খুঁজুন..." : "Search supplier / phone"}
                     className={cn("pr-8 h-10 bg-background/50 border-input text-xs w-full", errors.supplier && "border-destructive")}
                   />
                   <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
                   {showSupplierSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                    <div className="absolute z-50 left-0 top-full mt-1 w-[240px] sm:w-[280px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
                       {filteredSuppliers.length === 0 ? (
                         <div className="p-3 text-center text-xs text-muted-foreground">
                           {isBangla ? "কোনো সরবরাহকারী নেই" : "No suppliers found"}
@@ -1019,198 +1001,106 @@ function NewPurchaseContent() {
                 {errors.supplier && <p className="text-[10px] text-destructive font-medium">{errors.supplier}</p>}
               </div>
 
-              {/* Purchase Date */}
-              <div className="space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ক্রয় তারিখ" : "Purchase Date"}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full h-10 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-3"
-                    >
-                      <span>{format(invoiceDate, "dd MMM yyyy")}</span>
-                      <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      mode="single"
-                      selected={invoiceDate}
-                      onSelect={(date) => date && setInvoiceDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Purchase Type */}
-              <div className="space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ক্রয় প্রকার" : "Purchase Type"}
+              {/* 3. Purchase Type (Smaller 10% width -> 1/10 cols) */}
+              <div className="space-y-2 col-span-1 md:col-span-1 min-w-[110px]">
+                <Label className="text-xs font-semibold text-foreground truncate">
+                  {isBangla ? "প্রকার" : "Type"}
                 </Label>
                 <Select
                   value={purchaseType}
                   onValueChange={(val) => {
                     setPurchaseType(val);
                     if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
-                      setWarehouseId(warehousesList[0].id);
+                      setWarehouseId(String(warehousesList[0].id));
                     } else if (val === "in_store" && !branch.id && storeBranches.length > 0) {
                       const mainB = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
                       if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
                     }
                   }}
                 >
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full px-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="in_store">{isBangla ? "ইন স্টোর (In Store)" : "In Store"}</SelectItem>
-                    <SelectItem value="warehouse">{isBangla ? "ওয়্যারহাউস (Warehouse)" : "Warehouse"}</SelectItem>
+                    <SelectItem value="in_store">{isBangla ? "ইন স্টোর" : "In Store"}</SelectItem>
+                    <SelectItem value="warehouse">{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {/* Row 2: Branch/Warehouse, Responsible Person, Reference Number */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end border-t border-border/40 pt-4">
-              {/* Dynamic Location Selector based on Purchase Type */}
-              {purchaseType === "warehouse" ? (
-                <div className="space-y-2 col-span-1">
-                  <Label className="text-xs font-semibold text-foreground">
-                    {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
-                  </Label>
-                  <Select value={warehouseId} onValueChange={setWarehouseId}>
-                    <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                      <SelectValue placeholder={isBangla ? "ওয়্যারহাউস নির্বাচন করুন" : "Select Warehouse"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {warehousesList.map((w: any) => (
-                        <SelectItem key={w.id} value={w.id}>
-                          {w.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="space-y-2 col-span-1">
-                  <Label className="text-xs font-semibold text-foreground">
-                    {isBangla ? "শাখা *" : "Branch *"}
-                  </Label>
-                  <Select
-                    value={branch.id ? String(branch.id) : undefined}
-                    onValueChange={(selectedId) => {
-                      const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
-                      if (selectedObj) {
-                        setBranch({ id: String(selectedObj.id), name: selectedObj.name });
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                      <SelectValue placeholder={isBangla ? "শাখা নির্বাচন করুন" : "Select Branch"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {storeBranches.map((b: any) => (
-                        <SelectItem key={b.id} value={String(b.id)}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {/* Responsible Person */}
-              <div className="space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "দায়িত্বপ্রাপ্ত ব্যক্তি" : "Responsible Person"}
-                </Label>
-                <Input
-                  value={responsiblePerson}
-                  onChange={(e) => setResponsiblePerson(e.target.value)}
-                  placeholder={isBangla ? "নাম লিখুন" : "Employee name"}
-                  className="h-10 bg-background/50 border-input text-xs w-full"
-                />
-              </div>
-
-              {/* Reference Number */}
-              <div className="space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "রেফারেন্স নম্বর" : "Reference Number"}
-                </Label>
-                <Input
-                  value={referenceNo}
-                  onChange={(e) => setReferenceNo(e.target.value)}
-                  placeholder={isBangla ? "রেফারেন্স কোড" : "Reference code"}
-                  className="h-10 bg-background/50 border-input text-xs w-full"
-                />
+              {/* 4. Branch / Warehouse (20% width -> 2/10 cols) */}
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                {purchaseType === "warehouse" ? (
+                  <>
+                    <Label className="text-xs font-semibold text-foreground truncate">
+                      {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
+                    </Label>
+                    <Select value={warehouseId} onValueChange={setWarehouseId}>
+                      <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                        <SelectValue placeholder={isBangla ? "ওয়্যারহাউস" : "Select Warehouse"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {warehousesList.map((w: any) => (
+                          <SelectItem key={w.id} value={w.id}>
+                            {w.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                ) : (
+                  <>
+                    <Label className="text-xs font-semibold text-foreground truncate">
+                      {isBangla ? "শাখা *" : "Branch *"}
+                    </Label>
+                    <Select
+                      value={branch.id ? String(branch.id) : undefined}
+                      onValueChange={(selectedId) => {
+                        const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
+                        if (selectedObj) {
+                          setBranch({ id: String(selectedObj.id), name: selectedObj.name });
+                        }
+                      }}
+                    >
+                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                        <SelectValue placeholder={isBangla ? "শাখা" : "Select Branch"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {storeBranches.map((b: any) => (
+                          <SelectItem key={b.id} value={String(b.id)}>
+                            {b.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
               </div>
             </div>
           </div>
-
-          {/* Supplier Overview Banner */}
-          {singleSupplierData?.data && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-2xs space-y-3">
-              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
-                <Users className="h-4 w-4" />
-                <span>{isBangla ? "সরবরাহকারী সংক্ষিপ্ত বিবরণ" : "Supplier Overview"}</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "সরবরাহকারীর নাম" : "Supplier Name"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{singleSupplierData.data.name}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "মোবাইল" : "Phone"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{singleSupplierData.data.phone || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-rose-400 uppercase tracking-wide">{isBangla ? "বর্তমান বকেয়া" : "Current Due"}</p>
-                  <p className="font-bold text-rose-500 mt-0.5">
-                    {formatCurrency(Math.abs(singleSupplierData.data.currentBalance || 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "বাকির সীমা" : "Credit Limit"}</p>
-                  <p className="font-semibold text-foreground mt-0.5">
-                    {singleSupplierData.data.creditLimit ? formatCurrency(singleSupplierData.data.creditLimit) : (isBangla ? 'সীমাহীন' : 'Unlimited')}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
+      {/* Main Responsive Grid layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Form Content (9 Columns wide) */}
+        <div className="lg:col-span-9 space-y-6">  
           {/* Billing Items Table */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "পণ্য ও মূল্য নির্ধারণ" : "Items & Pricing"}
               </span>
-              {/* <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addItemRow}
-                className="h-8 text-xs gap-1.5 cursor-pointer"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>{isBangla ? "নতুন সারি যোগ করুন" : "Add Row"}</span>
-              </Button> */}
             </div>
 
             <div className="overflow-x-auto border border-border/60 rounded-lg">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
                     <th className="px-3 py-3 w-[4%] text-center">#</th>
-                    <th className="px-3 py-3 w-[32%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
-                    <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
+                    <th className="px-3 py-3 w-[36%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
+                    <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
                     <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "পরিমাণ *" : "Qty *"}</th>
-                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
-                    <th className="px-3 py-3 w-[9%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
-                    <th className="px-3 py-3 w-[18%] text-center">{isBangla ? "মোট" : "Amount"}</th>
+                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
+                    <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
+                    <th className="px-3 py-3 w-[16%] text-center">{isBangla ? "মোট" : "Amount"}</th>
                     <th className="px-3 py-3 w-[6%] text-center"></th>
                   </tr>
                 </thead>
@@ -1225,105 +1115,203 @@ function NewPurchaseContent() {
                     </tr>
                   ) : (
                     selectedItems.map((item, idx) => (
-                      <tr key={item.id} className="hover:bg-muted/10 transition-colors">
-                        <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle">
-                          {idx + 1}
-                        </td>
+                      <Fragment key={item.id}>
+                        <tr className="hover:bg-muted/10 transition-colors">
+                          <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle text-center">
+                            {idx + 1}
+                          </td>
 
-                        {/* Product Image, Name & SKU (Uneditable Display) */}
-                        <td className="px-3 py-3 align-middle">
-                          <div className="flex items-center gap-2.5">
-                            {item.imageUrl ? (
-                              <img
-                                src={item.imageUrl}
-                                alt={item.itemName}
-                                className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                <Image
-                                  src="/images/image.png"
-                                  width={40}
-                                  height={40}
-                                  alt="Image"
-                                  className="h-5 w-5 text-muted-foreground/60"
+                          {/* Product Image, Name, SKU & Always Visible Track Batch Checkbox */}
+                          <td className="px-3 py-3 align-middle">
+                            <div className="flex items-center gap-3">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.itemName}
+                                  className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
                                 />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-semibold text-foreground text-xs leading-tight">
-                                {item.itemName}
-                              </p>
-                              {item.sku && (
-                                <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-                                  SKU: {item.sku}
-                                </p>
+                              ) : (
+                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                  <Image
+                                    src="/images/image.png"
+                                    width={40}
+                                    height={40}
+                                    alt="Image"
+                                    className="h-5 w-5 text-muted-foreground/60"
+                                  />
+                                </div>
                               )}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-foreground text-xs leading-tight truncate">
+                                  {item.itemName}
+                                </p>
+                                {item.sku && (
+                                  <p className="text-[10px] text-muted-foreground mt-0.5 font-mono truncate">
+                                    SKU: {item.sku}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* 1. Track Batch Checkbox */}
+                              <label
+                                data-expiry-container
+                                className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground shrink-0 bg-muted/40 hover:bg-muted/70 px-2 py-1 rounded-md border border-border/50 transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={!!item.trackBatch}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    handleRowChange(item.id, "trackBatch", checked);
+                                    if (checked) {
+                                      setOpenExpiryRowId(item.id);
+                                    } else {
+                                      handleRowChange(item.id, "trackExpiry", false);
+                                      handleRowChange(item.id, "expiryDate", undefined);
+                                      if (openExpiryRowId === item.id) {
+                                        setOpenExpiryRowId(null);
+                                      }
+                                    }
+                                  }}
+                                  className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+                                />
+                                <span className="font-medium whitespace-nowrap">
+                                  {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
+                                </span>
+                              </label>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Stock */}
-                        <td className="px-3 py-3 align-middle text-center text-muted-foreground font-medium">
-                          {item.currentStock} {item.unit}
-                        </td>
+                          {/* Stock */}
+                          <td className="px-3 py-3 align-middle text-center text-muted-foreground font-medium">
+                            {item.currentStock} {item.unit}
+                          </td>
 
-                        {/* Quantity */}
-                        <td className="px-3 py-3 align-middle">
-                          <Input
-                            type="number"
-                            value={item.quantity || ""}
-                            onChange={(e) => handleRowChange(item.id, "quantity", e.target.value)}
-                            className="h-8 text-center bg-background/50 border-input text-xs font-semibold"
-                            min="1"
-                          />
-                        </td>
+                          {/* Quantity */}
+                          <td className="px-3 py-3 align-middle">
+                            <Input
+                              type="number"
+                              value={item.quantity || ""}
+                              onChange={(e) => handleRowChange(item.id, "quantity", e.target.value)}
+                              className="h-8 text-center bg-background/50 border-input text-xs font-semibold"
+                              min="1"
+                            />
+                          </td>
 
-                        {/* Rate */}
-                        <td className="px-3 py-3 align-middle">
-                          <Input
-                            type="number"
-                            value={item.unitCost || ""}
-                            onChange={(e) => handleRowChange(item.id, "unitCost", e.target.value)}
-                            className="h-8 text-right bg-background/50 border-input text-xs font-semibold"
-                            min="0"
-                          />
-                        </td>
+                          {/* Rate */}
+                          <td className="px-3 py-3 align-middle">
+                            <Input
+                              type="number"
+                              value={item.unitCost || ""}
+                              onChange={(e) => handleRowChange(item.id, "unitCost", e.target.value)}
+                              className="h-8 text-right bg-background/50 border-input text-xs font-semibold"
+                              min="0"
+                            />
+                          </td>
 
-                        {/* Tax % */}
-                        <td className="px-3 py-3 align-middle">
-                          <Input
-                            type="number"
-                            value={item.taxPercent || ""}
-                            onChange={(e) => handleRowChange(item.id, "taxPercent", e.target.value)}
-                            placeholder="0%"
-                            className="h-8 text-right bg-background/50 border-input text-xs"
-                            min="0"
-                          />
-                        </td>
+                          {/* Tax % */}
+                          <td className="px-3 py-3 align-middle">
+                            <Input
+                              type="number"
+                              value={item.taxPercent || ""}
+                              onChange={(e) => handleRowChange(item.id, "taxPercent", e.target.value)}
+                              placeholder="0%"
+                              className="h-8 text-right bg-background/50 border-input text-xs"
+                              min="0"
+                            />
+                          </td>
 
-                        {/* Row Total (Editable) */}
-                        <td className="px-3 py-3 align-middle">
-                          <Input
-                            type="number"
-                            value={item.total || ""}
-                            onChange={(e) => handleRowChange(item.id, "total", e.target.value)}
-                            className="h-8 text-right bg-background/50 border-input text-xs font-bold text-primary font-mono"
-                            min="0"
-                          />
-                        </td>
+                          {/* Row Total */}
+                          <td className="px-3 py-3 align-middle">
+                            <Input
+                              type="number"
+                              value={item.total || ""}
+                              onChange={(e) => handleRowChange(item.id, "total", e.target.value)}
+                              className="h-8 text-right bg-background/50 border-input text-xs font-bold text-primary font-mono"
+                              min="0"
+                            />
+                          </td>
 
-                        {/* Delete Action */}
-                        <td className="px-3 py-3 align-middle text-right">
-                          <button
-                            type="button"
-                            onClick={() => removeItemRow(item.id)}
-                            className="text-muted-foreground hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                          {/* Delete Action */}
+                          <td className="px-3 py-3 align-middle text-right">
+                            <button
+                              type="button"
+                              onClick={() => removeItemRow(item.id)}
+                              className="text-muted-foreground hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+
+                        {/* Conditional Expiry Sub-Row (Shows when Track Batch is ON and openExpiryRowId matches item.id) */}
+                        {item.trackBatch && openExpiryRowId === item.id && (
+                          <tr
+                            data-expiry-container
+                            className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
+                            <td colSpan={8} className="px-4 py-2 text-xs">
+                              <div className="flex flex-wrap items-center gap-4 pl-7">
+                                <span className="text-[11px] font-semibold text-primary/90 flex items-center gap-1.5 shrink-0">
+                                  <span>↳</span>
+                                  <span>{isBangla ? "মেয়াদ সংক্রান্ত তথ্য:" : "Expiry Settings:"}</span>
+                                </span>
+
+                                {/* 2. Track Expiry Checkbox */}
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!item.trackExpiry}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      handleRowChange(item.id, "trackExpiry", checked);
+                                      if (!checked) {
+                                        handleRowChange(item.id, "expiryDate", undefined);
+                                      }
+                                    }}
+                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+                                  />
+                                  <span className="font-medium whitespace-nowrap">
+                                    {isBangla ? "মেয়াদ ট্র্যাকিং" : "Track Expiry"}
+                                  </span>
+                                </label>
+
+                                {/* 3. Expiry Date Calendar (Required when Track Expiry is ON) */}
+                                {item.trackExpiry && (
+                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
+                                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
+                                      {isBangla ? "মেয়াদের তারিখ *" : "Expiry Date *"}
+                                    </span>
+                                    <Input
+                                      type="date"
+                                      value={
+                                        item.expiryDate
+                                          ? new Date(item.expiryDate).toISOString().split("T")[0]
+                                          : ""
+                                      }
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        handleRowChange(
+                                          item.id,
+                                          "expiryDate",
+                                          val ? new Date(val) : undefined
+                                        );
+                                        if (val) {
+                                          setTimeout(() => setOpenExpiryRowId(null), 300);
+                                        }
+                                      }}
+                                      className={cn(
+                                        "h-7 w-[140px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs",
+                                        !item.expiryDate && "border-amber-500/80 focus-visible:ring-amber-500"
+                                      )}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     ))
                   )}
                 </tbody>
@@ -1471,17 +1459,64 @@ function NewPurchaseContent() {
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-1.5 shadow-xs">
-            <Label className="text-xs font-semibold text-foreground">
-              {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
-            </Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={isBangla ? "অতিরিক্ত বিবরণ লিখুন..." : "Enter additional purchase remarks..."}
-              className="h-24 bg-background/50 border-input resize-none text-xs"
-            />
+          {/* Notes & Invoice Image Upload */}
+          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Remarks/Notes */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
+                </Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={isBangla ? "অতিরিক্ত বিবরণ লিখুন..." : "Enter additional purchase remarks..."}
+                  className="h-32 bg-background/50 border-input resize-none text-xs"
+                />
+              </div>
+
+              {/* Invoice Image Upload */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "ইনভয়েস বা রসিদের ছবি" : "Invoice / Receipt Image"}
+                </Label>
+                {invoiceImagePreview ? (
+                  <div className="relative h-32 w-full rounded-lg border border-border bg-background/50 overflow-hidden flex items-center justify-center group">
+                    <img
+                      src={invoiceImagePreview}
+                      alt="Invoice preview"
+                      className="h-full w-full object-contain p-1"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRemoveInvoiceImage}
+                        className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer shadow-xs"
+                        title={isBangla ? "মুছে ফেলুন" : "Remove Image"}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-background/30 hover:bg-background/50 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-1.5" />
+                    <span className="text-xs font-semibold text-foreground">
+                      {isBangla ? "ইনভয়েস ছবি আপলোড করুন" : "Upload Invoice Image"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                      PNG, JPG, WEBP ({isBangla ? "সর্বোচ্চ ৫ মেগাবাইট" : "Max 5MB"})
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleInvoiceImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

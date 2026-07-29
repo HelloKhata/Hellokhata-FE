@@ -13,7 +13,6 @@ import { BranchStockTable } from "@/components/product-details/BranchStockTable"
 import { PurchaseHistoryTable } from "@/components/product-details/PurchaseHistoryTable";
 import { SalesSummarySection } from "@/components/product-details/SalesSummarySection";
 import { StockTimeline } from "@/components/product-details/StockTimeline";
-import { BarcodeSection } from "@/components/product-details/BarcodeSection";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -181,11 +180,11 @@ function ProductDetailsContent() {
         {/* Tab Content 1: Overview */}
         <TabsContent value="overview" className="space-y-6">
           <ProductInformationCard product={product} />
-          <BarcodeSection
+          {/* <BarcodeSection
             barcodes={mockBarcodes}
             onPrintLabel={(bc) => alert(`Printing barcode: ${bc}`)}
             onGenerateBarcode={() => alert("Generate new barcode label")}
-          />
+          /> */}
         </TabsContent>
 
         {/* Tab Content 2: Batches */}
