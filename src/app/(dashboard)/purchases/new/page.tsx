@@ -41,7 +41,17 @@ import {
   Info,
   FileText,
   Search,
+  Layers,
+  Barcode,
+  Package,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useCurrency, useDateFormat } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
@@ -49,6 +59,7 @@ import { toast } from "sonner";
 import { useGetItems } from "@/hooks/api/useItems";
 import { useParties, useParty } from "@/hooks/api/useParties";
 import { useCreatePurchases, useGetPurchases } from "@/hooks/api/usePurchases";
+import { getBatches } from "@/services/batches.services";
 import { useBranches, useAccounts } from "@/hooks/queries";
 import { useUser } from "@/stores/sessionStore";
 import Image from "next/image";
@@ -69,8 +80,6 @@ interface BillingItemRow {
   itemName: string;
   quantity: number;
   unitCost: number;
-  discountPercent: number;
-  discountFlat: number;
   total: number;
   searchQuery: string;
   showSuggestions: boolean;
@@ -117,7 +126,7 @@ function NewPurchaseContent() {
   const { data: suppliersData } = useParties({ type: "supplier" });
   const suppliers = suppliersData?.data || [];
 
-  const { data: branches = [] } = useBranches();
+  const { data: branches = [{id:1, name:'Main'},{id:2, name:'Sub Branch'}] } = useBranches();
   const { data: accounts = [] } = useAccounts();
   const { data: purchases = [] } = useGetPurchases();
 
@@ -128,23 +137,53 @@ function NewPurchaseContent() {
   });
   const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
 
-  // Top Product Search & Barcode Scan State
+  // Top Product Search & Selection State
   const [topProductSearchQuery, setTopProductSearchQuery] = useState("");
   const [showTopProductSuggestions, setShowTopProductSuggestions] = useState(false);
+  const [selectedSearchProduct, setSelectedSearchProduct] = useState<any | null>(null);
+  const [searchQty, setSearchQty] = useState<number>(1);
+  const [searchAmount, setSearchAmount] = useState<number>(0);
 
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [purchaseType, setPurchaseType] = useState<string>("in_store");
-  const [branchId, setBranchId] = useState<string>("");
+  const [warehouseId, setWarehouseId] = useState<string>("");
   const [responsiblePerson, setResponsiblePerson] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState<string>("");
+  // Store branches vs Warehouses lists
+  const storeBranches = useMemo(() => {
+    const filtered = branches.filter((b: any) => b.type !== "warehouse");
+    return filtered.length > 0 ? filtered : branches;
+  }, [branches]);
 
-  // Set default values from session user
+  // Find main branch
+  const defaultMainBranch = useMemo(() => {
+    if (!storeBranches || storeBranches.length === 0) return { id: "", name: "" };
+    const found = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
+    return { id: String(found.id), name: found.name };
+  }, [storeBranches]);
+
+  const [branch, setBranch] = useState<{ name: string; id: string }>({ name: "", id: "" });
+
+  const warehousesList = useMemo(() => {
+    const filtered = branches.filter((b: any) => b.type === "warehouse");
+    if (filtered.length > 0) return filtered;
+    return [
+      { id: "wh-main", name: isBangla ? "কেন্দ্রীয় ডিস্ট্রিবিউশন ওয়্যারহাউস (WH-MAIN)" : "Central Distribution Warehouse (WH-MAIN)" },
+      { id: "wh-dhaka", name: isBangla ? "ঢাকা ওয়্যারহাউস (WH-DHK)" : "Dhaka Central Warehouse (WH-DHK)" },
+      { id: "wh-ctg", name: isBangla ? "চট্টগ্রাম ডিস্ট্রিবিউশন হাব (WH-CTG)" : "Chittagong Hub Warehouse (WH-CTG)" },
+    ];
+  }, [branches, isBangla]);
+
+  // Set default values from session user & warehouses
   const userBranchId = user?.branchId;
   const userName = user?.name;
   useEffect(() => {
-    if (userBranchId && !branchId) setBranchId(userBranchId);
+    if (defaultMainBranch.id && !branch.id) {
+      setBranch(defaultMainBranch);
+    }
     if (userName && !responsiblePerson) setResponsiblePerson(userName);
-  }, [userBranchId, userName, branchId, responsiblePerson]);
+    if (warehousesList.length > 0 && !warehouseId) setWarehouseId(warehousesList[0].id);
+  }, [defaultMainBranch, branch.id, userName, responsiblePerson, warehousesList, warehouseId]);
 
   const [notes, setNotes] = useState("");
 
@@ -162,7 +201,6 @@ function NewPurchaseContent() {
   ]);
 
   // Order summary adjustments
-  const [orderDiscount, setOrderDiscount] = useState<number>(0);
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [additionalCharges, setAdditionalCharges] = useState<number>(0);
 
@@ -179,8 +217,6 @@ function NewPurchaseContent() {
       itemName: "",
       quantity: 1,
       unitCost: 0,
-      discountPercent: 0,
-      discountFlat: 0,
       total: 0,
       searchQuery: "",
       showSuggestions: false,
@@ -219,22 +255,17 @@ function NewPurchaseContent() {
 
   // Calculations
   const subtotal = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + item.total, 0);
-  }, [selectedItems]);
-
-  const itemDiscount = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + item.discountFlat, 0);
+    return selectedItems.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitCost || 0), 0);
   }, [selectedItems]);
 
   const itemTax = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + item.taxAmount, 0);
+    return selectedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
   }, [selectedItems]);
 
   const grandTotal = useMemo(() => {
-    const totalBeforeOrderDiscount = subtotal + itemTax;
-    const finalTotal = totalBeforeOrderDiscount - orderDiscount + shippingCost + additionalCharges;
+    const finalTotal = subtotal + itemTax + shippingCost + additionalCharges;
     return Math.max(0, finalTotal);
-  }, [subtotal, itemTax, orderDiscount, shippingCost, additionalCharges]);
+  }, [subtotal, itemTax, shippingCost, additionalCharges]);
 
   const totalPaid = useMemo(() => {
     return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -268,8 +299,6 @@ function NewPurchaseContent() {
         itemName: "",
         quantity: 1,
         unitCost: 0,
-        discountPercent: 0,
-        discountFlat: 0,
         total: 0,
         searchQuery: "",
         showSuggestions: false,
@@ -296,8 +325,6 @@ function NewPurchaseContent() {
           itemName: "",
           quantity: 1,
           unitCost: 0,
-          discountPercent: 0,
-          discountFlat: 0,
           total: 0,
           searchQuery: "",
           showSuggestions: false,
@@ -332,17 +359,9 @@ function NewPurchaseContent() {
           const qty = r.quantity || 1;
           const taxPct = item.taxPercent || 0;
 
-          let discFlat = r.discountFlat || 0;
-          let discPct = r.discountPercent || 0;
-          if (discPct > 0) {
-            discFlat = parseFloat(((qty * cost) * (discPct / 100)).toFixed(2));
-          } else if (discFlat > 0 && qty * cost > 0) {
-            discPct = parseFloat(((discFlat / (qty * cost)) * 100).toFixed(2));
-          }
-
           const baseTotal = qty * cost;
-          const taxAmt = Math.max(0, baseTotal - discFlat) * (taxPct / 100);
-          const finalTotal = Math.max(0, baseTotal - discFlat + taxAmt);
+          const taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
+          const finalTotal = Math.max(0, baseTotal + taxAmt);
 
           return {
             ...r,
@@ -352,8 +371,6 @@ function NewPurchaseContent() {
             unit: item.unit?.name || item.unit || "Pcs",
             currentStock: item.currentStock || 0,
             unitCost: cost,
-            discountPercent: discPct,
-            discountFlat: discFlat,
             taxPercent: taxPct,
             taxAmount: taxAmt,
             total: finalTotal,
@@ -378,36 +395,39 @@ function NewPurchaseContent() {
         if (item.id === id) {
           const updated = { ...item, [field]: value };
 
-          const qty = field === "quantity" ? parseFloat(value) || 0 : item.quantity;
-          const cost = field === "unitCost" ? parseFloat(value) || 0 : item.unitCost;
-          let discFlat = item.discountFlat;
-          let discPct = item.discountPercent;
+          let qty = item.quantity;
+          let cost = item.unitCost;
+          let taxPct = item.taxPercent;
+          let taxAmt = item.taxAmount;
+          let total = item.total;
 
-          if (field === "discountPercent") {
-            discPct = parseFloat(value) || 0;
-            discFlat = parseFloat(((qty * cost) * (discPct / 100)).toFixed(2)) || 0;
-          } else if (field === "discountFlat") {
-            discFlat = parseFloat(value) || 0;
-            discPct = qty * cost > 0 ? parseFloat(((discFlat / (qty * cost)) * 100).toFixed(2)) : 0;
-          } else if (field === "quantity" || field === "unitCost") {
-            if (discPct > 0) {
-              discFlat = parseFloat(((qty * cost) * (discPct / 100)).toFixed(2)) || 0;
-            } else if (discFlat > 0 && qty * cost > 0) {
-              discPct = parseFloat(((discFlat / (qty * cost)) * 100).toFixed(2));
-            }
+          if (field === "quantity") {
+            qty = parseFloat(value) || 0;
+            const baseTotal = qty * cost;
+            taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
+            total = parseFloat((baseTotal + taxAmt).toFixed(2));
+          } else if (field === "unitCost") {
+            cost = parseFloat(value) || 0;
+            const baseTotal = qty * cost;
+            taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
+            total = parseFloat((baseTotal + taxAmt).toFixed(2));
+          } else if (field === "taxPercent") {
+            taxPct = parseFloat(value) || 0;
+            const baseTotal = qty * cost;
+            taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
+            total = parseFloat((baseTotal + taxAmt).toFixed(2));
+          } else if (field === "total") {
+            const newTotal = parseFloat(value) || 0;
+            total = newTotal;
+            const baseTotal = taxPct > 0 ? newTotal / (1 + taxPct / 100) : newTotal;
+            taxAmt = newTotal - baseTotal;
+            cost = qty > 0 ? parseFloat((baseTotal / qty).toFixed(2)) : 0;
           }
-
-          const taxPct = field === "taxPercent" ? parseFloat(value) || 0 : item.taxPercent;
-          const baseTotal = qty * cost;
-          const taxAmt = Math.max(0, baseTotal - discFlat) * (taxPct / 100);
-          const total = Math.max(0, baseTotal - discFlat + taxAmt);
 
           return {
             ...updated,
             quantity: qty,
             unitCost: cost,
-            discountPercent: discPct,
-            discountFlat: discFlat,
             taxPercent: taxPct,
             taxAmount: taxAmt,
             total,
@@ -438,25 +458,54 @@ function NewPurchaseContent() {
     );
   };
 
-  const handleAddProductFromTopSearch = (product: any) => {
-    const cost = product.costPrice || product.purchasePrice || 0;
+  const handleSelectProductFromTopSearch = (product: any) => {
+    setSelectedSearchProduct(product);
+    setSearchQty(1);
+    setSearchAmount(product.costPrice || product.purchasePrice || 0);
+    setTopProductSearchQuery("");
+    setShowTopProductSuggestions(false);
+  };
+
+  const handleConfirmAddFromSearch = async () => {
+    if (!selectedSearchProduct) return;
+
+    const product = selectedSearchProduct;
+    const qty = Math.max(1, searchQty || 1);
+    const unitCost = Math.max(0, searchAmount || 0);
     const taxPct = product.taxPercent || 0;
 
+    let availableBatches: any[] = [];
+    try {
+      const res = await getBatches({ itemId: product.id, status: 'active', limit: 50 });
+      availableBatches = res?.data || [];
+    } catch {
+      // Fallback
+    }
+
+    const selectedBatchObj = availableBatches[0];
+    const batchNo = selectedBatchObj?.batchNumber || "";
+    const baseTotal = qty * unitCost;
+    const taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
+    const total = Math.max(0, baseTotal + taxAmt);
+
     setSelectedItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.itemId === product.id);
+      const existingIndex = prev.findIndex(
+        (item) => item.itemId === product.id && (batchNo ? item.batchNumber === batchNo : true)
+      );
 
       if (existingIndex !== -1) {
         return prev.map((item, index) => {
           if (index === existingIndex) {
-            const newQty = item.quantity + 1;
-            const baseTotal = newQty * item.unitCost;
-            const taxAmt = (baseTotal - item.discountFlat) * (item.taxPercent / 100);
-            const total = Math.max(0, baseTotal - item.discountFlat + taxAmt);
+            const newQty = item.quantity + qty;
+            const newBase = newQty * unitCost;
+            const newTaxAmt = Math.max(0, newBase) * (item.taxPercent / 100);
+            const newTotal = Math.max(0, newBase + newTaxAmt);
             return {
               ...item,
               quantity: newQty,
-              taxAmount: taxAmt,
-              total,
+              unitCost: unitCost,
+              taxAmount: newTaxAmt,
+              total: newTotal,
             };
           }
           return item;
@@ -473,22 +522,21 @@ function NewPurchaseContent() {
         sku: product.sku || "",
         unit: product.unit?.name || product.unit || "Pcs",
         currentStock: product.currentStock || 0,
-        quantity: 1,
-        unitCost: cost,
-        discountPercent: 0,
-        discountFlat: 0,
+        quantity: qty,
+        unitCost: unitCost,
         taxPercent: taxPct,
-        taxAmount: cost * (taxPct / 100),
-        total: cost + cost * (taxPct / 100),
+        taxAmount: taxAmt,
+        total: total,
         searchQuery: "",
         showSuggestions: false,
-        trackBatch: false,
-        batchNumber: "",
-        trackExpiry: false,
+        trackBatch: !!batchNo || product.trackBatch,
+        batchNumber: batchNo,
+        trackExpiry: product.trackExpiry || !!selectedBatchObj?.expiryDate,
+        expiryDate: selectedBatchObj?.expiryDate ? new Date(selectedBatchObj.expiryDate) : undefined,
         rowNote: "",
         isExpanded: false,
-        lastPurchasePrice: product.lastPurchasePrice || cost,
-        averageCost: product.averageCost || cost,
+        lastPurchasePrice: product.lastPurchasePrice || unitCost,
+        averageCost: product.averageCost || unitCost,
       };
 
       if (hasSingleEmptyRow) {
@@ -498,9 +546,13 @@ function NewPurchaseContent() {
       return [...prev, newRow];
     });
 
-    setTopProductSearchQuery("");
-    setShowTopProductSuggestions(false);
-    toast.success(isBangla ? `${product.name} যোগ করা হয়েছে` : `Added ${product.name}`);
+    toast.success(
+      isBangla
+        ? `${product.name} (${qty} ${product.unit?.name || product.unit || "Pcs"}) সফলভাবে টেবিলে যোগ করা হয়েছে`
+        : `Added ${product.name} (${qty} ${product.unit?.name || product.unit || "Pcs"}) to items table`
+    );
+
+    setSelectedSearchProduct(null);
   };
 
   const handleSubmitWithStatus = () => {
@@ -542,8 +594,9 @@ function NewPurchaseContent() {
 
     const payload = {
       supplierId: selectedSupplierId || undefined,
-      purchaseType,
-      branchId: branchId || undefined,
+      branchId: purchaseType === "warehouse" ? (warehouseId || undefined) : (branch.id || undefined),
+      branchName: purchaseType === "in_store" ? (branch.name || undefined) : undefined,
+      warehouseId: purchaseType === "warehouse" ? (warehouseId || undefined) : undefined,
       responsiblePerson: responsiblePerson || undefined,
       referenceNo: referenceNo || undefined,
       status: "received",
@@ -552,7 +605,7 @@ function NewPurchaseContent() {
         itemName: item.itemName,
         quantity: item.quantity,
         unitCost: item.unitCost,
-        discount: item.discountFlat,
+        discount: 0,
         taxPercent: item.taxPercent,
         trackBatch: item.trackBatch,
         batchNumber: item.batchNumber || undefined,
@@ -560,8 +613,7 @@ function NewPurchaseContent() {
         expiryDate: item.expiryDate ? item.expiryDate.toISOString() : undefined,
         rowNote: item.rowNote || undefined,
       })),
-      discount: orderDiscount + itemDiscount,
-      orderDiscount,
+      discount: 0,
       shippingCost,
       additionalCharges,
       total: grandTotal,
@@ -722,83 +774,178 @@ function NewPurchaseContent() {
         <div className="lg:col-span-9 space-y-6">
 
           {/* Top Product Autocomplete Search & Barcode Scanner Card (At Very Top of Purchase Info) */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-2 shadow-xs">
-            <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <Search className="h-4 w-4 text-primary" />
-              <span>{isBangla ? "পণ্য খুঁজুন বা স্ক্যান করুন" : "Search Product / Scan Barcode"}</span>
-            </Label>
-            <div className="relative">
-              <Input
-                value={topProductSearchQuery}
-                onChange={(e) => {
-                  setTopProductSearchQuery(e.target.value);
-                  setShowTopProductSuggestions(true);
-                }}
-                onFocus={() => setShowTopProductSuggestions(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowTopProductSuggestions(false), 200);
-                }}
-                placeholder={
-                  isBangla
-                    ? "পণ্য সার্চ বা বারকোড স্ক্যান করুন (পণ্য সিলেক্ট করলে অটো নিচে টেবিল যোগ হবে)..."
-                    : "Search product by name, SKU or scan barcode (auto-adds to items table below)..."
-                }
-                className="pr-10 h-11 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
-              />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-              {showTopProductSuggestions && (
-                <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                  {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
-                    <div className="p-3 text-center text-xs text-muted-foreground">
-                      {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
-                    </div>
-                  ) : (
-                    getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleAddProductFromTopSearch(product);
-                        }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate text-xs">
-                              {product.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                              <span>SKU: {product.sku || "—"}</span>
-                              <span>•</span>
-                              <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <p className="font-bold text-primary text-xs">
-                            {formatCurrency(product.costPrice || product.purchasePrice || 0)}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
+          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Search className="h-4 w-4 text-primary" />
+                <span>{isBangla ? "পণ্য খুঁজুন বা স্ক্যান করুন" : "Search Product / Scan Barcode"}</span>
+              </Label>
+              {selectedSearchProduct && (
+                <span className="text-[11px] text-primary font-medium">
+                  {isBangla ? "পরিমাণ ও দর নির্ধারণ করুন" : "Set Quantity & Amount"}
+                </span>
               )}
             </div>
+
+            {selectedSearchProduct ? (
+              <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between border-b border-primary/20 pb-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {selectedSearchProduct.imageUrl ? (
+                      <img
+                        src={selectedSearchProduct.imageUrl}
+                        alt={selectedSearchProduct.name}
+                        className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-border shrink-0">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-foreground truncate">
+                        {selectedSearchProduct.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                        <span>SKU: {selectedSearchProduct.sku || "—"}</span>
+                        <span>•</span>
+                        <span>Stock: {selectedSearchProduct.currentStock || 0} {selectedSearchProduct.unit?.name || selectedSearchProduct.unit || "Pcs"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedSearchProduct(null)}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                  {/* Quantity Field */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground">
+                      {isBangla ? "পরিমাণ *" : "Quantity *"}
+                    </Label>
+                    <Input
+                      type="number"
+                      value={searchQty || ""}
+                      onChange={(e) => setSearchQty(parseFloat(e.target.value) || 0)}
+                      onKeyDown={(e) => e.key === "Enter" && handleConfirmAddFromSearch()}
+                      min="1"
+                      placeholder="1"
+                      className="h-10 text-xs font-bold bg-background border-input text-center focus-visible:ring-1"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Amount / Rate Field */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-foreground">
+                      {isBangla ? "মোট মূল্য *" : "Total Amount*"}
+                    </Label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2.5 text-xs text-muted-foreground font-medium">Tk.</span>
+                      <Input
+                        type="number"
+                        value={searchAmount || ""}
+                        onChange={(e) => setSearchAmount(parseFloat(e.target.value) || 0)}
+                        onKeyDown={(e) => e.key === "Enter" && handleConfirmAddFromSearch()}
+                        min="0"
+                        placeholder="0"
+                        className="h-10 text-xs font-bold bg-background border-input text-right pl-8 focus-visible:ring-1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Add Button */}
+                  <Button
+                    type="button"
+                    onClick={handleConfirmAddFromSearch}
+                    className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs gap-1.5 w-full cursor-pointer shadow-xs"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>{isBangla ? "টেবিলে যোগ করুন" : "Add to Table"}</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  value={topProductSearchQuery}
+                  onChange={(e) => {
+                    setTopProductSearchQuery(e.target.value);
+                    setShowTopProductSuggestions(true);
+                  }}
+                  onFocus={() => setShowTopProductSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowTopProductSuggestions(false), 200);
+                  }}
+                  placeholder={
+                    isBangla
+                      ? "পণ্য সার্চ বা বারকোড স্ক্যান করুন..."
+                      : "Search product by name, SKU or scan barcode..."
+                  }
+                  className="pr-10 h-11 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
+                />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+                {showTopProductSuggestions && (
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                    {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
+                      </div>
+                    ) : (
+                      getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectProductFromTopSearch(product);
+                          }}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {product.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-semibold text-foreground truncate text-xs">
+                                {product.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                <span>SKU: {product.sku || "—"}</span>
+                                <span>•</span>
+                                <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className="font-bold text-primary text-xs">
+                              {formatCurrency(product.costPrice || product.purchasePrice || 0)}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Desktop Purchase Info Card */}
@@ -903,7 +1050,18 @@ function NewPurchaseContent() {
                 <Label className="text-xs font-semibold text-foreground">
                   {isBangla ? "ক্রয় প্রকার" : "Purchase Type"}
                 </Label>
-                <Select value={purchaseType} onValueChange={setPurchaseType}>
+                <Select
+                  value={purchaseType}
+                  onValueChange={(val) => {
+                    setPurchaseType(val);
+                    if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
+                      setWarehouseId(warehousesList[0].id);
+                    } else if (val === "in_store" && !branch.id && storeBranches.length > 0) {
+                      const mainB = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
+                      if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
+                    }
+                  }}
+                >
                   <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -915,26 +1073,54 @@ function NewPurchaseContent() {
               </div>
             </div>
 
-            {/* Row 2: Branch, Responsible Person, Reference Number (Each taking 1/3 equal full width) */}
+            {/* Row 2: Branch/Warehouse, Responsible Person, Reference Number */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end border-t border-border/40 pt-4">
-              {/* Branch Selector */}
-              <div className="space-y-2 col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "শাখা" : "Branch"}
-                </Label>
-                <Select value={branchId} onValueChange={setBranchId}>
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                    <SelectValue placeholder={isBangla ? "শাখা নির্বাচন করুন" : "Select Branch"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Dynamic Location Selector based on Purchase Type */}
+              {purchaseType === "warehouse" ? (
+                <div className="space-y-2 col-span-1">
+                  <Label className="text-xs font-semibold text-foreground">
+                    {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
+                  </Label>
+                  <Select value={warehouseId} onValueChange={setWarehouseId}>
+                    <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                      <SelectValue placeholder={isBangla ? "ওয়্যারহাউস নির্বাচন করুন" : "Select Warehouse"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {warehousesList.map((w: any) => (
+                        <SelectItem key={w.id} value={w.id}>
+                          {w.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2 col-span-1">
+                  <Label className="text-xs font-semibold text-foreground">
+                    {isBangla ? "শাখা *" : "Branch *"}
+                  </Label>
+                  <Select
+                    value={branch.id ? String(branch.id) : undefined}
+                    onValueChange={(selectedId) => {
+                      const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
+                      if (selectedObj) {
+                        setBranch({ id: String(selectedObj.id), name: selectedObj.name });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                      <SelectValue placeholder={isBangla ? "শাখা নির্বাচন করুন" : "Select Branch"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {storeBranches.map((b: any) => (
+                        <SelectItem key={b.id} value={String(b.id)}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Responsible Person */}
               <div className="space-y-2 col-span-1">
@@ -1018,21 +1204,20 @@ function NewPurchaseContent() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
-                    <th className="px-3 py-3 w-[4%]">#</th>
-                    <th className="px-3 py-3 w-[26%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
-                    <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
+                    <th className="px-3 py-3 w-[4%] text-center">#</th>
+                    <th className="px-3 py-3 w-[32%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
+                    <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
                     <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "পরিমাণ *" : "Qty *"}</th>
-                    <th className="px-3 py-3 w-[12%]">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
-                    <th className="px-3 py-3 w-[8%]">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
-                    <th className="px-3 py-3 w-[18%]">{isBangla ? "ছাড় (% / Flat)" : "Discount (% / Flat)"}</th>
-                    <th className="px-4 py-3 w-[10%] text-right">{isBangla ? "মোট" : "Amount"}</th>
-                    <th className="px-3 py-3 w-[4%]"></th>
+                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
+                    <th className="px-3 py-3 w-[9%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
+                    <th className="px-3 py-3 w-[18%] text-center">{isBangla ? "মোট" : "Amount"}</th>
+                    <th className="px-3 py-3 w-[6%] text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {selectedItems.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">
+                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">
                         {isBangla
                           ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে যোগ করুন।"
                           : "Use the search box above to search or scan products into this purchase."}
@@ -1117,42 +1302,15 @@ function NewPurchaseContent() {
                           />
                         </td>
 
-                        {/* Discount (% and flat) */}
+                        {/* Row Total (Editable) */}
                         <td className="px-3 py-3 align-middle">
-                          <div className="flex gap-1.5 items-center">
-                            <div className="relative flex-1 flex items-center">
-                              <Input
-                                type="number"
-                                value={item.discountPercent || ""}
-                                onChange={(e) => handleRowChange(item.id, "discountPercent", e.target.value)}
-                                placeholder="0"
-                                className="bg-background/50 h-8 text-right pr-5 border-input text-xs font-semibold"
-                                min="0"
-                                max="100"
-                              />
-                              <span className="absolute right-1.5 text-[10px] text-muted-foreground font-semibold">
-                                %
-                              </span>
-                            </div>
-                            <div className="relative flex-1 flex items-center">
-                              <span className="absolute left-1.5 text-[10px] text-muted-foreground font-medium">
-                                Tk.
-                              </span>
-                              <Input
-                                type="number"
-                                value={item.discountFlat || ""}
-                                onChange={(e) => handleRowChange(item.id, "discountFlat", e.target.value)}
-                                placeholder="0"
-                                className="pl-6 bg-background/50 h-8 text-right border-input text-xs font-semibold"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Row Total */}
-                        <td className="px-4 py-3 align-middle text-right font-bold text-foreground font-mono">
-                          {formatCurrency(item.total)}
+                          <Input
+                            type="number"
+                            value={item.total || ""}
+                            onChange={(e) => handleRowChange(item.id, "total", e.target.value)}
+                            className="h-8 text-right bg-background/50 border-input text-xs font-bold text-primary font-mono"
+                            min="0"
+                          />
                         </td>
 
                         {/* Delete Action */}
@@ -1340,28 +1498,8 @@ function NewPurchaseContent() {
                 <span className="font-semibold text-foreground">{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "আইটেম ছাড়" : "Item Discount"}</span>
-                <span className="font-semibold text-primary">-{formatCurrency(itemDiscount)}</span>
-              </div>
-              <div className="flex justify-between items-center text-muted-foreground">
                 <span>{isBangla ? "আইটেম ট্যাক্স" : "Item Tax"}</span>
                 <span className="font-semibold text-foreground">+{formatCurrency(itemTax)}</span>
-              </div>
-
-              {/* Order Discount Input */}
-              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
-                <span>{isBangla ? "অর্ডার ছাড়" : "Order Discount"}</span>
-                <div className="relative w-28 flex items-center">
-                  <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={orderDiscount || ""}
-                    onChange={(e) => setOrderDiscount(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
-                    min="0"
-                  />
-                </div>
               </div>
 
               {/* Shipping Cost Input */}

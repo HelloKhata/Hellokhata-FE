@@ -33,6 +33,9 @@ import {
   UserSquare2,
   FileClock,
   BookPlus,
+  Building2,
+  SlidersHorizontal,
+  ArrowRightLeft,
 } from "lucide-react";
 
 export interface SubnavItem {
@@ -150,9 +153,27 @@ export const navGroups: NavItem[] = [
         labelBn: "ব্যাচ",
       },
       {
+        page: "/inventory/warehouse",
+        icon: Building2,
+        labelKey: "Warehouse",
+        labelBn: "ওয়্যারহাউস",
+      },
+      {
+        page: "/inventory/stock-adjustment",
+        icon: SlidersHorizontal,
+        labelKey: "Stock Adjustment",
+        labelBn: "স্টক সংশোধন",
+      },
+      {
+        page: "/inventory/stock-transfer",
+        icon: ArrowRightLeft,
+        labelKey: "Stock Transfer",
+        labelBn: "স্টক ট্রান্সফার",
+      },
+      {
         page: "/inventory/promotions",
         icon: Sparkles,
-        labelKey: "Promotions",
+        labelKey: "Offers & Promotions",
         labelBn: "প্রমোশন ও অফার",
       },
     ],
