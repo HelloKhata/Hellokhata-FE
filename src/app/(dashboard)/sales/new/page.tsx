@@ -52,6 +52,7 @@ import {
   Sparkles,
   Gift,
   Search,
+  Phone,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -258,6 +259,16 @@ function NewSaleContent() {
     if (party) return party.name;
     if (singlePartyData?.data && singlePartyData.data.id === selectedPartyId) {
       return singlePartyData.data.name;
+    }
+    return "";
+  }, [parties, selectedPartyId, singlePartyData]);
+
+  // Selected Party Phone
+  const selectedPartyPhone = useMemo(() => {
+    const party = parties.find((p: any) => p.id === selectedPartyId);
+    if (party) return party.phone || "";
+    if (singlePartyData?.data && singlePartyData.data.id === selectedPartyId) {
+      return singlePartyData.data.phone || "";
     }
     return "";
   }, [parties, selectedPartyId, singlePartyData]);
@@ -922,9 +933,9 @@ function NewSaleContent() {
 
         <div className="w-full lg:flex-[3] min-w-0 space-y-6">
           
-          {/* Row 1 Layout: Search Product, Select Party, Invoice Date */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
-            {/* Search Product (Search Or Scan Bar Code) */}
+          {/* Row 1 Layout: Search Product, Select Party, Party Phone Number, Invoice Date */}
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+            {/* 1. Search Product (Search Or Scan Bar Code) */}
             <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
                 {isBangla ? "পণ্য খুঁজুন" : "Search Product"}
@@ -945,14 +956,14 @@ function NewSaleContent() {
                       ? "পণ্য সার্চ বা বারকোড স্ক্যান করুন"
                       : "Search Or Scan Bar Code"
                   }
-                  className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1 text-sm font-medium"
+                  className="pr-9 h-11 bg-background/50 border-input focus-visible:ring-1 text-xs font-medium"
                 />
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
                 {showProductSuggestions && (
                   <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
                     {getFilteredProducts(productSearchQuery).length === 0 ? (
-                      <div className="p-3 text-center text-sm text-muted-foreground">
+                      <div className="p-3 text-center text-xs text-muted-foreground">
                         {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
                       </div>
                     ) : (
@@ -971,16 +982,16 @@ function NewSaleContent() {
                               <img
                                 src={product.imageUrl}
                                 alt={product.name}
-                                className="h-9 w-9 rounded object-cover border border-border/80 shrink-0"
+                                className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
                               />
                             ) : (
-                              <div className="h-9 w-9 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
                                 <Image
                                   src="/images/image.png"
                                   width={20}
                                   height={20}
                                   alt={product.name}
-                                  className="h-5 w-5 text-muted-foreground/60"
+                                  className="h-4 w-4 text-muted-foreground/60"
                                 />
                               </div>
                             )}
@@ -1008,11 +1019,33 @@ function NewSaleContent() {
                 )}
               </div>
             </div>
-
-            {/* Select Party */}
+ {/* 3. Party Phone Number */}
             <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "পার্টি নির্বাচন করুন" : "Select Party"}
+                {isBangla ? "ফোন নম্বর" : "Phone Number"}
+              </Label>
+              <div className="relative">
+                <Input
+                  value={selectedPartyPhone || partySearchQuery}
+                  onChange={(e) => {
+                    setPartySearchQuery(e.target.value);
+                    if (selectedPartyId) setSelectedPartyId("");
+                    setShowPartySuggestions(true);
+                  }}
+                  onFocus={() => setShowPartySuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowPartySuggestions(false), 200);
+                  }}
+                  placeholder={isBangla ? "ফোন নম্বর..." : "Search phone..."}
+                  className="pr-9 h-11 bg-background/50 border-input text-xs font-mono focus-visible:ring-1"
+                />
+                <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            {/* 2. Select Party */}
+            <div className="relative space-y-2">
+              <Label className="text-sm font-medium text-foreground">
+                {isBangla ? "গ্রাহক" : "Customer"}
               </Label>
               <div className="relative">
                 <Input
@@ -1027,14 +1060,14 @@ function NewSaleContent() {
                     setTimeout(() => setShowPartySuggestions(false), 200);
                   }}
                   placeholder={isBangla ? "পার্টি খুঁজুন..." : "Search for party"}
-                  className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1"
+                  className="pr-9 h-11 bg-background/50 border-input text-xs focus-visible:ring-1"
                 />
                 <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
                 {showPartySuggestions && (
                   <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
                     {filteredParties.length === 0 ? (
-                      <div className="p-3 text-center text-sm text-muted-foreground">
+                      <div className="p-3 text-center text-xs text-muted-foreground">
                         {isBangla
                           ? "কোনো পার্টি পাওয়া যায়নি"
                           : "No parties found"}
@@ -1044,7 +1077,7 @@ function NewSaleContent() {
                         <button
                           key={party.id}
                           type="button"
-                          className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between"
+                          className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
                           onMouseDown={(e) => {
                             e.preventDefault();
                             setSelectedPartyId(party.id);
@@ -1052,11 +1085,11 @@ function NewSaleContent() {
                             setShowPartySuggestions(false);
                           }}
                         >
-                          <span className="font-medium text-foreground">
+                          <span className="font-semibold text-foreground truncate max-w-[140px]">
                             {party.name}
                           </span>
                           {party.phone && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground font-mono">
                               {party.phone}
                             </span>
                           )}
@@ -1068,7 +1101,9 @@ function NewSaleContent() {
               </div>
             </div>
 
-            {/* Invoice Date */}
+           
+
+            {/* 4. Invoice Date */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">
                 {isBangla ? "ইনভয়েস তারিখ" : "Invoice Date"}
@@ -1077,10 +1112,10 @@ function NewSaleContent() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted"
+                    className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-3"
                   >
                     <span>{format(invoiceDate, "dd MMM yyyy")}</span>
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="end">
@@ -1095,65 +1130,40 @@ function NewSaleContent() {
             </div>
           </div>
 
-          {/* Customer Info Card (if selected) */}
-          {singlePartyData?.data && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
-                <Users className="h-4 w-4" />
-                <span>{isBangla ? "গ্রাহক সংক্ষিপ্ত বিবরণ" : "Customer Overview"}</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "গ্রাহকের নাম" : "Customer Name"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{singlePartyData.data.name}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "মোবাইল" : "Phone"}</p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">{singlePartyData.data.phone || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-rose-400/80 uppercase tracking-wide">{isBangla ? "বর্তমান বাকি" : "Current Due"}</p>
-                  <p className="font-bold text-rose-500 mt-0.5">
-                    {formatCurrency(Math.abs(singlePartyData.data.currentBalance || 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{isBangla ? "ক্রেডিট লিমিট" : "Credit Limit"}</p>
-                  <p className="font-semibold text-foreground mt-0.5">
-                    {singlePartyData.data.creditLimit ? formatCurrency(singlePartyData.data.creditLimit) : (isBangla ? "সীমাহীন" : "Unlimited")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+         
+        </div>
 
-          {/* Row 2: Billing Items Table */}
+
+      {/* 75% / 25% Split Layout Container */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+        
+        {/* left side */}
+        {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
+          <div className="w-full flex flex-col gap-5 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+           {/* Row 2: Billing Items Table */}
           <div className="w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[5%] text-xs font-semibold uppercase">
                     {isBangla ? "ক্রমিক" : "S.N."}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
+                  <TableHead className="px-3 py-3 w-[5%] text-xs font-semibold uppercase">
                     {/* Thumbnail Image column */}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[32%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[45%] text-xs font-semibold uppercase">
                     {isBangla ? "প্রোডাক্ট" : "Product"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[20%] text-xs font-semibold uppercase">
                     {isBangla ? "দর" : "Rate"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
                     {isBangla ? "পরিমাণ" : "Quantity"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[18%] text-xs font-semibold uppercase">
-                    {isBangla ? "ছাড়" : "Discount"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[11%] text-right text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[10%] text-right text-xs font-semibold uppercase">
                     {isBangla ? "মোট" : "Amount"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[11%] text-right text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[5%] text-right text-xs font-semibold uppercase">
                   
                   </TableHead>
                 </TableRow>
@@ -1247,46 +1257,6 @@ function NewSaleContent() {
                       />
                     </TableCell>
 
-                    {/* Discount (% and flat) */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <div className="flex gap-1.5 items-center">
-                        <div className="relative flex-1 flex items-center">
-                          <Input
-                            type="number"
-                            value={item.discountPercent || ""}
-                            onChange={(e) =>
-                              handleDiscountPercentChange(
-                                item.id,
-                                e.target.value,
-                              )
-                            }
-                            placeholder="0"
-                            className="bg-background/30 h-9 text-right pr-6 border-input focus:ring-1 focus-visible:ring-1"
-                            min="0"
-                            max="100"
-                          />
-                          <span className="absolute right-2 text-xs text-muted-foreground font-semibold">
-                            %
-                          </span>
-                        </div>
-                        <div className="relative flex-1 flex items-center">
-                          <span className="absolute left-2.5 text-[10px] text-muted-foreground font-medium">
-                            Tk.
-                          </span>
-                          <Input
-                            type="number"
-                            value={item.discountFlat || ""}
-                            onChange={(e) =>
-                              handleDiscountFlatChange(item.id, e.target.value)
-                            }
-                            placeholder="0"
-                            className="pl-7 bg-background/30 h-9 text-right border-input focus:ring-1 focus-visible:ring-1"
-                            min="0"
-                          />
-                        </div>
-                      </div>
-                    </TableCell>
-
                     {/* Amount & Action */}
                     <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
                       <div className="flex items-center justify-end gap-3">
@@ -1330,14 +1300,6 @@ function NewSaleContent() {
               </div>
             </div>
           </div>
-        </div>
-
-
-      {/* 75% / 25% Split Layout Container */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
-        {/* left side */}
-        {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
-          <div className="w-full flex flex-col gap-5 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
             {/* Notes Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
@@ -1382,7 +1344,7 @@ function NewSaleContent() {
             {/* Financial Details */}
             <div className="space-y-3">
               {/* Subtotal */}
-              <div className="flex justify-between items-center text-sm font-medium">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
                 <span className="text-foreground">Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
@@ -1474,7 +1436,7 @@ function NewSaleContent() {
 
             {/* overall discount */}
             <div className="flex items-center justify-between py-1">
-               <span className="text-md text-muted-foreground font-medium">Overall Discount:</span>
+               <span className="text-sm text-muted-foreground font-medium"> Discount:</span>
                <div className="flex w-full items-center justify-between gap-4">
   {/* Percentage */}
   <div className="relative flex-1">

@@ -1,231 +1,245 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  Search, 
-  Plus,
-  AlertTriangle,
-  Calendar,
+import { Card, CardContent } from '@/components/ui/card';
+import {
   Package,
-  Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle,
-  Filter,
-  Bell,
-  TrendingUp,
-  Sparkles
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useGetBatches, useGetBatchesStatus } from '@/hooks/api/useBatches';
-import { useGetOffers } from '@/hooks/api/useOffers';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-interface Batch {
-  id: string;
-  batchNumber: string;
-  itemId: string;
-  itemName?: string;
-  quantity: number;
-  costPrice: number;
-  expiryDate?: string;
-  manufactureDate?: string;
-  daysUntilExpiry?: number | null;
-  isExpired?: boolean;
-  isExpiringSoon?: boolean;
-  isActive: boolean;
-  createdAt: string;
-}
+import { useBranches } from '@/hooks/queries';
+import {
+  BatchHeader,
+  BatchToolbar,
+  BatchRow,
+  BatchDetailSheet,
+  BulkActionBar,
+  BatchEmptyState,
+  BatchLoadingSkeleton,
+  type BatchRowData,
+  type StatusTab,
+} from '@/components/inventory/batches';
+import type { BatchStatus, BatchSort } from '@/services/batches.services';
 
 export default function BatchesPage() {
-  const { t, isBangla } = useAppTranslation();
+  const { isBangla } = useAppTranslation();
+  const router = useRouter();
+
+  // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-const [filter, setFilter] = useState<
-   'expired' | 'expiring' | 'active' | 'inactive' | undefined
->(undefined);
-  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusTab>('all');
+  const [branchFilter, setBranchFilter] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<BatchSort>('received_desc');
+  const [page, setPage] = useState(1);
+  const LIMIT = 30;
 
-  // const [expiringSummary, setExpiringSummary] = useState<{
-  //   expiringCount: number;
-  //   expiredCount: number;
-  //   expiringValue: number;
-  //   expiredValue: number;
-  // } | null>(null);
+  // Multi-select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-const {data: batchesStatusData} = useGetBatchesStatus();
-const {data:batchesData, isLoading:isLoadingBatches} = useGetBatches(
- {search: searchQuery,status: filter }
-)
-const batchesStatus = batchesStatusData?.data;
-const batches = batchesData?.data || [];
-const { data: offersData } = useGetOffers();
-const activeOffers = offersData?.data || [];
-const router = useRouter();
+  // Batch Detail Sheet
+  const [inspectingBatchId, setInspectingBatchId] = useState<string | null>(null);
+  const [inspectingFallback, setInspectingFallback] = useState<BatchRowData | null>(null);
 
-const getBatchActiveOffer = (batchId: string, itemId?: string) => {
-  return activeOffers.find(
-    (o) =>
-      o.status === 'active' &&
-      (o.batchId === batchId || (!o.batchId && o.productId === itemId))
+  // Data fetching
+  const { data: branches = [] } = useBranches();
+  const isMultiBranch = branches.length > 1;
+
+  const { data: batchesStatusData } = useGetBatchesStatus();
+  const batchesStatus = batchesStatusData?.data;
+
+  const { data: batchesData, isLoading, isError, refetch } = useGetBatches({
+    search: debouncedSearch || undefined,
+    status: statusFilter === 'all' ? undefined : (statusFilter as BatchStatus),
+    branchId: branchFilter.trim() ? branchFilter : undefined,
+    sort: sortOrder,
+    page,
+    limit: LIMIT,
+  });
+
+  // Map API response items into robust BatchRowData format
+  const batches: BatchRowData[] = useMemo(() => {
+    const raw = batchesData?.data || [];
+    return raw.map((b: any) => ({
+      id: b.id,
+      batchNumber: b.batchNumber,
+      itemId: b.itemId,
+      itemName: b.itemName || b.item?.name,
+      itemImage: b.item?.image,
+      unit: b.item?.unit || 'pcs',
+      category: b.item?.category,
+      quantity: b.quantity,
+      quantityReceived: b.quantityReceived,
+      costPrice: b.costPrice,
+      sellingPrice: b.sellingPrice,
+      expiryDate: b.expiryDate,
+      manufactureDate: b.manufactureDate,
+      receivedDate: b.receivedDate || b.createdAt,
+      supplier: b.supplier,
+      branchName: b.branch?.name || b.branchName,
+      branchId: b.branchId,
+      barcode: b.barcode,
+      barcodeType: b.barcodeType || b.item?.barcodeType,
+      manufacturerBarcode: b.manufacturerBarcode || b.item?.manufacturerBarcode,
+      source: b.source,
+      hasExpiry: b.hasExpiry ?? b.item?.hasExpiry,
+      isExpired: b.isExpired,
+      isExpiringSoon: b.isExpiringSoon,
+      isActive: b.isActive,
+      daysUntilExpiry: b.daysUntilExpiry,
+      createdAt: b.createdAt,
+    }));
+  }, [batchesData]);
+
+  const totalBatchesCount = batchesData?.meta?.total ?? batches.length;
+  const totalPages = Math.ceil(totalBatchesCount / LIMIT);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, branchFilter, sortOrder]);
+
+  // Select handlers
+  const handleSelectToggle = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  }, []);
+
+  const selectedBatches = useMemo(
+    () => batches.filter((b) => selectedIds.has(b.id)),
+    [batches, selectedIds]
   );
-};
+
+  // Batch item click handler
+  const handleBatchTap = useCallback((batch: BatchRowData) => {
+    if (selectMode) {
+      handleSelectToggle(batch.id, !selectedIds.has(batch.id));
+      return;
+    }
+    setInspectingFallback(batch);
+    setInspectingBatchId(batch.id);
+  }, [selectMode, selectedIds, handleSelectToggle]);
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setStatusFilter('all');
+    setBranchFilter('');
+    setSortOrder('received_desc');
+    setPage(1);
+  };
+
+  const hasActiveFilters = !!(debouncedSearch || statusFilter !== 'all' || branchFilter.trim());
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push('/inventory')}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  {isBangla ? 'ব্যাচ ট্র্যাকিং' : 'Batch Tracking'}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {isBangla 
-                    ? `${batches.length}টি ব্যাচ` 
-                    : `${batches.length} batches`}
-                </p>
-              </div>
-            </div>
-            
-            <Button onClick={() => router.push('new')}>
-              <Plus className="h-4 w-4 mr-2" />
-              {isBangla ? 'নতুন ব্যাচ' : 'Add Batch'}
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background space-y-4 pb-20">
+      {/* Page Header */}
+      <BatchHeader
+        totalBatches={batchesStatus?.totalBatches || totalBatchesCount}
+        selectMode={selectMode}
+        onToggleSelectMode={() => {
+          setSelectMode(!selectMode);
+          if (selectMode) handleClearSelection();
+        }}
+        onRefresh={() => refetch()}
+        onAddBatch={() => router.push('/inventory/new')}
+      />
 
-      {/* Alert Banner */}
-      {/* {expiringSummary && (expiringSummary.expiredCount > 0 || expiringSummary.expiringCount > 0) && (
-        <div className="bg-gradient-to-r from-red-50 to-amber-50 border-b">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Bell className="h-5 w-5 text-amber-600 animate-pulse" />
-                <div>
-                  {expiringSummary.expiredCount > 0 && (
-                    <span className="text-red-700 font-medium">
-                      {expiringSummary.expiredCount} {isBangla ? 'মেয়াদোত্তীর্ণ' : 'expired'} 
-                      {' '}(৳{expiringSummary.expiredValue.toLocaleString()})
-                    </span>
-                  )}
-                  {expiringSummary.expiringCount > 0 && (
-                    <span className="text-amber-700 font-medium ml-4">
-                      {expiringSummary.expiringCount} {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'expiring soon'}
-                      {' '}(৳{expiringSummary.expiringValue.toLocaleString()})
-                    </span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                {expiringSummary.expiredCount > 0 && (
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={() => setFilter('expired')}
-                  >
-                    {isBangla ? 'মেয়াদোত্তীর্ণ দেখুন' : 'View Expired'}
-                  </Button>
-                )}
-                {expiringSummary.expiringCount > 0 && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => setFilter('expiring')}
-                  >
-                    {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'View Expiring'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
-
-      {/* Stats Cards */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
+        {/* Metric Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Card className="border border-border/60 shadow-xs">
+            <CardContent className="p-3.5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Package className="h-5 w-5 text-indigo-600" />
+                <div className="h-9 w-9 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
+                  <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground font-medium">
                     {isBangla ? 'মোট ব্যাচ' : 'Total Batches'}
                   </p>
-                  <p className="text-xl font-bold">{batchesStatus?.totalBatches || 0}</p>
+                  <p className="text-lg font-bold font-mono text-foreground">
+                    {batchesStatus?.totalBatches || 0}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
+
+          <Card className="border border-rose-500/20 bg-rose-50/20 dark:bg-rose-950/10 shadow-xs">
+            <CardContent className="p-3.5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                  <XCircle className="h-5 w-5 text-red-600" />
+                <div className="h-9 w-9 rounded-lg bg-rose-500/15 flex items-center justify-center shrink-0">
+                  <XCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-red-700">
+                  <p className="text-[11px] text-rose-700 dark:text-rose-400 font-medium">
                     {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
                   </p>
-                  <p className="text-xl font-bold text-red-700">
+                  <p className="text-lg font-bold font-mono text-rose-700 dark:text-rose-400">
                     {batchesStatus?.expired || 0}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="border-amber-200 bg-amber-50">
-            <CardContent className="p-4">
+
+          <Card className="border border-amber-500/20 bg-amber-50/20 dark:bg-amber-950/10 shadow-xs">
+            <CardContent className="p-3.5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <div className="h-9 w-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-amber-700">
-                    {isBangla ? '৩০ দিনের মধ্যে' : 'Expiring in 30 Days'}
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                    {isBangla ? '৩০ দিনের মধ্যে' : 'Expiring Soon'}
                   </p>
-                  <p className="text-xl font-bold text-amber-700">
+                  <p className="text-lg font-bold font-mono text-amber-700 dark:text-amber-400">
                     {batchesStatus?.expiringIn30Days || 0}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardContent className="p-4">
+
+          <Card className="border border-border/60 shadow-xs">
+            <CardContent className="p-3.5">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground font-medium">
                     {isBangla ? 'সক্রিয় ব্যাচ' : 'Active Batches'}
                   </p>
-                  <p className="text-xl font-bold">
+                  <p className="text-lg font-bold font-mono text-foreground">
                     {batchesStatus?.activeBatches || 0}
                   </p>
                 </div>
@@ -233,288 +247,104 @@ const getBatchActiveOffer = (batchId: string, itemId?: string) => {
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 py-2">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={isBangla ? 'ব্যাচ নম্বর বা পণ্য খুঁজুন...' : 'Search batch or product...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-             <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
-  <SelectTrigger className="w-full md:w-[180px]">
-    <SelectValue placeholder={isBangla ? 'ধরন' : 'Type'} />
-  </SelectTrigger>
+        {/* Search + Filter Toolbar */}
+        <BatchToolbar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          branchFilter={branchFilter}
+          onBranchFilterChange={setBranchFilter}
+          branches={branches}
+          isMultiBranch={isMultiBranch}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+        />
 
-  <SelectContent>
-    <SelectItem value=" ">
-      {isBangla ? 'সব' : 'All'}
-    </SelectItem>
-
-    <SelectItem value="expired">
-      {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
-    </SelectItem>
-
-    <SelectItem value="expiring">
-      {isBangla ? 'শীঘ্রই মেয়াদোত্তীর্ণ' : 'Expiring Soon'}
-    </SelectItem>
-
-    <SelectItem value="active">
-      {isBangla ? 'সক্রিয়' : 'Active'}
-    </SelectItem>
-     <SelectItem value="inactive">
-      {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
-    </SelectItem>
-  </SelectContent>
-</Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Batches List */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        {isLoadingBatches ? (
-          <div className="text-center py-12">
-            <Package className="h-8 w-8 animate-pulse mx-auto text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">
-              {isBangla ? 'লোড হচ্ছে...' : 'Loading...'}
-            </p>
-          </div>
+        {/* Batch Card List */}
+        {isLoading ? (
+          <BatchLoadingSkeleton />
+        ) : isError ? (
+          <BatchEmptyState type="error" onAction={() => refetch()} />
         ) : batches.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
-              <h3 className="mt-4 text-lg font-medium">
-                {isBangla ? 'কোন ব্যাচ নেই' : 'No batches found'}
-              </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {isBangla 
-                  ? 'ব্যাচ ট্র্যাকিং সক্রিয় করা আইটেমগুলোর জন্য ব্যাচ যোগ করুন'
-                  : 'Add batches for items with batch tracking enabled'}
-              </p>
-            </CardContent>
-          </Card>
+          hasActiveFilters ? (
+            <BatchEmptyState type="filtered_empty" onResetFilters={handleResetFilters} />
+          ) : (
+            <BatchEmptyState type="no_data" onAction={() => router.push('/purchases/new')} />
+          )
         ) : (
-          <div className="space-y-3">
-            {batches.map((batch) => {
-              const activeOffer = getBatchActiveOffer(batch.id, batch.itemId);
-              return (
-                <Card
+          <>
+            <div className="space-y-2">
+              {batches.map((batch) => (
+                <BatchRow
                   key={batch.id}
-                  className={cn(
-                    "hover:border-primary/50 transition-colors",
-                    batch.isExpired && "border-red-300 bg-red-50/50",
-                    batch.isExpiringSoon && !batch.isExpired && "border-amber-300 bg-amber-50/50"
-                  )}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div
-                        className="flex items-start gap-4 cursor-pointer flex-1"
-                        onClick={() => setSelectedBatch(batch)}
-                      >
-                        <div className={cn(
-                          "h-12 w-12 rounded-lg flex items-center justify-center shrink-0",
-                          batch.isExpired ? "bg-red-100" : batch.isExpiringSoon ? "bg-amber-100" : "bg-indigo-100"
-                        )}>
-                          <Package className={cn(
-                            "h-6 w-6",
-                            batch.isExpired ? "text-red-600" : batch.isExpiringSoon ? "text-amber-600" : "text-indigo-600"
-                          )} />
-                        </div>
+                  batch={batch}
+                  showBranch={isMultiBranch}
+                  isSelectable={selectMode}
+                  isSelected={selectedIds.has(batch.id)}
+                  onSelect={handleSelectToggle}
+                  onTap={handleBatchTap}
+                />
+              ))}
+            </div>
 
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold">{batch.batchNumber}</h3>
-                            {batch.isExpired ? (
-                              <Badge variant="destructive" size="sm">
-                                {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
-                              </Badge>
-                            ) : batch.isExpiringSoon ? (
-                              <Badge variant="warning" size="sm">
-                                {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'Expiring Soon'}
-                              </Badge>
-                            ) : (
-                              <Badge variant="success" size="sm">
-                                {isBangla ? 'সক্রিয়' : 'Active'}
-                              </Badge>
-                            )}
-                          </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4 text-xs">
+                <span className="text-muted-foreground font-mono">
+                  Showing {(page - 1) * LIMIT + 1} - {Math.min(page * LIMIT, totalBatchesCount)} of {totalBatchesCount}
+                </span>
 
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {batch.itemName || 'Unknown Item'}
-                          </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="h-8 text-xs gap-1 cursor-pointer"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    {isBangla ? 'আগের' : 'Previous'}
+                  </Button>
 
-                          <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>{batch.quantity} {batch.item?.unit || 'pcs'}</span>
-                            <span>৳{batch.costPrice}/unit</span>
-                            <span>
-                              {isBangla ? 'মোট' : 'Total'}: ৳{(batch.quantity * batch.costPrice).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                  <span className="font-mono font-semibold px-2">
+                    {page} / {totalPages}
+                  </span>
 
-                      {/* Right side: Offer Action or Offer Badge */}
-                      <div className="flex flex-col items-end gap-2 ml-4 shrink-0">
-                        <div className="text-right">
-                          <p className="text-lg font-bold">
-                            ৳{(batch.quantity * batch.costPrice).toLocaleString()}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {batch.quantity} {batch.item?.unit || 'pcs'}
-                          </p>
-                        </div>
-
-                        {/* Offer Active Badge / Apply Offer Button */}
-                        {activeOffer ? (
-                          <button
-                            type="button"
-                            onClick={() => router.push(`/inventory/promotions/new?id=${activeOffer.id}`)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[11px] font-bold transition-colors cursor-pointer"
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            {isBangla ? 'অফার সক্রিয়' : 'Offer Active'}
-                          </button>
-                        ) : (batch.isExpiringSoon || batch.isExpired) ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(
-                                `/inventory/promotions/new?productId=${batch.itemId || ''}&batchId=${batch.id}&type=bogo&buyQty=1&freeQty=1`
-                              );
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-semibold transition-colors cursor-pointer"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" />
-                            {isBangla ? 'অফার প্রযোগ করুন' : 'Apply Offer'}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="h-8 text-xs gap-1 cursor-pointer"
+                  >
+                    {isBangla ? 'পরের' : 'Next'}
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Batch Detail Modal */}
-      {selectedBatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-[400px] max-w-full">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                {selectedBatch?.batchNumber}
-              </CardTitle>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setSelectedBatch(null)}
-              >
-                ×
-              </Button>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isBangla ? 'পণ্য' : 'Product'}
-                  </p>
-                  <p className="font-medium">{selectedBatch?.itemName}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isBangla ? 'পরিমাণ' : 'Quantity'}
-                  </p>
-                  <p className="font-medium">{selectedBatch.quantity} </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isBangla ? 'ক্রয় মূল্য' : 'Cost Price'}
-                  </p>
-                  <p className="font-medium">৳{selectedBatch.costPrice}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isBangla ? 'মেয়াদ শেষ' : 'Expiry Date'}
-                  </p>
-                  <p className="font-medium">
-                    {selectedBatch.expiryDate 
-                      ? format(new Date(selectedBatch.expiryDate), 'dd MMMM yyyy')
-                      : (isBangla ? 'নেই' : 'Not set')}
-                  </p>
-                </div>
-                
-                {selectedBatch.manufactureDate && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {isBangla ? 'উৎপাদনের তারিখ' : 'Manufacture Date'}
-                    </p>
-                    <p className="font-medium">
-                      {format(new Date(selectedBatch.manufactureDate), 'dd MMMM yyyy')}
-                    </p>
-                  </div>
-                )}
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isBangla ? 'মোট মূল্য' : 'Total Value'}
-                  </p>
-                  <p className="font-bold text-lg">
-                    ৳{(selectedBatch.quantity * selectedBatch.costPrice).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-              
-              {selectedBatch.isExpired && (
-                <div className="p-3 bg-red-100 rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertCircle className="h-5 w-5" />
-                    <span className="font-medium">
-                      {isBangla ? 'এই ব্যাচের মেয়াদ শেষ হয়েছে!' : 'This batch has expired!'}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {selectedBatch.isExpiringSoon && !selectedBatch.isExpired && (
-                <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
-                  <div className="flex items-center gap-2 text-amber-700">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-medium">
-                      {isBangla 
-                        ? `${selectedBatch.daysUntilExpiry} দিনের মধ্যে মেয়াদ শেষ হবে!`
-                        : `Expires in ${selectedBatch.daysUntilExpiry} days!`}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setSelectedBatch(null)}>
-                  {isBangla ? 'বন্ধ করুন' : 'Close'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Batch Detail Panel */}
+      <BatchDetailSheet
+        batchId={inspectingBatchId}
+        isOpen={!!inspectingBatchId}
+        onClose={() => {
+          setInspectingBatchId(null);
+          setInspectingFallback(null);
+        }}
+        fallbackBatch={inspectingFallback}
+      />
+
+      {/* Sticky Bulk Action Bar */}
+      <BulkActionBar
+        selectedBatches={selectedBatches}
+        onClearSelection={handleClearSelection}
+      />
     </div>
   );
 }

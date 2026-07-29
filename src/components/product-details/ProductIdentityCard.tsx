@@ -22,6 +22,7 @@ import {
   Archive,
   Trash2,
   Layers,
+  Printer,
 } from "lucide-react";
 import { Product } from "./mock-data";
 
@@ -50,77 +51,9 @@ export function ProductIdentityCard({
   return (
     <Card className="border border-border/80 rounded-2xl bg-card shadow-sm overflow-hidden">
       <CardContent className="p-5 md:p-6">
-        {/* Header Action Bar inside Card */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-border/40 gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="outline"
-              className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
-            >
-              {product.status || "Active"}
-            </Badge>
-            {product.category && (
-              <Badge variant="secondary" className="px-2.5 py-0.5 text-xs font-semibold">
-                {product.category}
-              </Badge>
-            )}
-            {product.brand && (
-              <span className="text-xs text-muted-foreground font-medium">
-                Brand: <strong className="text-foreground">{product.brand}</strong>
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={onEdit || (() => onEditField?.("all"))}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-3.5 text-xs font-semibold rounded-xl cursor-pointer flex items-center gap-1.5"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit Product
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 border-input bg-background hover:bg-accent text-muted-foreground hover:text-foreground rounded-xl cursor-pointer shrink-0"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card border border-border rounded-xl">
-                <DropdownMenuItem
-                  onClick={onShare}
-                  className="text-xs font-medium cursor-pointer flex items-center py-2 px-3"
-                >
-                  <Share2 className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  Share Product
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onArchive}
-                  className="text-xs font-medium cursor-pointer flex items-center py-2 px-3"
-                >
-                  <Archive className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                  Archive Product
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={onDelete}
-                  className="text-xs font-medium cursor-pointer flex items-center py-2 px-3 text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
-                  Delete Product
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Main Content Layout */}
-        <div className="flex flex-col lg:flex-row items-start gap-6">
-          {/* Product Image */}
-          <div className="relative group h-28 w-28 md:h-32 md:w-32 rounded-2xl overflow-hidden border border-border bg-muted flex items-center justify-center shrink-0 shadow-inner transition-all hover:border-primary/50">
+        <div className="flex flex-col md:flex-row items-stretch gap-6">
+          {/* Left Side: Product Image (Top to Bottom height) */}
+          <div className="relative group w-full md:w-36 lg:w-44 min-h-[140px] md:min-h-0 self-stretch rounded-2xl overflow-hidden border border-border bg-muted flex items-center justify-center shrink-0 shadow-inner transition-all hover:border-primary/50">
             {product.imageUrl ? (
               <img
                 src={product.imageUrl}
@@ -128,62 +61,138 @@ export function ProductIdentityCard({
                 className="h-full w-full object-cover rounded-2xl animate-fade-in"
               />
             ) : (
-              <Package className="h-10 w-10 text-muted-foreground/60" />
+              <Package className="h-12 w-12 text-muted-foreground/60" />
             )}
-            {/* Change Image Button Cover */}
+            {/* Change Image Button Overlay */}
             <button
               type="button"
               onClick={onChangeImage}
-              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-semibold gap-1 cursor-pointer"
+              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-1.5 cursor-pointer"
             >
               <Camera className="h-4 w-4" />
               Change Image
             </button>
           </div>
 
-          {/* Details & Summary Cards Container */}
+          {/* Right Side: Details & Summary Cards */}
           <div className="flex-1 min-w-0 space-y-4 w-full">
-            {/* Product Name */}
+            {/* Header Action Bar: Status, Category, Brand in Single Flex Line (Left) & Actions (Right) */}
+            <div className="flex items-center justify-between pb-3 border-b border-border/40 gap-4 flex-wrap">
+             
+          <div>
+              {/* Product Name */}
             <div className="space-y-1">
-              <div className="flex items-center gap-1.5 group">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Product Name
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onEditField?.("name")}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary-hover p-0.5"
-                >
-                  <Pencil className="h-3 w-3" />
-                </button>
-              </div>
+               {product.brand && (
+                  <p className="text-xs font-semibold text-foreground">
+                    Brand: {product.brand}
+                  </p>
+                )}
+             
               <h2 className="text-lg md:text-xl font-extrabold text-foreground tracking-tight truncate">
                 {product.name}
               </h2>
             </div>
+            
+ {/* Status, Category, Brand Name Flex Layout in Single Line */}
+              <div className="flex items-center gap-2 flex-wrap">
+                
+                {product.category && (
+                  <p className="text-xs"> {product.category}</p>
+                )}
+               
+
+                <Badge
+                  variant="outline"
+                  className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                >
+                  {product.status || "Active"}
+                </Badge>
+              </div>
+          </div>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={onEdit || (() => onEditField?.("all"))}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-3.5 text-xs font-semibold rounded-xl cursor-pointer flex items-center gap-1.5"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit Product
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 border-input bg-background hover:bg-accent text-muted-foreground hover:text-foreground rounded-xl cursor-pointer shrink-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-card border border-border rounded-xl">
+                  
+                    <DropdownMenuItem
+                      onClick={onArchive}
+                      className="text-xs font-medium cursor-pointer flex items-center py-2 px-3"
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                      Print Barcode
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={onArchive}
+                      className="text-xs font-medium cursor-pointer flex items-center py-2 px-3"
+                    >
+                      <Archive className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                      Archive Product
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={onDelete}
+                      className="text-xs font-medium cursor-pointer flex items-center py-2 px-3 text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-2 text-red-500" />
+                      Delete Product
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
 
             {/* Bottom Row: Left Info (Category, Unit, SKU, Barcode) & Right Summary Cards */}
-            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pt-1">
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
               {/* Left Side Info */}
-              <div className="flex flex-wrap items-center gap-6 sm:gap-8">
-                {/* Category */}
+              <div>
+                <div className="flex flex-wrap items-center gap-6 sm:gap-8">
+                  {/* Barcode if available */}
+                {product.barcode && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Barcode
+                    </span>
+                    <p className="text-sm font-mono font-bold text-foreground truncate">
+                      {product.barcode}
+                    </p>
+                  </div>
+                )}
+              {/* SKU Code */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 group">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Category
+                      SKU Code
                     </span>
                     <button
                       type="button"
-                      onClick={() => onEditField?.("category")}
+                      onClick={() => onEditField?.("sku")}
                       className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary-hover p-0.5"
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
                   </div>
-                  <p className="text-sm font-semibold text-foreground truncate max-w-[140px]">
-                    {product.category}
+                  <p className="text-sm font-mono font-bold text-foreground truncate">
+                    {product.sku}
                   </p>
                 </div>
+
+              
 
                 {/* Unit Measure */}
                 <div className="space-y-1">
@@ -203,37 +212,21 @@ export function ProductIdentityCard({
                     {product.unit}
                   </p>
                 </div>
-
-                {/* SKU Code */}
                 <div className="space-y-1">
                   <div className="flex items-center gap-1 group">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      SKU Code
+                      Warranty
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => onEditField?.("sku")}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary-hover p-0.5"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
+                   
                   </div>
-                  <p className="text-sm font-mono font-bold text-foreground truncate">
-                    {product.sku}
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    Yes
                   </p>
                 </div>
 
-                {/* Barcode if available */}
-                {product.barcode && (
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      Barcode
-                    </span>
-                    <p className="text-sm font-mono font-bold text-foreground truncate">
-                      {product.barcode}
-                    </p>
-                  </div>
-                )}
+                
+              </div>
+              <p className="mt-6 text-xs text-muted-foreground mr-4">Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt amet, officia eius illo nobis facere adipisci ipsum suscipit quam vero!</p>
               </div>
 
               {/* Right Side: Quick Summary Cards */}
@@ -290,12 +283,12 @@ export function ProductIdentityCard({
                 <div className="bg-muted/30 border border-border/40 rounded-2xl p-3.5 min-w-[120px] transition-all hover:bg-muted/40 hover:border-border/60">
                   <div className="flex justify-between items-start gap-2">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Branches
+                      Batches
                     </span>
                     <Store className="h-4 w-4 text-indigo-500 shrink-0" />
                   </div>
                   <p className="text-xl font-extrabold text-foreground mt-1.5 tracking-tight">
-                    {product.totalBranches}
+                    3
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
                     Active Outlets

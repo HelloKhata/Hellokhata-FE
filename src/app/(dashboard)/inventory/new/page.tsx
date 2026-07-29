@@ -43,6 +43,8 @@ export default function AddProductPage() {
   const [trackExpiry, setTrackExpiry] = useState(false);
   const [trackBatch, setTrackBatch] = useState(false);
   const [status, setStatus] = useState("ACTIVE");
+  const [warranty, setWarranty] = useState<"YES" | "NO">("NO");
+  const [warrantyDays, setWarrantyDays] = useState<number | "">("");
   const [productType, setProductType] = useState("PRODUCT");
   const [imageUrl, setImageUrl] = useState("");
 
@@ -146,6 +148,9 @@ export default function AddProductPage() {
       trackExpiry,
       trackBatch,
       status,
+      warranty,
+      hasWarranty: warranty === "YES",
+      warrantyDays: warranty === "YES" ? (warrantyDays === "" ? 0 : Number(warrantyDays)) : 0,
       productType,
       imageUrl,
       expiryDate: showDateFields ? expiryDate : null,
@@ -378,6 +383,47 @@ export default function AddProductPage() {
                       <option value="ACTIVE">Active</option>
                       <option value="INACTIVE">Inactive</option>
                     </select>
+                  </div>
+
+                  {/* Warranty Dropdown Field */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                      Warranty
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={warranty}
+                        onChange={(e) =>
+                          setWarranty(e.target.value as "YES" | "NO")
+                        }
+                        className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      >
+                        <option value="NO">No</option>
+                        <option value="YES">Yes</option>
+                      </select>
+
+                      {warranty === "YES" && (
+                        <div className="relative w-28 shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            value={warrantyDays}
+                            onChange={(e) =>
+                              setWarrantyDays(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value)
+                              )
+                            }
+                            placeholder="365"
+                            className="w-full bg-slate-900/90 border border-slate-800 rounded-lg pl-3 pr-9 h-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                          />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-medium pointer-events-none">
+                            Days
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
