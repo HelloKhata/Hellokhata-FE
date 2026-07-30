@@ -45,6 +45,7 @@ import {
   Barcode,
   Package,
   Upload,
+  Settings,
 } from "lucide-react";
 import {
   Dialog,
@@ -58,12 +59,19 @@ import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGetItems } from "@/hooks/api/useItems";
+import { AddPartyModal } from "@/components/parties/AddPartyModal";
+import { InventoryItemForm } from "@/components/inventory/InventoryItemForm";
 import { useParties, useParty } from "@/hooks/api/useParties";
 import { useCreatePurchases, useGetPurchases } from "@/hooks/api/usePurchases";
 import { getBatches } from "@/services/batches.services";
 import { useBranches, useAccounts } from "@/hooks/queries";
 import { useUser } from "@/stores/sessionStore";
 import Image from "next/image";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PaymentRow {
   id: string;
@@ -256,6 +264,10 @@ function NewPurchaseContent() {
 
   // Track open Expiry Settings row ID
   const [openExpiryRowId, setOpenExpiryRowId] = useState<string | null>(null);
+
+  // Modals for "+ Add New" Item and Supplier
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+  const [isAddSupplierModalOpen, setIsAddSupplierModalOpen] = useState(false);
 
   // Close expiry settings when clicking outside or empty spaces
   useEffect(() => {
@@ -590,6 +602,7 @@ function NewPurchaseContent() {
         trackBatch: false,
         batchNumber: batchNo,
         trackExpiry: false,
+        manufactureDate: undefined,
         expiryDate: undefined,
         rowNote: "",
         isExpanded: false,
@@ -798,9 +811,9 @@ function NewPurchaseContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between pb-3 border-b border-border/80">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             {isBangla ? "নতুন ক্রয়" : "New Purchase"}
           </h1>
           <Button
@@ -821,267 +834,285 @@ function NewPurchaseContent() {
         <Button
           variant="ghost"
           onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground h-9 px-3"
+          className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs sm:text-sm ml-auto sm:ml-0"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           {isBangla ? "পেছনে" : "Back"}
         </Button>
       </div>
 
+      {/* Merged Purchase Information Card */}
+      <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
+          <span className="text-sm font-semibold text-foreground">
+            {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}
+          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <Label className="text-xs font-semibold text-foreground shrink-0 whitespace-nowrap">
+              {isBangla ? "তারিখ:" : "Date:"}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-8 w-[130px] justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5 shrink-0"
+                >
+                  <span className="truncate">{format(invoiceDate, "dd MMM yyyy")}</span>
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={invoiceDate}
+                  onSelect={(date) => date && setInvoiceDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
 
-          {/* Merged Purchase Information Card */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-2.5">
-              <span className="text-sm font-semibold text-foreground">
-                {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <Label className="text-xs font-semibold text-foreground shrink-0 whitespace-nowrap">
-                  {isBangla ? "তারিখ:" : "Date:"}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-8 w-[130px] justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5 shrink-0"
-                    >
-                      <span className="truncate">{format(invoiceDate, "dd MMM yyyy")}</span>
-                      <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      mode="single"
-                      selected={invoiceDate}
-                      onSelect={(date) => date && setInvoiceDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+        {/* Single Row on Desktop, 2 Cols on Tablet, Stacked on Mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-3 items-end">
+          {/* 1. Purchase Item (40% width on desktop) */}
+          <div className="space-y-2 col-span-1 sm:col-span-2 lg:col-span-4 relative">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
+                <Search className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => setIsAddItemModalOpen(true)}
+                className="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                + Add New
+              </button>
             </div>
+            <div className="relative">
+              <Input
+                value={topProductSearchQuery}
+                onChange={(e) => {
+                  setTopProductSearchQuery(e.target.value);
+                  setShowTopProductSuggestions(true);
+                }}
+                onFocus={() => setShowTopProductSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowTopProductSuggestions(false), 200);
+                }}
+                placeholder={
+                  isBangla
+                    ? "পণ্য সার্চ / স্ক্যান..."
+                    : "Search item / barcode..."
+                }
+                className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
+              />
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
-            {/* Single Row: Purchase Item (40%), Supplier Name (30%), Purchase Type (10%), Branch/Warehouse (20%) */}
-            <div className="grid grid-cols-1 md:grid-cols-10 gap-3 items-end">
-              {/* 1. Purchase Item (40% width -> 4/10 cols) */}
-              <div className="space-y-2 col-span-1 md:col-span-4 relative">
-                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
-                  <Search className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={topProductSearchQuery}
-                    onChange={(e) => {
-                      setTopProductSearchQuery(e.target.value);
-                      setShowTopProductSuggestions(true);
-                    }}
-                    onFocus={() => setShowTopProductSuggestions(true)}
-                    onBlur={() => {
-                      setTimeout(() => setShowTopProductSuggestions(false), 200);
-                    }}
-                    placeholder={
-                      isBangla
-                        ? "পণ্য সার্চ / স্ক্যান..."
-                        : "Search item / barcode..."
-                    }
-                    className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
-                  />
-                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-
-                  {showTopProductSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-[280px] sm:w-[360px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                      {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
-                        </div>
-                      ) : (
-                        getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleSelectProductFromTopSearch(product);
-                            }}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              {product.imageUrl ? (
-                                <img
-                                  src={product.imageUrl}
-                                  alt={product.name}
-                                  className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                                />
-                              ) : (
-                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                  <Package className="h-4 w-4 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground truncate text-xs">
-                                  {product.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                                  <span>SKU: {product.sku || "—"}</span>
-                                  <span>•</span>
-                                  <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="text-right shrink-0">
-                              <p className="font-bold text-primary text-xs">
-                                {formatCurrency(product.costPrice || product.purchasePrice || 0)}
-                              </p>
-                            </div>
-                          </button>
-                        ))
-                      )}
+              {showTopProductSuggestions && (
+                <div className="absolute z-50 left-0 top-full mt-1 w-full min-w-[280px] max-w-sm sm:max-w-md bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                  {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
                     </div>
+                  ) : (
+                    getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectProductFromTopSearch(product);
+                        }}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground truncate text-xs">
+                              {product.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                              <span>SKU: {product.sku || "—"}</span>
+                              <span>•</span>
+                              <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-primary text-xs">
+                            {formatCurrency(product.costPrice || product.purchasePrice || 0)}
+                          </p>
+                        </div>
+                      </button>
+                    ))
                   )}
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
 
-              {/* 2. Party Name / Phone (30% width -> 3/10 cols) */}
-              <div className="relative space-y-2 col-span-1 md:col-span-3">
-                <Label className="text-xs font-semibold text-foreground truncate">
-                  {isBangla ? "সরবরাহকারী *" : "Supplier Name *"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={selectedSupplierName || supplierSearchQuery}
-                    onChange={(e) => {
-                      setSupplierSearchQuery(e.target.value);
-                      if (selectedSupplierId) setSelectedSupplierId("");
-                      setShowSupplierSuggestions(true);
-                    }}
-                    onFocus={() => setShowSupplierSuggestions(true)}
-                    onBlur={() => {
-                      setTimeout(() => setShowSupplierSuggestions(false), 200);
-                    }}
-                    placeholder={isBangla ? "নাম / ফোন দিয়ে খুঁজুন..." : "Search supplier / phone"}
-                    className={cn("pr-8 h-10 bg-background/50 border-input text-xs w-full", errors.supplier && "border-destructive")}
-                  />
-                  <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          {/* 2. Party Name / Phone (30% width on desktop) */}
+          <div className="relative space-y-2 col-span-1 sm:col-span-2 lg:col-span-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-foreground truncate">
+                {isBangla ? "সরবরাহকারী *" : "Supplier Name *"}
+              </Label>
+              <button
+                type="button"
+                onClick={() => setIsAddSupplierModalOpen(true)}
+                className="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                + Add New
+              </button>
+            </div>
+            <div className="relative">
+              <Input
+                value={selectedSupplierName || supplierSearchQuery}
+                onChange={(e) => {
+                  setSupplierSearchQuery(e.target.value);
+                  if (selectedSupplierId) setSelectedSupplierId("");
+                  setShowSupplierSuggestions(true);
+                }}
+                onFocus={() => setShowSupplierSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowSupplierSuggestions(false), 200);
+                }}
+                placeholder={isBangla ? "নাম / ফোন দিয়ে খুঁজুন..." : "Search supplier / phone"}
+                className={cn("pr-8 h-10 bg-background/50 border-input text-xs w-full", errors.supplier && "border-destructive")}
+              />
+              <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
-                  {showSupplierSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-[240px] sm:w-[280px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                      {filteredSuppliers.length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          {isBangla ? "কোনো সরবরাহকারী নেই" : "No suppliers found"}
-                        </div>
-                      ) : (
-                        filteredSuppliers.map((supplier: any) => (
-                          <button
-                            key={supplier.id}
-                            type="button"
-                            className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setSelectedSupplierId(supplier.id);
-                              setSupplierSearchQuery("");
-                              setShowSupplierSuggestions(false);
-                            }}
-                          >
-                            <span className="font-semibold text-foreground truncate max-w-[180px]">
-                              {supplier.name}
-                            </span>
-                            {supplier.phone && (
-                              <span className="text-[10px] text-muted-foreground">
-                                {supplier.phone}
-                              </span>
-                            )}
-                          </button>
-                        ))
-                      )}
+              {showSupplierSuggestions && (
+                <div className="absolute z-50 left-0 top-full mt-1 w-full min-w-[240px] max-w-xs sm:max-w-sm bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  {filteredSuppliers.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {isBangla ? "কোনো সরবরাহকারী নেই" : "No suppliers found"}
                     </div>
+                  ) : (
+                    filteredSuppliers.map((supplier: any) => (
+                      <button
+                        key={supplier.id}
+                        type="button"
+                        className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedSupplierId(supplier.id);
+                          setSupplierSearchQuery("");
+                          setShowSupplierSuggestions(false);
+                        }}
+                      >
+                        <span className="font-semibold text-foreground truncate max-w-[180px]">
+                          {supplier.name}
+                        </span>
+                        {supplier.phone && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {supplier.phone}
+                          </span>
+                        )}
+                      </button>
+                    ))
                   )}
                 </div>
-                {errors.supplier && <p className="text-[10px] text-destructive font-medium">{errors.supplier}</p>}
-              </div>
+              )}
+            </div>
+            {errors.supplier && <p className="text-[10px] text-destructive font-medium">{errors.supplier}</p>}
+          </div>
 
-              {/* 3. Purchase Type (Smaller 10% width -> 1/10 cols) */}
-              <div className="space-y-2 col-span-1 md:col-span-1 min-w-[110px]">
+          {/* 3. Purchase Type (10% width on desktop) */}
+          <div className="space-y-2 col-span-1 sm:col-span-1 lg:col-span-1">
+            <Label className="text-xs font-semibold text-foreground truncate">
+              {isBangla ? "প্রকার" : "Type"}
+            </Label>
+            <Select
+              value={purchaseType}
+              onValueChange={(val) => {
+                setPurchaseType(val);
+                if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
+                  setWarehouseId(String(warehousesList[0].id));
+                } else if (val === "in_store" && !branch.id && storeBranches.length > 0) {
+                  const mainB = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
+                  if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
+                }
+              }}
+            >
+              <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full px-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in_store">{isBangla ? "ইন স্টোর" : "In Store"}</SelectItem>
+                <SelectItem value="warehouse">{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 4. Branch / Warehouse (20% width on desktop) */}
+          <div className="space-y-2 col-span-1 sm:col-span-1 lg:col-span-2">
+            {purchaseType === "warehouse" ? (
+              <>
                 <Label className="text-xs font-semibold text-foreground truncate">
-                  {isBangla ? "প্রকার" : "Type"}
+                  {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
+                </Label>
+                <Select value={warehouseId} onValueChange={setWarehouseId}>
+                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                    <SelectValue placeholder={isBangla ? "ওয়্যারহাউস" : "Select Warehouse"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehousesList.map((w: any) => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <Label className="text-xs font-semibold text-foreground truncate">
+                  {isBangla ? "শাখা *" : "Branch *"}
                 </Label>
                 <Select
-                  value={purchaseType}
-                  onValueChange={(val) => {
-                    setPurchaseType(val);
-                    if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
-                      setWarehouseId(String(warehousesList[0].id));
-                    } else if (val === "in_store" && !branch.id && storeBranches.length > 0) {
-                      const mainB = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
-                      if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
+                  value={branch.id ? String(branch.id) : undefined}
+                  onValueChange={(selectedId) => {
+                    const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
+                    if (selectedObj) {
+                      setBranch({ id: String(selectedObj.id), name: selectedObj.name });
                     }
                   }}
                 >
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full px-2">
-                    <SelectValue />
+                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
+                    <SelectValue placeholder={isBangla ? "শাখা" : "Select Branch"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="in_store">{isBangla ? "ইন স্টোর" : "In Store"}</SelectItem>
-                    <SelectItem value="warehouse">{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</SelectItem>
+                    {storeBranches.map((b: any) => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              {/* 4. Branch / Warehouse (20% width -> 2/10 cols) */}
-              <div className="space-y-2 col-span-1 md:col-span-2">
-                {purchaseType === "warehouse" ? (
-                  <>
-                    <Label className="text-xs font-semibold text-foreground truncate">
-                      {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
-                    </Label>
-                    <Select value={warehouseId} onValueChange={setWarehouseId}>
-                      <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                        <SelectValue placeholder={isBangla ? "ওয়্যারহাউস" : "Select Warehouse"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {warehousesList.map((w: any) => (
-                          <SelectItem key={w.id} value={w.id}>
-                            {w.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                ) : (
-                  <>
-                    <Label className="text-xs font-semibold text-foreground truncate">
-                      {isBangla ? "শাখা *" : "Branch *"}
-                    </Label>
-                    <Select
-                      value={branch.id ? String(branch.id) : undefined}
-                      onValueChange={(selectedId) => {
-                        const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
-                        if (selectedObj) {
-                          setBranch({ id: String(selectedObj.id), name: selectedObj.name });
-                        }
-                      }}
-                    >
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                        <SelectValue placeholder={isBangla ? "শাখা" : "Select Branch"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {storeBranches.map((b: any) => (
-                          <SelectItem key={b.id} value={String(b.id)}>
-                            {b.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
-              </div>
-            </div>
+              </>
+            )}
           </div>
+        </div>
+      </div>
+
       {/* Main Responsive Grid layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Form Content (9 Columns wide) */}
-        <div className="lg:col-span-9 space-y-6">  
+        {/* Left Form Content (9 Columns wide on Desktop) */}
+        <div className="col-span-1 lg:col-span-9 space-y-6">
           {/* Billing Items Table */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
@@ -1121,7 +1152,7 @@ function NewPurchaseContent() {
                             {idx + 1}
                           </td>
 
-                          {/* Product Image, Name, SKU & Always Visible Track Batch Checkbox */}
+                          {/* Product Image, Fixed Width Name with Truncate & Tooltip, SKU, Track Batch Checkbox & Set Button */}
                           <td className="px-3 py-3 align-middle">
                             <div className="flex items-center gap-3">
                               {item.imageUrl ? (
@@ -1141,10 +1172,19 @@ function NewPurchaseContent() {
                                   />
                                 </div>
                               )}
-                              <div className="min-w-0 flex-1">
-                                <p className="font-semibold text-foreground text-xs leading-tight truncate">
-                                  {item.itemName}
-                                </p>
+                              <div className="w-[180px] min-w-[180px] max-w-[180px] shrink-0">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="font-semibold text-foreground text-xs leading-tight truncate cursor-pointer hover:text-primary transition-colors">
+                                      {item.itemName || "—"}
+                                    </p>
+                                  </TooltipTrigger>
+                                  {item.itemName && (
+                                    <TooltipContent side="top" className="max-w-[250px]">
+                                      <p className="text-xs">{item.itemName}</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
                                 {item.sku && (
                                   <p className="text-[10px] text-muted-foreground mt-0.5 font-mono truncate">
                                     SKU: {item.sku}
@@ -1152,33 +1192,48 @@ function NewPurchaseContent() {
                                 )}
                               </div>
 
-                              {/* 1. Track Batch Checkbox */}
-                              <label
-                                data-expiry-container
-                                className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground shrink-0 bg-muted/40 hover:bg-muted/70 px-2 py-1 rounded-md border border-border/50 transition-colors"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={!!item.trackBatch}
-                                  onChange={(e) => {
-                                    const checked = e.target.checked;
-                                    handleRowChange(item.id, "trackBatch", checked);
-                                    if (checked) {
-                                      setOpenExpiryRowId(item.id);
-                                    } else {
-                                      handleRowChange(item.id, "trackExpiry", false);
-                                      handleRowChange(item.id, "expiryDate", undefined);
-                                      if (openExpiryRowId === item.id) {
-                                        setOpenExpiryRowId(null);
+                              {/* 1. Track Batch Checkbox (Shown in column ONLY when Track Batch is OFF) */}
+                              {!item.trackBatch ? (
+                                <label
+                                  data-expiry-container
+                                  className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground shrink-0 bg-muted/40 hover:bg-muted/70 px-2 py-1 rounded-md border border-border/50 transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={false}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      handleRowChange(item.id, "trackBatch", checked);
+                                      if (checked) {
+                                        setOpenExpiryRowId(item.id);
                                       }
-                                    }
+                                    }}
+                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+                                  />
+                                  <span className="font-medium whitespace-nowrap">
+                                    {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
+                                  </span>
+                                </label>
+                              ) : (
+                                /* 2. Set Button (Shown in column when Track Batch is ON) */
+                                <button
+                                  type="button"
+                                  data-expiry-container
+                                  onClick={() => {
+                                    setOpenExpiryRowId((prev) => (prev === item.id ? null : item.id));
                                   }}
-                                  className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
-                                />
-                                <span className="font-medium whitespace-nowrap">
-                                  {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
-                                </span>
-                              </label>
+                                  className={cn(
+                                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
+                                    openExpiryRowId === item.id
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                  )}
+                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস পরিবর্তন করুন" : "Set or modify batch & expiry settings"}
+                                >
+                                  <Settings className="h-3 w-3" />
+                                  <span>{isBangla ? "সেট" : "Set"}</span>
+                                </button>
+                              )}
                             </div>
                           </td>
 
@@ -1244,7 +1299,7 @@ function NewPurchaseContent() {
                           </td>
                         </tr>
 
-                        {/* Conditional Expiry Sub-Row (Shows when Track Batch is ON and openExpiryRowId matches item.id) */}
+                        {/* Conditional Expiry & Batch Settings Sub-Row */}
                         {item.trackBatch && openExpiryRowId === item.id && (
                           <tr
                             data-expiry-container
@@ -1254,10 +1309,33 @@ function NewPurchaseContent() {
                               <div className="flex flex-wrap items-center gap-4 pl-7">
                                 <span className="text-[11px] font-semibold text-primary/90 flex items-center gap-1.5 shrink-0">
                                   <span>↳</span>
-                                  <span>{isBangla ? "মেয়াদ সংক্রান্ত তথ্য:" : "Expiry Settings:"}</span>
+                                  <span>{isBangla ? "ব্যাচ ও মেয়াদ তথ্য:" : "Batch & Expiry Settings:"}</span>
                                 </span>
 
-                                {/* 2. Track Expiry Checkbox */}
+                                {/* 1. Track Batch Checkbox inside Settings */}
+                                <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!item.trackBatch}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      handleRowChange(item.id, "trackBatch", checked);
+                                      if (!checked) {
+                                        handleRowChange(item.id, "trackExpiry", false);
+                                        handleRowChange(item.id, "expiryDate", undefined);
+                                        if (openExpiryRowId === item.id) {
+                                          setOpenExpiryRowId(null);
+                                        }
+                                      }
+                                    }}
+                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+                                  />
+                                  <span className="font-medium whitespace-nowrap">
+                                    {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
+                                  </span>
+                                </label>
+
+                                {/* 2. Track Expiry Checkbox inside Settings */}
                                 <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
                                   <input
                                     type="checkbox"
@@ -1266,6 +1344,7 @@ function NewPurchaseContent() {
                                       const checked = e.target.checked;
                                       handleRowChange(item.id, "trackExpiry", checked);
                                       if (!checked) {
+                                        handleRowChange(item.id, "manufactureDate", undefined);
                                         handleRowChange(item.id, "expiryDate", undefined);
                                       }
                                     }}
@@ -1276,7 +1355,33 @@ function NewPurchaseContent() {
                                   </span>
                                 </label>
 
-                                {/* 3. Expiry Date Calendar (Required when Track Expiry is ON) */}
+                                {/* 3. Manufacture Date Calendar */}
+                                {item.trackExpiry && (
+                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
+                                    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                                      {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
+                                    </span>
+                                    <Input
+                                      type="date"
+                                      value={
+                                        item.manufactureDate
+                                          ? new Date(item.manufactureDate).toISOString().split("T")[0]
+                                          : ""
+                                      }
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        handleRowChange(
+                                          item.id,
+                                          "manufactureDate",
+                                          val ? new Date(val) : undefined
+                                        );
+                                      }}
+                                      className="h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* 4. Expiry Date Calendar */}
                                 {item.trackExpiry && (
                                   <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
                                     <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
@@ -1296,12 +1401,9 @@ function NewPurchaseContent() {
                                           "expiryDate",
                                           val ? new Date(val) : undefined
                                         );
-                                        if (val) {
-                                          setTimeout(() => setOpenExpiryRowId(null), 300);
-                                        }
                                       }}
                                       className={cn(
-                                        "h-7 w-[140px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs",
+                                        "h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs",
                                         !item.expiryDate && "border-amber-500/80 focus-visible:ring-amber-500"
                                       )}
                                     />
@@ -1323,7 +1425,7 @@ function NewPurchaseContent() {
 
           {/* Payment Info Section - Cash vs Bank / Mobile Banking */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "পেমেন্ট তথ্য" : "Payment Information"}
               </span>
@@ -1332,7 +1434,7 @@ function NewPurchaseContent() {
                 variant="outline"
                 size="sm"
                 onClick={addPaymentRow}
-                className="h-8 text-xs gap-1.5 cursor-pointer"
+                className="h-8 text-xs gap-1.5 cursor-pointer ml-auto sm:ml-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>{isBangla ? "নতুন পেমেন্ট যোগ করুন" : "Add Payment"}</span>
@@ -1358,7 +1460,7 @@ function NewPurchaseContent() {
                       </button>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
                       {/* Payment Method Selector */}
                       <div className="space-y-2 col-span-1">
                         <Label className="text-xs font-semibold text-foreground">
@@ -1520,8 +1622,8 @@ function NewPurchaseContent() {
           </div>
         </div>
 
-        {/* Right Section: Purchase Summary Sticky Panel (3 Columns Wide) */}
-        <div className="lg:col-span-3 lg:sticky lg:top-6 space-y-6">
+        {/* Right Section: Purchase Summary Sticky Panel */}
+        <div className="col-span-1 lg:col-span-3 lg:sticky lg:top-6 space-y-6">
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               {isBangla ? "ক্রয় সারাংশ" : "Purchase Summary"}
@@ -1595,7 +1697,7 @@ function NewPurchaseContent() {
               )}
             </div>
 
-            {/* ONLY Complete Purchase & Cancel Buttons (per user request) */}
+            {/* ONLY Complete Purchase & Cancel Buttons */}
             <div className="space-y-2 pt-3 border-t border-border">
               <Button
                 type="button"
@@ -1656,6 +1758,33 @@ function NewPurchaseContent() {
           )}
         </div>
       </div>
+
+      {/* Add New Supplier Modal */}
+      <AddPartyModal
+        isOpen={isAddSupplierModalOpen}
+        onClose={() => setIsAddSupplierModalOpen(false)}
+      />
+
+      {/* Add New Item Modal */}
+      <Dialog open={isAddItemModalOpen} onOpenChange={setIsAddItemModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              {isBangla ? "নতুন পণ্য যুক্ত করুন" : "Add New Product"}
+            </DialogTitle>
+          </DialogHeader>
+          <InventoryItemForm
+            isModal
+            onSuccess={(newItem) => {
+              setIsAddItemModalOpen(false);
+              if (newItem) {
+                handleSelectProductFromTopSearch(newItem);
+              }
+            }}
+            onCancel={() => setIsAddItemModalOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
