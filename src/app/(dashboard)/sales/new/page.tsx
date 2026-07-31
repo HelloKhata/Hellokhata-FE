@@ -1129,8 +1129,6 @@ function NewSaleContent() {
               </Popover>
             </div>
           </div>
-
-         
         </div>
 
 
