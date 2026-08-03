@@ -97,6 +97,7 @@ function NewSaleContent() {
 
   // API Data
   const [partySearchQuery, setPartySearchQuery] = useState("");
+  const [phoneSearchQuery, setPhoneSearchQuery] = useState("");
   const [debouncedPartySearchQuery, setDebouncedPartySearchQuery] =
     useState("");
 
@@ -243,15 +244,60 @@ function NewSaleContent() {
     },
   ]);
 
+  // Handle Customer Phone change with auto-selection
+  const handlePhoneChange = (inputVal: string) => {
+    setPhoneSearchQuery(inputVal);
+    const cleanInput = inputVal.trim().replace(/[\s\-\+\(\)]/g, "");
+
+    if (!cleanInput) {
+      setSelectedPartyId("");
+      return;
+    }
+
+    // Match party by phone number in DB
+    const matched = parties.find((p: any) => {
+      if (!p.phone) return false;
+      const cleanPhone = p.phone.trim().replace(/[\s\-\+\(\)]/g, "");
+      return cleanPhone === cleanInput || p.phone.trim() === inputVal.trim();
+    });
+
+    if (matched) {
+      setSelectedPartyId(matched.id);
+    } else {
+      setSelectedPartyId("");
+    }
+  };
+
+  // Auto-match party by phone when parties list finishes loading
+  useEffect(() => {
+    if (!phoneSearchQuery || selectedPartyId) return;
+    const cleanInput = phoneSearchQuery.trim().replace(/[\s\-\+\(\)]/g, "");
+    if (!cleanInput) return;
+
+    const matched = parties.find((p: any) => {
+      if (!p.phone) return false;
+      const cleanPhone = p.phone.trim().replace(/[\s\-\+\(\)]/g, "");
+      return cleanPhone === cleanInput || p.phone.trim() === phoneSearchQuery.trim();
+    });
+
+    if (matched) {
+      setSelectedPartyId(matched.id);
+    }
+  }, [parties, phoneSearchQuery, selectedPartyId]);
+
+  // Default customer name fallback
+  const defaultCustomerName = isBangla ? "সাধারণ গ্রাহক" : "Walk-in Customer";
+
   // Parties Filtering
   const filteredParties = useMemo(() => {
-    if (!partySearchQuery) return parties;
+    const query = (partySearchQuery || phoneSearchQuery).trim().toLowerCase();
+    if (!query) return parties;
     return parties.filter(
       (p: any) =>
-        p.name.toLowerCase().includes(partySearchQuery.toLowerCase()) ||
-        p.phone?.includes(partySearchQuery),
+        p.name?.toLowerCase().includes(query) ||
+        p.phone?.includes(query),
     );
-  }, [parties, partySearchQuery]);
+  }, [parties, partySearchQuery, phoneSearchQuery]);
 
   // Selected Party Name
   const selectedPartyName = useMemo(() => {
@@ -272,6 +318,19 @@ function NewSaleContent() {
     }
     return "";
   }, [parties, selectedPartyId, singlePartyData]);
+
+  // Display Party Name (Auto Walk-in Customer fallback)
+  const displayPartyName = useMemo(() => {
+    if (selectedPartyName) return selectedPartyName;
+    if (partySearchQuery) return partySearchQuery;
+    return defaultCustomerName;
+  }, [selectedPartyName, partySearchQuery, defaultCustomerName]);
+
+  // Display Party Phone
+  const displayPartyPhone = useMemo(() => {
+    if (selectedPartyPhone) return selectedPartyPhone;
+    return phoneSearchQuery;
+  }, [selectedPartyPhone, phoneSearchQuery]);
 
   // Calculations
   const rawSubtotal = useMemo(() => {
@@ -1019,17 +1078,17 @@ function NewSaleContent() {
                 )}
               </div>
             </div>
- {/* 3. Party Phone Number */}
+
+            {/* 2. Customer Phone Number (Searches customer by phone) */}
             <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "ফোন নম্বর" : "Phone Number"}
+                {isBangla ? "ফোন নম্বর" : "Customer Phone"}
               </Label>
               <div className="relative">
                 <Input
-                  value={selectedPartyPhone || partySearchQuery}
+                  value={displayPartyPhone}
                   onChange={(e) => {
-                    setPartySearchQuery(e.target.value);
-                    if (selectedPartyId) setSelectedPartyId("");
+                    handlePhoneChange(e.target.value);
                     setShowPartySuggestions(true);
                   }}
                   onFocus={() => setShowPartySuggestions(true)}
@@ -1040,32 +1099,9 @@ function NewSaleContent() {
                   className="pr-9 h-11 bg-background/50 border-input text-xs font-mono focus-visible:ring-1"
                 />
                 <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-            {/* 2. Select Party */}
-            <div className="relative space-y-2">
-              <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "গ্রাহক" : "Customer"}
-              </Label>
-              <div className="relative">
-                <Input
-                  value={selectedPartyName || partySearchQuery}
-                  onChange={(e) => {
-                    setPartySearchQuery(e.target.value);
-                    if (selectedPartyId) setSelectedPartyId("");
-                    setShowPartySuggestions(true);
-                  }}
-                  onFocus={() => setShowPartySuggestions(true)}
-                  onBlur={() => {
-                    setTimeout(() => setShowPartySuggestions(false), 200);
-                  }}
-                  placeholder={isBangla ? "পার্টি খুঁজুন..." : "Search for party"}
-                  className="pr-9 h-11 bg-background/50 border-input text-xs focus-visible:ring-1"
-                />
-                <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
                 {showPartySuggestions && (
-                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
                     {filteredParties.length === 0 ? (
                       <div className="p-3 text-center text-xs text-muted-foreground">
                         {isBangla
@@ -1077,11 +1113,12 @@ function NewSaleContent() {
                         <button
                           key={party.id}
                           type="button"
-                          className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                          className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between items-center"
                           onMouseDown={(e) => {
                             e.preventDefault();
                             setSelectedPartyId(party.id);
                             setPartySearchQuery("");
+                            setPhoneSearchQuery(party.phone || "");
                             setShowPartySuggestions(false);
                           }}
                         >
@@ -1098,6 +1135,25 @@ function NewSaleContent() {
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* 3. Customer Name (Auto filled or default Walk-in Customer) */}
+            <div className="relative space-y-2">
+              <Label className="text-sm font-medium text-foreground">
+                {isBangla ? "গ্রাহক" : "Customer"}
+              </Label>
+              <div className="relative">
+                <Input
+                  value={displayPartyName}
+                  onChange={(e) => {
+                    setPartySearchQuery(e.target.value);
+                    if (selectedPartyId) setSelectedPartyId("");
+                  }}
+                  placeholder={defaultCustomerName}
+                  className="pr-9 h-11 bg-background/50 border-input text-xs focus-visible:ring-1"
+                />
+                <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
 
@@ -1279,15 +1335,15 @@ function NewSaleContent() {
             </Table>
 
             {/* Table Bottom Add Action */}
-            <div className="flex justify-between items-center px-6 py-4 bg-muted/10 border-t border-border">
-              <button
+            <div className="flex justify-end items-center px-6 py-4 bg-muted/10 border-t border-border">
+              {/* <button
                 type="button"
                 onClick={addItemRow}
                 className="text-primary font-semibold text-sm flex items-center gap-1.5 hover:text-primary-hover transition-colors cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 {isBangla ? "বিল আইটেম যোগ করুন" : "Add Billing Item"}
-              </button>
+              </button> */}
               <div className="flex items-center gap-8">
                 <span className="text-sm text-muted-foreground font-medium">
                   {isBangla ? "উপমোট" : "Sub Total"}

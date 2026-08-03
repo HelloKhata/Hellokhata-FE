@@ -1126,19 +1126,20 @@ function NewPurchaseContent() {
                 <thead>
                   <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
                     <th className="px-3 py-3 w-[4%] text-center">#</th>
-                    <th className="px-3 py-3 w-[36%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
+                    <th className="px-3 py-3 w-[30%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
+                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}</th>
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
                     <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "পরিমাণ *" : "Qty *"}</th>
-                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
+                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}</th>
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
-                    <th className="px-3 py-3 w-[16%] text-center">{isBangla ? "মোট" : "Amount"}</th>
-                    <th className="px-3 py-3 w-[6%] text-center"></th>
+                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "মোট" : "Amount"}</th>
+                    <th className="px-3 py-3 w-[5%] text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {selectedItems.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">
+                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">
                         {isBangla
                           ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে যোগ করুন।"
                           : "Use the search box above to search or scan products into this purchase."}
@@ -1152,7 +1153,7 @@ function NewPurchaseContent() {
                             {idx + 1}
                           </td>
 
-                          {/* Product Image, Fixed Width Name with Truncate & Tooltip, SKU, Track Batch Checkbox & Set Button */}
+                          {/* Product Image, Fixed Width Name with Truncate & Tooltip, SKU */}
                           <td className="px-3 py-3 align-middle">
                             <div className="flex items-center gap-3">
                               {item.imageUrl ? (
@@ -1191,31 +1192,27 @@ function NewPurchaseContent() {
                                   </p>
                                 )}
                               </div>
+                            </div>
+                          </td>
 
-                              {/* 1. Track Batch Checkbox (Shown in column ONLY when Track Batch is OFF) */}
+                          {/* Track Batch Checkbox / Set Button Column */}
+                          <td className="px-3 py-3 align-middle text-center">
+                            <div className="flex items-center justify-center">
                               {!item.trackBatch ? (
-                                <label
-                                  data-expiry-container
-                                  className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground shrink-0 bg-muted/40 hover:bg-muted/70 px-2 py-1 rounded-md border border-border/50 transition-colors"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={false}
-                                    onChange={(e) => {
-                                      const checked = e.target.checked;
-                                      handleRowChange(item.id, "trackBatch", checked);
-                                      if (checked) {
-                                        setOpenExpiryRowId(item.id);
-                                      }
-                                    }}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
-                                  />
-                                  <span className="font-medium whitespace-nowrap">
-                                    {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
-                                  </span>
-                                </label>
+                                <input
+                                  type="checkbox"
+                                  checked={false}
+                                  onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    handleRowChange(item.id, "trackBatch", checked);
+                                    if (checked) {
+                                      setOpenExpiryRowId(item.id);
+                                    }
+                                  }}
+                                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                                  title={isBangla ? "ব্যাচ ট্র্যাকিং চালু করুন" : "Enable Track Batch"}
+                                />
                               ) : (
-                                /* 2. Set Button (Shown in column when Track Batch is ON) */
                                 <button
                                   type="button"
                                   data-expiry-container
@@ -1305,7 +1302,7 @@ function NewPurchaseContent() {
                             data-expiry-container
                             className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
                           >
-                            <td colSpan={8} className="px-4 py-2 text-xs">
+                            <td colSpan={9} className="px-4 py-2 text-xs">
                               <div className="flex flex-wrap items-center gap-4 pl-7">
                                 <span className="text-[11px] font-semibold text-primary/90 flex items-center gap-1.5 shrink-0">
                                   <span>↳</span>
