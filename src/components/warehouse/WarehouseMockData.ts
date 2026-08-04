@@ -66,6 +66,7 @@ export interface WarehouseProduct {
   batchNumber: string;
   expiryDate?: string;
   status: "in_stock" | "low_stock" | "out_of_stock";
+  imageUrl?: string;
 }
 
 export interface WarehouseTransferItem {
@@ -199,6 +200,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "B2026-081",
     expiryDate: "2027-05-15",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-102",
@@ -215,6 +217,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "SRG-8812",
     expiryDate: "2027-08-30",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-103",
@@ -231,6 +234,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "CV-901",
     expiryDate: "2026-11-10",
     status: "low_stock",
+    imageUrl: "https://images.unsplash.com/photo-1577401239170-897942555fb3?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-104",
@@ -247,6 +251,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "AMD-4011",
     expiryDate: "2027-03-12",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-105",
@@ -263,6 +268,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "MNS-7701",
     expiryDate: "2027-09-01",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1585435557343-3b092031a831?w=300&auto=format&fit=crop&q=80",
   },
 
   // Dhanmondi Regional Depot Products (wh-2)
@@ -281,6 +287,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "B2026-092",
     expiryDate: "2026-11-20",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-202",
@@ -297,6 +304,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "SEC-9002",
     expiryDate: "2027-10-01",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-203",
@@ -313,6 +321,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "BZR-102",
     expiryDate: "2026-12-15",
     status: "low_stock",
+    imageUrl: "https://images.unsplash.com/photo-1626714494904-e3a5332fbc13?w=300&auto=format&fit=crop&q=80",
   },
 
   // Gulshan Cold Storage Products (wh-3)
@@ -331,6 +340,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "INS-2026-X",
     expiryDate: "2026-10-20",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1579165466741-7f35e4755660?w=300&auto=format&fit=crop&q=80",
   },
   {
     id: "wp-302",
@@ -347,6 +357,7 @@ export const MOCK_WAREHOUSE_PRODUCTS: WarehouseProduct[] = [
     batchNumber: "VAC-8809",
     expiryDate: "2027-01-30",
     status: "in_stock",
+    imageUrl: "https://images.unsplash.com/photo-1618961734760-466979ce35b0?w=300&auto=format&fit=crop&q=80",
   },
 ];
 

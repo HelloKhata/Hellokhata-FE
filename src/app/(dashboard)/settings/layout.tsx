@@ -43,7 +43,6 @@ export default function Layout({
     { id: 'security', labelEn: 'Security Settings', labelBn: 'সিকিউরিটি সেটিংস', href: '/settings/security', icon: Lock },
     { id: 'invoice', labelEn: 'Invoice Settings', labelBn: 'ইনভয়েস সেটিংস', href: '/settings/invoice', icon: FileText },
     { id: 'branches', labelEn: 'Branch Management', labelBn: 'শাখা পরিচালনা', href: '/settings/branches', icon: Building2, isPro: true },
-    { id: 'roles', labelEn: 'Roles & Permissions', labelBn: 'ভূমিকা ও অনুমতি', href: '/settings/roles', icon: Lock, isPro: true },
     { id: 'connected-devices', labelEn: 'Connected Devices', labelBn: 'সংযুক্ত ডিভাইস', href: '/settings/connected-devices', icon: Laptop, isPro: true },
   ];
 

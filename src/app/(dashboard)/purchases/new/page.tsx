@@ -46,6 +46,7 @@ import {
   Package,
   Upload,
   Settings,
+  Eye,
 } from "lucide-react";
 import {
   Dialog,
@@ -1195,23 +1196,27 @@ function NewPurchaseContent() {
                             </div>
                           </td>
 
-                          {/* Track Batch Checkbox / Set Button Column */}
+                          {/* Track Batch Set / View Column */}
                           <td className="px-3 py-3 align-middle text-center">
                             <div className="flex items-center justify-center">
                               {!item.trackBatch ? (
-                                <input
-                                  type="checkbox"
-                                  checked={false}
-                                  onChange={(e) => {
-                                    const checked = e.target.checked;
-                                    handleRowChange(item.id, "trackBatch", checked);
-                                    if (checked) {
-                                      setOpenExpiryRowId(item.id);
-                                    }
+                                <button
+                                  type="button"
+                                  data-expiry-container
+                                  onClick={() => {
+                                    setOpenExpiryRowId((prev) => (prev === item.id ? null : item.id));
                                   }}
-                                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
-                                  title={isBangla ? "ব্যাচ ট্র্যাকিং চালু করুন" : "Enable Track Batch"}
-                                />
+                                  className={cn(
+                                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
+                                    openExpiryRowId === item.id
+                                      ? "bg-primary text-primary-foreground border-primary"
+                                      : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                                  )}
+                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস নির্বাচন করুন" : "Set batch & expiry settings"}
+                                >
+                                  <Settings className="h-3 w-3" />
+                                  <span>{isBangla ? "সেট" : "Set"}</span>
+                                </button>
                               ) : (
                                 <button
                                   type="button"
@@ -1223,12 +1228,12 @@ function NewPurchaseContent() {
                                     "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
                                     openExpiryRowId === item.id
                                       ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
                                   )}
-                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস পরিবর্তন করুন" : "Set or modify batch & expiry settings"}
+                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস দেখুন" : "View batch & expiry settings"}
                                 >
-                                  <Settings className="h-3 w-3" />
-                                  <span>{isBangla ? "সেট" : "Set"}</span>
+                                  <Eye className="h-3 w-3" />
+                                  <span>{isBangla ? "ভিউ" : "View"}</span>
                                 </button>
                               )}
                             </div>
@@ -1297,17 +1302,14 @@ function NewPurchaseContent() {
                         </tr>
 
                         {/* Conditional Expiry & Batch Settings Sub-Row */}
-                        {item.trackBatch && openExpiryRowId === item.id && (
+                        {openExpiryRowId === item.id && (
                           <tr
                             data-expiry-container
                             className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
                           >
                             <td colSpan={9} className="px-4 py-2 text-xs">
                               <div className="flex flex-wrap items-center gap-4 pl-7">
-                                <span className="text-[11px] font-semibold text-primary/90 flex items-center gap-1.5 shrink-0">
-                                  <span>↳</span>
-                                  <span>{isBangla ? "ব্যাচ ও মেয়াদ তথ্য:" : "Batch & Expiry Settings:"}</span>
-                                </span>
+                                
 
                                 {/* 1. Track Batch Checkbox inside Settings */}
                                 <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
@@ -1333,11 +1335,20 @@ function NewPurchaseContent() {
                                 </label>
 
                                 {/* 2. Track Expiry Checkbox inside Settings */}
-                                <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
+                                <label
+                                  className={cn(
+                                    "flex items-center gap-1.5 select-none text-[11px] px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0",
+                                    !item.trackBatch
+                                      ? "opacity-50 cursor-not-allowed bg-muted/20 text-muted-foreground"
+                                      : "cursor-pointer text-foreground bg-background hover:bg-muted/60"
+                                  )}
+                                >
                                   <input
                                     type="checkbox"
                                     checked={!!item.trackExpiry}
+                                    disabled={!item.trackBatch}
                                     onChange={(e) => {
+                                      if (!item.trackBatch) return;
                                       const checked = e.target.checked;
                                       handleRowChange(item.id, "trackExpiry", checked);
                                       if (!checked) {
@@ -1345,38 +1356,13 @@ function NewPurchaseContent() {
                                         handleRowChange(item.id, "expiryDate", undefined);
                                       }
                                     }}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
                                   />
                                   <span className="font-medium whitespace-nowrap">
                                     {isBangla ? "মেয়াদ ট্র্যাকিং" : "Track Expiry"}
                                   </span>
                                 </label>
 
-                                {/* 3. Manufacture Date Calendar */}
-                                {item.trackExpiry && (
-                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
-                                    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                                      {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
-                                    </span>
-                                    <Input
-                                      type="date"
-                                      value={
-                                        item.manufactureDate
-                                          ? new Date(item.manufactureDate).toISOString().split("T")[0]
-                                          : ""
-                                      }
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        handleRowChange(
-                                          item.id,
-                                          "manufactureDate",
-                                          val ? new Date(val) : undefined
-                                        );
-                                      }}
-                                      className="h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs"
-                                    />
-                                  </div>
-                                )}
 
                                 {/* 4. Expiry Date Calendar */}
                                 {item.trackExpiry && (
@@ -1406,6 +1392,32 @@ function NewPurchaseContent() {
                                     />
                                   </div>
                                 )}
+                                {/* 3. Manufacture Date Calendar */}
+                                {item.trackExpiry && (
+                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
+                                    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                                      {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
+                                    </span>
+                                    <Input
+                                      type="date"
+                                      value={
+                                        item.manufactureDate
+                                          ? new Date(item.manufactureDate).toISOString().split("T")[0]
+                                          : ""
+                                      }
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        handleRowChange(
+                                          item.id,
+                                          "manufactureDate",
+                                          val ? new Date(val) : undefined
+                                        );
+                                      }}
+                                      className="h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs"
+                                    />
+                                  </div>
+                                )}
+
                               </div>
                             </td>
                           </tr>

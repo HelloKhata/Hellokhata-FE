@@ -26,8 +26,8 @@ export function BatchHeader({
   const router = useRouter();
 
   return (
-    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-xs border-b border-border/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5">
+    <div className="sticky top-0 z-20  border-b border-border/80">
+      <div className="mx-auto px-4 sm:px-6 py-3.5">
         <div className="flex items-center justify-between gap-4">
           {/* Title & Description */}
           <div className="flex items-center gap-3">

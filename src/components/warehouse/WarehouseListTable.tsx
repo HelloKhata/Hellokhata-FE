@@ -25,7 +25,6 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Star,
   Download,
   Archive,
   CheckSquare,
@@ -58,7 +57,6 @@ export function WarehouseListTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,11 +72,10 @@ export function WarehouseListTable({
 
       const matchesBranch = branchFilter === "all" || wh.branchId === branchFilter;
       const matchesStatus = statusFilter === "all" || wh.status === statusFilter;
-      const matchesType = typeFilter === "all" || wh.type === typeFilter;
 
-      return matchesSearch && matchesBranch && matchesStatus && matchesType;
+      return matchesSearch && matchesBranch && matchesStatus;
     });
-  }, [warehouses, searchQuery, branchFilter, statusFilter, typeFilter]);
+  }, [warehouses, searchQuery, branchFilter, statusFilter]);
 
   const totalPages = Math.ceil(filteredWarehouses.length / itemsPerPage) || 1;
   const paginatedWarehouses = useMemo(() => {
@@ -98,13 +95,6 @@ export function WarehouseListTable({
       const pageIds = paginatedWarehouses.map((w) => w.id);
       setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
     }
-  };
-
-  const toggleSelectRow = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -260,7 +250,7 @@ export function WarehouseListTable({
 
         {/* Data Table */}
         <div className="overflow-x-auto border border-border/60 rounded-xl">
-          <table className="w-full text-left text-xs border-collapse min-w-[840px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-muted/40 text-muted-foreground border-b border-border/80 font-semibold uppercase text-[10px]">
                 <th className="p-3 w-10 text-center">
@@ -270,12 +260,10 @@ export function WarehouseListTable({
                   />
                 </th>
                 <th className="p-3 font-semibold">{isBangla ? "ওয়্যারহাউস ও কোড" : "Warehouse & Code"}</th>
-                <th className="p-3 font-semibold">{isBangla ? "টাইপ" : "Type"}</th>
-                <th className="p-3 font-semibold">{isBangla ? "শাখা ও জেলা" : "Branch / City"}</th>
+                <th className="p-3 font-semibold">{isBangla ? "অবস্থান" : "Location"}</th>
                 <th className="p-3 font-semibold">{isBangla ? "ম্যানেজার" : "Manager"}</th>
-                <th className="p-3 font-semibold text-right">{isBangla ? "প্রাপ্য স্টক" : "Available Qty"}</th>
+                <th className="p-3 font-semibold text-right">{isBangla ? "প্রাপ্য স্টক" : "Available Items"}</th>
                 <th className="p-3 font-semibold text-right">{isBangla ? "স্টক মূল্য" : "Stock Value"}</th>
-                <th className="p-3 font-semibold">{isBangla ? "ধারণক্ষমতা (%)" : "Capacity"}</th>
                 <th className="p-3 font-semibold">{isBangla ? "স্ট্যাটাস" : "Status"}</th>
                 <th className="p-3 font-semibold text-right">{isBangla ? "অ্যাকশন" : "Actions"}</th>
               </tr>
@@ -284,7 +272,7 @@ export function WarehouseListTable({
             <tbody className="divide-y divide-border/40">
               {paginatedWarehouses.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground space-y-2">
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground space-y-2">
                     <Building2 className="h-8 w-8 text-muted-foreground/40 mx-auto" />
                     <p className="font-semibold text-foreground text-xs">
                       {isBangla ? "কোনো ওয়্যারহাউস পাওয়া যায়নি" : "No Warehouses Found"}
@@ -293,10 +281,6 @@ export function WarehouseListTable({
                 </tr>
               ) : (
                 paginatedWarehouses.map((wh) => {
-                  const capPercent = wh.capacityMax > 0
-                    ? Math.round((wh.capacityUsed / wh.capacityMax) * 100)
-                    : 0;
-
                   const isSelected = selectedIds.includes(wh.id);
 
                   return (
@@ -321,46 +305,31 @@ export function WarehouseListTable({
                         />
                       </td>
 
-                      {/* Name & Code + Default Badge */}
+                      {/* Name & Code */}
                       <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <p className="font-bold text-foreground hover:text-primary transition-colors text-xs flex items-center gap-1.5">
-                              <span>{wh.name}</span>
-                              {wh.isDefault && (
-                                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[9px] font-bold py-0">
-                                  <Star className="h-2 w-2 mr-0.5 fill-amber-500 text-amber-500" />
-                                  Default
-                                </Badge>
-                              )}
-                            </p>
-                            <Badge variant="outline" className="text-[9px] py-0 font-mono bg-muted text-muted-foreground mt-0.5">
-                              {wh.code}
-                            </Badge>
-                          </div>
+                        <div>
+                          <p className="font-bold text-foreground hover:text-primary transition-colors text-xs">
+                            {wh.name}
+                          </p>
+                          <Badge variant="outline" className="text-[9px] py-0 font-mono bg-muted text-muted-foreground mt-0.5">
+                            {wh.code}
+                          </Badge>
                         </div>
                       </td>
 
-                      {/* Type Column */}
+                      {/* Location (City, Branch) */}
                       <td className="p-3 text-muted-foreground font-medium text-[11px]">
-                        {wh.type}
+                        {wh.city}, {wh.branchName}
                       </td>
 
-                      {/* Branch & City */}
-                      <td className="p-3">
-                        <span className="font-medium text-foreground block text-xs">{wh.branchName}</span>
-                        <span className="text-[10px] text-muted-foreground">{wh.city}</span>
-                      </td>
-
-                      {/* Manager (Clean name without phone duplication) */}
+                      {/* Manager */}
                       <td className="p-3 font-medium text-foreground">
                         {wh.managerName}
                       </td>
 
-                      {/* Available Qty Column */}
+                      {/* Available Qty */}
                       <td className="p-3 text-right font-bold font-mono text-foreground">
-                        {(wh.availableUnits || wh.totalStockUnits).toLocaleString()}{" "}
-                        <span className="text-[10px] text-muted-foreground font-normal">Units</span>
+                        {(wh.availableUnits || wh.totalStockUnits).toLocaleString()}
                       </td>
 
                       {/* Stock Value */}
@@ -368,76 +337,23 @@ export function WarehouseListTable({
                         ৳{wh.stockValue.toLocaleString("en-IN")}
                       </td>
 
-                      {/* Capacity Progress */}
-                      <td className="p-3 w-32">
-                        <div className="space-y-1">
-                          <div className="flex justify-between items-center text-[10px] font-mono font-bold">
-                            <span>{capPercent}%</span>
-                            <span className="text-muted-foreground text-[9px]">
-                              {wh.capacityUsed}/{wh.capacityMax}
-                            </span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden border border-border/50">
-                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${
-                                capPercent > 80
-                                  ? "bg-rose-500"
-                                  : capPercent > 60
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${Math.min(100, capPercent)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-
                       {/* Status */}
                       <td className="p-3">
                         {getStatusBadge(wh.status)}
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions - Only Transfer button as requested */}
                       <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end">
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => onSelectWarehouse(wh)}
-                            className="h-7 w-7 text-primary hover:bg-primary/10 cursor-pointer"
-                            title={isBangla ? "ভিউ ওয়্যারহাউস" : "View Details"}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEditWarehouse(wh)}
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                            title={isBangla ? "এডিট করুন" : "Edit"}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={onNavigateTransfer}
-                            className="h-7 w-7 text-blue-500 hover:bg-blue-500/10 cursor-pointer"
+                            className="h-7 text-xs px-2 font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 cursor-pointer gap-1"
                             title={isBangla ? "স্টক ট্রান্সফার" : "Transfer"}
                           >
                             <ArrowRightLeft className="h-3.5 w-3.5" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDeleteWarehouse(wh.id)}
-                            className="h-7 w-7 text-rose-500 hover:bg-rose-500/10 cursor-pointer"
-                            title={isBangla ? "মুছে ফেলুন" : "Delete"}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>{isBangla ? "ট্রান্সফার" : "Transfer"}</span>
                           </Button>
                         </div>
                       </td>

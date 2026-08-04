@@ -159,7 +159,7 @@ export default function BatchesPage() {
   const hasActiveFilters = !!(debouncedSearch || statusFilter !== 'all' || branchFilter.trim());
 
   return (
-    <div className="min-h-screen bg-background space-y-4 pb-20">
+    <div className="min-h-screen space-y-4 pb-20">
       {/* Page Header */}
       <BatchHeader
         totalBatches={batchesStatus?.totalBatches || totalBatchesCount}
@@ -172,7 +172,7 @@ export default function BatchesPage() {
         onAddBatch={() => router.push('/inventory/new')}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
+      <div className="mx-auto px-4 sm:px-6 space-y-4">
         {/* Metric Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border border-border/60 shadow-xs">

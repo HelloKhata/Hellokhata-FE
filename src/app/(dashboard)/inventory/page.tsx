@@ -186,17 +186,6 @@ export default function InventoryPage() {
             </p>
           </div>
           <div className="flex items-center gap-2.5">
-            {/* Settings Dropdown — disabled, coming soon */}
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled
-              title={isBangla ? 'শীঘ্রই আসছে' : 'Coming soon'}
-              className="opacity-50 cursor-not-allowed h-10 w-10 rounded-xl"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-
             <Button
               onClick={() => router.push('/inventory/new')}
               className="shrink-0 h-10 px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-2"
