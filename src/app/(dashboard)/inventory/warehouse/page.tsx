@@ -225,10 +225,10 @@ export default function WarehouseOverviewPage() {
         isBangla={isBangla}
       />
 
-      {/* 4. Warehouse List Table with Row Dialog Modal & Bulk Actions */}
+      {/* 4. Warehouse List Table with Row Navigation */}
       <WarehouseListTable
         warehouses={displayedWarehouses}
-        onSelectWarehouse={handleOpenWarehouseDetails}
+        onSelectWarehouse={(wh) => router.push(`/inventory/warehouse/${wh.id}`)}
         onEditWarehouse={handleOpenEditModal}
         onDeleteWarehouse={handleDeleteWarehouse}
         onBulkDelete={handleBulkDelete}
@@ -246,12 +246,7 @@ export default function WarehouseOverviewPage() {
         isBangla={isBangla}
       />
 
-      {/* 6. Warehouse Alerts + Activity (Dual Filterable Panels) */}
-      <WarehouseActivitiesAndAlerts
-        alerts={MOCK_ALERTS}
-        activities={MOCK_ACTIVITIES}
-        isBangla={isBangla}
-      />
+ 
 
       {/* WAREHOUSE DETAILS MODAL */}
       <WarehouseDetailsModal

@@ -106,7 +106,8 @@ export interface PayableSummary {
 
 export interface RecentTransaction {
   id: string;
-  type: "sale" | "expense" | "deposit" | "withdrawal" | "transfer";
+  type: "sale" | "expense" | "deposit" | "withdrawal" | "transfer" | "income" | "refund";
+  accountName?: string;
   description: string;
   category?: string;
   isAuto: boolean;
@@ -114,4 +115,42 @@ export interface RecentTransaction {
   timestamp: string;
   rawDate: Date;
   amount: number;
+  status?: "completed" | "pending" | "failed";
 }
+
+export interface CategoryBreakdownItem {
+  category: string;
+  amount: number;
+  percentage: number;
+  color: string;
+}
+
+export interface CashFlowPointExtended {
+  date: string;
+  label: string;
+  income: number;
+  expense: number;
+  profit: number;
+}
+
+export interface AccountOverview {
+  id: string;
+  accountName: string;
+  accountType: "Cash" | "Bank" | "Mobile Banking" | "Credit Card";
+  accountNumber?: string;
+  currentBalance: number;
+  availableBalance: number;
+  status: "active" | "inactive" | "syncing";
+  bankLogo?: string;
+}
+
+export interface FinancialDashboardInsights {
+  highestExpenseCategory: { name: string; amount: number };
+  highestIncomeSource: { name: string; amount: number };
+  profitMarginPercentage: number;
+  avgDailyIncome: number;
+  avgDailyExpense: number;
+  bestPerformingMonth: string;
+  worstPerformingMonth: string;
+}
+
