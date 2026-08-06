@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Package,
   CheckCircle2,
@@ -14,6 +16,7 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useRouter } from 'next/navigation';
 import { useGetBatches, useGetBatchesStatus } from '@/hooks/api/useBatches';
+import { useGetOffers } from '@/hooks/api/useOffers';
 import { useBranches } from '@/hooks/queries';
 import {
   BatchHeader,
@@ -26,7 +29,10 @@ import {
   type BatchRowData,
   type StatusTab,
 } from '@/components/inventory/batches';
+import { EditBatchDetailsModal } from '@/components/inventory/batches/EditBatchDetailsModal';
+import { AdjustmentForm } from '@/components/inventory/batches/AdjustmentForm';
 import type { BatchStatus, BatchSort } from '@/services/batches.services';
+import { toast } from 'sonner';
 
 export default function BatchesPage() {
   const { isBangla } = useAppTranslation();
@@ -45,9 +51,11 @@ export default function BatchesPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Batch Detail Sheet
+  // Batch Detail Sheet & Modal States
   const [inspectingBatchId, setInspectingBatchId] = useState<string | null>(null);
   const [inspectingFallback, setInspectingFallback] = useState<BatchRowData | null>(null);
+  const [editingBatch, setEditingBatch] = useState<BatchRowData | null>(null);
+  const [adjustingBatch, setAdjustingBatch] = useState<BatchRowData | null>(null);
 
   // Data fetching
   const { data: branches = [] } = useBranches();
@@ -55,6 +63,9 @@ export default function BatchesPage() {
 
   const { data: batchesStatusData } = useGetBatchesStatus();
   const batchesStatus = batchesStatusData?.data;
+
+  const { data: offersRes } = useGetOffers();
+  const offers = offersRes?.data || [];
 
   const { data: batchesData, isLoading, isError, refetch } = useGetBatches({
     search: debouncedSearch || undefined,
@@ -80,6 +91,7 @@ export default function BatchesPage() {
       quantityReceived: b.quantityReceived,
       costPrice: b.costPrice,
       sellingPrice: b.sellingPrice,
+      offer: b.offer || b.activeOffer,
       expiryDate: b.expiryDate,
       manufactureDate: b.manufactureDate,
       receivedDate: b.receivedDate || b.createdAt,
@@ -262,70 +274,137 @@ export default function BatchesPage() {
           onSortOrderChange={setSortOrder}
         />
 
-        {/* Batch Card List */}
-        {isLoading ? (
-          <BatchLoadingSkeleton />
-        ) : isError ? (
-          <BatchEmptyState type="error" onAction={() => refetch()} />
-        ) : batches.length === 0 ? (
-          hasActiveFilters ? (
-            <BatchEmptyState type="filtered_empty" onResetFilters={handleResetFilters} />
+        {/* Batch Table Container - Styled Exactly like Inventory Items Table */}
+        <div className="rounded-2xl border border-border/60 bg-[#12161f] shadow-sm overflow-hidden">
+          <div className="px-6 pt-5 pb-3 flex items-center justify-between">
+            <h3 className="text-base font-bold text-foreground">
+              {isBangla ? 'ব্যাচ তালিকা' : 'Batch List'}
+            </h3>
+            <span className="text-xs font-mono text-muted-foreground/80">
+              {totalBatchesCount} {isBangla ? 'টি ব্যাচ' : 'batches'}
+            </span>
+          </div>
+
+          {isLoading ? (
+            <BatchLoadingSkeleton />
+          ) : isError ? (
+            <BatchEmptyState type="error" onAction={() => refetch()} />
+          ) : batches.length === 0 ? (
+            hasActiveFilters ? (
+              <BatchEmptyState type="filtered_empty" onResetFilters={handleResetFilters} />
+            ) : (
+              <BatchEmptyState type="no_data" onAction={() => router.push('/purchases/new')} />
+            )
           ) : (
-            <BatchEmptyState type="no_data" onAction={() => router.push('/purchases/new')} />
-          )
-        ) : (
-          <>
-            <div className="space-y-2">
-              {batches.map((batch) => (
-                <BatchRow
-                  key={batch.id}
-                  batch={batch}
-                  showBranch={isMultiBranch}
-                  isSelectable={selectMode}
-                  isSelected={selectedIds.has(batch.id)}
-                  onSelect={handleSelectToggle}
-                  onTap={handleBatchTap}
-                />
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 text-xs">
-                <span className="text-muted-foreground font-mono">
-                  Showing {(page - 1) * LIMIT + 1} - {Math.min(page * LIMIT, totalBatchesCount)} of {totalBatchesCount}
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                    className="h-8 text-xs gap-1 cursor-pointer"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                    {isBangla ? 'আগের' : 'Previous'}
-                  </Button>
-
-                  <span className="font-mono font-semibold px-2">
-                    {page} / {totalPages}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="h-8 text-xs gap-1 cursor-pointer"
-                  >
-                    {isBangla ? 'পরের' : 'Next'}
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
+            <div className="overflow-x-auto">
+              <div className="min-w-[1100px]">
+                {/* Column Header Bar - Matches Inventory Items Table Column Headers */}
+                <div className="flex items-center justify-between px-6 py-3 bg-[#161a23]/60 text-xs font-semibold text-muted-foreground/80 border-b border-border/40 gap-4">
+                  <div className="w-10 text-left shrink-0">
+                    {selectMode ? (
+                      <Checkbox
+                        checked={batches.length > 0 && selectedIds.size === batches.length}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedIds(new Set(batches.map((b) => b.id)));
+                          } else {
+                            setSelectedIds(new Set());
+                          }
+                        }}
+                        className="cursor-pointer"
+                        aria-label="Select all batches"
+                      />
+                    ) : (
+                      'SL.'
+                    )}
+                  </div>
+                  <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batch'}</div>
+                  <div className="flex-1 min-w-0 text-left">{isBangla ? 'পণ্য' : 'Product'}</div>
+                  <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'অবশিষ্ট' : 'Available'}</div>
+                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'ক্রয় মূল্য' : 'Cost'}</div>
+                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'বিক্রয় মূল্য' : 'Selling'}</div>
+                  <div className="w-24 sm:w-28 text-center shrink-0">{isBangla ? 'অফার' : 'Offer'}</div>
+                  <div className="w-28 sm:w-32 text-left shrink-0">{isBangla ? 'মেয়াদ' : 'Expiry'}</div>
+                  <div className="w-24 sm:w-28 text-center shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
+                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
                 </div>
+
+                {/* Table Body */}
+                <ScrollArea className="h-[560px]">
+                  <div className="divide-y divide-border/30">
+                    {batches.map((batch, index) => {
+                      const activeOffer = offers.find(
+                        (o: any) =>
+                          o.status === 'active' &&
+                          (o.batchId === batch.id || (!o.batchId && o.productId === batch.itemId))
+                      );
+                      return (
+                        <BatchRow
+                          key={batch.id}
+                          batch={batch}
+                          index={index}
+                          showBranch={isMultiBranch}
+                          isSelectable={selectMode}
+                          isSelected={selectedIds.has(batch.id)}
+                          offer={activeOffer}
+                          onSelect={handleSelectToggle}
+                          onTap={handleBatchTap}
+                          onViewDetails={handleBatchTap}
+                          onEdit={(b) => setEditingBatch(b)}
+                          onAdjust={(b) => setAdjustingBatch(b)}
+                          onCreateOffer={(b) => router.push(`/inventory/promotions/new?batchId=${b.id}&productId=${b.itemId || ''}`)}
+                          onPrintLabel={(b) => {
+                            toast.info(
+                              isBangla
+                                ? `ব্যাচ #${b.batchNumber} লেবেল প্রিন্টারে পাঠানো হচ্ছে...`
+                                : `Sending label for Batch #${b.batchNumber} to printer...`
+                            );
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               </div>
-            )}
-          </>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4 text-xs">
+            <span className="text-muted-foreground font-mono">
+              Showing {(page - 1) * LIMIT + 1} - {Math.min(page * LIMIT, totalBatchesCount)} of {totalBatchesCount}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="h-8 text-xs gap-1 cursor-pointer"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                {isBangla ? 'আগের' : 'Previous'}
+              </Button>
+
+              <span className="font-mono font-semibold px-2">
+                {page} / {totalPages}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="h-8 text-xs gap-1 cursor-pointer"
+              >
+                {isBangla ? 'পরের' : 'Next'}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -339,6 +418,30 @@ export default function BatchesPage() {
         }}
         fallbackBatch={inspectingFallback}
       />
+
+      {/* Edit Batch Details Modal */}
+      {editingBatch && (
+        <EditBatchDetailsModal
+          isOpen={!!editingBatch}
+          onClose={() => setEditingBatch(null)}
+          batchId={editingBatch.id}
+          batchNumber={editingBatch.batchNumber}
+          initialSupplier={editingBatch.supplier}
+          initialMfgDate={editingBatch.manufactureDate}
+        />
+      )}
+
+      {/* Stock Adjustment Form Modal */}
+      {adjustingBatch && (
+        <AdjustmentForm
+          isOpen={!!adjustingBatch}
+          onClose={() => setAdjustingBatch(null)}
+          batchId={adjustingBatch.id}
+          batchNumber={adjustingBatch.batchNumber}
+          currentQuantity={adjustingBatch.quantity}
+          unit={adjustingBatch.unit || 'pcs'}
+        />
+      )}
 
       {/* Sticky Bulk Action Bar */}
       <BulkActionBar

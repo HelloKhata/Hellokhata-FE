@@ -26,6 +26,11 @@ import {
 import { Accordion } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import {
+  Banknote,
+  CreditCard,
+  Smartphone,
+  Receipt,
+  ChevronRight,
   Plus,
   Trash2,
   Calendar as CalendarIcon,
@@ -117,6 +122,18 @@ interface BillingItemRow {
   previousSupplierName?: string;
   lastPurchaseDate?: string;
 }
+
+const METHODS = [
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+];
+
+const MOBILE_PROVIDERS = [
+  { id: "bkash", label: "bKash", color: "#E2136E" },
+  { id: "nagad", label: "Nagad", color: "#EE7623" },
+  { id: "rocket", label: "Rocket", color: "#8C52E0" },
+];
 
 function NewPurchaseContent() {
   const router = useRouter();
@@ -229,6 +246,7 @@ function NewPurchaseContent() {
       date: new Date(),
     },
   ]);
+  const [splitMode, setSplitMode] = useState(false);
 
   // Order summary adjustments
   const [shippingCost, setShippingCost] = useState<number>(0);
@@ -720,7 +738,31 @@ function NewPurchaseContent() {
     });
   };
 
+  const toggleSplitMode = () => {
+    if (splitMode) {
+      // Revert to single payment mode
+      setPayments([
+        {
+          id: Math.random().toString(),
+          method: payments[0]?.method || "cash",
+          accountId: payments[0]?.accountId || "",
+          reference: "",
+          transactionId: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+      ]);
+    } else {
+      // Enter split mode
+      const firstId = payments[0].id;
+      handlePaymentFieldChange(firstId, "amount", Math.round(grandTotal * 0.6));
+      addPaymentRow();
+    }
+    setSplitMode(!splitMode);
+  };
+
   const addPaymentRow = () => {
+    const remaining = Math.max(0, grandTotal - totalPaid);
     setPayments((prev) => [
       ...prev,
       {
@@ -729,7 +771,7 @@ function NewPurchaseContent() {
         accountId: "",
         reference: "",
         transactionId: "",
-        amount: 0,
+        amount: remaining,
         date: new Date(),
       },
     ]);
@@ -1432,142 +1474,187 @@ function NewPurchaseContent() {
             {errors.items && <p className="text-[10px] text-destructive font-medium">{errors.items}</p>}
           </div>
 
-          {/* Payment Info Section - Cash vs Bank / Mobile Banking */}
+          {/* Payment Info Section */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "পেমেন্ট তথ্য" : "Payment Information"}
               </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addPaymentRow}
-                className="h-8 text-xs gap-1.5 cursor-pointer ml-auto sm:ml-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>{isBangla ? "নতুন পেমেন্ট যোগ করুন" : "Add Payment"}</span>
-              </Button>
+              
+              <div className="flex items-center gap-2 group">
+                <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
+                  {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
+                </Label>
+                <Switch
+                  id="split-mode"
+                  checked={splitMode}
+                  onCheckedChange={toggleSplitMode}
+                />
+              </div>
             </div>
 
             <div className="space-y-3">
-              {payments.map((p) => {
-                const isCash = p.method === "cash";
+              {payments.map((p, idx) => {
+                const activeMethod = METHODS.find((m) => m.id === p.method);
                 return (
-                  <div
-                    key={p.id}
-                    className="p-4 rounded-xl border border-border/60 bg-background/30 space-y-4 relative"
-                  >
-                    {/* Delete payment button in top right if multiple payment rows */}
-                    {payments.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removePaymentRow(p.id)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-rose-500 transition-colors p-1 cursor-pointer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                  <div key={p.id} className="bg-background/30 rounded-xl p-4 border border-border/60">
+                    {splitMode && (
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+                          {isBangla ? `পেমেন্ট ${idx + 1}` : `Payment ${idx + 1}`}
+                        </span>
+                        {payments.length > 1 && (
+                          <button type="button" onClick={() => removePaymentRow(p.id)} className="text-muted-foreground hover:text-rose-500">
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-                      {/* Payment Method Selector */}
-                      <div className="space-y-2 col-span-1">
-                        <Label className="text-xs font-semibold text-foreground">
-                          {isBangla ? "পদ্ধতি *" : "Payment Method *"}
-                        </Label>
+                    {/* Method chips */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {METHODS.map((m) => {
+                        const Icon = m.icon;
+                        const active = p.method === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => handlePaymentFieldChange(p.id, "method", m.id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                              active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
+                            )}
+                          >
+                            <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
+                            <span
+                              className={cn(
+                                "text-[10px] font-medium leading-tight text-center",
+                                active ? m.colorClass : "text-muted-foreground"
+                              )}
+                            >
+                              {m.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Account selection for bank / mobile */}
+                    {p.method === "bank" && (
+                      <div className="mb-3">
                         <Select
-                          value={p.method}
-                          onValueChange={(val: any) => handlePaymentFieldChange(p.id, "method", val)}
+                          value={p.accountId}
+                          onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
                         >
                           <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full">
-                            <SelectValue />
+                            <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="cash">{isBangla ? "নগদ (Cash)" : "Cash"}</SelectItem>
-                            <SelectItem value="bank">{isBangla ? "ব্যাংক (Bank)" : "Bank"}</SelectItem>
-                            <SelectItem value="mobile_banking">
-                              {isBangla ? "মোবাইল ব্যাংকিং (Mobile Banking)" : "Mobile Banking"}
-                            </SelectItem>
+                            {accounts.map((acc: any) => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name} (Tk.{acc.balance})
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
-
-                      {/* Extra fields when Bank or Mobile Banking is selected */}
-                      {!isCash && (
-                        <>
-                          {/* Account selection */}
-                          <div className="space-y-2 col-span-1">
-                            <Label className="text-xs font-semibold text-foreground">
-                              {isBangla ? "অ্যাকাউন্ট" : "Account"}
-                            </Label>
-                            <Select
-                              value={p.accountId}
-                              onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                    )}
+                    
+                    {p.method === "mobile_banking" && (
+                      <div className="flex gap-2 mb-3">
+                        {MOBILE_PROVIDERS.map((provider) => {
+                          const active = p.accountId === provider.id;
+                          return (
+                            <button
+                              key={provider.id}
+                              type="button"
+                              onClick={() => handlePaymentFieldChange(p.id, "accountId", provider.id)}
+                              className={cn(
+                                "flex-1 py-2 rounded-lg text-xs font-semibold transition-all border",
+                                active ? "text-white" : "text-muted-foreground border-border/60 bg-transparent hover:bg-muted/30"
+                              )}
+                              style={active ? { backgroundColor: provider.color, borderColor: provider.color } : {}}
                             >
-                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full">
-                                <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {accounts.map((acc: any) => (
-                                  <SelectItem key={acc.id} value={acc.id}>
-                                    {acc.name} (Tk.{acc.balance})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </>
-                      )}
+                              {provider.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
-                      {/* Amount Field */}
-                      <div className="space-y-2 col-span-1">
-                        <Label className="text-xs font-semibold text-foreground">
-                          {isBangla ? "পরিমাণ *" : "Amount *"}
-                        </Label>
-                        <Input
-                          type="number"
-                          value={p.amount || ""}
-                          onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                          placeholder="0"
-                          className="h-10 text-xs bg-background/50 border-input text-right font-semibold w-full"
+                    {/* Amount input */}
+                    <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 mb-1.5 focus-within:border-primary">
+                      <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                      <input
+                        type="number"
+                        value={p.amount || ""}
+                        onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                        className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                        placeholder="0"
+                      />
+                    </div>
+                    {p.method !== "cash" && (
+                      <div className="text-[9px] text-muted-foreground mb-2 px-0.5">
+                        {isBangla ? "সঠিক পরিমাণ প্রবেশ করান" : `No change on ${p.method === "bank" ? "card" : "mobile banking"} — capped at the exact amount due`}
+                      </div>
+                    )}
+
+                    {/* Reference and TXN ID — bank / mobile only */}
+                    {p.method !== "cash" && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={p.reference}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
+                          placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          value={p.transactionId}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
+                          placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
                         />
                       </div>
-
-                      {!isCash && (
-                        <>
-                          {/* Reference */}
-                          <div className="space-y-2 col-span-1">
-                            <Label className="text-xs font-semibold text-foreground">
-                              {isBangla ? "রেফারেন্স" : "Reference"}
-                            </Label>
-                            <Input
-                              value={p.reference}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
-                              placeholder="Check / Ref no"
-                              className="h-10 text-xs bg-background/50 border-input w-full"
-                            />
-                          </div>
-
-                          {/* Transaction ID */}
-                          <div className="space-y-2 col-span-1">
-                            <Label className="text-xs font-semibold text-foreground">
-                              {isBangla ? "লেনদেন আইডি" : "TXN ID"}
-                            </Label>
-                            <Input
-                              value={p.transactionId}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
-                              placeholder="TXN-xxxx"
-                              className="h-10 text-xs bg-background/50 border-input w-full"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    )}
                   </div>
                 );
               })}
-              {errors.payments && <p className="text-[10px] text-destructive font-medium">{errors.payments}</p>}
+
+              {splitMode && (
+                <button
+                  type="button"
+                  onClick={addPaymentRow}
+                  className="w-full flex items-center justify-center gap-1.5 mt-3 py-2.5 rounded-xl border border-dashed border-border text-blue-500 hover:bg-blue-500/5 text-xs font-medium transition-colors"
+                >
+                  <Plus size={14} /> {isBangla ? "আরেকটি পেমেন্ট যোগ করুন" : "Add another payment method"}
+                </button>
+              )}
             </div>
+
+            {/* Summary row */}
+            <div className="mt-5 pt-4 border-t border-border space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">{isBangla ? "প্রবেশ করানো হয়েছে" : "Entered"}</span>
+                <span className="text-foreground font-mono">{formatCurrency(totalPaid)}</span>
+              </div>
+              {due > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{isBangla ? "বাকি" : "Remaining"}</span>
+                  <span className="text-orange-500 font-mono">{formatCurrency(due)}</span>
+                </div>
+              )}
+              {changeReturned > 0 && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{isBangla ? "ফেরত" : "Change due"}</span>
+                  <span className="text-emerald-500 font-mono">{formatCurrency(changeReturned)}</span>
+                </div>
+              )}
+            </div>
+            
+            {errors.payments && <p className="text-[10px] text-destructive font-medium">{errors.payments}</p>}
           </div>
 
           {/* Notes & Invoice Image Upload */}

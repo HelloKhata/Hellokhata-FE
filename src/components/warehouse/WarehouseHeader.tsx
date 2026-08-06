@@ -48,8 +48,6 @@ export function WarehouseHeader({
   warehouses,
   selectedWarehouse,
   selectedBranchId,
-  onSelectBranch,
-  onSelectWarehouse,
   onOpenNewModal,
   onOpenEditModal,
   onNavigateTransfer,
@@ -57,14 +55,7 @@ export function WarehouseHeader({
   onImportModal,
   isBangla = false,
 }: WarehouseHeaderProps) {
-  const currentWh = selectedWarehouse || (warehouses.length > 0 ? warehouses[0] : null);
-
-  const activeBranchName =
-    selectedBranchId === "all"
-      ? isBangla
-        ? "সকল শাখা"
-        : "All Branches"
-      : MOCK_BRANCHES.find((b) => b.id === selectedBranchId)?.name || "Branch";
+  const currentWh = selectedWarehouse || (warehouses?.length > 0 ? warehouses[0] : null);
 
 
   return (

@@ -41,6 +41,7 @@ import {
   Info,
   CheckCircle,
   Image as ImageIcon,
+  Receipt,
 } from "lucide-react";
 import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { useUser } from "@/stores/sessionStore";
@@ -584,24 +585,10 @@ function NewPurchaseReturnContent() {
             <RotateCcw className="h-6 w-6 text-primary" />
             {isBangla ? "ক্রয় ফেরত" : "Purchase Return"}
           </h1>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
-            className={cn(
-              "gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-all flex items-center cursor-pointer",
-              isAiPanelOpen
-                ? "bg-primary/20 text-primary border-primary/40 shadow-xs"
-                : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15",
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
-            <span>{isBangla ? "এআই সহকারী" : "AI Assistant"}</span>
-          </Button>
         </div>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           onClick={() => router.back()}
           className="text-muted-foreground hover:text-foreground h-9 px-3"
         >
@@ -610,125 +597,187 @@ function NewPurchaseReturnContent() {
         </Button>
       </div>
 
-      {/* Main 12-column grid layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Main Purchase Invoice Card */}
+      <div className="bg-card border border-border/50 rounded-xl p-5 shadow-sm space-y-4">
+        {/* Card Header & Invoice Change Button */}
+        <div className="flex items-center justify-between border-b border-border/50 pb-3">
+          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+            <Receipt className="h-4 w-4" />
+            <span>{isBangla ? "ক্রয় ইনভয়েস" : "Purchase Invoice"}</span>
+          </div>
+          {selectedPurchaseId && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedPurchaseId("");
+                setInvoiceSearchQuery("");
+                setSelectedSupplierId("");
+                setSelectedItems([]);
+              }}
+              className="h-8 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              {isBangla ? "ইনভয়েস পরিবর্তন করুন" : "Change Invoice"}
+            </Button>
+          )}
+        </div>
+
+        {/* 4-Column Grid: Purchase Invoice, Supplier(disable), Purchase Date(disable), Return Date */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          {/* Field 1 (25%): Purchase Invoice */}
+          <div className="relative space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ক্রয় ইনভয়েস" : "Purchase Invoice"}
+            </Label>
+            <div className="relative">
+              <Input
+                value={selectedInvoiceNo || invoiceSearchQuery}
+                onChange={(e) => {
+                  setInvoiceSearchQuery(e.target.value);
+                  if (selectedPurchaseId) setSelectedPurchaseId("");
+                  setShowInvoiceSuggestions(true);
+                }}
+                onFocus={() => setShowInvoiceSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowInvoiceSuggestions(false), 200);
+                }}
+                placeholder={
+                  isBangla
+                    ? "ইনভয়েস নম্বর দিয়ে খুঁজুন..."
+                    : "Search purchase invoice number..."
+                }
+                className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1 text-sm font-medium w-full"
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+              {showInvoiceSuggestions && (
+                <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  {filteredPurchases.length === 0 ? (
+                    <div className="p-3 text-center text-sm text-muted-foreground">
+                      {isBangla
+                        ? "কোনো ইনভয়েস পাওয়া যায়নি"
+                        : "No invoices found"}
+                    </div>
+                  ) : (
+                    filteredPurchases.map((purchase: any) => (
+                      <button
+                        key={purchase.id}
+                        type="button"
+                        className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between items-center"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setSelectedPurchaseId(purchase.id);
+                          setInvoiceSearchQuery("");
+                          setShowInvoiceSuggestions(false);
+                        }}
+                      >
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            {purchase.invoiceNo || `PUR-${(purchase.id || "").slice(-6)}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {purchase.supplier?.name || "Supplier"}
+                          </p>
+                        </div>
+                        <span className="font-bold text-xs text-primary">
+                          {formatCurrency(purchase.total)}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Field 2 (25%): Supplier (Non-editable) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "সরবরাহকারী" : "Supplier"}
+            </Label>
+            <Input
+              readOnly
+              disabled
+              value={
+                selectedPurchaseId
+                  ? singlePurchaseData?.data?.supplier?.name || selectedSupplierName || singleSupplierData?.data?.name || "—"
+                  : ""
+              }
+              placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
+              className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-80"
+            />
+          </div>
+
+          {/* Field 3 (25%): Purchase Date (Non-editable) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ক্রয় তারিখ" : "Purchase Date"}
+            </Label>
+            <Input
+              readOnly
+              disabled
+              value={
+                selectedPurchaseId && singlePurchaseData?.data?.createdAt
+                  ? format(new Date(singlePurchaseData.data.createdAt), "dd MMM yyyy")
+                  : ""
+              }
+              placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
+              className="h-11 bg-muted/40 border-input text-sm font-semibold text-foreground cursor-not-allowed disabled:opacity-80"
+            />
+          </div>
+
+          {/* Field 4 (25%): Return Date (Editable Date Picker) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ফেরতের তারিখ" : "Return Date"}
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-sm font-medium cursor-pointer"
+                >
+                  <span>{format(returnDate, "dd MMM yyyy")}</span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={returnDate}
+                  onSelect={(date) => date && setReturnDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      {/* IF NO INVOICE IS SELECTED: SHOW EMPTY PLACEHOLDER CARD */}
+      {!!selectedPurchaseId ? (
+        <div className="bg-card/50 border border-dashed border-border rounded-xl p-12 text-center space-y-3">
+          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <Receipt className="h-6 w-6" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">
+            {isBangla ? "কোনো ক্রয় ইনভয়েস নির্বাচন করা হয়নি" : "No Purchase Invoice Selected"}
+          </h3>
+          <p className="text-xs text-muted-foreground mx-auto">
+            {isBangla
+              ? "ক্রয় ফেরত প্রক্রিয়া শুরু করতে উপরে যেকোনো মূল ক্রয় ইনভয়েস সার্চ করে সিলেক্ট করুন।"
+              : "Please search and select an original purchase invoice above to view purchase details, product info, and process return items."}
+          </p>
+        </div>
+      ) : (
+        /* Main 12-column grid layout (Shown when invoice is selected) */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Section (Spans 9 columns on desktop) */}
         <div className="lg:col-span-9 space-y-6">
           
           {/* Section 1: Purchase Return Information Card */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-2.5">
-              <span className="text-sm font-semibold text-foreground">
-                {isBangla ? "ক্রয় ফেরত সংক্রান্ত তথ্য" : "Purchase Return Information"}
-              </span>
-              <Badge variant="outline" className="text-xs font-medium">
-                {isBangla ? "মেটাডাটা বিবরণ" : "Metadata Info"}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-background/30 p-3.5 rounded-lg border border-border/40">
-              {/* Supplier Display */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "সরবরাহকারী" : "Supplier Name"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5">
-                  {singleSupplierData?.data?.name || (isBangla ? "সরবরাহকারী নির্বাচন করুন" : "Select Supplier")}
-                </p>
-              </div>
-
-              {/* Original Purchase Invoice */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "মূল ক্রয় ইনভয়েস" : "Original Invoice"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5">
-                  {selectedInvoiceNo || (isBangla ? "ঐচ্ছিক ইনভয়েস" : "Optional Invoice")}
-                </p>
-              </div>
-
-              {/* Return Date Display */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "ফেরতের তারিখ" : "Return Date"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5">
-                  {format(returnDate, "dd MMM yyyy")}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Purchase Return Number */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ক্রয় ফেরত নম্বর" : "Return Number"}
-                </Label>
-                <Input
-                  value={returnNo}
-                  onChange={(e) => setReturnNo(e.target.value)}
-                  className="bg-background/50 border-input h-10 text-xs font-bold text-primary"
-                />
-              </div>
-
-              {/* Return Date */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ফেরতের তারিখ" : "Return Date"}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full h-10 bg-background/50 border-input justify-between text-left text-xs font-normal text-muted-foreground hover:bg-muted/5"
-                    >
-                      <span>{returnDate ? format(returnDate, "PPP") : isBangla ? "তারিখ নির্বাচন" : "Select date"}</span>
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-50">
-                    <Calendar
-                      mode="single"
-                      selected={returnDate}
-                      onSelect={(date) => date && setReturnDate(date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Branch */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "শাখা" : "Branch"}
-                </Label>
-                <Select value={branchId} onValueChange={setBranchId}>
-                  <SelectTrigger className="bg-background/50 border-input h-10 text-xs">
-                    <SelectValue placeholder={isBangla ? "শাখা নির্বাচন করুন" : "Select branch"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Responsible Person */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "দায়িত্বপ্রাপ্ত ব্যক্তি" : "Responsible Person"}
-                </Label>
-                <Input
-                  value={responsiblePerson}
-                  onChange={(e) => setResponsiblePerson(e.target.value)}
-                  className="bg-background/50 border-input h-10 text-xs font-medium"
-                />
-              </div>
-            </div>
-          </div>
+          
 
           {/* Section 2: Supplier Overview Card */}
           {singleSupplierData?.data && (
@@ -780,171 +829,64 @@ function NewPurchaseReturnContent() {
 
           {/* Section 3: Return Items List Table */}
           <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs space-y-4">
+            {/* Purchase Billing Info Text in sm text at the top of table */}
+            {singlePurchaseData?.data && (
+              <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs font-medium">
+                <div className="flex items-center gap-2 flex-wrap text-muted-foreground text-xs">
+                  <span className="font-bold text-foreground">
+                    {isBangla ? "ক্রয় ইনভয়েস তথ্য:" : "Purchase Billing Info:"}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {isBangla ? "সরবরাহকারী:" : "Supplier:"}{" "}
+                    <strong className="text-foreground">
+                      {singlePurchaseData?.data?.supplier?.name || selectedSupplierName || "—"}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {isBangla ? "তারিখ:" : "Purchase Date:"}{" "}
+                    <strong className="text-foreground">
+                      {singlePurchaseData.data.createdAt
+                        ? format(new Date(singlePurchaseData.data.createdAt), "dd MMM yyyy")
+                        : "—"}
+                    </strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3.5 flex-wrap text-xs">
+                  <span>
+                    {isBangla ? "মোট ইনভয়েস:" : "Total:"}{" "}
+                    <strong className="font-bold text-foreground">
+                      {formatCurrency(singlePurchaseData.data.total || 0)}
+                    </strong>
+                  </span>
+                  <span>
+                    {isBangla ? "পরিশোধিত:" : "Paid:"}{" "}
+                    <strong className="font-bold text-emerald-500">
+                      {formatCurrency(
+                        singlePurchaseData.data.paidAmount || singlePurchaseData.data.paid || 0
+                      )}
+                    </strong>
+                  </span>
+                  <span>
+                    {isBangla ? "বাকি:" : "Due:"}{" "}
+                    <strong className="font-bold text-rose-500">
+                      {formatCurrency(
+                        singlePurchaseData.data.dueAmount ??
+                          ((singlePurchaseData.data.total || 0) -
+                            (singlePurchaseData.data.paidAmount || 0))
+                      )}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "ফেরতযোগ্য পণ্য তালিকা" : "Returnable Items Details"}
               </span>
-            </div>
-
-            {/* Top Search Controls Bar */}
-            <div className="px-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              {/* Product Search */}
-              <div className="relative space-y-1.5 md:col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "পণ্য খুঁজুন" : "Search Product"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={productSearchQuery}
-                    onChange={(e) => {
-                      setProductSearchQuery(e.target.value);
-                      setShowProductSuggestions(true);
-                    }}
-                    onFocus={() => setShowProductSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowProductSuggestions(false), 200)}
-                    placeholder={isBangla ? "পণ্য সার্চ করুন..." : "Search product or scan barcode..."}
-                    className="pr-9 h-9 bg-background/50 border-input text-xs font-medium"
-                  />
-                  <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-
-                  {showProductSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                      {getFilteredProducts(productSearchQuery).length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No products found"}
-                        </div>
-                      ) : (
-                        getFilteredProducts(productSearchQuery).map((product: any) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between gap-3 text-foreground"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleAddProductToTable(product);
-                            }}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="h-7 w-7 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                <Image src="/images/image.png" width={16} height={16} alt="prod" className="h-4 w-4 text-muted-foreground/60" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground truncate text-xs">{product.name}</p>
-                                <p className="text-[10px] text-muted-foreground truncate">SKU: {product.sku || "—"}</p>
-                              </div>
-                            </div>
-                            <span className="font-bold text-primary text-xs shrink-0">
-                              {formatCurrency(product.costPrice || product.sellingPrice || 0)}
-                            </span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Purchase Invoice Selector */}
-              <div className="relative space-y-1.5 md:col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "মূল ক্রয় ইনভয়েস" : "Original Purchase Invoice"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={selectedInvoiceNo || invoiceSearchQuery}
-                    onChange={(e) => {
-                      setInvoiceSearchQuery(e.target.value);
-                      if (selectedPurchaseId) setSelectedPurchaseId("");
-                      setShowInvoiceSuggestions(true);
-                    }}
-                    onFocus={() => setShowInvoiceSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowInvoiceSuggestions(false), 200)}
-                    placeholder={isBangla ? "ইনভয়েস নম্বর খুঁজুন..." : "Search invoice no..."}
-                    className="pr-9 h-9 bg-background/50 border-input text-xs"
-                  />
-                  <FileText className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-
-                  {showInvoiceSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                      {filteredPurchases.length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          {isBangla ? "কোনো ইনভয়েস পাওয়া যায়নি" : "No invoices found"}
-                        </div>
-                      ) : (
-                        filteredPurchases.map((purchase: any) => (
-                          <button
-                            key={purchase.id}
-                            type="button"
-                            className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setSelectedPurchaseId(purchase.id);
-                              setInvoiceSearchQuery("");
-                              setShowInvoiceSuggestions(false);
-                            }}
-                          >
-                            <span className="font-semibold text-foreground">
-                              {purchase.invoiceNo || `PUR-${(purchase.id || "").slice(-6)}`}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground font-mono">
-                              {formatCurrency(purchase.total)}
-                            </span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Supplier Selector */}
-              <div className="relative space-y-1.5 md:col-span-1">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "সরবরাহকারী নির্বাচন" : "Select Supplier"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={selectedSupplierName || supplierSearchQuery}
-                    onChange={(e) => {
-                      setSupplierSearchQuery(e.target.value);
-                      if (selectedSupplierId) setSelectedSupplierId("");
-                      setShowSupplierSuggestions(true);
-                    }}
-                    onFocus={() => setShowSupplierSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSupplierSuggestions(false), 200)}
-                    placeholder={isBangla ? "সরবরাহকারী খুঁজুন..." : "Search supplier..."}
-                    className="pr-9 h-9 bg-background/50 border-input text-xs"
-                  />
-                  <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-
-                  {showSupplierSuggestions && (
-                    <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                      {filteredSuppliers.length === 0 ? (
-                        <div className="p-3 text-center text-xs text-muted-foreground">
-                          {isBangla ? "কোনো সরবরাহকারী পাওয়া যায়নি" : "No suppliers found"}
-                        </div>
-                      ) : (
-                        filteredSuppliers.map((supplier: any) => (
-                          <button
-                            key={supplier.id}
-                            type="button"
-                            className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setSelectedSupplierId(supplier.id);
-                              setSupplierSearchQuery("");
-                              setShowSupplierSuggestions(false);
-                            }}
-                          >
-                            <span className="font-semibold text-foreground">{supplier.name}</span>
-                            {supplier.phone && <span className="text-[10px] text-muted-foreground">{supplier.phone}</span>}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Table */}
@@ -1146,7 +1088,7 @@ function NewPurchaseReturnContent() {
         <div className="lg:col-span-3 lg:sticky lg:top-6 space-y-6">
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
-              {isBangla ? "ফেরত ও সমন্বয় বিবরণী" : "Refund & Calculation Summary"}
+              {isBangla ? "ফেরত বিবরণী" : "Refund Summary"}
             </h3>
 
             <div className="space-y-2.5 text-xs">
@@ -1157,7 +1099,7 @@ function NewPurchaseReturnContent() {
 
               {/* Order Discount */}
               <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
-                <span>{isBangla ? "অর্ডার ছাড়" : "Order Discount"}</span>
+                <span>{isBangla ? "ছাড়" : "Discount"}</span>
                 <div className="relative w-28 flex items-center">
                   <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
                   <Input
@@ -1173,7 +1115,7 @@ function NewPurchaseReturnContent() {
 
               {/* Tax Percent */}
               <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "ট্যাক্স হার" : "Tax Percent"}</span>
+                <span>{isBangla ? "ট্যাক্স" : "Tax"}</span>
                 <div className="relative w-28 flex items-center">
                   <Input
                     type="number"
@@ -1188,35 +1130,7 @@ function NewPurchaseReturnContent() {
                 </div>
               </div>
 
-              {/* Shipping Adjustment */}
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "পরিবহন খরচ সমন্বয়" : "Shipping Adjustment"}</span>
-                <div className="relative w-28 flex items-center">
-                  <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={shippingAdjustment || ""}
-                    onChange={(e) => setShippingAdjustment(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Additional Charges */}
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "অতিরিক্ত সমন্বয় খরচ" : "Additional Charges"}</span>
-                <div className="relative w-28 flex items-center">
-                  <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={additionalCharges || ""}
-                    onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
-                  />
-                </div>
-              </div>
+           
 
               {/* Grand Total */}
               <div className="flex justify-between items-center border-t border-border pt-3 text-sm font-bold">
@@ -1225,84 +1139,9 @@ function NewPurchaseReturnContent() {
               </div>
             </div>
 
-            {/* Split Options */}
-            <div className="border-t border-border pt-3.5 space-y-3 text-xs">
-              <span className="font-semibold text-foreground block">
-                {isBangla ? "রিফান্ড বন্টন (Splits)" : "Refund Distributions"}
-              </span>
-
-              {/* Cash/Bank Amount */}
-              <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <Label className="text-[10px] text-muted-foreground uppercase">{isBangla ? "নগদ / ব্যাংক ফেরত" : "Cash / Bank Refund"}</Label>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoFillSplit("refund")}
-                    className="text-[9px] text-primary hover:underline font-semibold"
-                  >
-                    {isBangla ? "সবটুকুন" : "All"}
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <span className="absolute left-2.5 text-[10px] text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={refundAmount || ""}
-                    onChange={(e) => setRefundAmount(parseFloat(e.target.value) || 0)}
-                    className="h-8 text-right pl-7 bg-background/30 text-xs font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Supplier Credit Note */}
-              <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <Label className="text-[10px] text-muted-foreground uppercase">{isBangla ? "সরবরাহকারী ক্রেডিট" : "Supplier Credit"}</Label>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoFillSplit("credit")}
-                    className="text-[9px] text-primary hover:underline font-semibold"
-                  >
-                    {isBangla ? "সবটুকুন" : "All"}
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <span className="absolute left-2.5 text-[10px] text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={supplierCredit || ""}
-                    onChange={(e) => setSupplierCredit(parseFloat(e.target.value) || 0)}
-                    className="h-8 text-right pl-7 bg-background/30 text-xs font-semibold"
-                  />
-                </div>
-              </div>
-
-              {/* Outstanding Due Adjustment */}
-              <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <Label className="text-[10px] text-muted-foreground uppercase">{isBangla ? "বকেয়া সমন্বয়" : "Outstanding Due Adjustment"}</Label>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoFillSplit("adjustment")}
-                    className="text-[9px] text-primary hover:underline font-semibold"
-                  >
-                    {isBangla ? "সবটুকুন" : "All"}
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <span className="absolute left-2.5 text-[10px] text-muted-foreground">Tk.</span>
-                  <Input
-                    type="number"
-                    value={paymentAdjustment || ""}
-                    onChange={(e) => setPaymentAdjustment(parseFloat(e.target.value) || 0)}
-                    className="h-8 text-right pl-7 bg-background/30 text-xs font-semibold"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Refund Method & Accounts */}
-            <div className="border-t border-border pt-3.5 space-y-3 text-xs">
+            <div className="flex items-center justify-between border-t border-border pt-3.5 space-y-3 text-xs">
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-foreground">{isBangla ? "রিফান্ড পদ্ধতি" : "Refund Method"}</Label>
                 <Select value={refundMethod} onValueChange={(val: any) => setRefundMethod(val)}>
@@ -1363,38 +1202,6 @@ function NewPurchaseReturnContent() {
                 )}
               </Button>
 
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleSubmitWithStatus("draft", "clear")}
-                  disabled={isSubmitting}
-                  className="h-9 text-xs border-input hover:bg-muted font-medium cursor-pointer"
-                >
-                  {isBangla ? "খসড়া রাখুন" : "Save Draft"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleSubmitWithStatus("pending", "clear")}
-                  disabled={isSubmitting}
-                  className="h-9 text-xs border-input hover:bg-muted font-medium cursor-pointer"
-                >
-                  {isBangla ? "অনুমোদন ও নতুন" : "Save & New"}
-                </Button>
-              </div>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => handleSubmitWithStatus(returnStatus, "print")}
-                disabled={isSubmitting}
-                className="w-full h-9 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <FileText className="h-4 w-4" />
-                <span>{isBangla ? "প্রিন্ট করুন" : "Save & Print"}</span>
-              </Button>
-
               <Button
                 type="button"
                 variant="ghost"
@@ -1435,6 +1242,7 @@ function NewPurchaseReturnContent() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
