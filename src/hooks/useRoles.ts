@@ -1,5 +1,5 @@
 import { Role, RoleCode } from '@/types/role';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const PREDEFINED_ROLES: Role[] = [
   {
@@ -13,6 +13,15 @@ export const PREDEFINED_ROLES: Role[] = [
     isSystem: true,
     employeeCount: 1,
     updatedAt: '2026-08-01T10:00:00Z',
+    scope: 'entire_company',
+    limits: {
+      maxDiscountPercentage: 100,
+    },
+    restrictions: {
+      allowLogin: 'always',
+      allowedDevice: 'any'
+    },
+    dataVisibility: 'all'
   },
   {
     id: 'role-branch-manager',
@@ -65,11 +74,15 @@ export const PREDEFINED_ROLES: Role[] = [
 ];
 
 export const useRoles = () => {
+  const queryClient = useQueryClient();
+
   const { data: roles = PREDEFINED_ROLES, isLoading, isError, refetch } = useQuery<Role[]>({
     queryKey: ['roles'],
     queryFn: async () => {
       // Simulate network request for production-ready TanStack Query hook
       await new Promise((resolve) => setTimeout(resolve, 300));
+      const cached = queryClient.getQueryData<Role[]>(['roles']);
+      if (cached && cached.length > 0) return cached;
       return PREDEFINED_ROLES;
     },
     staleTime: 1000 * 60 * 15, // 15 mins cache
@@ -79,11 +92,53 @@ export const useRoles = () => {
     return roles.find((r) => r.code === code);
   };
 
+  const createRole = (newRole: Omit<Role, 'id' | 'isProtected' | 'isSystem' | 'employeeCount' | 'updatedAt'>) => {
+    const role: Role = {
+      ...newRole,
+      id: `role-${Date.now()}`,
+      isProtected: false,
+      isSystem: false,
+      employeeCount: 0,
+      updatedAt: new Date().toISOString(),
+    };
+    queryClient.setQueryData<Role[]>(['roles'], (old) => {
+      return [...(old || []), role];
+    });
+    return role;
+  };
+
+  const duplicateRole = (roleToDuplicate: Role) => {
+    const role: Role = {
+      ...roleToDuplicate,
+      id: `role-${Date.now()}`,
+      code: `${roleToDuplicate.code}_copy_${Date.now()}`,
+      name: `${roleToDuplicate.name} (Copy)`,
+      isProtected: false,
+      isSystem: false,
+      employeeCount: 0,
+      updatedAt: new Date().toISOString(),
+    };
+    queryClient.setQueryData<Role[]>(['roles'], (old) => {
+      return [...(old || []), role];
+    });
+    return role;
+  };
+
+  const deleteRole = (roleId: string) => {
+    queryClient.setQueryData<Role[]>(['roles'], (old) => {
+      if (!old) return old;
+      return old.filter(r => r.id !== roleId);
+    });
+  };
+
   return {
     roles,
     isLoading,
     isError,
     refetch,
     getRoleByCode,
+    createRole,
+    duplicateRole,
+    deleteRole,
   };
 };

@@ -1,11 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Info, Truck, AlertTriangle, ShieldCheck, FileText } from "lucide-react";
+import { Truck, AlertTriangle, ShieldCheck, BarChart3 } from "lucide-react";
 import { Product } from "./mock-data";
-import { SalesPerformanceOverview } from "./SalesPerformanceOverview";
+import {
+  SalesPerformanceOverview,
+  KPISummaryCards,
+  PeriodTabs,
+  getPeriodData,
+  computeKPIMetrics,
+} from "./SalesPerformanceOverview";
+import type { SalesPeriod } from "./SalesPerformanceOverview";
+import { PurchaseHistoryTable } from "./PurchaseHistoryTable";
 
 interface ProductInformationCardProps {
   product: Product;
@@ -15,186 +22,107 @@ export function ProductInformationCard({ product }: ProductInformationCardProps)
   const isLowStock =
     (product.totalStock || 0) <= (product.minStockAlert || 30);
 
+  const [period, setPeriod] = useState<SalesPeriod>("7d");
+  const chartData = useMemo(() => getPeriodData(period), [period]);
+  const kpiMetrics = useMemo(
+    () => computeKPIMetrics(chartData, period),
+    [chartData, period]
+  );
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Main Column (2 cols wide) */}
       <div className="lg:col-span-2 space-y-6">
         {/* Sales Performance Overview Analytics Card */}
-        <SalesPerformanceOverview />
-
-        {/* Product Details & Specifications Card */}
-        <Card className="border border-border/80 rounded-2xl bg-card shadow-sm overflow-hidden">
-          <CardHeader className="p-5 border-b border-border/40 pb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-                <Info className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-bold text-foreground">
-                  Product Details & Specifications
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Core master data & inventory configuration
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Product Name
-                </span>
-                <p className="text-sm font-bold text-foreground">{product.name}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  SKU Code
-                </span>
-                <p className="text-sm font-mono font-bold text-foreground">{product.sku}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Barcode
-                </span>
-                <p className="text-sm font-mono font-bold text-foreground">{product.barcode || "N/A"}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Category
-                </span>
-                <p className="text-sm font-semibold text-foreground">{product.category}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Brand
-                </span>
-                <p className="text-sm font-semibold text-foreground">{product.brand || "Generic"}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Unit Measure
-                </span>
-                <p className="text-sm font-semibold text-foreground">{product.unit}</p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Applicable Tax Rate
-                </span>
-                <p className="text-sm font-semibold text-foreground">
-                  {product.taxRate ? `${product.taxRate}% VAT` : "Tax Exempt (0%)"}
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                  Product Status
-                </span>
-                <Badge
-                  variant="outline"
-                  className="text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
-                >
-                  {product.status || "Active"}
-                </Badge>
-              </div>
-            </div>
-
-            {product.description && (
-              <div className="pt-4 border-t border-border/40 space-y-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" />
-                  Description
-                </span>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <SalesPerformanceOverview
+          period={period}
+          onPeriodChange={setPeriod}
+        />
+      
       </div>
 
-      {/* Side Column: Supplier & Inventory Health */}
+      {/* Side Column: KPI Summary, Supplier & Inventory Health */}
       <div className="space-y-6">
-        {/* Preferred Supplier */}
+        {/* KPI Summary */}
         <Card className="border border-border/80 rounded-2xl bg-card shadow-sm overflow-hidden">
-          <CardHeader className="p-4 border-b border-border/40 pb-3">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              <CardTitle className="text-sm font-bold text-foreground">
-                Preferred Supplier
-              </CardTitle>
+          <CardHeader className="p-2 border-b border-border/40">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold text-foreground">
+                  KPI Summary
+                </CardTitle>
+              </div>
+              <PeriodTabs period={period} onPeriodChange={setPeriod} short />
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 space-y-3">
-            <div>
-              <p className="text-sm font-bold text-foreground">
-                {product.preferredSupplier || "Agro Foods Trading Co."}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {product.supplierEmail || "orders@supplier.com"}
-              </p>
-            </div>
-
-            <div className="pt-2 border-t border-border/40 flex justify-between items-center text-xs">
-              <span className="text-muted-foreground">Phone Contact:</span>
-              <span className="font-semibold text-foreground">
-                {product.supplierContact || "+880 1711-234567"}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Inventory Status & Minimum Threshold */}
-        <Card className="border border-border/80 rounded-2xl bg-card shadow-sm overflow-hidden">
-          <CardHeader className="p-4 border-b border-border/40 pb-3">
-            <div className="flex items-center gap-2">
-              {isLowStock ? (
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-              ) : (
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-              )}
-              <CardTitle className="text-sm font-bold text-foreground">
-                Inventory Health Status
-              </CardTitle>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-4 space-y-3">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-muted-foreground font-medium">Minimum Threshold:</span>
-              <span className="font-bold text-foreground">
-                {product.minStockAlert || 30} units
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-muted-foreground font-medium">Current Stock Level:</span>
-              <span className="font-bold text-foreground">{product.totalStock} units</span>
-            </div>
-
-            {isLowStock ? (
-              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2 font-medium">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                Stock is nearing minimum threshold! Consider issuing a Purchase Order.
-              </div>
-            ) : (
-              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
-                <ShieldCheck className="h-4 w-4 shrink-0" />
-                Stock level is optimal and well above minimum threshold.
-              </div>
-            )}
+          <CardContent className="px-4">
+            <KPISummaryCards metrics={kpiMetrics} />
           </CardContent>
         </Card>
       </div>
+    </div>
+     <div className="pt-5">
+       <PurchaseHistoryTable  purchases={[
+  {
+    id: "pur_001",
+    purchaseNo: "PUR-20260804-001",
+    supplierName: "ABC Traders",
+    purchaseDate: "2026-08-04",
+    batchId: "BCH-107029",
+    quantity: 100,
+    unitCost: 73,
+    totalCost: 7300,
+    createdBy: "Sweet Ali",
+  },
+  {
+    id: "pur_002",
+    purchaseNo: "PUR-20260803-002",
+    supplierName: "Fresh Foods Ltd.",
+    purchaseDate: "2026-08-03",
+    batchId: "BCH-107030",
+    quantity: 50,
+    unitCost: 75,
+    totalCost: 3750,
+    createdBy: "Admin",
+  },
+  {
+    id: "pur_003",
+    purchaseNo: "PUR-20260802-003",
+    supplierName: "Global Supply Co.",
+    purchaseDate: "2026-08-02",
+    batchId: "BCH-107031",
+    quantity: 200,
+    unitCost: 68,
+    totalCost: 13600,
+    createdBy: "John Doe",
+  },
+  {
+    id: "pur_004",
+    purchaseNo: "PUR-20260801-004",
+    supplierName: "Prime Wholesale",
+    purchaseDate: "2026-08-01",
+    batchId: "BCH-107032",
+    quantity: 80,
+    unitCost: 71,
+    totalCost: 5680,
+    createdBy: "Admin",
+  },
+  {
+    id: "pur_005",
+    purchaseNo: "PUR-20260730-005",
+    supplierName: "National Distributors",
+    purchaseDate: "2026-07-30",
+    batchId: "BCH-107033",
+    quantity: 150,
+    unitCost: 69,
+    totalCost: 10350,
+    createdBy: "Sweet Ali",
+  },
+]} />
+     </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Save, Undo2, Loader2 } from 'lucide-react';
+import { AlertTriangle, Save, RotateCcw, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,41 +33,40 @@ export const StickySaveBar: React.FC<StickySaveBarProps> = ({
 
   return (
     <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
-        <div className="flex items-center justify-between p-3.5 sm:px-5 rounded-2xl bg-foreground text-background shadow-xl border border-border/20 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
-            <span className="text-xs sm:text-sm font-medium">
-              You have unsaved permission changes.
-            </span>
+      <div className="fixed left-0 right-0 bottom-0 z-40 bg-card/90 backdrop-blur-md border-t border-border shadow-[0_-8px_24px_-18px_rgba(0,0,0,0.25)] animate-in slide-in-from-bottom-full duration-300">
+        <div className="max-w-[1440px] mx-auto px-[clamp(16px,3vw,32px)] py-3 flex items-center justify-between gap-3">
+          <div className="text-[13px] text-muted-foreground font-semibold flex items-center gap-2">
+            <AlertTriangle className="w-[14px] h-[14px] text-amber-500" />
+            <span className="hidden sm:inline">You have unsaved permission changes</span>
+            <span className="sm:hidden">Unsaved changes</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex gap-2.5">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowConfirmModal(true)}
               disabled={isSaving}
-              className="h-8 text-xs font-medium border-background/30 text-background hover:bg-background/10 hover:text-background rounded-xl gap-1.5"
+              className="h-[38px] px-3.5 rounded-[9px] font-semibold text-[13.5px] border-border text-foreground hover:bg-muted"
             >
-              <Undo2 className="h-3.5 w-3.5" />
-              Discard
+              <RotateCcw className="h-4 w-4 mr-1.5" />
+              Reset
             </Button>
             <Button
               type="button"
               size="sm"
               onClick={onSave}
               disabled={isSaving}
-              className="h-8 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl gap-1.5 shadow-sm"
+              className="h-[38px] px-3.5 rounded-[9px] font-semibold text-[13.5px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="h-3.5 w-3.5" />
+                  <Save className="h-4 w-4 mr-1.5" />
                   Save Changes
                 </>
               )}

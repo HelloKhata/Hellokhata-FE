@@ -21,12 +21,12 @@ export function WarehouseKpiCards({
   isBangla = false,
 }: WarehouseKpiCardsProps) {
   // Calculated aggregates matching inventory cards specification
-  const totalItems = warehouses.reduce((sum, w) => sum + (w.productsCount || 0), 0);
-  const totalStock = warehouses.reduce((sum, w) => sum + (w.totalStockUnits || 0), 0);
-  const stockValue = warehouses.reduce((sum, w) => sum + (w.stockValue || 0), 0);
-  const lowStockCount = warehouses.reduce((sum, w) => sum + Math.max(1, Math.round((w.productsCount || 0) * 0.015)), 0);
+  const totalItems = warehouses?.reduce((sum, w) => sum + (w.productsCount || 0), 0);
+  const totalStock = warehouses?.reduce((sum, w) => sum + (w.totalStockUnits || 0), 0);
+  const stockValue = warehouses?.reduce((sum, w) => sum + (w.stockValue || 0), 0);
+  const lowStockCount = warehouses?.reduce((sum, w) => sum + Math.max(1, Math.round((w.productsCount || 0) * 0.015)), 0);
 
-  const formatCurrency = (val: number) => `৳${val.toLocaleString("en-BD")}`;
+  const formatCurrency = (val: number) => `৳${val?.toLocaleString("en-BD")}`;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -39,7 +39,7 @@ export function WarehouseKpiCards({
                 {isBangla ? "মোট পণ্য" : "Total Items"}
               </p>
               <p className="text-xl font-bold font-mono text-foreground">
-                {totalItems.toLocaleString()}{" "}
+                {totalItems?.toLocaleString()}{" "}
                 <span className="text-xs font-normal text-muted-foreground">{isBangla ? "টি পণ্য" : "Items"}</span>
               </p>
               <span className="text-[10px] text-muted-foreground block truncate">
@@ -62,7 +62,7 @@ export function WarehouseKpiCards({
                 {isBangla ? "মোট স্টক" : "Total Stock"}
               </p>
               <p className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                {totalStock.toLocaleString()}{" "}
+                {totalStock?.toLocaleString()}{" "}
                 <span className="text-xs font-normal text-muted-foreground">{isBangla ? "ইউনিট" : "Units"}</span>
               </p>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block truncate">

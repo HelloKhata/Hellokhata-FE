@@ -25,7 +25,7 @@ export default function AddProductPage() {
   const [barcode, setBarcode] = useState("");
   const [brand, setBrand] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [taxCategoryId, setTaxCategoryId] = useState("");
+  const [taxCategoryId, setTaxCategoryId] = useState<string | null>(null);
   const [unitId, setUnitId] = useState("");
   const [description, setDescription] = useState("");
 
@@ -148,8 +148,6 @@ export default function AddProductPage() {
       trackExpiry,
       trackBatch,
       status,
-      warranty,
-      hasWarranty: warranty === "YES",
       warrantyDays: warranty === "YES" ? (warrantyDays === "" ? 0 : Number(warrantyDays)) : 0,
       productType,
       imageUrl,
@@ -264,15 +262,8 @@ export default function AddProductPage() {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-xs font-medium text-slate-400">
-                        Barcode / EAN
+                        Barcode
                       </label>
-                      <button
-                        type="button"
-                        onClick={generateBarcode}
-                        className="text-[11px] text-primary hover:underline font-medium"
-                      >
-                        Generate Barcode
-                      </button>
                     </div>
                     <input
                       type="text"
@@ -490,7 +481,7 @@ export default function AddProductPage() {
                 {/* Left Column: Core Inputs & Expandable Advance Inputs */}
                 <div className="md:col-span-2 space-y-3.5">
                   {/* Base Pricing Row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
                       <label className="block text-xs font-medium text-slate-400 mb-1">
                         Purchase Cost <span className="text-primary">*</span>
@@ -564,6 +555,32 @@ export default function AddProductPage() {
                         </p>
                       )}
                     </div>
+                      <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Tax Category
+                  </label>
+                  <select
+                    value={taxCategoryId}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      setTaxCategoryId(selectedId);
+                      const selected = taxCategories?.find(
+                        (tc: any) => tc.id === selectedId,
+                      );
+                      if (selected && typeof selected.rate === "number") {
+                        setVatRate(selected.rate);
+                      }
+                    }}
+                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                  >
+                    <option value="">Select Tax Category</option>
+                    {taxCategories?.map((tc: any) => (
+                      <option key={tc.id} value={tc.id}>
+                        {tc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                   </div>
                   <button
                     type="button"
@@ -835,95 +852,7 @@ export default function AddProductPage() {
               </div>
             </section>
 
-            {/* CARD 4: Tax Rates & Accounting Setup */}
-            <section className="bg-[#121520] border border-slate-800/80 rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800/60">
-                <Receipt className="w-4 h-4 text-primary" />
-                <h3 className="text-base font-semibold text-white">
-                  Tax Rates & Accounting Setup
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
-                    Tax Category
-                  </label>
-                  <select
-                    value={taxCategoryId}
-                    onChange={(e) => {
-                      const selectedId = e.target.value;
-                      setTaxCategoryId(selectedId);
-                      const selected = taxCategories?.find(
-                        (tc: any) => tc.id === selectedId,
-                      );
-                      if (selected && typeof selected.rate === "number") {
-                        setVatRate(selected.rate);
-                      }
-                    }}
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
-                  >
-                    <option value="">Select Tax Category</option>
-                    {taxCategories?.map((tc: any) => (
-                      <option key={tc.id} value={tc.id}>
-                        {tc.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
-                    VAT Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={vatRate}
-                    onChange={(e) =>
-                      setVatRate(
-                        e.target.value === "" ? "" : Number(e.target.value),
-                      )
-                    }
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3 h-10 text-xs text-slate-100 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">
-                    Income Revenue Account
-                  </label>
-                  <select
-                    value={incomeRevenueAccount}
-                    onChange={(e) => setIncomeRevenueAccount(e.target.value)}
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 h-10 text-xs text-slate-300 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
-                  >
-                    <option>Sales Revenue</option>
-                    <option>Other Income</option>
-                  </select>
-                </div>
-              </div>
-            </section>
-
-            {/* CARD 5: Description Section */}
-            <section className="bg-[#121520] border border-slate-800/80 rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800/60">
-                <Tag className="w-4 h-4 text-primary" />
-                <h3 className="text-base font-semibold text-white">
-                  Description
-                </h3>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter full product details, specifications, packaging notes, tags, or internal metadata..."
-                  className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all resize-none"
-                />
-              </div>
-            </section>
+         
           </div>
 
           {/* RIGHT COLUMN SIDEBAR CARDS - STICKY WRAPPER */}
@@ -954,7 +883,7 @@ export default function AddProductPage() {
             </section>
 
             {/* Creation Summary Card */}
-            <section className="bg-[#121520] border border-slate-800/80 rounded-xl p-4.5 space-y-3 shadow-sm">
+            {/* <section className="bg-[#121520] border border-slate-800/80 rounded-xl p-4.5 space-y-3 shadow-sm">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-800/60">
                 <ShieldCheck className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold text-white">
@@ -980,6 +909,28 @@ export default function AddProductPage() {
                     Validating Entry
                   </span>
                 </div>
+              </div>
+            </section> */}
+               {/* CARD 5: Description Section */}
+            <section className="bg-[#121520] border border-slate-800/80 rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2 pb-2.5 border-b border-slate-800/60">
+                <Tag className="w-4 h-4 text-primary" />
+                <h3 className="text-base font-semibold text-white">
+                  Description
+                </h3>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter full product details, specifications, packaging notes, tags, or internal metadata..."
+                  className="w-full bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all resize-none"
+                />
               </div>
             </section>
           </div>

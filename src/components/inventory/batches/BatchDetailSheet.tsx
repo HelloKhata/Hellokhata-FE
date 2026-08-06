@@ -24,6 +24,8 @@ import {
   DollarSign,
   Sparkles,
   ArrowRight,
+  Plus,
+  Tag,
 } from "lucide-react";
 import { useGetBatchById, useGetBatchMovements } from "@/hooks/api/useBatches";
 import { useGetOffers } from "@/hooks/api/useOffers";
@@ -62,13 +64,13 @@ export function BatchDetailSheet({
   const batch = batchRes?.data || fallbackBatch;
   const activeOffers = offersRes?.data || [];
 
-  const activeOffer = batch
-    ? activeOffers.find(
+  const linkedOffers = batch
+    ? activeOffers.filter(
         (o: any) =>
-          o.status === "active" &&
+          (o.status === "active" || o.status === "scheduled") &&
           (o.batchId === batch.id || (!o.batchId && o.productId === batch.itemId))
       )
-    : null;
+    : [];
 
   const movements: MovementItem[] = (movementsRes?.data || []).map((m: any) => ({
     id: m.id || String(Math.random()),
@@ -94,12 +96,18 @@ export function BatchDetailSheet({
     );
   };
 
+  const handleCreateOffer = () => {
+    if (!batch) return;
+    onClose();
+    router.push(`/inventory/promotions/new?batchId=${batch.id}&productId=${batch.itemId || ''}`);
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="w-[95%] sm:w-[95%] lg:w-[50%] max-w-none sm:max-w-none lg:max-w-none p-0 bg-background border border-border shadow-xl rounded-2xl overflow-hidden">
           {/* ========================================================================= */}
-          {/* Section 1: Header — product image/name, branch, expiry status badge       */}
+          {/* Section 1: Header — product info, batch number, status badge              */}
           {/* ========================================================================= */}
           <DialogHeader className="p-4 sm:p-5 border-b border-border/80 bg-card space-y-1">
             {isLoading && !batch ? (
@@ -108,37 +116,19 @@ export function BatchDetailSheet({
                 <Skeleton className="h-3 w-32" />
               </div>
             ) : batch ? (
-              <div className="flex items-center gap-3.5 pr-6">
-                {/* Product Image */}
-                <div
-                  className={cn(
-                    "h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border border-border/40 overflow-hidden",
-                    batch.isExpired
-                      ? "bg-rose-100 dark:bg-rose-900/30"
-                      : batch.isExpiringSoon
-                      ? "bg-amber-100 dark:bg-amber-900/30"
-                      : "bg-indigo-100 dark:bg-indigo-900/30"
-                  )}
-                >
-                  {batch.itemImage ? (
-                    <img src={batch.itemImage} alt={batch.itemName || ""} className="h-full w-full object-cover" />
-                  ) : (
-                    <Package
-                      className={cn(
-                        "h-6 w-6",
-                        batch.isExpired ? "text-rose-600" : batch.isExpiringSoon ? "text-amber-600" : "text-indigo-600"
-                      )}
-                    />
-                  )}
-                </div>
-
-                {/* Name & Branch */}
+              <div className="flex items-center justify-between pr-6 gap-3">
                 <div className="min-w-0 flex-1">
                   <DialogTitle className="text-base sm:text-lg font-bold text-foreground text-left truncate">
                     {batch.itemName || batch.batchNumber}
                   </DialogTitle>
                   <DialogDescription className="text-xs text-muted-foreground text-left flex items-center gap-2 flex-wrap mt-0.5">
                     <span className="font-mono font-semibold text-foreground/80">#{batch.batchNumber}</span>
+                    {batch.barcode && (
+                      <>
+                        <span>•</span>
+                        <span className="font-mono text-slate-300">BARCODE: {batch.barcode}</span>
+                      </>
+                    )}
                     {batch.branchName && (
                       <>
                         <span>•</span>
@@ -282,36 +272,79 @@ export function BatchDetailSheet({
                 </Card>
 
                 {/* ========================================================================= */}
-                {/* Section 4: Active Offer banner — ONLY shown if an offer targets this batch  */}
+                {/* Section 4: Linked Offers & Promotions Section                             */}
                 {/* ========================================================================= */}
-                {activeOffer && (
-                  <div
-                    onClick={() => router.push(`/inventory/promotions/new?id=${activeOffer.id}`)}
-                    className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 transition-colors cursor-pointer flex items-center justify-between gap-3 text-purple-950 dark:text-purple-300"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
-                        <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <Card className="border border-border/60 shadow-xs">
+                  <CardContent className="p-3.5 space-y-3">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground uppercase">
+                        <Sparkles className="h-4 w-4 text-amber-400" />
+                        <span>{isBangla ? "অফার ও প্রমোশন" : "Offers & Promotions"}</span>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold truncate">
-                          {isBangla ? "সক্রিয় অফার উপলব্ধ" : "Active Batch Offer"}
-                        </div>
-                        <div className="text-[11px] text-purple-700 dark:text-purple-400 truncate">
-                          {(activeOffer as any).name || (activeOffer as any).title || "Special promotional offer currently active for this batch"}
-                        </div>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCreateOffer}
+                        className="h-7 text-xs font-semibold border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 gap-1 cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        {isBangla ? "অফার তৈরি করুন" : "Create Offer"}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs font-semibold border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300 shrink-0 gap-1"
-                    >
-                      {isBangla ? "অফার দেখুন" : "View Offer"}
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+
+                    {linkedOffers.length > 0 ? (
+                      <div className="space-y-2">
+                        {linkedOffers.map((offer: any) => (
+                          <div
+                            key={offer.id}
+                            onClick={() => {
+                              onClose();
+                              router.push(`/inventory/promotions/new?id=${offer.id}`);
+                            }}
+                            className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 transition-colors cursor-pointer flex items-center justify-between gap-3 text-purple-950 dark:text-purple-300"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                                <Tag className="h-4 w-4 text-purple-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold truncate flex items-center gap-2">
+                                  <span>{offer.name || offer.title || "Special Offer"}</span>
+                                  <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 font-mono font-semibold">
+                                    {offer.type}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-purple-700 dark:text-purple-400 truncate mt-0.5">
+                                  {offer.scope === "batch"
+                                    ? isBangla ? "ব্যাচ অফার" : "Batch Specific Offer"
+                                    : isBangla ? "প্রোডাক্ট অফার" : "Product Level Offer"}
+                                  {offer.startDate && ` • Start: ${format(new Date(offer.startDate), "dd MMM yyyy")}`}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs font-semibold border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-300 shrink-0 gap-1"
+                            >
+                              {isBangla ? "সম্পাদনা" : "Edit Offer"}
+                              <ArrowRight className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-3 bg-muted/20 rounded-xl border border-dashed border-border/40 space-y-1">
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {isBangla ? "এই ব্যাচের জন্য কোনো সক্রিয় অফার নেই" : "No active offers linked to this batch"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/70">
+                          {isBangla ? "নতুন অফার তৈরি করে প্রমোশন যোগ করুন" : "Create a discount or BOGO offer linked to this batch"}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* ========================================================================= */}
                 {/* Section 5: Stock Movement History — reverse-chronological list            */}
@@ -338,15 +371,24 @@ export function BatchDetailSheet({
                 </Card>
 
                 {/* ========================================================================= */}
-                {/* Section 6: Actions row — Adjust Quantity button & Edit Details button       */}
+                {/* Section 6: Actions row — Adjust Qty, Create Offer, Edit Details            */}
                 {/* ========================================================================= */}
-                <div className="grid grid-cols-2 gap-2.5 pt-2">
+                <div className="grid grid-cols-3 gap-2.5 pt-2">
                   <Button
                     onClick={() => setIsAdjustOpen(true)}
                     className="h-10 text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
                   >
                     <SlidersHorizontal className="h-4 w-4" />
-                    {isBangla ? "পরিমাণ সংশোধন" : "Adjust Quantity"}
+                    {isBangla ? "পরিমাণ সংশোধন" : "Adjust Qty"}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={handleCreateOffer}
+                    className="h-10 text-xs font-bold gap-1.5 cursor-pointer border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                  >
+                    <Tag className="h-4 w-4 text-emerald-400" />
+                    {isBangla ? "অফার তৈরি করুন" : "Create Offer"}
                   </Button>
 
                   <Button

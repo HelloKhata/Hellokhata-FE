@@ -21,47 +21,49 @@ import {
 } from "@/components/ui/select";
 import { Building2, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { Warehouse } from "./WarehouseMockData";
-import { useCreateWarehouse } from "@/hooks/api/useWarehouse";
 
-interface NewWarehouseModalProps {
+interface EditWarehouseModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave?: (warehouseData: any) => void;
+  warehouse: any | null;
   isBangla?: boolean;
 }
 
-export function NewWarehouseModal({
+export function EditWarehouseModal({
   isOpen,
   onClose,
+  onSave,
+  warehouse,
   isBangla = false,
-}: NewWarehouseModalProps) {
-  const { mutate:createWarehouse, isPending:isCreating } = useCreateWarehouse();
+}: EditWarehouseModalProps) {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Form State matching Warehouse List columns (Name, Code, Location, Manager, Status)
+  // Form State matching Warehouse List columns
   const [formData, setFormData] = useState({
     name: "",
     code: "",
     location: "Dhaka",
     managerName: "",
     managerPhone: "",
-    status: "ACTIVE",
+    status: "active",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (isOpen) {
+    if (warehouse) {
       setFormData({
-        name: "",
-        code: `WH-${Math.floor(100 + Math.random() * 900)}`,
-        location: "Dhaka",
-        managerName: "",
-        managerPhone: "",
-        status: "ACTIVE",
+        name: warehouse.name || "",
+        code: warehouse.code || "",
+        location: warehouse.location || warehouse.city || "Dhaka",
+        managerName: warehouse.managerName || "",
+        managerPhone: warehouse.managerPhone || "",
+        status: warehouse.status || "active",
       });
-      setErrors({});
     }
-  }, [isOpen]);
+    setErrors({});
+  }, [warehouse, isOpen]);
 
   const handleTextChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -82,14 +84,10 @@ export function NewWarehouseModal({
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
-    createWarehouse(formData,{onSuccess:()=>{
-      toast.success(isBangla ? "ওয়্যারহাউস সফলভাবে তৈরি করা হয়েছে" : "Warehouse created successfully");
-      onClose()
-    }})
-
+    if (!validateForm() || !warehouse) return;
+    onClose();
   };
 
   return (
@@ -102,12 +100,10 @@ export function NewWarehouseModal({
             </div>
             <div>
               <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
-                {isBangla ? "নতুন ওয়্যারহাউস তৈরি করুন" : "Create New Warehouse"}
+                {isBangla ? "ওয়্যারহাউস আপডেট করুন" : "Update Warehouse"}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                {isBangla
-                  ? "ওয়্যারহাউসের তথ্য পূরণ করুন।"
-                  : "Enter warehouse details matching the warehouse list."}
+                {isBangla ? "ওয়্যারহাউসের তথ্য পরিবর্তন করুন।" : "Modify warehouse details."}
               </DialogDescription>
             </div>
           </div>
@@ -142,8 +138,6 @@ export function NewWarehouseModal({
               />
               {errors.code && <p className="text-[10px] text-destructive font-medium">{errors.code}</p>}
             </div>
-
-          
 
             {/* City (Location) */}
             <div className="space-y-1.5">
@@ -197,13 +191,13 @@ export function NewWarehouseModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE" className="text-xs">
+                  <SelectItem value="active" className="text-xs">
                     {isBangla ? "সক্রিয় (Active)" : "Active"}
                   </SelectItem>
-                  <SelectItem value="MAINTENANCE" className="text-xs">
+                  <SelectItem value="maintenance" className="text-xs">
                     {isBangla ? "রক্ষণাবেক্ষণ (Maintenance)" : "Maintenance"}
                   </SelectItem>
-                  <SelectItem value="INACTIVE" className="text-xs">
+                  <SelectItem value="inactive" className="text-xs">
                     {isBangla ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}
                   </SelectItem>
                 </SelectContent>
@@ -217,17 +211,17 @@ export function NewWarehouseModal({
               variant="outline"
               onClick={onClose}
               className="h-9 text-xs font-semibold cursor-pointer rounded-xl"
-              disabled={isCreating || isCreating}
+              disabled={isLoading}
             >
               {isBangla ? "বাতিল" : "Cancel"}
             </Button>
 
             <Button
               type="submit"
-              disabled={isCreating || isCreating}
+              disabled={isLoading}
               className="h-9 text-xs font-semibold gap-2 cursor-pointer rounded-xl"
             >
-              {(isCreating || isCreating) ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
                   {isBangla ? "সংরক্ষণ হচ্ছে..." : "Saving..."}
@@ -235,7 +229,7 @@ export function NewWarehouseModal({
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  {isBangla ? "সেভ করুন" : "Save Warehouse"}
+                  {isBangla ? "আপডেট করুন" : "Update Warehouse"}
                 </>
               )}
             </Button>

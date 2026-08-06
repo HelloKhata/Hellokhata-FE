@@ -10,18 +10,12 @@ import { ProductIdentityCard } from "@/components/product-details/ProductIdentit
 import { ProductInformationCard } from "@/components/product-details/ProductInformationCard";
 import { BatchTable } from "@/components/product-details/BatchTable";
 import { BranchStockTable } from "@/components/product-details/BranchStockTable";
-import { PurchaseHistoryTable } from "@/components/product-details/PurchaseHistoryTable";
-import { SalesSummarySection } from "@/components/product-details/SalesSummarySection";
-import { StockTimeline } from "@/components/product-details/StockTimeline";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   mockProduct,
   mockBatches,
   mockBranchStocks,
-  mockPurchases,
-  mockMovements,
   mockBarcodes,
   Product,
 } from "@/components/product-details/mock-data";
@@ -136,38 +130,6 @@ function ProductDetailsContent() {
             </TabsTrigger>
 
             <TabsTrigger
-              value="purchases"
-              className="rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              <ShoppingBag className="h-3.5 w-3.5" />
-              Purchases ({mockPurchases.length})
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="sales"
-              className="rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              <TrendingUp className="h-3.5 w-3.5" />
-              Sales
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="timeline"
-              className="rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              <History className="h-3.5 w-3.5" />
-              Inventory Timeline
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="pricing"
-              className="rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer data-[state=active]:bg-card data-[state=active]:shadow-sm"
-            >
-              <Tag className="h-3.5 w-3.5" />
-              Pricing Tiers
-            </TabsTrigger>
-
-            <TabsTrigger
               value="documents"
               className="rounded-xl px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
@@ -180,11 +142,6 @@ function ProductDetailsContent() {
         {/* Tab Content 1: Overview */}
         <TabsContent value="overview" className="space-y-6">
           <ProductInformationCard product={product} />
-          {/* <BarcodeSection
-            barcodes={mockBarcodes}
-            onPrintLabel={(bc) => alert(`Printing barcode: ${bc}`)}
-            onGenerateBarcode={() => alert("Generate new barcode label")}
-          /> */}
         </TabsContent>
 
         {/* Tab Content 2: Batches */}
@@ -203,58 +160,12 @@ function ProductDetailsContent() {
           <BranchStockTable branches={mockBranchStocks} />
         </TabsContent>
 
-        {/* Tab Content 4: Purchases */}
-        <TabsContent value="purchases">
-          <PurchaseHistoryTable purchases={mockPurchases} />
-        </TabsContent>
-
-        {/* Tab Content 5: Sales */}
-        <TabsContent value="sales">
-          <SalesSummarySection product={product} />
-        </TabsContent>
-
-        {/* Tab Content 6: Inventory Timeline */}
-        <TabsContent value="timeline">
-          <StockTimeline movements={mockMovements} />
-        </TabsContent>
-
-        {/* Tab Content 7: Pricing Tiers */}
-        <TabsContent value="pricing">
-          <Card className="border border-border/80 rounded-2xl bg-card shadow-sm p-6 space-y-4">
-            <CardHeader className="p-0 pb-3 border-b border-border/40">
-              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <Tag className="h-4 w-4 text-emerald-500" />
-                Pricing Tiers & Configuration
-              </CardTitle>
-            </CardHeader>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Retail Price (SRP)</span>
-                <p className="text-2xl font-extrabold text-foreground">৳{product.sellingPrice}</p>
-                <p className="text-[11px] text-muted-foreground">Standard customer rate</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Wholesale Price</span>
-                <p className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">৳{Math.round(product.sellingPrice * 0.9)}</p>
-                <p className="text-[11px] text-muted-foreground">10% bulk purchase discount</p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/40 space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Cost Price</span>
-                <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">৳{product.costPrice}</p>
-                <p className="text-[11px] text-muted-foreground">Average purchase unit cost</p>
-              </div>
-            </div>
-          </Card>
-        </TabsContent>
-
         {/* Tab Content 8: Documents */}
         <TabsContent value="documents">
           <Card className="border border-border/80 rounded-2xl bg-card shadow-sm p-8 text-center space-y-3">
             <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
             <h3 className="text-sm font-bold text-foreground">No Attachments Uploaded</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            <p className="text-xs text-muted-foreground mx-auto">
               Upload product manuals, lab certificates, invoices, or compliance documents for safe keeping.
             </p>
           </Card>

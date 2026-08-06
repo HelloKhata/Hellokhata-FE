@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -44,7 +44,8 @@ export interface KPIMetric {
 
 export interface SalesPerformanceOverviewProps {
   isLoading?: boolean;
-  initialPeriod?: SalesPeriod;
+  period: SalesPeriod;
+  onPeriodChange: (period: SalesPeriod) => void;
   customData?: Record<SalesPeriod, ChartDataPoint[]>;
 }
 
@@ -79,6 +80,14 @@ const MOCK_PERIOD_DATA: Record<SalesPeriod, ChartDataPoint[]> = {
   ],
 };
 
+export function getPeriodData(
+  period: SalesPeriod,
+  customData?: Record<SalesPeriod, ChartDataPoint[]>
+): ChartDataPoint[] {
+  const dataset = customData || MOCK_PERIOD_DATA;
+  return dataset[period] || [];
+}
+
 const formatCurrency = (amount: number): string => {
   return `৳${amount.toLocaleString("en-US")}`;
 };
@@ -86,6 +95,175 @@ const formatCurrency = (amount: number): string => {
 const formatNumber = (num: number): string => {
   return num.toLocaleString("en-US");
 };
+
+export function computeKPIMetrics(
+  chartData: ChartDataPoint[],
+  period: SalesPeriod
+): KPIMetric[] {
+  if (!chartData || chartData.length === 0) {
+    return [
+      { id: "units", title: "Units Sold", value: "0 pcs", icon: Package },
+      { id: "revenue", title: "Revenue", value: "৳0", icon: CircleDollarSign },
+      { id: "profit", title: "Gross Profit", value: "৳0", icon: PieChart },
+      { id: "daily", title: "Avg Daily Sales", value: "0 pcs/day", icon: Calendar },
+      { id: "best_month", title: "Best Selling Month", value: "N/A", icon: Award },
+    ];
+  }
+
+  const totalUnits = chartData.reduce((sum, item) => sum + item.units, 0);
+  const totalRevenue = chartData.reduce((sum, item) => sum + item.sales, 0);
+  const totalProfit = chartData.reduce((sum, item) => sum + item.profit, 0);
+
+  let avgDaily = 0;
+  if (period === "7d") avgDaily = Math.round(totalUnits / 7);
+  else if (period === "30d") avgDaily = Math.round(totalUnits / 30);
+  else avgDaily = Math.round(totalUnits / 365);
+
+  let bestPoint = chartData[0];
+  for (const pt of chartData) {
+    if (pt.sales > bestPoint.sales) {
+      bestPoint = pt;
+    }
+  }
+
+  return [
+    {
+      id: "units",
+      title: "Units Sold",
+      value: `${formatNumber(totalUnits)} pcs`,
+      change: "+12.4%",
+      isPositive: true,
+      icon: Package,
+    },
+    {
+      id: "revenue",
+      title: "Revenue",
+      value: formatCurrency(totalRevenue),
+      change: "+15.8%",
+      isPositive: true,
+      icon: CircleDollarSign,
+    },
+    {
+      id: "profit",
+      title: "Gross Profit",
+      value: formatCurrency(totalProfit),
+      change: "+18.2%",
+      isPositive: true,
+      icon: PieChart,
+    },
+    {
+      id: "daily",
+      title: "Avg Daily Sales",
+      value: `${formatNumber(avgDaily)} pcs/day`,
+      change: "+5.1%",
+      isPositive: true,
+      icon: Calendar,
+    },
+    {
+      id: "best_month",
+      title: "Best Selling Month",
+      value: `${bestPoint.label} (${formatCurrency(bestPoint.sales)})`,
+      icon: Award,
+    },
+  ];
+}
+
+export function KPISummaryCards({ metrics }: { metrics: KPIMetric[] }) {
+  return (
+    <div className="grid grid-cols-1 gap-2.5">
+      {metrics.map((kpi) => {
+        const Icon = kpi.icon;
+        return (
+          <div
+            key={kpi.id}
+            className="bg-muted/30 border border-border/40 rounded-2xl p-4 space-y-2.5 transition-colors hover:border-border/80"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="p-1.5 rounded-lg bg-muted text-muted-foreground shrink-0">
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate">
+                  {kpi.title}
+                </span>
+              </div>
+
+              <div className="shrink-0 text-right">
+                <p className="text-base font-bold text-foreground font-mono truncate">
+                  {kpi.value}
+                </p>
+                {kpi.change && (
+                  <div className="mt-1 flex items-center justify-end gap-1">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-semibold px-1.5 py-0.2 border-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    >
+                      <TrendingUp className="h-3 w-3 mr-0.5 inline" />
+                      {kpi.change}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const PERIOD_LABELS: Record<SalesPeriod, string> = {
+  "7d": "Last 7 Days",
+  "30d": "Last 30 Days",
+  "12m": "Last 12 Months",
+};
+
+const PERIOD_SHORT_LABELS: Record<SalesPeriod, string> = {
+  "7d": "7 Days",
+  "30d": "30 Days",
+  "12m": "12 Months",
+};
+
+interface PeriodTabsProps {
+  period: SalesPeriod;
+  onPeriodChange: (period: SalesPeriod) => void;
+  short?: boolean;
+}
+
+export function PeriodTabs({
+  period,
+  onPeriodChange,
+  short = false,
+}: PeriodTabsProps) {
+  const labels = short ? PERIOD_SHORT_LABELS : PERIOD_LABELS;
+  return (
+    <Tabs
+      value={period}
+      onValueChange={(val) => onPeriodChange(val as SalesPeriod)}
+      className="w-full md:w-auto"
+    >
+      <TabsList
+        className={`bg-muted/80 p-1 rounded-xl border border-border/40 w-full md:w-auto grid grid-cols-3 md:flex ${
+          short ? "h-8" : "h-9"
+        }`}
+      >
+        {(Object.keys(labels) as SalesPeriod[]).map((key) => (
+          <TabsTrigger
+            key={key}
+            value={key}
+            className={`font-semibold rounded-lg transition-all cursor-pointer data-[state=active]:bg-primary data-[state=active]:text-primary-foreground ${
+              short
+                ? "text-[11px] px-2 py-1"
+                : "text-xs px-3 py-1"
+            }`}
+          >
+            {labels[key]}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
+  );
+}
 
 interface CustomTooltipProps {
   active?: boolean;
@@ -122,84 +300,14 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 
 export function SalesPerformanceOverview({
   isLoading = false,
-  initialPeriod = "7d",
+  period,
+  onPeriodChange,
   customData,
 }: SalesPerformanceOverviewProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<SalesPeriod>(initialPeriod);
-
-  const chartData = useMemo(() => {
-    const dataset = customData || MOCK_PERIOD_DATA;
-    return dataset[selectedPeriod] || [];
-  }, [selectedPeriod, customData]);
-
-  const kpiMetrics = useMemo<KPIMetric[]>(() => {
-    if (!chartData || chartData.length === 0) {
-      return [
-        { id: "units", title: "Units Sold", value: "0 pcs", icon: Package },
-        { id: "revenue", title: "Revenue", value: "৳0", icon: CircleDollarSign },
-        { id: "profit", title: "Gross Profit", value: "৳0", icon: PieChart },
-        { id: "daily", title: "Avg Daily Sales", value: "0 pcs/day", icon: Calendar },
-        { id: "best_month", title: "Best Selling Month", value: "N/A", icon: Award },
-      ];
-    }
-
-    const totalUnits = chartData.reduce((sum, item) => sum + item.units, 0);
-    const totalRevenue = chartData.reduce((sum, item) => sum + item.sales, 0);
-    const totalProfit = chartData.reduce((sum, item) => sum + item.profit, 0);
-
-    let avgDaily = 0;
-    if (selectedPeriod === "7d") avgDaily = Math.round(totalUnits / 7);
-    else if (selectedPeriod === "30d") avgDaily = Math.round(totalUnits / 30);
-    else avgDaily = Math.round(totalUnits / 365);
-
-    let bestPoint = chartData[0];
-    for (const pt of chartData) {
-      if (pt.sales > bestPoint.sales) {
-        bestPoint = pt;
-      }
-    }
-
-    return [
-      {
-        id: "units",
-        title: "Units Sold",
-        value: `${formatNumber(totalUnits)} pcs`,
-        change: "+12.4%",
-        isPositive: true,
-        icon: Package,
-      },
-      {
-        id: "revenue",
-        title: "Revenue",
-        value: formatCurrency(totalRevenue),
-        change: "+15.8%",
-        isPositive: true,
-        icon: CircleDollarSign,
-      },
-      {
-        id: "profit",
-        title: "Gross Profit",
-        value: formatCurrency(totalProfit),
-        change: "+18.2%",
-        isPositive: true,
-        icon: PieChart,
-      },
-      {
-        id: "daily",
-        title: "Avg Daily Sales",
-        value: `${formatNumber(avgDaily)} pcs/day`,
-        change: "+5.1%",
-        isPositive: true,
-        icon: Calendar,
-      },
-      {
-        id: "best_month",
-        title: "Best Selling Month",
-        value: `${bestPoint.label} (${formatCurrency(bestPoint.sales)})`,
-        icon: Award,
-      },
-    ];
-  }, [chartData, selectedPeriod]);
+  const chartData = useMemo(
+    () => getPeriodData(period, customData),
+    [period, customData]
+  );
 
   if (isLoading) {
     return (
@@ -216,12 +324,6 @@ export function SalesPerformanceOverview({
         </div>
 
         <Skeleton className="h-[340px] w-full rounded-xl" />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
       </Card>
     );
   }
@@ -246,32 +348,7 @@ export function SalesPerformanceOverview({
           </div>
 
           {/* Segmented Period Selector */}
-          <Tabs
-            value={selectedPeriod}
-            onValueChange={(val) => setSelectedPeriod(val as SalesPeriod)}
-            className="w-full md:w-auto"
-          >
-            <TabsList className="bg-muted/80 p-1 rounded-xl h-9 border border-border/40 w-full md:w-auto grid grid-cols-3 md:flex">
-              <TabsTrigger
-                value="7d"
-                className="text-xs font-semibold rounded-lg px-3 py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all cursor-pointer"
-              >
-                Last 7 Days
-              </TabsTrigger>
-              <TabsTrigger
-                value="30d"
-                className="text-xs font-semibold rounded-lg px-3 py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all cursor-pointer"
-              >
-                Last 30 Days
-              </TabsTrigger>
-              <TabsTrigger
-                value="12m"
-                className="text-xs font-semibold rounded-lg px-3 py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all cursor-pointer"
-              >
-                Last 12 Months
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <PeriodTabs period={period} onPeriodChange={onPeriodChange} />
         </div>
       </CardHeader>
 
@@ -345,45 +422,6 @@ export function SalesPerformanceOverview({
             </div>
           </div>
         )}
-
-        {/* KPI Summary (5 Cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          {kpiMetrics.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <div
-                key={kpi.id}
-                className="bg-muted/30 border border-border/40 rounded-2xl p-4 space-y-2.5 transition-colors hover:border-border/80"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate">
-                    {kpi.title}
-                  </span>
-                  <div className="p-1.5 rounded-lg bg-muted text-muted-foreground shrink-0">
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-base font-bold text-foreground font-mono truncate">
-                    {kpi.value}
-                  </p>
-                  {kpi.change && (
-                    <div className="mt-1 flex items-center gap-1">
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-semibold px-1.5 py-0.2 border-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      >
-                        <TrendingUp className="h-3 w-3 mr-0.5 inline" />
-                        {kpi.change}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </CardContent>
     </Card>
   );
