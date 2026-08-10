@@ -281,16 +281,10 @@ export const navGroups: NavItem[] = [
         labelBn: "বেতন",
       },
       {
-        page: "/hrm/reports/attendance-summary",
+        page: "/hrm/attendance-summary",
         icon: FileClock,
         labelKey: "Attendance Summary",
         labelBn: "উপস্থিতি সারসংক্ষেপ",
-      },
-      {
-        page: "/hrm/reports/payroll-register",
-        icon: ClipboardList,
-        labelKey: "Payroll Register",
-        labelBn: "বেতন রেজিস্টার",
       },
       {
         page: "/hrm/roles-permissions",
