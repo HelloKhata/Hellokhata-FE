@@ -1644,33 +1644,7 @@ function NewPurchaseContent() {
                       })}
                     </div>
 
-                    {/* Provider selection for Mobile Banking */}
-                    {p.method === "mobile_banking" && (
-                      <div className="flex gap-2 mb-3">
-                        {MOBILE_PROVIDERS.map((provider) => {
-                          const active = p.accountId === provider.id;
-                          return (
-                            <button
-                              key={provider.id}
-                              type="button"
-                              onClick={() => handlePaymentFieldChange(p.id, "accountId", provider.id)}
-                              className={cn(
-                                "flex flex-1 items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all border",
-                                active ? "text-white" : "text-muted-foreground border-border/60 bg-transparent hover:bg-muted/30"
-                              )}
-                              style={active ? { backgroundColor: provider.color, borderColor: provider.color } : {}}
-                            >
-                              {provider.logo ? (
-                                <img src={provider.logo} alt={provider.label} className="w-[50px] h-8 object-contain" />
-                              ) : (
-                                provider.label
-                              )}
-                              { provider.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+
 
                     {/* Common Amount Input (Rendered alone if method is somehow missing, though should be covered below) */}
                     {!["cash", "bank", "mobile_banking"].includes(p.method) && (
@@ -1751,8 +1725,23 @@ function NewPurchaseContent() {
 
                     {/* Fields for Mobile Banking */}
                     {p.method === "mobile_banking" && (
-                      <div className="grid grid-cols-3 gap-3 mb-3">
-                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <Select
+                          value={p.accountId}
+                          onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                        >
+                          <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                            <SelectValue placeholder={isBangla ? "প্রোভাইডার নির্বাচন করুন" : "Select Provider"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MOBILE_PROVIDERS.map((provider) => (
+                              <SelectItem key={provider.id} value={provider.id}>
+                                {provider.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
                             type="number"
@@ -1767,14 +1756,14 @@ function NewPurchaseContent() {
                           value={p.transactionId}
                           onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
                           placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
-                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                          className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
                         />
                         <input
                           type="text"
                           value={p.reference}
                           onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
                           placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
-                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                          className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
                         />
                       </div>
                     )}
