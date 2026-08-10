@@ -1731,7 +1731,7 @@ function NewPurchaseContent() {
                           onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
                         >
                           <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
-                            <SelectValue placeholder={isBangla ? "প্রোভাইডার নির্বাচন করুন" : "Select Provider"} />
+                            <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                           </SelectTrigger>
                           <SelectContent>
                             {MOBILE_PROVIDERS.map((provider) => (

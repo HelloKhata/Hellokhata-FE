@@ -473,195 +473,62 @@ export default function FinanceBankWalletsPage() {
         )}
       </AnimatePresence>
 
-      {/* ══ SECTION A: LIQUIDITY OVERVIEW STRIP ══ */}
-      <div
-        className="rounded-2xl p-5 border"
-        style={{
-          background: 'linear-gradient(135deg, rgba(79,91,255,0.07) 0%, rgba(15,191,159,0.04) 100%)',
-          borderColor: 'rgba(79,91,255,0.12)',
-        }}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-4">
-          {/* Total */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-              {isBangla ? 'সর্বমোট তারল্য' : 'Total Liquidity'}
-            </p>
-            <p className="text-3xl font-bold text-foreground font-mono">
-              {hideBalances ? '৳ ••••••' : formatCurrency(totalLiquid)}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {accounts.length} {isBangla ? 'টি অ্যাকাউন্ট' : 'accounts active'}
-            </p>
-          </div>
-          {/* Bank */}
-          <div className="border-l border-border/40 pl-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500/80 mb-1 flex items-center gap-1">
-              <Landmark className="h-3 w-3" />
-              {isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
-            </p>
-            <p className="text-2xl font-bold text-foreground font-mono">
-              {hideBalances ? '৳ ••••••' : formatCurrency(totalBank)}
-            </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${bankPct}%` }} />
-              </div>
-              <span className="text-[10px] text-muted-foreground font-bold">{bankPct}%</span>
-            </div>
-          </div>
-          {/* Wallet */}
-          <div className="border-l border-border/40 pl-5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-pink-500/80 mb-1 flex items-center gap-1">
-              <Wallet className="h-3 w-3" />
-              {isBangla ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance'}
-            </p>
-            <p className="text-2xl font-bold text-foreground font-mono">
-              {hideBalances ? '৳ ••••••' : formatCurrency(totalWallet)}
-            </p>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
-                <div className="h-full bg-pink-500 rounded-full transition-all" style={{ width: `${walletPct}%` }} />
-              </div>
-              <span className="text-[10px] text-muted-foreground font-bold">{walletPct}%</span>
-            </div>
-          </div>
+      {/* ══ SECTION A: LIQUIDITY OVERVIEW CARDS ══ */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">
+        {/* Total */}
+        <div className="rounded-2xl p-5 border bg-emerald-500/10 border-emerald-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-1 relative z-10">
+            {isBangla ? 'সর্বমোট তারল্য' : 'Total Liquidity'}
+          </p>
+          <p className="text-3xl font-bold text-foreground font-mono relative z-10">
+            {hideBalances ? '৳ ••••••' : formatCurrency(totalLiquid)}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {accounts.length} {isBangla ? 'টি অ্যাকাউন্ট' : 'accounts active'}
+          </p>
         </div>
 
-        {/* Segmented allocation bar */}
-        <div className="w-full h-2.5 rounded-full overflow-hidden flex gap-0.5">
-          {accounts.map(acc => {
-            const pct = totalLiquid > 0 ? (acc.balance / totalLiquid) * 100 : 0;
-            const bg = acc.type === 'bank' ? '#3b82f6' : '#ec4899';
-            return (
-              <div
-                key={acc.id}
-                title={`${acc.name}: ${formatCurrency(acc.balance)}`}
-                className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, backgroundColor: bg, opacity: 0.8 }}
-              />
-            );
-          })}
-        </div>
-        <div className="flex gap-3 mt-2">
-          {accounts.map(acc => (
-            <div key={acc.id} className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: acc.type === 'bank' ? '#3b82f6' : '#ec4899' }} />
-              {isBangla ? acc.nameBn : acc.name}
+        {/* Bank */}
+        <div className="rounded-2xl p-5 border bg-blue-500/10 border-blue-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-1 flex items-center gap-1 relative z-10">
+            <Landmark className="h-3 w-3" />
+            {isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
+          </p>
+          <p className="text-2xl font-bold text-foreground font-mono relative z-10">
+            {hideBalances ? '৳ ••••••' : formatCurrency(totalBank)}
+          </p>
+          {/* <div className="mt-2.5 flex items-center gap-2 relative z-10">
+            <div className="flex-1 h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${bankPct}%` }} />
             </div>
-          ))}
+            <span className="text-[10px] text-blue-500 font-bold">{bankPct}%</span>
+          </div> */}
+        </div>
+
+        {/* Wallet */}
+        <div className="rounded-2xl p-5 border bg-pink-500/10 border-pink-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-pink-500 mb-1 flex items-center gap-1 relative z-10">
+            <Wallet className="h-3 w-3" />
+            {isBangla ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance'}
+          </p>
+          <p className="text-2xl font-bold text-foreground font-mono relative z-10">
+            {hideBalances ? '৳ ••••••' : formatCurrency(totalWallet)}
+          </p>
+          {/* <div className="mt-2.5 flex items-center gap-2 relative z-10">
+            <div className="flex-1 h-1.5 rounded-full bg-pink-500/20 overflow-hidden">
+              <div className="h-full bg-pink-500 rounded-full transition-all" style={{ width: `${walletPct}%` }} />
+            </div>
+            <span className="text-[10px] text-pink-500 font-bold">{walletPct}%</span>
+          </div> */}
         </div>
       </div>
 
       {/* ══ SECTION B: VIRTUAL CARDS + ADD FORM ══ */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* LEFT: Virtual Card Carousel */}
-        <div className="xl:col-span-2 space-y-4">
-          {/* Filter pills */}
-          <div className="flex items-center gap-2">
-            {(['all', 'bank', 'wallet'] as const).map(type => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={cn(
-                  'px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all',
-                  filterType === type
-                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                    : 'border-border text-muted-foreground hover:text-foreground bg-card'
-                )}
-              >
-                {type === 'all'
-                  ? (isBangla ? 'সকল' : 'All')
-                  : type === 'bank'
-                    ? (isBangla ? 'ব্যাংক' : 'Bank')
-                    : (isBangla ? 'ওয়ালেট' : 'Wallet')}
-                <span className="ml-1.5 opacity-60">
-                  {type === 'all' ? accounts.length : accounts.filter(a => a.type === type).length}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Card grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AnimatePresence>
-              {filteredAccounts.map(acc => (
-                <VirtualCard
-                  key={acc.id}
-                  account={acc}
-                  isActive={activeCardId === acc.id}
-                  onClick={() => setActiveCardId(prev => prev === acc.id ? null : acc.id)}
-                  isBangla={isBangla}
-                  formatCurrency={formatCurrency}
-                  onCopy={handleCopy}
-                  onReconcile={handleOpenReconcile}
-                  onDelete={handleDeleteAccount}
-                  hideBalance={hideBalances}
-                />
-              ))}
-            </AnimatePresence>
-            {filteredAccounts.length === 0 && (
-              <div className="sm:col-span-2 flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed border-border/50 text-muted-foreground gap-3">
-                <CreditCard className="h-10 w-10 opacity-20" />
-                <p className="text-sm font-medium">
-                  {isBangla ? 'কোনো অ্যাকাউন্ট পাওয়া যায়নি' : 'No accounts found'}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* ── Recent Activity ─────────────────────────────── */}
-          <div
-            className="rounded-2xl border overflow-hidden"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}
-          >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <History className="h-4 w-4 text-primary" />
-                {isBangla ? 'সাম্প্রতিক কার্যকলাপ' : 'Recent Activity'}
-              </h3>
-              <span className="text-[11px] text-muted-foreground">{activities.length} {isBangla ? 'টি এন্ট্রি' : 'entries'}</span>
-            </div>
-            <div className="divide-y divide-border/30">
-              {activities.slice(0, 6).map((act, i) => (
-                <motion.div
-                  key={act.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors"
-                >
-                  <div className={cn(
-                    'h-8 w-8 rounded-xl flex items-center justify-center shrink-0',
-                    act.type === 'inflow' ? 'bg-emerald-500/10' : 'bg-rose-500/10'
-                  )}>
-                    {act.type === 'inflow'
-                      ? <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
-                      : <ArrowUpRight className="h-4 w-4 text-rose-500" />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-foreground truncate">
-                      {isBangla ? act.descriptionBn : act.description}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {isBangla ? act.accountNameBn : act.accountName} · {act.date}
-                    </p>
-                  </div>
-                  <span className={cn(
-                    'text-xs font-bold font-mono shrink-0',
-                    act.type === 'inflow' ? 'text-emerald-500' : 'text-rose-500'
-                  )}>
-                    {act.type === 'inflow' ? '+' : '-'}{formatCurrency(act.amount)}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: Add Account Panel ─────────────────────────── */}
+{/* left: Add Account Panel ─────────────────────────── */}
         <div
           className="rounded-2xl border overflow-hidden h-fit"
           style={{ borderColor: 'rgba(79,91,255,0.12)', background: 'rgba(79,91,255,0.02)' }}
@@ -848,6 +715,112 @@ export default function FinanceBankWalletsPage() {
             </AnimatePresence>
           </div>
         </div>
+        {/* Right: Virtual Card Carousel */}
+        <div className="xl:col-span-2 space-y-4">
+          {/* Filter pills */}
+          <div className="flex items-center gap-2">
+            {(['all', 'bank', 'wallet'] as const).map(type => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all',
+                  filterType === type
+                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                    : 'border-border text-muted-foreground hover:text-foreground bg-card'
+                )}
+              >
+                {type === 'all'
+                  ? (isBangla ? 'সকল' : 'All')
+                  : type === 'bank'
+                    ? (isBangla ? 'ব্যাংক' : 'Bank')
+                    : (isBangla ? 'ওয়ালেট' : 'Wallet')}
+                <span className="ml-1.5 opacity-60">
+                  {type === 'all' ? accounts.length : accounts.filter(a => a.type === type).length}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Card grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <AnimatePresence>
+              {filteredAccounts.map(acc => (
+                <VirtualCard
+                  key={acc.id}
+                  account={acc}
+                  isActive={activeCardId === acc.id}
+                  onClick={() => setActiveCardId(prev => prev === acc.id ? null : acc.id)}
+                  isBangla={isBangla}
+                  formatCurrency={formatCurrency}
+                  onCopy={handleCopy}
+                  onReconcile={handleOpenReconcile}
+                  onDelete={handleDeleteAccount}
+                  hideBalance={hideBalances}
+                />
+              ))}
+            </AnimatePresence>
+            {filteredAccounts.length === 0 && (
+              <div className="sm:col-span-2 flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed border-border/50 text-muted-foreground gap-3">
+                <CreditCard className="h-10 w-10 opacity-20" />
+                <p className="text-sm font-medium">
+                  {isBangla ? 'কোনো অ্যাকাউন্ট পাওয়া যায়নি' : 'No accounts found'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Recent Activity ─────────────────────────────── */}
+          <div
+            className="rounded-2xl border overflow-hidden"
+            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                {isBangla ? 'সাম্প্রতিক কার্যকলাপ' : 'Recent Activity'}
+              </h3>
+              <span className="text-[11px] text-muted-foreground">{activities.length} {isBangla ? 'টি এন্ট্রি' : 'entries'}</span>
+            </div>
+            <div className="divide-y divide-border/30">
+              {activities.slice(0, 6).map((act, i) => (
+                <motion.div
+                  key={act.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors"
+                >
+                  <div className={cn(
+                    'h-8 w-8 rounded-xl flex items-center justify-center shrink-0',
+                    act.type === 'inflow' ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                  )}>
+                    {act.type === 'inflow'
+                      ? <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+                      : <ArrowUpRight className="h-4 w-4 text-rose-500" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-foreground truncate">
+                      {isBangla ? act.descriptionBn : act.description}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {isBangla ? act.accountNameBn : act.accountName} · {act.date}
+                    </p>
+                  </div>
+                  <span className={cn(
+                    'text-xs font-bold font-mono shrink-0',
+                    act.type === 'inflow' ? 'text-emerald-500' : 'text-rose-500'
+                  )}>
+                    {act.type === 'inflow' ? '+' : '-'}{formatCurrency(act.amount)}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        
       </div>
 
       {/* ══ RECONCILE DIALOG ══ */}
