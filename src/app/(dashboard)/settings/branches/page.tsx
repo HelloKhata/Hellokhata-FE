@@ -58,38 +58,22 @@ import { cn } from "@/lib/utils";
 // Schema for Branch Settings
 const branchSettingsSchema = z.object({
   name: z.string().min(2, "Branch name is required"),
-  code: z.string().min(2, "Branch code is required"),
   email: z.string().email("Invalid email address").or(z.literal("")),
   phone: z.string().min(6, "Valid phone number is required"),
   address: z.string().min(2, "Address is required"),
   city: z.string().min(2, "City is required"),
-  state: z.string().optional(),
-  country: z.string().default("Bangladesh"),
-  postalCode: z.string().optional(),
   status: z.enum(["active", "inactive"]).default("active"),
-  openingDate: z.string().optional(),
-  timeZone: z.string().default("Asia/Dhaka"),
-  currency: z.string().default("BDT"),
-  language: z.string().default("bn"),
 });
 
 type BranchSettingsFormValues = z.infer<typeof branchSettingsSchema>;
 
 const EMPTY_BRANCH_VALUES: BranchSettingsFormValues = {
   name: "",
-  code: "",
   email: "",
   phone: "",
   address: "",
   city: "Dhaka",
-  state: "Dhaka Division",
-  country: "Bangladesh",
-  postalCode: "1200",
   status: "active",
-  openingDate: new Date().toISOString().split("T")[0],
-  timeZone: "Asia/Dhaka",
-  currency: "BDT",
-  language: "bn",
 };
 
 const INITIAL_BRANCHES: Branch[] = [
@@ -196,10 +180,8 @@ export default function BranchManagementPage() {
     setActiveFormMode("create");
     setEditingBranchId(null);
 
-    const nextCode = `BR-0${branchesList.length + 1}`;
     reset({
       ...EMPTY_BRANCH_VALUES,
-      code: nextCode,
     });
 
     scrollToForm();
@@ -219,22 +201,13 @@ export default function BranchManagementPage() {
     setActiveFormMode("edit");
     setEditingBranchId(branch.id);
 
-    const index = branchesList.findIndex((b) => b.id === branch.id);
     reset({
       name: branch.name,
-      code: `BR-${branch.name.substring(0, 2).toUpperCase()}-0${index >= 0 ? index + 1 : 1}`,
       email: `${branch.name.toLowerCase().replace(/\s+/g, "")}@smartstore.com`,
       phone: branch.phone || "",
       address: branch.address || "",
       city: "Dhaka",
-      state: "Dhaka Division",
-      country: "Bangladesh",
-      postalCode: "1200",
       status: branch.isActive ? "active" : "inactive",
-      openingDate: "2024-01-01",
-      timeZone: "Asia/Dhaka",
-      currency: "BDT",
-      language: "bn",
     });
 
     scrollToForm();
@@ -525,7 +498,7 @@ export default function BranchManagementPage() {
         </div>
       </div>
 
-      {/* Main General Branch Configuration Form (HIDDEN BY DEFAULT until user clicks Configure/Edit or Create) */}
+      {/* Main General Branch Configuration Form */}
       {activeFormMode !== null && (
         <form
           id="branch-config-form"
@@ -552,11 +525,11 @@ export default function BranchManagementPage() {
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {activeFormMode === "create"
                     ? isBangla
-                      ? "নতুন শাখার নাম, কোড, ঠিকানা ও যোগাযোগের তথ্য দিয়ে নিচের ফর্মটি পূরণ করুন"
+                      ? "নতুন শাখার নাম, ঠিকানা ও যোগাযোগের তথ্য দিয়ে নিচের ফর্মটি পূরণ করুন"
                       : "Fill in the general information form below to create a new branch"
                     : isBangla
-                    ? "শাখার নাম, কোড, স্থান এবং আঞ্চলিক সেটিংস আপডেট করুন"
-                    : "Update core identity, location, and regional settings for this branch"}
+                    ? "শাখার নাম, ঠিকানা এবং যোগাযোগের তথ্য আপডেট করুন"
+                    : "Update core identity and location settings for this branch"}
                 </p>
               </div>
             </div>
@@ -598,48 +571,6 @@ export default function BranchManagementPage() {
               )}
             </div>
 
-            {/* Branch Code */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "ব্রাঞ্চ কোড *" : "Branch Code *"}
-              </Label>
-              <Input
-                {...register("code")}
-                placeholder="BR-04"
-                className="h-10 text-xs font-mono"
-              />
-              {errors.code && (
-                <p className="text-[11px] text-destructive">{errors.code.message}</p>
-              )}
-            </div>
-
-            {/* Status */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "স্ট্যাটাস" : "Status"}
-              </Label>
-              <Select
-                value={watch("status")}
-                onValueChange={(val) =>
-                  setValue("status", val as "active" | "inactive", {
-                    shouldDirty: true,
-                  })
-                }
-              >
-                <SelectTrigger className="h-10 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">
-                    {isBangla ? "সক্রিয় (Active)" : "Active"}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {isBangla ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Email */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">
@@ -669,18 +600,6 @@ export default function BranchManagementPage() {
               {errors.phone && (
                 <p className="text-[11px] text-destructive">{errors.phone.message}</p>
               )}
-            </div>
-
-            {/* Opening Date */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "উদ্বোধনের তারিখ" : "Opening Date"}
-              </Label>
-              <Input
-                type="date"
-                {...register("openingDate")}
-                className="h-10 text-xs"
-              />
             </div>
 
             {/* Address (Span 2) */}
@@ -715,97 +634,29 @@ export default function BranchManagementPage() {
               )}
             </div>
 
-            {/* State */}
+            {/* Status */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "বিভাগ / রাজ্য" : "State / Division"}
-              </Label>
-              <Input
-                {...register("state")}
-                placeholder="Dhaka Division"
-                className="h-10 text-xs"
-              />
-            </div>
-
-            {/* Country */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "দেশ *" : "Country *"}
-              </Label>
-              <Input
-                {...register("country")}
-                placeholder="Bangladesh"
-                className="h-10 text-xs"
-              />
-            </div>
-
-            {/* Postal Code */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "পোস্টাল কোড" : "Postal Code"}
-              </Label>
-              <Input
-                {...register("postalCode")}
-                placeholder="1205"
-                className="h-10 text-xs"
-              />
-            </div>
-
-            {/* Time Zone */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "টাইম জোন" : "Time Zone"}
+                {isBangla ? "স্ট্যাটাস" : "Status"}
               </Label>
               <Select
-                value={watch("timeZone")}
-                onValueChange={(val) => setValue("timeZone", val, { shouldDirty: true })}
+                value={watch("status")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive", {
+                    shouldDirty: true,
+                  })
+                }
               >
                 <SelectTrigger className="h-10 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Asia/Dhaka">Asia/Dhaka (GMT+6)</SelectItem>
-                  <SelectItem value="Asia/Kolkata">Asia/Kolkata (GMT+5:30)</SelectItem>
-                  <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Currency */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "মুদ্রা (Currency)" : "Currency"}
-              </Label>
-              <Select
-                value={watch("currency")}
-                onValueChange={(val) => setValue("currency", val, { shouldDirty: true })}
-              >
-                <SelectTrigger className="h-10 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BDT">BDT (৳ - Bangladeshi Taka)</SelectItem>
-                  <SelectItem value="USD">USD ($ - US Dollar)</SelectItem>
-                  <SelectItem value="EUR">EUR (€ - Euro)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Language */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">
-                {isBangla ? "ডিফল্ট ভাষা" : "Default Language"}
-              </Label>
-              <Select
-                value={watch("language")}
-                onValueChange={(val) => setValue("language", val, { shouldDirty: true })}
-              >
-                <SelectTrigger className="h-10 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bn">বাংলা (Bengali)</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="active">
+                    {isBangla ? "সক্রিয় (Active)" : "Active"}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {isBangla ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -822,7 +673,9 @@ export default function BranchManagementPage() {
             >
               {isBangla ? "বাতিল করুন" : "Cancel"}
             </Button>
-            <Button
+            {
+             activeFormMode === "create" ? 
+ <Button
               type="submit"
               size="sm"
               disabled={isSaving}
@@ -838,7 +691,18 @@ export default function BranchManagementPage() {
               {activeFormMode === "create"
                 ? isBangla ? "শাখা তৈরি করুন" : "Create Branch"
                 : isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
-            </Button>
+            </Button>: 
+             <Button
+              size="sm"
+              disabled={isSaving}
+              className="rounded-xl text-xs font-medium"
+            >
+              
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+             
+              {isBangla ? "সংরক্ষণ করুন" : "Save Changes"}
+            </Button> 
+            }
           </div>
         </form>
       )}

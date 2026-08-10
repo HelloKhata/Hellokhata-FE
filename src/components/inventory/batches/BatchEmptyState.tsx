@@ -83,7 +83,7 @@ export function BatchEmptyState({
           <h3 className="text-base font-bold text-foreground">
             {isBangla ? "কোনো ব্যাচ পাওয়া যায়নি" : "No Batches Found"}
           </h3>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+          <p className="text-xs text-muted-foreground mx-auto">
             {isBangla
               ? "আপনার ইনভেন্টরিতে এখনো কোনো ব্যাচ যোগ করা হয়নি। ক্রয় করার সময় স্বয়ক্রিয়ভাবে ব্যাচ যুক্ত হবে।"
               : "No batches are registered in your inventory yet. Batches will be automatically created when you perform stock-in or purchase orders."}

@@ -85,6 +85,7 @@ interface PaymentRow {
   accountId: string;
   reference: string;
   transactionId: string;
+  receivedBy?: string;
   amount: number;
   date: Date;
 }
@@ -130,9 +131,9 @@ const METHODS = [
 ];
 
 const MOBILE_PROVIDERS = [
-  { id: "bkash", label: "bKash", color: "#E2136E" },
-  { id: "nagad", label: "Nagad", color: "#EE7623" },
-  { id: "rocket", label: "Rocket", color: "#8C52E0" },
+  { id: "bkash", label: "bKash", color: "#E2136E", logo: "/images/bkash.png" },
+  { id: "nagad", label: "Nagad", color: "#EE7623", logo: "/images/nagad.png" },
+  { id: "rocket", label: "Rocket", color: "#8C52E0", logo: "/images/rocket.png" },
 ];
 
 function NewPurchaseContent() {
@@ -153,6 +154,7 @@ function NewPurchaseContent() {
   const { data: suppliersData } = useParties({ type: "supplier" });
   const suppliers = suppliersData?.data || [];
 
+  console.log(suppliers)
   const { data: branches = [{id:1, name:'Main'},{id:2, name:'Sub Branch'}] } = useBranches();
   const { data: accounts = [] } = useAccounts();
   const { data: purchases = [] } = useGetPurchases();
@@ -168,9 +170,6 @@ function NewPurchaseContent() {
   const [topProductSearchQuery, setTopProductSearchQuery] = useState("");
   const [showTopProductSuggestions, setShowTopProductSuggestions] = useState(false);
   const [selectedSearchProduct, setSelectedSearchProduct] = useState<any | null>(null);
-  const [searchQty, setSearchQty] = useState<number>(1);
-  const [searchUnitPrice, setSearchUnitPrice] = useState<number>(0);
-  const [searchAmount, setSearchAmount] = useState<number>(0);
 
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [purchaseType, setPurchaseType] = useState<string>("in_store");
@@ -191,7 +190,7 @@ function NewPurchaseContent() {
   }, [storeBranches]);
 
   const [branch, setBranch] = useState<{ name: string; id: string }>({ name: "", id: "" });
-
+  console.log("branch", branch);
   const warehousesList = useMemo(() => {
     const filtered = branches.filter((b: any) => b.type === "warehouse");
     if (filtered.length > 0) return filtered;
@@ -242,11 +241,13 @@ function NewPurchaseContent() {
       accountId: "",
       reference: "",
       transactionId: "",
+      receivedBy: "",
       amount: 0,
       date: new Date(),
     },
   ]);
   const [splitMode, setSplitMode] = useState(false);
+  const [activeSplitMethod, setActiveSplitMethod] = useState<string>("cash");
 
   // Order summary adjustments
   const [shippingCost, setShippingCost] = useState<number>(0);
@@ -329,9 +330,9 @@ function NewPurchaseContent() {
 
   // Selected Supplier Name
   const selectedSupplierName = useMemo(() => {
-    const supplier = suppliers.find((p: any) => p.id === selectedSupplierId);
+    const supplier = suppliers.find((p: any) => String(p.id) === String(selectedSupplierId));
     if (supplier) return supplier.name;
-    if (singleSupplierData?.data && singleSupplierData.data.id === selectedSupplierId) {
+    if (singleSupplierData?.data && String(singleSupplierData.data.id) === String(selectedSupplierId)) {
       return singleSupplierData.data.name;
     }
     return "";
@@ -435,43 +436,6 @@ function NewPurchaseContent() {
     );
   };
 
-  const handleItemSelect = (rowId: string, item: any) => {
-    setSelectedItems((prev) =>
-      prev.map((r) => {
-        if (r.id === rowId) {
-          const cost = item.costPrice || item.purchasePrice || 0;
-          const qty = r.quantity || 1;
-          const taxPct = item.taxPercent || 0;
-
-          const baseTotal = qty * cost;
-          const taxAmt = Math.max(0, baseTotal) * (taxPct / 100);
-          const finalTotal = Math.max(0, baseTotal + taxAmt);
-
-          return {
-            ...r,
-            itemId: item.id,
-            itemName: item.name,
-            sku: item.sku || "",
-            unit: item.unit?.name || item.unit || "Pcs",
-            currentStock: item.currentStock || 0,
-            unitCost: cost,
-            taxPercent: taxPct,
-            taxAmount: taxAmt,
-            total: finalTotal,
-            searchQuery: "",
-            showSuggestions: false,
-            lastPurchasePrice: item.lastPurchasePrice || cost,
-            averageCost: item.averageCost || cost,
-            lowestPurchasePrice: item.lowestPurchasePrice || cost,
-            highestPurchasePrice: item.highestPurchasePrice || cost,
-            previousSupplierName: item.previousSupplierName || "",
-            lastPurchaseDate: item.lastPurchaseDate || "",
-          };
-        }
-        return r;
-      })
-    );
-  };
 
   const handleRowChange = (id: string, field: keyof BillingItemRow, value: any) => {
     setSelectedItems((prev) =>
@@ -685,39 +649,46 @@ function NewPurchaseContent() {
     setErrors({});
 
     const payload = {
-      supplierId: selectedSupplierId || undefined,
       branchId: purchaseType === "warehouse" ? (warehouseId || undefined) : (branch.id || undefined),
-      branchName: purchaseType === "in_store" ? (branch.name || undefined) : undefined,
+      allocationMethod: "VALUE",
+      additionalCharges: additionalCharges || 0,
+      shippingCost: shippingCost || 0,
+      purchaseDate: format(invoiceDate, "yyyy-MM-dd"),
+      purchaseType: purchaseType === "warehouse" ? "WAREHOUSE" : "INSTORE",
       warehouseId: purchaseType === "warehouse" ? (warehouseId || undefined) : undefined,
-      responsiblePerson: responsiblePerson || undefined,
-      referenceNo: referenceNo || undefined,
-      status: "received",
+      supplierId: selectedSupplierId || undefined,
+      invoiceNo: referenceNo || undefined,
+      grnNo: referenceNo || undefined,
       items: validItems.map((item) => ({
         itemId: item.itemId,
         itemName: item.itemName,
-        quantity: item.quantity,
-        unitCost: item.unitCost,
-        discount: 0,
-        taxPercent: item.taxPercent,
-        trackBatch: item.trackBatch,
+        quantity: item.quantity || 0,
+        unitCost: item.unitCost || 0,
+        tax: item.taxPercent || 0,
+        batchId: undefined,
+        trackBatch: item.trackBatch || false,
         batchNumber: item.batchNumber || undefined,
-        manufactureDate: item.manufactureDate ? item.manufactureDate.toISOString() : undefined,
         expiryDate: item.expiryDate ? item.expiryDate.toISOString() : undefined,
-        rowNote: item.rowNote || undefined,
+        manufactureDate: item.manufactureDate ? item.manufactureDate.toISOString() : undefined,
+        warrantyDays: 0,
+        mrp: item.unitCost || 0,
+        location: undefined,
+        weight: 0,
+        volume: 0,
+        manualAllocatedCost: 0,
       })),
       discount: 0,
-      shippingCost,
-      additionalCharges,
-      total: grandTotal,
-      paidAmount: totalPaid,
-      payments: payments.map((p) => ({
-        method: p.method,
-        accountId: p.accountId || undefined,
-        reference: p.reference || undefined,
-        transactionId: p.transactionId || undefined,
-        amount: p.amount,
-        date: p.date.toISOString(),
+      tax: itemTax || 0,
+      status: "received",
+      paidAmount: totalPaid || 0,
+      paymentMethod: payments.filter((p) => p.amount > 0).map((p) => ({
+        paymentId: p.id,
+        paymentType: p.method,
+        amount: p.amount || 0,
+        referenceNumber: p.reference || undefined,
+        txnId: p.transactionId || undefined,
       })),
+      accountId: payments.length > 0 ? (payments[0].accountId || undefined) : undefined,
       notes: notes || undefined,
     };
 
@@ -744,41 +715,52 @@ function NewPurchaseContent() {
       setPayments([
         {
           id: Math.random().toString(),
-          method: payments[0]?.method || "cash",
-          accountId: payments[0]?.accountId || "",
+          method: "cash",
+          accountId: "",
           reference: "",
           transactionId: "",
+          receivedBy: "",
           amount: grandTotal,
           date: new Date(),
         },
       ]);
     } else {
+      setActiveSplitMethod("cash");
       // Enter split mode
-      const firstId = payments[0].id;
-      handlePaymentFieldChange(firstId, "amount", Math.round(grandTotal * 0.6));
-      addPaymentRow();
+      setPayments([
+        {
+          id: "cash-split",
+          method: "cash",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+        {
+          id: "bank-split",
+          method: "bank",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        },
+        {
+          id: "mobile-split",
+          method: "mobile_banking",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        }
+      ]);
     }
     setSplitMode(!splitMode);
-  };
-
-  const addPaymentRow = () => {
-    const remaining = Math.max(0, grandTotal - totalPaid);
-    setPayments((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        method: "cash",
-        accountId: "",
-        reference: "",
-        transactionId: "",
-        amount: remaining,
-        date: new Date(),
-      },
-    ]);
-  };
-
-  const removePaymentRow = (id: string) => {
-    setPayments((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
@@ -1474,189 +1456,6 @@ function NewPurchaseContent() {
             {errors.items && <p className="text-[10px] text-destructive font-medium">{errors.items}</p>}
           </div>
 
-          {/* Payment Info Section */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
-              <span className="text-sm font-semibold text-foreground">
-                {isBangla ? "পেমেন্ট তথ্য" : "Payment Information"}
-              </span>
-              
-              <div className="flex items-center gap-2 group">
-                <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
-                  {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
-                </Label>
-                <Switch
-                  id="split-mode"
-                  checked={splitMode}
-                  onCheckedChange={toggleSplitMode}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {payments.map((p, idx) => {
-                const activeMethod = METHODS.find((m) => m.id === p.method);
-                return (
-                  <div key={p.id} className="bg-background/30 rounded-xl p-4 border border-border/60">
-                    {splitMode && (
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
-                          {isBangla ? `পেমেন্ট ${idx + 1}` : `Payment ${idx + 1}`}
-                        </span>
-                        {payments.length > 1 && (
-                          <button type="button" onClick={() => removePaymentRow(p.id)} className="text-muted-foreground hover:text-rose-500">
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Method chips */}
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      {METHODS.map((m) => {
-                        const Icon = m.icon;
-                        const active = p.method === m.id;
-                        return (
-                          <button
-                            key={m.id}
-                            type="button"
-                            onClick={() => handlePaymentFieldChange(p.id, "method", m.id)}
-                            className={cn(
-                              "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
-                              active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
-                            )}
-                          >
-                            <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
-                            <span
-                              className={cn(
-                                "text-[10px] font-medium leading-tight text-center",
-                                active ? m.colorClass : "text-muted-foreground"
-                              )}
-                            >
-                              {m.label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Account selection for bank / mobile */}
-                    {p.method === "bank" && (
-                      <div className="mb-3">
-                        <Select
-                          value={p.accountId}
-                          onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
-                        >
-                          <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full">
-                            <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {accounts.map((acc: any) => (
-                              <SelectItem key={acc.id} value={acc.id}>
-                                {acc.name} (Tk.{acc.balance})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    
-                    {p.method === "mobile_banking" && (
-                      <div className="flex gap-2 mb-3">
-                        {MOBILE_PROVIDERS.map((provider) => {
-                          const active = p.accountId === provider.id;
-                          return (
-                            <button
-                              key={provider.id}
-                              type="button"
-                              onClick={() => handlePaymentFieldChange(p.id, "accountId", provider.id)}
-                              className={cn(
-                                "flex-1 py-2 rounded-lg text-xs font-semibold transition-all border",
-                                active ? "text-white" : "text-muted-foreground border-border/60 bg-transparent hover:bg-muted/30"
-                              )}
-                              style={active ? { backgroundColor: provider.color, borderColor: provider.color } : {}}
-                            >
-                              {provider.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Amount input */}
-                    <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 mb-1.5 focus-within:border-primary">
-                      <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
-                      <input
-                        type="number"
-                        value={p.amount || ""}
-                        onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                        className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
-                        placeholder="0"
-                      />
-                    </div>
-                    {p.method !== "cash" && (
-                      <div className="text-[9px] text-muted-foreground mb-2 px-0.5">
-                        {isBangla ? "সঠিক পরিমাণ প্রবেশ করান" : `No change on ${p.method === "bank" ? "card" : "mobile banking"} — capped at the exact amount due`}
-                      </div>
-                    )}
-
-                    {/* Reference and TXN ID — bank / mobile only */}
-                    {p.method !== "cash" && (
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <input
-                          type="text"
-                          value={p.reference}
-                          onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
-                          placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
-                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                        />
-                        <input
-                          type="text"
-                          value={p.transactionId}
-                          onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
-                          placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
-                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {splitMode && (
-                <button
-                  type="button"
-                  onClick={addPaymentRow}
-                  className="w-full flex items-center justify-center gap-1.5 mt-3 py-2.5 rounded-xl border border-dashed border-border text-blue-500 hover:bg-blue-500/5 text-xs font-medium transition-colors"
-                >
-                  <Plus size={14} /> {isBangla ? "আরেকটি পেমেন্ট যোগ করুন" : "Add another payment method"}
-                </button>
-              )}
-            </div>
-
-            {/* Summary row */}
-            <div className="mt-5 pt-4 border-t border-border space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{isBangla ? "প্রবেশ করানো হয়েছে" : "Entered"}</span>
-                <span className="text-foreground font-mono">{formatCurrency(totalPaid)}</span>
-              </div>
-              {due > 0 && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{isBangla ? "বাকি" : "Remaining"}</span>
-                  <span className="text-orange-500 font-mono">{formatCurrency(due)}</span>
-                </div>
-              )}
-              {changeReturned > 0 && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{isBangla ? "ফেরত" : "Change due"}</span>
-                  <span className="text-emerald-500 font-mono">{formatCurrency(changeReturned)}</span>
-                </div>
-              )}
-            </div>
-            
-            {errors.payments && <p className="text-[10px] text-destructive font-medium">{errors.payments}</p>}
-          </div>
-
           {/* Notes & Invoice Image Upload */}
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1772,8 +1571,236 @@ function NewPurchaseContent() {
                 <span className="text-foreground">{isBangla ? "সর্বমোট" : "Grand Total"}</span>
                 <span className="text-primary text-base">{formatCurrency(grandTotal)}</span>
               </div>
+                 {/* Payment Info Section */}
+          <div className="">
+            <div className="flex items-center justify-end gap-2 border-b border-border pb-2.5">
+              {/* <span className="text-sm font-semibold text-foreground">
+                {isBangla ? "পেমেন্ট তথ্য" : "Payment Information"}
+              </span> */}
+              
+              <div className="flex items-center gap-2 group">
+                <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
+                  {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
+                </Label>
+                <Switch
+                  id="split-mode"
+                  checked={splitMode}
+                  onCheckedChange={toggleSplitMode}
+                />
+              </div>
+            </div>
 
-              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
+            <div className="space-y-4">
+              {(() => {
+                const activePayment = splitMode
+                  ? payments.find(p => p.method === activeSplitMethod) || payments[0]
+                  : payments[0];
+                
+                if (!activePayment) return null;
+                const p = activePayment;
+
+                return (
+                  <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
+                    {/* Method chips */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {METHODS.map((m) => {
+                        const Icon = m.icon;
+                        const active = splitMode ? activeSplitMethod === m.id : p.method === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => {
+                              if (splitMode) {
+                                setActiveSplitMethod(m.id);
+                              } else {
+                                handlePaymentFieldChange(p.id, "method", m.id);
+                              }
+                            }}
+                            className={cn(
+                              "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                              active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
+                            )}
+                          >
+                            <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
+                            <span
+                              className={cn(
+                                "text-[10px] font-medium leading-tight text-center",
+                                active ? m.colorClass : "text-muted-foreground"
+                              )}
+                            >
+                              {m.label}
+                              {splitMode && (() => {
+                                const splitP = payments.find(pay => pay.method === m.id);
+                                return splitP && splitP.amount > 0 ? (
+                                  <span className="block mt-0.5 font-bold text-foreground text-[11px]">
+                                    Tk.{splitP.amount}
+                                  </span>
+                                ) : null;
+                              })()}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Provider selection for Mobile Banking */}
+                    {p.method === "mobile_banking" && (
+                      <div className="flex gap-2 mb-3">
+                        {MOBILE_PROVIDERS.map((provider) => {
+                          const active = p.accountId === provider.id;
+                          return (
+                            <button
+                              key={provider.id}
+                              type="button"
+                              onClick={() => handlePaymentFieldChange(p.id, "accountId", provider.id)}
+                              className={cn(
+                                "flex flex-1 items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all border",
+                                active ? "text-white" : "text-muted-foreground border-border/60 bg-transparent hover:bg-muted/30"
+                              )}
+                              style={active ? { backgroundColor: provider.color, borderColor: provider.color } : {}}
+                            >
+                              {provider.logo ? (
+                                <img src={provider.logo} alt={provider.label} className="w-[50px] h-8 object-contain" />
+                              ) : (
+                                provider.label
+                              )}
+                              { provider.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Common Amount Input (Rendered alone if method is somehow missing, though should be covered below) */}
+                    {!["cash", "bank", "mobile_banking"].includes(p.method) && (
+                      <div className="mb-3">
+                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                          <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                          <input
+                            type="number"
+                            value={p.amount || ""}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                            className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                            placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Fields for Cash */}
+                    {p.method === "cash" && (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                          <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                          <input
+                            type="number"
+                            value={p.amount || ""}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                            className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                            placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={p.receivedBy || ""}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "receivedBy", e.target.value)}
+                          placeholder={isBangla ? "গ্রহীতার নাম" : "Received By (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                        />
+                      </div>
+                    )}
+
+                    {/* Fields for Bank */}
+                    {p.method === "bank" && (
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                          <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                          <input
+                            type="number"
+                            value={p.amount || ""}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                            className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                            placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                          />
+                        </div>
+                        <Select
+                          value={p.accountId}
+                          onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                        >
+                          <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                            <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accounts.map((acc: any) => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name} (Tk.{acc.balance})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <input
+                          type="text"
+                          value={p.transactionId}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
+                          placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                        />
+                      </div>
+                    )}
+
+                    {/* Fields for Mobile Banking */}
+                    {p.method === "mobile_banking" && (
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                          <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                          <input
+                            type="number"
+                            value={p.amount || ""}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                            className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                            placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          value={p.transactionId}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
+                          placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                        />
+                        <input
+                          type="text"
+                          value={p.reference}
+                          onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
+                          placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
+                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+            
+            {errors.payments && <p className="text-[10px] text-destructive font-medium">{errors.payments}</p>}
+          </div>
+              {splitMode && payments.some(p => p.amount > 0) && (
+                <div className="pt-2 pb-1 space-y-1.5">
+                  {payments.filter(p => p.amount > 0).map((p) => {
+                    const methodLabel = METHODS.find(m => m.id === p.method)?.label || p.method;
+                    const accountName = accounts.find((a: any) => String(a.id) === String(p.accountId))?.name;
+                    return (
+                      <div key={p.id} className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>{methodLabel} {accountName ? `(${accountName})` : ''}</span>
+                        <span>{formatCurrency(p.amount)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
                 <span>{isBangla ? "পরিশোধিত" : "Paid Amount"}</span>
                 <span className="font-bold text-foreground">{formatCurrency(totalPaid)}</span>
               </div>
@@ -1825,33 +1852,7 @@ function NewPurchaseContent() {
             </div>
           </div>
 
-          {/* AI Suggestions Card */}
-          {isAiPanelOpen && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 shadow-xs space-y-3.5 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between border-b border-primary/10 pb-2">
-                <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 animate-pulse" />
-                  <span>{isBangla ? "এআই ক্রয় বুদ্ধি" : "AI Purchase Insights"}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsAiPanelOpen(false)}
-                  className="text-muted-foreground hover:text-foreground text-xs"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              <div className="space-y-3 text-[11px] leading-relaxed">
-                {aiSuggestions.map((suggestion, idx) => (
-                  <div key={idx} className="p-2.5 bg-background/50 border border-border/50 rounded-lg flex items-start gap-2 shadow-2xs">
-                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground">{suggestion}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          
         </div>
       </div>
 
