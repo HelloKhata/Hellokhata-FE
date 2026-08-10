@@ -159,6 +159,7 @@ export default function AddProductPage() {
       onSuccess:(data)=>{
       if(data.success){
         toast.success(data.message || "Product added successfully");
+        console.log('inventory data', data)
         router.push("/inventory");
       }else{
         toast.error(data.message || "Failed to add product");
