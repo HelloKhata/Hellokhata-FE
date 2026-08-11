@@ -108,7 +108,7 @@ export default function InventoryPage() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
-  const { data: itemsData, isLoading: itemsLoading, refetch } = useGetItems({
+  const { data: products, isLoading: itemsLoading, refetch } = useGetItems({
     search: searchTerm || undefined,
     categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
     lowStock: stockFilter === 'low' ? true : undefined,
@@ -121,7 +121,6 @@ export default function InventoryPage() {
   const { data: statusData, isLoading: statusLoading } = useGetItemsStatus();
   const router = useRouter();
 
-  const items = itemsData?.data;
   const categories = categoriesData?.data;
 
   // Status KPIs from API
@@ -131,12 +130,12 @@ export default function InventoryPage() {
   const lowStockCount = statusData?.data?.lowStock ?? 0;
 
   // Multi-price stats (still derived from the items list)
-  const wholesaleItems = (items || []).filter((item) => item.wholesalePrice && item.wholesalePrice > 0).length;
-  const vipItems = (items || []).filter((item) => item.vipPrice && item.vipPrice > 0).length;
-  const multiPriceItems = (items || []).filter((item) => item.wholesalePrice || item.vipPrice || item.minimumPrice).length;
+  const wholesaleItems = (products || []).filter((item) => item.wholesalePrice && item.wholesalePrice > 0).length;
+  const vipItems = (products || []).filter((item) => item.vipPrice && item.vipPrice > 0).length;
+  const multiPriceItems = (products || []).filter((item) => item.wholesalePrice || item.vipPrice || item.minimumPrice).length;
 
   // Client-side price filtering
-  const priceFilteredItems = (items || []).filter((item) => {
+  const priceFilteredItems = (products || []).filter((item) => {
     switch (priceFilter) {
       case 'wholesale':
         return item.wholesalePrice && item.wholesalePrice > 0;
@@ -547,7 +546,7 @@ export default function InventoryPage() {
       <ExportItemsModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
-        items={items || []}
+        items={products || []}
       />
 
       {/* Categories Management Modal */}

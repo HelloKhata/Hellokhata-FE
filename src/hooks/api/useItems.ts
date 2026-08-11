@@ -28,7 +28,7 @@ export const useGetItems = (filters?: {
     queryKey: ["items", filters],
     queryFn: () => getItems(filters),
     placeholderData: (previousData) => previousData,
-    // select: (data) => data.data
+    select: (data) => data.data
   });
 };
 
