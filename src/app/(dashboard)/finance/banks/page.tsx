@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
+import { useCreatePaymentMethod } from '@/hooks/api/usePaymentMethod';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Building2,
@@ -33,7 +35,6 @@ import {
 interface BankAccount {
   id: string;
   name: string;
-  nameBn: string;
   type: 'bank' | 'wallet';
   provider: string;
   providerBn: string;
@@ -63,7 +64,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
   {
     id: 'ACC-001',
     name: 'Corporate Current Account',
-    nameBn: 'কর্পোরেট কারেন্ট অ্যাকাউন্ট',
     type: 'bank',
     provider: 'Dutch-Bangla Bank',
     providerBn: 'ডাচ-বাংলা ব্যাংক (DBBL)',
@@ -78,7 +78,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
   {
     id: 'ACC-002',
     name: 'Government Payout Ledger',
-    nameBn: 'সরকারি পেমেন্ট লেজার',
     type: 'bank',
     provider: 'Sonali Bank PLC',
     providerBn: 'সোনালী ব্যাংক পিএলসি',
@@ -93,7 +92,6 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
   {
     id: 'ACC-003',
     name: 'bKash Merchant Wallet',
-    nameBn: 'বিকাশ মার্চেন্ট ক্যাশ আউট',
     type: 'wallet',
     provider: 'bKash',
     providerBn: 'বিকাশ ওয়ালেট (bKash)',
@@ -159,9 +157,7 @@ function VirtualCard({
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-0.5">
               {isBangla ? account.providerBn : account.provider}
             </p>
-            <p className="text-sm font-bold text-white/90 leading-tight max-w-[180px]">
-              {isBangla ? account.nameBn : account.name}
-            </p>
+           
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <span
@@ -259,6 +255,8 @@ function VirtualCard({
 export default function FinanceBankWalletsPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
+  
+  const { mutate: createPaymentMethod, isPending: isCreating } = useCreatePaymentMethod();
 
   const [accounts, setAccounts] = useState<BankAccount[]>(INITIAL_ACCOUNTS);
   const [activities, setActivities] = useState<ActivityLog[]>(INITIAL_ACTIVITIES);
@@ -330,67 +328,48 @@ export default function FinanceBankWalletsPage() {
   const handleAddAccount = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const BANK_COLORS = [
-      { color: 'from-[#1e3a8a] via-[#1d4ed8] to-[#3b82f6]', accent: '#60a5fa' },
-      { color: 'from-[#064e3b] via-[#065f46] to-[#059669]', accent: '#34d399' },
-      { color: 'from-[#4c1d95] via-[#5b21b6] to-[#7c3aed]', accent: '#c4b5fd' },
-      { color: 'from-[#713f12] via-[#92400e] to-[#d97706]', accent: '#fde68a' },
-    ];
-    const WALLET_COLORS = [
-      { color: 'from-[#831843] via-[#9d174d] to-[#ec4899]', accent: '#f9a8d4' },
-      { color: 'from-[#1e1b4b] via-[#312e81] to-[#6366f1]', accent: '#a5b4fc' },
-      { color: 'from-[#0f172a] via-[#1e293b] to-[#0ea5e9]', accent: '#7dd3fc' },
-    ];
 
     if (formCategory === 'bank') {
       if (!bankAccName.trim() || !bankName.trim() || !bankAccNumber.trim()) {
         showAlert(isBangla ? 'অনুগ্রহ করে সকল বাধ্যতামূলক ঘর পূরণ করুন।' : 'Please fill all required fields.', 'error');
         return;
       }
-      const colorSet = BANK_COLORS[accounts.filter(a => a.type === 'bank').length % BANK_COLORS.length];
-      const newAcc: BankAccount = {
-        id: `ACC-${(accounts.length + 1).toString().padStart(3, '0')}`,
+
+      const payload = {
         name: bankAccName,
-        nameBn: bankAccName,
         type: 'bank',
-        provider: bankName,
-        providerBn: bankName,
+        bankName: bankName,
         accountNumber: bankAccNumber,
-        balance: parseFloat(bankBalance) || 0,
-        branch: bankBranch || 'Main Branch',
-        branchBn: bankBranch || 'প্রধান শাখা',
+        openingBalance: parseFloat(bankBalance) || 0,
+        branchName: bankBranch || 'Main Branch',
         routingNumber: bankRouting,
-        color: colorSet.color,
-        accentColor: colorSet.accent,
       };
-      setAccounts(prev => [...prev, newAcc]);
-      setBankAccName(''); setBankName(''); setBankBranch(''); setBankAccNumber(''); setBankRouting(''); setBankBalance('');
+
+      createPaymentMethod(payload as any, {
+        onSuccess: () => {
+          toast.success(isBangla ? 'নতুন অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে!' : 'Account added successfully!');
+        }
+      });
     } else {
       if (!walletTagName.trim() || !walletMobile.trim()) {
         showAlert(isBangla ? 'অনুগ্রহ করে সকল বাধ্যতামূলক ঘর পূরণ করুন।' : 'Please fill all required fields.', 'error');
         return;
       }
-      const colorSet = WALLET_COLORS[accounts.filter(a => a.type === 'wallet').length % WALLET_COLORS.length];
-      const newAcc: BankAccount = {
-        id: `ACC-${(accounts.length + 1).toString().padStart(3, '0')}`,
-        name: walletTagName,
-        nameBn: walletTagName,
-        type: 'wallet',
-        provider: walletProvider,
-        providerBn: `${walletProvider} ওয়ালেট`,
-        accountNumber: walletMobile,
-        balance: parseFloat(walletBalance) || 0,
-        branch: 'Digital',
-        branchBn: 'ডিজিটাল',
-        walletType: walletAccType,
-        color: colorSet.color,
-        accentColor: colorSet.accent,
-      };
-      setAccounts(prev => [...prev, newAcc]);
-      setWalletTagName(''); setWalletMobile(''); setWalletBalance('');
-    }
 
-    showAlert(isBangla ? 'নতুন অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে!' : 'Account added successfully!');
+      const payload = {
+        name: walletTagName,
+        type: 'mobile_banking',
+        provider: walletProvider,
+        walletType: walletAccType,
+        mobileNumber: walletMobile,
+        openingBalance: parseFloat(walletBalance) || 0,
+      };
+
+      createPaymentMethod(payload as any, {
+        onSuccess: () => {
+            toast.success(isBangla ? 'নতুন অ্যাকাউন্ট সফলভাবে যুক্ত হয়েছে!' : 'Account added successfully!');
+    }});
+    }
   };
 
   const handleReconcile = (e: React.FormEvent) => {
@@ -638,7 +617,8 @@ export default function FinanceBankWalletsPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full h-10 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/20 mt-2"
+                    disabled={isCreating}
+                    className="w-full h-10 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-blue-500/20 mt-2 disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
                     {isBangla ? 'ব্যাংক অ্যাকাউন্ট যুক্ত করুন' : 'Add Bank Account'}
@@ -705,7 +685,8 @@ export default function FinanceBankWalletsPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full h-10 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-pink-500/20 mt-2"
+                    disabled={isCreating}
+                    className="w-full h-10 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-pink-500/20 mt-2 disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
                     {isBangla ? 'মোবাইল ওয়ালেট যুক্ত করুন' : 'Add Mobile Wallet'}
@@ -851,7 +832,7 @@ export default function FinanceBankWalletsPage() {
                 <div>
                   <h3 className="text-sm font-bold text-foreground">{isBangla ? 'ব্যালেন্স সমন্বয়' : 'Reconcile Balance'}</h3>
                   <p className="text-[11px] text-muted-foreground">
-                    {reconcileAccount ? (isBangla ? reconcileAccount.nameBn : reconcileAccount.name) : ''}
+                    { reconcileAccount &&  reconcileAccount.name}
                   </p>
                 </div>
               </div>

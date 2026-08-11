@@ -17,6 +17,7 @@ export const useParties = (filter: { type?: 'customer' | 'supplier', search?: st
         queryKey: ['parties', filter],
         queryFn: () => getParties(filter),
         placeholderData: (previousData) => previousData,
+        select: data => data.data
     })
 }
 

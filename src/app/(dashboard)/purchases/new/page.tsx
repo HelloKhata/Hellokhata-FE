@@ -1,6 +1,3 @@
-// Hello Khata OS - New Purchase Page
-// হ্যালো খাতা - নতুন ক্রয় পেজ
-
 "use client";
 
 import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
@@ -23,31 +20,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Accordion } from "@/components/ui/accordion";
+
 import { Switch } from "@/components/ui/switch";
 import {
   Banknote,
   CreditCard,
   Smartphone,
-  Receipt,
-  ChevronRight,
-  Plus,
   Trash2,
   Calendar as CalendarIcon,
   Check,
-  X,
   ArrowLeft,
-  Camera,
   Users,
   Loader2,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  FileText,
   Search,
-  Layers,
-  Barcode,
   Package,
   Upload,
   Settings,
@@ -58,9 +44,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { useCurrency, useDateFormat } from "@/hooks/useAppTranslation";
+import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -69,8 +54,9 @@ import { AddPartyModal } from "@/components/parties/AddPartyModal";
 import { InventoryItemForm } from "@/components/inventory/InventoryItemForm";
 import { useParties, useParty } from "@/hooks/api/useParties";
 import { useCreatePurchases, useGetPurchases } from "@/hooks/api/usePurchases";
+import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
+import { useGetWarehouses } from "@/hooks/api/useWarehouse";
 import { getBatches } from "@/services/batches.services";
-import { useBranches, useAccounts } from "@/hooks/queries";
 import { useUser } from "@/stores/sessionStore";
 import Image from "next/image";
 import {
@@ -78,6 +64,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGetBranches } from "@/hooks/api/useBranches";
 
 interface PaymentRow {
   id: string;
@@ -91,7 +78,6 @@ interface PaymentRow {
 }
 
 interface BillingItemRow {
-  id: string;
   itemId: string;
   itemName: string;
   quantity: number;
@@ -145,72 +131,42 @@ function NewPurchaseContent() {
   const { mutate, isPending } = useCreatePurchases();
   const user = useUser();
 
-  // API Data
-  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
-
-  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
-  const items = itemsData?.data || [];
-
-  const { data: suppliersData } = useParties({ type: "supplier" });
-  const suppliers = suppliersData?.data || [];
-
-  console.log(suppliers)
-  const { data: branches = [{id:1, name:'Main'},{id:2, name:'Sub Branch'}] } = useBranches();
-  const { data: accounts = [] } = useAccounts();
-  const { data: purchases = [] } = useGetPurchases();
-
-  // Form State
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(supplierIdParam);
-  const { data: singleSupplierData } = useParty(selectedSupplierId, {
-    enabled: !!selectedSupplierId,
-  });
-  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
-
-  // Top Product Search & Selection State
+    // Top Product Search & Selection State
   const [topProductSearchQuery, setTopProductSearchQuery] = useState("");
+  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
   const [showTopProductSuggestions, setShowTopProductSuggestions] = useState(false);
-  const [selectedSearchProduct, setSelectedSearchProduct] = useState<any | null>(null);
+  // const [selectedSearchProduct, setSelectedSearchProduct] = useState<any | null>(null);
 
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
   const [purchaseType, setPurchaseType] = useState<string>("in_store");
   const [warehouseId, setWarehouseId] = useState<string>("");
-  const [responsiblePerson, setResponsiblePerson] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState<string>("");
-  // Store branches vs Warehouses lists
-  const storeBranches = useMemo(() => {
-    const filtered = branches.filter((b: any) => b.type !== "warehouse");
-    return filtered.length > 0 ? filtered : branches;
-  }, [branches]);
 
-  // Find main branch
-  const defaultMainBranch = useMemo(() => {
-    if (!storeBranches || storeBranches.length === 0) return { id: "", name: "" };
-    const found = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
-    return { id: String(found.id), name: found.name };
-  }, [storeBranches]);
+
+  // API Data
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
+ 
+  const { data: searchItems = [] } = useGetItems({ page: 1, limit: 10,search: topProductSearchQuery });
+  const { data: suppliers } = useParties({ type: "supplier",search: supplierSearchQuery });
+  const {data: brnaches} = useGetBranches();
+
+  console.log('brnaches',brnaches)
+  const { data: paymentMethods = [] } = useGetPaymentMethods();
+  const accounts = useMemo(() => {
+    return paymentMethods.map((pm: any) => ({
+      id: pm.id,
+      name: pm.name || pm.bankName || pm.provider || '',
+      balance: pm.currentBalance || pm.openingBalance || 0,
+      type: pm.type
+    }));
+  }, [paymentMethods]);
+
+  // Form State
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(supplierIdParam);
+  const [selectedSupplierName,setSelectedSupplierName] = useState<string>('')
 
   const [branch, setBranch] = useState<{ name: string; id: string }>({ name: "", id: "" });
-  console.log("branch", branch);
-  const warehousesList = useMemo(() => {
-    const filtered = branches.filter((b: any) => b.type === "warehouse");
-    if (filtered.length > 0) return filtered;
-    return [
-      { id: "wh-main", name: isBangla ? "কেন্দ্রীয় ডিস্ট্রিবিউশন ওয়্যারহাউস (WH-MAIN)" : "Central Distribution Warehouse (WH-MAIN)" },
-      { id: "wh-dhaka", name: isBangla ? "ঢাকা ওয়্যারহাউস (WH-DHK)" : "Dhaka Central Warehouse (WH-DHK)" },
-      { id: "wh-ctg", name: isBangla ? "চট্টগ্রাম ডিস্ট্রিবিউশন হাব (WH-CTG)" : "Chittagong Hub Warehouse (WH-CTG)" },
-    ];
-  }, [branches, isBangla]);
-
-  // Set default values from session user & warehouses
-  const userBranchId = user?.branchId;
-  const userName = user?.name;
-  useEffect(() => {
-    if (defaultMainBranch.id && !branch.id) {
-      setBranch(defaultMainBranch);
-    }
-    if (userName && !responsiblePerson) setResponsiblePerson(userName);
-    if (warehousesList.length > 0 && !warehouseId) setWarehouseId(String(warehousesList[0].id));
-  }, [defaultMainBranch, branch.id, userName, responsiblePerson, warehousesList, warehouseId]);
+  const { data: warehousesList = [] } = useGetWarehouses();
 
   const [notes, setNotes] = useState("");
   const [invoiceImage, setInvoiceImage] = useState<File | null>(null);
@@ -254,14 +210,12 @@ function NewPurchaseContent() {
   const [additionalCharges, setAdditionalCharges] = useState<number>(0);
 
   // Attachment states
-  const [attachments, setAttachments] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
 
   // Billing Items Table Rows
   const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([
     {
-      id: "initial-row",
       itemId: "",
       itemName: "",
       quantity: 1,
@@ -295,7 +249,7 @@ function NewPurchaseContent() {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-expiry-container]")) {
         if (openExpiryRowId) {
-          const activeItem = selectedItems.find((i) => i.id === openExpiryRowId);
+          const activeItem = selectedItems.find((i) => i.itemId === openExpiryRowId);
           if (activeItem && activeItem.trackExpiry && !activeItem.expiryDate) {
             toast.error(
               isBangla
@@ -318,25 +272,6 @@ function NewPurchaseContent() {
     };
   }, [openExpiryRowId, selectedItems, isBangla]);
 
-  // Suppliers Filtering
-  const filteredSuppliers = useMemo(() => {
-    if (!supplierSearchQuery) return suppliers;
-    return suppliers.filter(
-      (p: any) =>
-        p.name.toLowerCase().includes(supplierSearchQuery.toLowerCase()) ||
-        p.phone?.includes(supplierSearchQuery),
-    );
-  }, [suppliers, supplierSearchQuery]);
-
-  // Selected Supplier Name
-  const selectedSupplierName = useMemo(() => {
-    const supplier = suppliers.find((p: any) => String(p.id) === String(selectedSupplierId));
-    if (supplier) return supplier.name;
-    if (singleSupplierData?.data && String(singleSupplierData.data.id) === String(selectedSupplierId)) {
-      return singleSupplierData.data.name;
-    }
-    return "";
-  }, [suppliers, selectedSupplierId, singleSupplierData]);
 
   // Calculations
   const subtotal = useMemo(() => {
@@ -364,48 +299,11 @@ function NewPurchaseContent() {
     return Math.max(0, totalPaid - grandTotal);
   }, [totalPaid, grandTotal]);
 
-  // Sync initial single payment row amount when grandTotal changes safely
-  useEffect(() => {
-    setPayments((prev) => {
-      if (prev.length === 1 && prev[0].amount === 0 && grandTotal > 0) {
-        return [{ ...prev[0], amount: grandTotal }];
-      }
-      return prev;
-    });
-  }, [grandTotal]);
-
-  // Table row handlers
-  const addItemRow = () => {
-    setSelectedItems((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        itemId: "",
-        itemName: "",
-        quantity: 1,
-        unitCost: 0,
-        total: 0,
-        searchQuery: "",
-        showSuggestions: false,
-        sku: "",
-        currentStock: 0,
-        unit: "Pcs",
-        taxPercent: 0,
-        taxAmount: 0,
-        trackBatch: false,
-        batchNumber: "",
-        trackExpiry: false,
-        rowNote: "",
-        isExpanded: false,
-      },
-    ]);
-  };
 
   const removeItemRow = (id: string) => {
     if (selectedItems.length === 1) {
       setSelectedItems([
         {
-          id: "initial-row",
           itemId: "",
           itemName: "",
           quantity: 1,
@@ -427,20 +325,13 @@ function NewPurchaseContent() {
       ]);
       return;
     }
-    setSelectedItems((prev) => prev.filter((item) => item.id !== id));
+    setSelectedItems((prev) => prev.filter((item) => item.itemId !== id));
   };
-
-  const toggleRowExpansion = (id: string) => {
-    setSelectedItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isExpanded: !item.isExpanded } : item))
-    );
-  };
-
 
   const handleRowChange = (id: string, field: keyof BillingItemRow, value: any) => {
     setSelectedItems((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
+        if (item.itemId === id) {
           const updated = { ...item, [field]: value };
 
           let qty = item.quantity;
@@ -486,31 +377,12 @@ function NewPurchaseContent() {
     );
   };
 
-  const getFilteredItems = (query: string) => {
-    if (!query) return items.slice(0, 10);
-    return items.filter(
-      (item: any) =>
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        item.sku?.toLowerCase().includes(query.toLowerCase())
-    );
-  };
-
-  const getFilteredTopProducts = (query: string) => {
-    if (!query?.trim()) return items.slice(0, 10);
-    const search = query.toLowerCase();
-    return items.filter(
-      (product: any) =>
-        product.name?.toLowerCase().includes(search) ||
-        product.sku?.toLowerCase().includes(search) ||
-        product.barcode?.toLowerCase().includes(search)
-    );
-  };
 
   const handleSelectProductFromTopSearch = async (product: any) => {
     // Check if any existing item has Track Expiry ON but no expiry date selected
     const invalidItem = selectedItems.find((i) => i.itemId && i.trackExpiry && !i.expiryDate);
     if (invalidItem) {
-      setOpenExpiryRowId(invalidItem.id);
+      setOpenExpiryRowId(invalidItem.itemId);
       toast.error(
         isBangla
           ? `নতুন পণ্য যোগ করার আগে "${invalidItem.itemName}"-এর মেয়াদের তারিখ সিলেক্ট করুন`
@@ -521,7 +393,6 @@ function NewPurchaseContent() {
 
     setTopProductSearchQuery("");
     setShowTopProductSuggestions(false);
-    setSelectedSearchProduct(null);
 
     const qty = 1;
     const unitCost = product.costPrice || product.purchasePrice || 0;
@@ -568,7 +439,6 @@ function NewPurchaseContent() {
       const hasSingleEmptyRow = prev.length === 1 && !prev[0].itemId;
 
       const newRow: BillingItemRow = {
-        id: Math.random().toString(),
         itemId: product.id,
         itemName: product.name,
         imageUrl: product.imageUrl || "",
@@ -623,14 +493,14 @@ function NewPurchaseContent() {
     selectedItems.forEach((item) => {
       if (item.itemId) {
         if (!item.quantity || item.quantity <= 0) {
-          newErrors[`qty-${item.id}`] = isBangla ? "পরিমাণ ০ এর বেশি হতে হবে" : "Qty must be > 0";
+          newErrors[`qty-${item.itemId}`] = isBangla ? "পরিমাণ ০ এর বেশি হতে হবে" : "Qty must be > 0";
         }
         if (item.unitCost <= 0) {
-          newErrors[`cost-${item.id}`] = isBangla ? "ক্রয় মূল্য ০ এর বেশি হতে হবে" : "Rate must be > 0";
+          newErrors[`cost-${item.itemId}`] = isBangla ? "ক্রয় মূল্য ০ এর বেশি হতে হবে" : "Rate must be > 0";
         }
         if (item.trackExpiry && !item.expiryDate) {
-          newErrors[`expiry-${item.id}`] = isBangla ? `"${item.itemName}"-এর মেয়াদের তারিখ নির্বাচন করা আবশ্যক` : `Expiry date is required for "${item.itemName}"`;
-          setOpenExpiryRowId(item.id);
+          newErrors[`expiry-${item.itemId}`] = isBangla ? `"${item.itemName}"-এর মেয়াদের তারিখ নির্বাচন করা আবশ্যক` : `Expiry date is required for "${item.itemName}"`;
+          setOpenExpiryRowId(item.itemId);
         }
       }
     });
@@ -649,7 +519,7 @@ function NewPurchaseContent() {
     setErrors({});
 
     const payload = {
-      branchId: purchaseType === "warehouse" ? (warehouseId || undefined) : (branch.id || undefined),
+      branchId: user?.branchId,
       allocationMethod: "VALUE",
       additionalCharges: additionalCharges || 0,
       shippingCost: shippingCost || 0,
@@ -693,7 +563,7 @@ function NewPurchaseContent() {
     };
 
     mutate(payload, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         toast.success(
           isBangla
             ? "ক্রয় সফলভাবে সংরক্ষণ করা হয়েছে"
@@ -792,47 +662,6 @@ function NewPurchaseContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedSupplierId, selectedItems, payments, grandTotal, totalPaid]);
 
-  // AI Suggestions
-  const aiSuggestions = useMemo(() => {
-    const suggestions: string[] = [];
-
-    if (selectedSupplierId && singleSupplierData?.data) {
-      const activeSup = singleSupplierData.data;
-      if (activeSup.riskLevel === "high") {
-        suggestions.push(
-          isBangla
-            ? `⚠️ সতর্কতা: এই সরবরাহকারীর ঝুঁকি স্তর উচ্চ (${activeSup.riskScore}/100)। বাকিতে লেনদেন সতর্কভাবে করুন।`
-            : `⚠️ Risk Warning: This supplier has a HIGH risk profile (${activeSup.riskScore}/100). Exercise caution with credit purchases.`,
-        );
-      } else {
-        suggestions.push(
-          isBangla
-            ? `👤 সরবরাহকারী যাচাইকৃত: ${activeSup.name}। বাকির সীমা ${activeSup.creditLimit ? formatCurrency(activeSup.creditLimit) : "সীমাহীন"}।`
-            : `👤 Supplier verified: ${activeSup.name}. Credit limit is ${activeSup.creditLimit ? formatCurrency(activeSup.creditLimit) : "unlimited"}.`,
-        );
-      }
-    }
-
-    const validItems = selectedItems.filter((item) => item.itemId);
-    if (validItems.length > 0) {
-      validItems.forEach((item) => {
-        if (item.lastPurchasePrice) {
-          const diff = item.unitCost - item.lastPurchasePrice;
-          const pct = item.lastPurchasePrice > 0 ? (diff / item.lastPurchasePrice) * 100 : 0;
-          if (pct >= 15) {
-            suggestions.push(
-              isBangla
-                ? `⚠️ মূল্য সতর্কতা: ${item.itemName}-এর দাম পূর্ববর্তী ক্রয়ের চেয়ে ${pct.toFixed(0)}% বৃদ্ধি পেয়েছে!`
-                : `⚠️ Cost Warning: ${item.itemName} unit price increased by ${pct.toFixed(0)}% compared to the last purchase price.`,
-            );
-          }
-        }
-      });
-    }
-
-    return suggestions;
-  }, [selectedItems, selectedSupplierId, singleSupplierData, isBangla]);
-
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
@@ -904,7 +733,6 @@ function NewPurchaseContent() {
           <div className="space-y-2 col-span-1 sm:col-span-2 lg:col-span-4 relative">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
-                <Search className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
               </Label>
               <button
@@ -922,27 +750,27 @@ function NewPurchaseContent() {
                   setTopProductSearchQuery(e.target.value);
                   setShowTopProductSuggestions(true);
                 }}
-                onFocus={() => setShowTopProductSuggestions(true)}
+                // onFocus={() => setShowTopProductSuggestions(true)}
                 onBlur={() => {
-                  setTimeout(() => setShowTopProductSuggestions(false), 200);
+                setShowTopProductSuggestions(false)
                 }}
                 placeholder={
                   isBangla
-                    ? "পণ্য সার্চ / স্ক্যান..."
-                    : "Search item / barcode..."
+                    ? "পণ্য সার্চ / বারকোড স্ক্যান..."
+                    : "Search item / Scan Barcode..."
                 }
                 className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
               />
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
               {showTopProductSuggestions && (
-                <div className="absolute z-50 left-0 top-full mt-1 w-full min-w-[280px] max-w-sm sm:max-w-md bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                  {getFilteredTopProducts(topProductSearchQuery).length === 0 ? (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full min-w-[280px]  bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                  {searchItems.length === 0 ? (
                     <div className="p-3 text-center text-xs text-muted-foreground">
                       {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
                     </div>
                   ) : (
-                    getFilteredTopProducts(topProductSearchQuery).map((product: any) => (
+                    searchItems.map((product: any) => (
                       <button
                         key={product.id}
                         type="button"
@@ -1005,15 +833,15 @@ function NewPurchaseContent() {
             </div>
             <div className="relative">
               <Input
-                value={selectedSupplierName || supplierSearchQuery}
+                value={selectedSupplierName}
                 onChange={(e) => {
                   setSupplierSearchQuery(e.target.value);
                   if (selectedSupplierId) setSelectedSupplierId("");
                   setShowSupplierSuggestions(true);
                 }}
-                onFocus={() => setShowSupplierSuggestions(true)}
+                // onFocus={() => setShowSupplierSuggestions(true)}
                 onBlur={() => {
-                  setTimeout(() => setShowSupplierSuggestions(false), 200);
+                  setTimeout(() =>  setShowSupplierSuggestions(false));
                 }}
                 placeholder={isBangla ? "নাম / ফোন দিয়ে খুঁজুন..." : "Search supplier / phone"}
                 className={cn("pr-8 h-10 bg-background/50 border-input text-xs w-full", errors.supplier && "border-destructive")}
@@ -1021,13 +849,13 @@ function NewPurchaseContent() {
               <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
               {showSupplierSuggestions && (
-                <div className="absolute z-50 left-0 top-full mt-1 w-full min-w-[240px] max-w-xs sm:max-w-sm bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                  {filteredSuppliers.length === 0 ? (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
+                  {suppliers.length === 0 ? (
                     <div className="p-3 text-center text-xs text-muted-foreground">
                       {isBangla ? "কোনো সরবরাহকারী নেই" : "No suppliers found"}
                     </div>
                   ) : (
-                    filteredSuppliers.map((supplier: any) => (
+                    suppliers.map((supplier: any) => (
                       <button
                         key={supplier.id}
                         type="button"
@@ -1035,6 +863,7 @@ function NewPurchaseContent() {
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setSelectedSupplierId(supplier.id);
+                          setSelectedSupplierName(supplier.name)
                           setSupplierSearchQuery("");
                           setShowSupplierSuggestions(false);
                         }}
@@ -1067,8 +896,8 @@ function NewPurchaseContent() {
                 setPurchaseType(val);
                 if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
                   setWarehouseId(String(warehousesList[0].id));
-                } else if (val === "in_store" && !branch.id && storeBranches.length > 0) {
-                  const mainB = storeBranches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || storeBranches[0];
+                } else if (val === "in_store" && !branch.id && brnaches.length > 0) {
+                  const mainB = brnaches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || brnaches[0];
                   if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
                 }
               }}
@@ -1111,7 +940,7 @@ function NewPurchaseContent() {
                 <Select
                   value={branch.id ? String(branch.id) : undefined}
                   onValueChange={(selectedId) => {
-                    const selectedObj = storeBranches.find((b: any) => String(b.id) === String(selectedId));
+                    const selectedObj = brnaches.find((b: any) => String(b.id) === String(selectedId));
                     if (selectedObj) {
                       setBranch({ id: String(selectedObj.id), name: selectedObj.name });
                     }
@@ -1121,7 +950,7 @@ function NewPurchaseContent() {
                     <SelectValue placeholder={isBangla ? "শাখা" : "Select Branch"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {storeBranches.map((b: any) => (
+                    {brnaches?.map((b: any) => (
                       <SelectItem key={b.id} value={String(b.id)}>
                         {b.name}
                       </SelectItem>
@@ -1172,7 +1001,7 @@ function NewPurchaseContent() {
                     </tr>
                   ) : (
                     selectedItems.map((item, idx) => (
-                      <Fragment key={item.id}>
+                      <Fragment key={item.itemId}>
                         <tr className="hover:bg-muted/10 transition-colors">
                           <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle text-center">
                             {idx + 1}
@@ -1228,11 +1057,11 @@ function NewPurchaseContent() {
                                   type="button"
                                   data-expiry-container
                                   onClick={() => {
-                                    setOpenExpiryRowId((prev) => (prev === item.id ? null : item.id));
+                                    setOpenExpiryRowId((prev) => (prev === item.itemId ? null : item.itemId));
                                   }}
                                   className={cn(
                                     "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
-                                    openExpiryRowId === item.id
+                                    openExpiryRowId === item.itemId
                                       ? "bg-primary text-primary-foreground border-primary"
                                       : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
                                   )}
@@ -1246,11 +1075,11 @@ function NewPurchaseContent() {
                                   type="button"
                                   data-expiry-container
                                   onClick={() => {
-                                    setOpenExpiryRowId((prev) => (prev === item.id ? null : item.id));
+                                    setOpenExpiryRowId((prev) => (prev === item.itemId ? null : item.itemId));
                                   }}
                                   className={cn(
                                     "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
-                                    openExpiryRowId === item.id
+                                    openExpiryRowId === item.itemId
                                       ? "bg-primary text-primary-foreground border-primary"
                                       : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
                                   )}
@@ -1273,7 +1102,7 @@ function NewPurchaseContent() {
                             <Input
                               type="number"
                               value={item.quantity || ""}
-                              onChange={(e) => handleRowChange(item.id, "quantity", e.target.value)}
+                              onChange={(e) => handleRowChange(item.itemId, "quantity", e.target.value)}
                               className="h-8 text-center bg-background/50 border-input text-xs font-semibold"
                               min="1"
                             />
@@ -1284,7 +1113,7 @@ function NewPurchaseContent() {
                             <Input
                               type="number"
                               value={item.unitCost || ""}
-                              onChange={(e) => handleRowChange(item.id, "unitCost", e.target.value)}
+                              onChange={(e) => handleRowChange(item.itemId, "unitCost", e.target.value)}
                               className="h-8 text-right bg-background/50 border-input text-xs font-semibold"
                               min="0"
                             />
@@ -1295,7 +1124,7 @@ function NewPurchaseContent() {
                             <Input
                               type="number"
                               value={item.taxPercent || ""}
-                              onChange={(e) => handleRowChange(item.id, "taxPercent", e.target.value)}
+                              onChange={(e) => handleRowChange(item.itemId, "taxPercent", e.target.value)}
                               placeholder="0%"
                               className="h-8 text-right bg-background/50 border-input text-xs"
                               min="0"
@@ -1307,7 +1136,7 @@ function NewPurchaseContent() {
                             <Input
                               type="number"
                               value={item.total || ""}
-                              onChange={(e) => handleRowChange(item.id, "total", e.target.value)}
+                              onChange={(e) => handleRowChange(item.itemId, "total", e.target.value)}
                               className="h-8 text-right bg-background/50 border-input text-xs font-bold text-primary font-mono"
                               min="0"
                             />
@@ -1317,7 +1146,7 @@ function NewPurchaseContent() {
                           <td className="px-3 py-3 align-middle text-right">
                             <button
                               type="button"
-                              onClick={() => removeItemRow(item.id)}
+                              onClick={() => removeItemRow(item.itemId)}
                               className="text-muted-foreground hover:text-rose-500 transition-colors p-1 cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1326,7 +1155,7 @@ function NewPurchaseContent() {
                         </tr>
 
                         {/* Conditional Expiry & Batch Settings Sub-Row */}
-                        {openExpiryRowId === item.id && (
+                        {openExpiryRowId === item.itemId && (
                           <tr
                             data-expiry-container
                             className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
@@ -1342,11 +1171,11 @@ function NewPurchaseContent() {
                                     checked={!!item.trackBatch}
                                     onChange={(e) => {
                                       const checked = e.target.checked;
-                                      handleRowChange(item.id, "trackBatch", checked);
+                                      handleRowChange(item.itemId, "trackBatch", checked);
                                       if (!checked) {
-                                        handleRowChange(item.id, "trackExpiry", false);
-                                        handleRowChange(item.id, "expiryDate", undefined);
-                                        if (openExpiryRowId === item.id) {
+                                        handleRowChange(item.itemId, "trackExpiry", false);
+                                        handleRowChange(item.itemId, "expiryDate", undefined);
+                                        if (openExpiryRowId === item.itemId) {
                                           setOpenExpiryRowId(null);
                                         }
                                       }
@@ -1374,10 +1203,10 @@ function NewPurchaseContent() {
                                     onChange={(e) => {
                                       if (!item.trackBatch) return;
                                       const checked = e.target.checked;
-                                      handleRowChange(item.id, "trackExpiry", checked);
+                                      handleRowChange(item.itemId, "trackExpiry", checked);
                                       if (!checked) {
-                                        handleRowChange(item.id, "manufactureDate", undefined);
-                                        handleRowChange(item.id, "expiryDate", undefined);
+                                        handleRowChange(item.itemId, "manufactureDate", undefined);
+                                        handleRowChange(item.itemId, "expiryDate", undefined);
                                       }
                                     }}
                                     className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
@@ -1404,7 +1233,7 @@ function NewPurchaseContent() {
                                       onChange={(e) => {
                                         const val = e.target.value;
                                         handleRowChange(
-                                          item.id,
+                                          item.itemId,
                                           "expiryDate",
                                           val ? new Date(val) : undefined
                                         );
@@ -1432,7 +1261,7 @@ function NewPurchaseContent() {
                                       onChange={(e) => {
                                         const val = e.target.value;
                                         handleRowChange(
-                                          item.id,
+                                          item.itemId,
                                           "manufactureDate",
                                           val ? new Date(val) : undefined
                                         );
@@ -1687,7 +1516,7 @@ function NewPurchaseContent() {
 
                     {/* Fields for Bank */}
                     {p.method === "bank" && (
-                      <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="grid grid-cols-2 gap-3 mb-3">
                         <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
@@ -1706,20 +1535,20 @@ function NewPurchaseContent() {
                             <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {accounts.map((acc: any) => (
+                            {accounts.filter((a: any) => a.type === 'bank').map((acc: any) => (
                               <SelectItem key={acc.id} value={acc.id}>
-                                {acc.name} (Tk.{acc.balance})
+                                {acc.name}  
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <input
+                        {/* <input
                           type="text"
                           value={p.transactionId}
                           onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
                           placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
                           className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                        />
+                        /> */}
                       </div>
                     )}
 
@@ -1734,9 +1563,9 @@ function NewPurchaseContent() {
                             <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {MOBILE_PROVIDERS.map((provider) => (
-                              <SelectItem key={provider.id} value={provider.id}>
-                                {provider.label}
+                            {accounts.filter((a: any) => a.type === 'mobile_banking').map((acc: any) => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name} (Tk.{acc.balance})
                               </SelectItem>
                             ))}
                           </SelectContent>
