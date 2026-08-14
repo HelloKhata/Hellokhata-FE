@@ -3,14 +3,13 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect, Suspense } from "react";
+import  { useState, useMemo, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/premium";
 import {
   Popover,
   PopoverContent,
@@ -24,35 +23,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Plus,
   Trash2,
   Calendar as CalendarIcon,
-  Check,
   X,
   ArrowLeft,
-  Users,
   Loader2,
   RotateCcw,
-  FileText,
   Search,
-  Camera,
   Sparkles,
-  Info,
   CheckCircle,
-  Image as ImageIcon,
   Receipt,
+  Upload,
 } from "lucide-react";
 import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { useUser } from "@/stores/sessionStore";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useParties, useParty } from "@/hooks/api/useParties";
-import { useGetItems } from "@/hooks/api/useItems";
-import { useReturnPurchase, useGetPurchaseReturns } from "@/hooks/api/useReturns";
+import { useReturnPurchase } from "@/hooks/api/useReturns";
 import { useGetPurchases, useGetPurchaseById } from "@/hooks/api/usePurchases";
-import { useBranches, useAccounts } from "@/hooks/queries";
-import Image from "next/image";
+import { useAccounts } from "@/hooks/queries";
+import { useParty } from "@/hooks/api/useParties";
 
 interface ReturnItemRow {
   id: string;
@@ -72,6 +64,7 @@ interface ReturnItemRow {
   searchQuery: string;
   showSuggestions: boolean;
   imageUrl?: string;
+  isSelected?: boolean;
 }
 
 function NewPurchaseReturnContent() {
@@ -80,70 +73,71 @@ function NewPurchaseReturnContent() {
   const supplierIdParam = searchParams.get("supplierId") || "";
   const purchaseIdParam = searchParams.get("purchaseId") || "";
 
+    // purchased items
+  const [purchase,setPurchase] = useState<any>(null);
+
+  // Return items table state
+  const [purchasedItems, setPurchasedItems] = useState<ReturnItemRow[]>([]);
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
   const { mutate: returnPurchase, isPending: isSubmitting } = useReturnPurchase();
   const user = useUser();
 
   // Queries
-  const { data: branches = [] } = useBranches();
+  // const { data: branches = [] } = useBranches();
   const { data: accounts = [] } = useAccounts();
-  const { data: purchaseReturns = [] } = useGetPurchaseReturns();
-
+  
   // Selected Purchase & Supplier state
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(supplierIdParam);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>(purchaseIdParam);
 
   // Search queries for supplier, invoice, product search
-  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
-  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
-  const [showInvoiceSuggestions, setShowInvoiceSuggestions] = useState(false);
-  const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
-
-  // Fetch API data
-  const { data: partiesData } = useParties();
-  const suppliers = useMemo(() => {
-    const list = partiesData?.data || [];
-    return list.filter((p: any) => p.type === "supplier" || p.type === "both");
-  }, [partiesData]);
+  const [showInvoiceSuggestions,setShowInvoiceSuggestions] = useState(false);
+ 
+  useEffect(() => {
+      if (!purchase) {
+        setPurchasedItems([])
+      return
+    }
+      const initialItems: ReturnItemRow[] = purchase.items.map((item: any) => ({
+        id: item?.id,
+        purchaseItemId: item?.id,
+        itemId: item?.productId || item?.itemId || item?.id,
+        itemName: item?.itemName || item?.name || "",
+        sku: item?.sku || "—",
+        batchNo: item?.batchNo || "",
+        quantity: item?.remainingQuantity ?? item?.quantity ?? 1,
+        maxQuantity: item?.quantity ?? item?.remainingQuantity ?? 1,
+        remainingQuantity: item?.remainingQuantity ?? item?.quantity ?? 1,
+        unitCost: item?.unitCost ?? item?.rate ?? 0,
+        unit: item?.unit || "pcs",
+        returnType: "refund",
+        reason: "damaged",
+        total: (item?.remainingQuantity ?? item?.quantity ?? 1) * (item?.unitCost ?? item?.rate ?? 0),
+        searchQuery: "",
+        showSuggestions: false,
+        imageUrl: item?.imageUrl || "",
+        isSelected: false,
+      }));
+      setPurchasedItems(initialItems);
+    
+  }, [purchase]);
 
   const { data: singleSupplierData } = useParty(selectedSupplierId, {
     enabled: !!selectedSupplierId,
   });
 
-  const { data: purchasesList = [] } = useGetPurchases();
+  const { data: purchaseData = [] } = useGetPurchases({search:invoiceSearchQuery});
   const { data: singlePurchaseData } = useGetPurchaseById(selectedPurchaseId);
-
-  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
-  const items = itemsData?.data || [];
-
-  // Form Metadata
-  const autoReturnNo = useMemo(() => {
-    const todayStr = format(new Date(), "yyyyMMdd");
-    const rand = Math.floor(1000 + Math.random() * 9000);
-    return `PR-${todayStr}-${rand}`;
-  }, []);
-
   const [returnNo, setReturnNo] = useState("");
-  useEffect(() => {
-    setReturnNo(autoReturnNo);
-  }, [autoReturnNo]);
 
   const [returnDate, setReturnDate] = useState<Date>(new Date());
-  const [branchId, setBranchId] = useState("");
   const [responsiblePerson, setResponsiblePerson] = useState("");
   const [referenceNo, setReferenceNo] = useState("");
   const [returnStatus, setReturnStatus] = useState<"draft" | "pending" | "approved" | "completed" | "cancelled">("completed");
 
-  const userBranchId = user?.branchId;
-  const userName = user?.name;
-  useEffect(() => {
-    if (userBranchId && !branchId) setBranchId(userBranchId);
-    if (userName && !responsiblePerson) setResponsiblePerson(userName);
-  }, [userBranchId, userName, branchId, responsiblePerson]);
-
+  
   // Adjustments & Split Refund Configurations
   const [orderDiscount, setOrderDiscount] = useState<number>(0);
   const [taxPercent, setTaxPercent] = useState<number>(0);
@@ -161,122 +155,32 @@ function NewPurchaseReturnContent() {
 
   const [attachments, setAttachments] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
-  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+  const [invoiceImage, setInvoiceImage] = useState<File | null>(null);
+  const [invoiceImagePreview, setInvoiceImagePreview] = useState<string | null>(null);
 
-  // Return items table state
-  const [selectedItems, setSelectedItems] = useState<ReturnItemRow[]>([
-    {
-      id: "initial-row",
-      itemId: "",
-      itemName: "",
-      sku: "—",
-      batchNo: "",
-      quantity: 1,
-      maxQuantity: 100,
-      remainingQuantity: 100,
-      unitCost: 0,
-      unit: "pcs",
-      returnType: "refund",
-      reason: "damaged",
-      total: 0,
-      searchQuery: "",
-      showSuggestions: false,
-      imageUrl: "",
-    },
-  ]);
-
-  // Sync items when an Original Purchase Invoice is selected
-  useEffect(() => {
-    if (singlePurchaseData?.data) {
-      const p = singlePurchaseData.data;
-      if (p.supplierId) setSelectedSupplierId(p.supplierId);
-      if (p.branchId) setBranchId(p.branchId);
-
-      if (p.items && p.items.length > 0) {
-        const prefilled: ReturnItemRow[] = p.items.map((item: any, idx: number) => {
-          const qtyPurchased = item.quantity || 1;
-          const qtyReturned = item.alreadyReturned || 0;
-          const qtyRemaining = Math.max(0, qtyPurchased - qtyReturned);
-          const price = item.unitCost || item.unitPrice || 0;
-          return {
-            id: item.id || String(idx),
-            purchaseItemId: item.id,
-            itemId: item.itemId || "",
-            itemName: item.itemName || item.name || "Product",
-            sku: item.sku || item.item?.sku || "—",
-            batchNo: item.batchNo || "",
-            quantity: qtyRemaining,
-            maxQuantity: qtyPurchased,
-            remainingQuantity: qtyRemaining,
-            unitCost: price,
-            unit: item.unit || "pcs",
-            returnType: "refund",
-            reason: "damaged",
-            total: qtyRemaining * price,
-            searchQuery: "",
-            showSuggestions: false,
-            imageUrl: item.imageUrl || "",
-          };
-        });
-        setSelectedItems(prefilled);
-      }
+  const handleInvoiceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setInvoiceImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setInvoiceImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [singlePurchaseData]);
-
-  // Suppliers list filtering
-  const filteredSuppliers = useMemo(() => {
-    if (!supplierSearchQuery) return suppliers;
-    return suppliers.filter(
-      (s: any) =>
-        s.name.toLowerCase().includes(supplierSearchQuery.toLowerCase()) ||
-        s.phone?.includes(supplierSearchQuery),
-    );
-  }, [suppliers, supplierSearchQuery]);
-
-  const selectedSupplierName = useMemo(() => {
-    const s = suppliers.find((p: any) => p.id === selectedSupplierId);
-    if (s) return s.name;
-    if (singleSupplierData?.data && singleSupplierData.data.id === selectedSupplierId) {
-      return singleSupplierData.data.name;
-    }
-    return "";
-  }, [suppliers, selectedSupplierId, singleSupplierData]);
-
-  // Purchases list filtering
-  const filteredPurchases = useMemo(() => {
-    if (!purchasesList) return [];
-    if (!invoiceSearchQuery) return purchasesList.slice(0, 10);
-    return purchasesList.filter((p: any) =>
-      (p.invoiceNo || "").toLowerCase().includes(invoiceSearchQuery.toLowerCase()),
-    );
-  }, [purchasesList, invoiceSearchQuery]);
-
-  const selectedInvoiceNo = useMemo(() => {
-    const p = purchasesList.find((x: any) => x.id === selectedPurchaseId);
-    if (p) return p.invoiceNo || `PUR-${(p.id || "").slice(-6)}`;
-    if (singlePurchaseData?.data) {
-      const sp = singlePurchaseData.data;
-      return sp.invoiceNo || `PUR-${(sp.id || "").slice(-6)}`;
-    }
-    return "";
-  }, [purchasesList, selectedPurchaseId, singlePurchaseData]);
-
-  // Product filtering
-  const getFilteredProducts = (query: string) => {
-    if (!query?.trim()) return items.slice(0, 10);
-    const search = query.toLowerCase();
-    return items.filter(
-      (product: any) =>
-        product.name?.toLowerCase().includes(search) ||
-        product.sku?.toLowerCase().includes(search) ||
-        product.barcode?.toLowerCase().includes(search),
-    );
   };
+
+  const handleRemoveInvoiceImage = () => {
+    setInvoiceImage(null);
+    setInvoiceImagePreview(null);
+  };
+
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
 
   // Financial calculations
   const subtotal = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
-  }, [selectedItems]);
+    return purchasedItems?.reduce((sum, item) => sum + (item?.isSelected ? item?.quantity * item?.unitCost : 0), 0);
+  }, [purchasedItems]);
 
   const taxAmount = useMemo(() => {
     return Math.max(0, (subtotal - orderDiscount) * (taxPercent / 100));
@@ -286,188 +190,15 @@ function NewPurchaseReturnContent() {
     return Math.max(0, subtotal - orderDiscount + taxAmount + shippingAdjustment + additionalCharges);
   }, [subtotal, orderDiscount, taxAmount, shippingAdjustment, additionalCharges]);
 
-  // Default split distribution
-  useEffect(() => {
-    if (
-      refundMethod === "cash" ||
-      refundMethod === "bank" ||
-      refundMethod === "card" ||
-      refundMethod === "bkash" ||
-      refundMethod === "nagad" ||
-      refundMethod === "rocket" ||
-      refundMethod === "wallet"
-    ) {
-      setRefundAmount(grandTotal);
-      setSupplierCredit(0);
-      setPaymentAdjustment(0);
-    } else if (refundMethod === "supplier_credit") {
-      setRefundAmount(0);
-      setSupplierCredit(grandTotal);
-      setPaymentAdjustment(0);
-    } else if (refundMethod === "due_adjustment") {
-      setRefundAmount(0);
-      setSupplierCredit(0);
-      setPaymentAdjustment(grandTotal);
-    }
-  }, [grandTotal, refundMethod]);
-
-  const handleAutoFillSplit = (type: "refund" | "credit" | "adjustment") => {
-    if (type === "refund") {
-      setRefundAmount(grandTotal);
-      setSupplierCredit(0);
-      setPaymentAdjustment(0);
-    } else if (type === "credit") {
-      setRefundAmount(0);
-      setSupplierCredit(grandTotal);
-      setPaymentAdjustment(0);
-    } else {
-      setRefundAmount(0);
-      setSupplierCredit(0);
-      setPaymentAdjustment(grandTotal);
-    }
-  };
-
-  // AI Insights Suggestions
-  const aiSuggestions = useMemo(() => {
-    const suggestions: string[] = [];
-    if (singleSupplierData?.data) {
-      const sup = singleSupplierData.data;
-      if (sup.returnRate && sup.returnRate > 15) {
-        suggestions.push(
-          isBangla
-            ? `⚠️ সরবরাহকারী গুণমান সতর্কতা: ${sup.name}-এর পণ্য ফেরতের হার উচ্চ (${sup.returnRate}%)।`
-            : `⚠️ Supplier Quality Warning: ${sup.name} has a high product return rate of ${sup.returnRate}%.`,
-        );
-      }
-      if (sup.riskLevel === "high") {
-        suggestions.push(
-          isBangla
-            ? `👤 আর্থিক ঝুঁকি: এই সরবরাহকারীর ঝুঁকি স্কোর বেশি। বকেয়া সমন্বয় নির্বাচন করার পরামর্শ দেওয়া হচ্ছে।`
-            : `👤 Financial Risk: High supplier risk score. Recommend selecting Due Adjustment.`,
-        );
-      }
-    }
-    if (suggestions.length === 0) {
-      suggestions.push(
-        isBangla
-          ? "💡 এআই পারচেজ অ্যাসিস্ট্যান্স: এই ফেরতের জন্য কোনো গুরুত্বপূর্ণ আর্থিক বা গুণগত ঝুঁকি পাওয়া যায়নি।"
-          : "💡 AI Purchase Assistance: No critical financial or inventory quality risks identified.",
-      );
-    }
-    return suggestions;
-  }, [singleSupplierData, isBangla]);
-
-  // Product table row actions
-  const handleAddProductToTable = (product: any) => {
-    setSelectedItems((prev) => {
-      const existingIndex = prev.findIndex((i) => i.itemId === product.id);
-      if (existingIndex > -1) {
-        return prev.map((item, idx) => {
-          if (idx === existingIndex) {
-            const newQty = item.quantity + 1;
-            const price = item.unitCost || product.costPrice || product.sellingPrice || 0;
-            return {
-              ...item,
-              quantity: newQty,
-              total: newQty * price,
-            };
-          }
-          return item;
-        });
-      }
-
-      const price = product.costPrice || product.sellingPrice || 0;
-      const newItemRow: ReturnItemRow = {
-        id: Math.random().toString(),
-        itemId: product.id,
-        itemName: product.name,
-        sku: product.sku || "—",
-        batchNo: "",
-        quantity: 1,
-        maxQuantity: product.currentStock || 100,
-        remainingQuantity: product.currentStock || 100,
-        unitCost: price,
-        unit: product.unit || "pcs",
-        returnType: "refund",
-        reason: "damaged",
-        total: price,
-        searchQuery: "",
-        showSuggestions: false,
-        imageUrl: product.imageUrl || "",
-      };
-
-      const emptyRowIndex = prev.findIndex((i) => i.itemId === "");
-      if (emptyRowIndex > -1 && prev.length === 1) {
-        return [newItemRow];
-      }
-
-      return [...prev.filter((i) => i.itemId !== ""), newItemRow];
-    });
-
-    setProductSearchQuery("");
-    setShowProductSuggestions(false);
-  };
-
-  const addItemRow = () => {
-    setSelectedItems((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        itemId: "",
-        itemName: "",
-        sku: "—",
-        batchNo: "",
-        quantity: 1,
-        maxQuantity: 100,
-        remainingQuantity: 100,
-        unitCost: 0,
-        unit: "pcs",
-        returnType: "refund",
-        reason: "damaged",
-        total: 0,
-        searchQuery: "",
-        showSuggestions: false,
-        imageUrl: "",
-      },
-    ]);
-  };
-
-  const removeItemRow = (id: string) => {
-    if (selectedItems.length === 1) {
-      setSelectedItems([
-        {
-          id: "initial-row",
-          itemId: "",
-          itemName: "",
-          sku: "—",
-          batchNo: "",
-          quantity: 1,
-          maxQuantity: 100,
-          remainingQuantity: 100,
-          unitCost: 0,
-          unit: "pcs",
-          returnType: "refund",
-          reason: "damaged",
-          total: 0,
-          searchQuery: "",
-          showSuggestions: false,
-          imageUrl: "",
-        },
-      ]);
-      return;
-    }
-    setSelectedItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
   const updateQuantity = (id: string, quantity: number) => {
-    setSelectedItems((prev) =>
+    setPurchasedItems((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
+        if (item?.id === id) {
           const newQty = Math.max(0, quantity);
           return {
             ...item,
             quantity: newQty,
-            total: newQty * item.unitCost,
+            total: newQty * item?.unitCost,
           };
         }
         return item;
@@ -476,9 +207,9 @@ function NewPurchaseReturnContent() {
   };
 
   const updateItemField = (id: string, field: keyof ReturnItemRow, value: any) => {
-    setSelectedItems((prev) =>
+    setPurchasedItems((prev) =>
       prev.map((item) => {
-        if (item.id === id) {
+        if (item?.id === id) {
           return {
             ...item,
             [field]: value,
@@ -491,7 +222,7 @@ function NewPurchaseReturnContent() {
 
   // Submit flow
   const handleSubmitWithStatus = (status: typeof returnStatus, andThen: "redirect" | "clear" | "print") => {
-    const itemsToReturn = selectedItems.filter((i) => (i.itemId !== "" || i.itemName !== "") && i.quantity > 0);
+    const itemsToReturn = purchasedItems.filter((i) => i.isSelected && (i.itemId !== "" || i.itemName !== "") && i.quantity > 0);
 
     if (!selectedSupplierId) {
       toast.error(isBangla ? "সরবরাহকারী নির্বাচন করা নেই" : "No supplier selected");
@@ -507,18 +238,18 @@ function NewPurchaseReturnContent() {
       supplierId: selectedSupplierId,
       returnNo,
       returnDate: returnDate.toISOString(),
-      branchId,
+      // branchId,
       responsiblePerson,
       referenceNo,
       status,
       items: itemsToReturn.map((item) => ({
-        purchaseItemId: item.purchaseItemId,
-        itemId: item.itemId,
-        itemName: item.itemName,
-        quantity: item.quantity,
-        unitCost: item.unitCost,
-        returnType: item.returnType,
-        reason: item.reason,
+        purchaseItemId: item?.purchaseItemId,
+        itemId: item?.itemId,
+        itemName: item?.itemName,
+        quantity: item?.quantity,
+        unitCost: item?.unitCost,
+        returnType: item?.returnType,
+        reason: item?.reason,
       })),
       discount: orderDiscount,
       tax: taxAmount,
@@ -539,7 +270,7 @@ function NewPurchaseReturnContent() {
           isBangla ? "ক্রয় ফেরত সফলভাবে সম্পন্ন হয়েছে" : "Purchase return saved successfully",
         );
         if (andThen === "clear") {
-          setSelectedItems([]);
+          setPurchasedItems([]);
           setNotes("");
           setReferenceNo("");
         } else if (andThen === "print") {
@@ -549,11 +280,6 @@ function NewPurchaseReturnContent() {
           router.push("/purchases/returns");
         }
       },
-      onError: (error: any) => {
-        toast.error(
-          error?.response?.data?.message || (isBangla ? "ফেরত ব্যর্থ হয়েছে" : "Return failed"),
-        );
-      },
     });
   };
 
@@ -561,10 +287,7 @@ function NewPurchaseReturnContent() {
     { value: "refund", label: isBangla ? "রিফান্ড (Refund)" : "Refund" },
     { value: "replacement", label: isBangla ? "প্রতিস্থাপন (Replacement)" : "Replacement" },
     { value: "exchange", label: isBangla ? "বিনিময় (Exchange)" : "Exchange" },
-    { value: "damage", label: isBangla ? "ক্ষতিগ্রস্ত (Damage)" : "Damage" },
-    { value: "expired", label: isBangla ? "মেয়াদোত্তীর্ণ (Expired)" : "Expired" },
-    { value: "warranty", label: isBangla ? "ওয়ারেন্টি (Warranty)" : "Warranty" },
-    { value: "supplier_credit", label: isBangla ? "সরবরাহকারী ক্রেডিট (Supplier Credit)" : "Supplier Credit" },
+    { value: "warranty", label: isBangla ? "ওয়ারেন্টি (Warranty)" : "Warranty" }
   ];
 
   const returnReasons = [
@@ -572,8 +295,7 @@ function NewPurchaseReturnContent() {
     { value: "expired", label: isBangla ? "মেয়াদোত্তীর্ণ (Expired)" : "Expired" },
     { value: "wrong_product", label: isBangla ? "ভুল পণ্য (Wrong Product)" : "Wrong Product" },
     { value: "wrong_quantity", label: isBangla ? "ভুল পরিমাণ (Wrong Quantity)" : "Wrong Quantity" },
-    { value: "defective", label: isBangla ? "ত্রুটিপূর্ণ (Defective)" : "Defective" },
-    { value: "other", label: isBangla ? "অন্যান্য (Other)" : "Other" },
+    { value: "defective", label: isBangla ? "ত্রুটিপূর্ণ (Defective)" : "Defective" }
   ];
 
   return (
@@ -605,26 +327,10 @@ function NewPurchaseReturnContent() {
             <Receipt className="h-4 w-4" />
             <span>{isBangla ? "ক্রয় ইনভয়েস" : "Purchase Invoice"}</span>
           </div>
-          {selectedPurchaseId && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSelectedPurchaseId("");
-                setInvoiceSearchQuery("");
-                setSelectedSupplierId("");
-                setSelectedItems([]);
-              }}
-              className="h-8 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              {isBangla ? "ইনভয়েস পরিবর্তন করুন" : "Change Invoice"}
-            </Button>
-          )}
         </div>
 
         {/* 4-Column Grid: Purchase Invoice, Supplier(disable), Purchase Date(disable), Return Date */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className={cn("grid grid-cols-1 gap-4 items-end", purchase ? "md:grid-cols-2 lg:grid-cols-4" : "")}>
           {/* Field 1 (25%): Purchase Invoice */}
           <div className="relative space-y-1.5">
             <Label className="text-xs font-medium text-foreground">
@@ -632,15 +338,15 @@ function NewPurchaseReturnContent() {
             </Label>
             <div className="relative">
               <Input
-                value={selectedInvoiceNo || invoiceSearchQuery}
+                value={invoiceSearchQuery}
                 onChange={(e) => {
                   setInvoiceSearchQuery(e.target.value);
-                  if (selectedPurchaseId) setSelectedPurchaseId("");
+                  // if (selectedPurchaseId) setSelectedPurchaseId("");
                   setShowInvoiceSuggestions(true);
                 }}
                 onFocus={() => setShowInvoiceSuggestions(true)}
                 onBlur={() => {
-                  setTimeout(() => setShowInvoiceSuggestions(false), 200);
+                  setShowInvoiceSuggestions(false)
                 }}
                 placeholder={
                   isBangla
@@ -653,28 +359,30 @@ function NewPurchaseReturnContent() {
 
               {showInvoiceSuggestions && (
                 <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
-                  {filteredPurchases.length === 0 ? (
+                  {purchaseData.length === 0 ? (
                     <div className="p-3 text-center text-sm text-muted-foreground">
                       {isBangla
                         ? "কোনো ইনভয়েস পাওয়া যায়নি"
                         : "No invoices found"}
                     </div>
                   ) : (
-                    filteredPurchases.map((purchase: any) => (
+                    purchaseData.map((purchase: any) => (
                       <button
                         key={purchase.id}
                         type="button"
                         className="w-full text-left p-3 hover:bg-muted/80 text-sm transition-colors flex justify-between items-center"
                         onMouseDown={(e) => {
                           e.preventDefault();
-                          setSelectedPurchaseId(purchase.id);
-                          setInvoiceSearchQuery("");
+                          setPurchase(purchase);
+                          setInvoiceSearchQuery(purchase.grnNo)
                           setShowInvoiceSuggestions(false);
                         }}
+
+                        onClick={() =>{ setPurchase(purchase); setInvoiceSearchQuery(purchase.grnNo)}}
                       >
                         <div>
                           <p className="font-semibold text-foreground">
-                            {purchase.invoiceNo || `PUR-${(purchase.id || "").slice(-6)}`}
+                            {purchase.grnNo || ''}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {purchase.supplier?.name || "Supplier"}
@@ -691,72 +399,74 @@ function NewPurchaseReturnContent() {
             </div>
           </div>
 
-          {/* Field 2 (25%): Supplier (Non-editable) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              {isBangla ? "সরবরাহকারী" : "Supplier"}
-            </Label>
-            <Input
-              readOnly
-              disabled
-              value={
-                selectedPurchaseId
-                  ? singlePurchaseData?.data?.supplier?.name || selectedSupplierName || singleSupplierData?.data?.name || "—"
-                  : ""
-              }
-              placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
-              className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-80"
-            />
-          </div>
-
-          {/* Field 3 (25%): Purchase Date (Non-editable) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              {isBangla ? "ক্রয় তারিখ" : "Purchase Date"}
-            </Label>
-            <Input
-              readOnly
-              disabled
-              value={
-                selectedPurchaseId && singlePurchaseData?.data?.createdAt
-                  ? format(new Date(singlePurchaseData.data.createdAt), "dd MMM yyyy")
-                  : ""
-              }
-              placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
-              className="h-11 bg-muted/40 border-input text-sm font-semibold text-foreground cursor-not-allowed disabled:opacity-80"
-            />
-          </div>
-
-          {/* Field 4 (25%): Return Date (Editable Date Picker) */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              {isBangla ? "ফেরতের তারিখ" : "Return Date"}
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-sm font-medium cursor-pointer"
-                >
-                  <span>{format(returnDate, "dd MMM yyyy")}</span>
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={returnDate}
-                  onSelect={(date) => date && setReturnDate(date)}
-                  initialFocus
+          {!!purchase && (
+            <>
+              {/* Field 2 (25%): Supplier (Non-editable) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  {isBangla ? "সরবরাহকারী" : "Supplier"}
+                </Label>
+                <Input
+                  readOnly
+                  disabled
+                  value={
+                    purchase?.supplier?.name  || purchase?.name || "—"
+                  }
+                  placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
+                  className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-80"
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+
+              {/* Field 3 (25%): Purchase Date (Non-editable) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  {isBangla ? "ক্রয় তারিখ" : "Purchase Date"}
+                </Label>
+                <Input
+                  readOnly
+                  disabled
+                  value={
+                    purchase?.createdAt
+                      ? format(new Date(purchase.createdAt), "dd MMM yyyy")
+                      : ""
+                  }
+                  placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
+                  className="h-11 bg-muted/40 border-input text-sm font-semibold text-foreground cursor-not-allowed disabled:opacity-80"
+                />
+              </div>
+
+              {/* Field 4 (25%): Return Date (Editable Date Picker) */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  {isBangla ? "ফেরতের তারিখ" : "Return Date"}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-sm font-medium cursor-pointer"
+                    >
+                      <span>{format(returnDate, "dd MMM yyyy")}</span>
+                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={returnDate}
+                      onSelect={(date) => date && setReturnDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* IF NO INVOICE IS SELECTED: SHOW EMPTY PLACEHOLDER CARD */}
-      {!!selectedPurchaseId ? (
+      {!purchase ? (
         <div className="bg-card/50 border border-dashed border-border rounded-xl p-12 text-center space-y-3">
           <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
             <Receipt className="h-6 w-6" />
@@ -775,82 +485,14 @@ function NewPurchaseReturnContent() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Section (Spans 9 columns on desktop) */}
         <div className="lg:col-span-9 space-y-6">
-          
-          {/* Section 1: Purchase Return Information Card */}
-          
-
-          {/* Section 2: Supplier Overview Card */}
-          {singleSupplierData?.data && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-2xs space-y-3">
-              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
-                <Users className="h-4 w-4" />
-                <span>{isBangla ? "সরবরাহকারী সংক্ষিপ্ত বিবরণ ও আর্থিক অবস্থা" : "Supplier Overview"}</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "সরবরাহকারীর নাম" : "Supplier Name"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {singleSupplierData.data.name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "মোবাইল নম্বর" : "Phone"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {singleSupplierData.data.phone || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-rose-400 uppercase tracking-wide">
-                    {isBangla ? "বর্তমান বকেয়া" : "Current Due"}
-                  </p>
-                  <p className="font-bold text-rose-500 mt-0.5">
-                    {formatCurrency(Math.abs(singleSupplierData.data.currentBalance || 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "বাকির সীমা (Credit Limit)" : "Credit Limit"}
-                  </p>
-                  <p className="font-semibold text-foreground mt-0.5">
-                    {singleSupplierData.data.creditLimit
-                      ? formatCurrency(singleSupplierData.data.creditLimit)
-                      : isBangla
-                        ? "সীমাহীন"
-                        : "Unlimited"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Section 3: Return Items List Table */}
           <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs space-y-4">
             {/* Purchase Billing Info Text in sm text at the top of table */}
-            {singlePurchaseData?.data && (
+            {purchase && (
               <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs font-medium">
                 <div className="flex items-center gap-2 flex-wrap text-muted-foreground text-xs">
                   <span className="font-bold text-foreground">
                     {isBangla ? "ক্রয় ইনভয়েস তথ্য:" : "Purchase Billing Info:"}
-                  </span>
-                  <span>•</span>
-                  <span>
-                    {isBangla ? "সরবরাহকারী:" : "Supplier:"}{" "}
-                    <strong className="text-foreground">
-                      {singlePurchaseData?.data?.supplier?.name || selectedSupplierName || "—"}
-                    </strong>
-                  </span>
-                  <span>•</span>
-                  <span>
-                    {isBangla ? "তারিখ:" : "Purchase Date:"}{" "}
-                    <strong className="text-foreground">
-                      {singlePurchaseData.data.createdAt
-                        ? format(new Date(singlePurchaseData.data.createdAt), "dd MMM yyyy")
-                        : "—"}
-                    </strong>
                   </span>
                 </div>
 
@@ -858,14 +500,14 @@ function NewPurchaseReturnContent() {
                   <span>
                     {isBangla ? "মোট ইনভয়েস:" : "Total:"}{" "}
                     <strong className="font-bold text-foreground">
-                      {formatCurrency(singlePurchaseData.data.total || 0)}
+                      {formatCurrency(purchase.total || 0)}
                     </strong>
                   </span>
                   <span>
                     {isBangla ? "পরিশোধিত:" : "Paid:"}{" "}
                     <strong className="font-bold text-emerald-500">
                       {formatCurrency(
-                        singlePurchaseData.data.paidAmount || singlePurchaseData.data.paid || 0
+                        purchase.paidAmount ||  0
                       )}
                     </strong>
                   </span>
@@ -873,9 +515,7 @@ function NewPurchaseReturnContent() {
                     {isBangla ? "বাকি:" : "Due:"}{" "}
                     <strong className="font-bold text-rose-500">
                       {formatCurrency(
-                        singlePurchaseData.data.dueAmount ??
-                          ((singlePurchaseData.data.total || 0) -
-                            (singlePurchaseData.data.paidAmount || 0))
+                        purchase?.dueAmount || 0
                       )}
                     </strong>
                   </span>
@@ -896,7 +536,7 @@ function NewPurchaseReturnContent() {
                   <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-semibold">
                     <th className="px-4 py-3">{isBangla ? "আইটেম বিবরণ" : "Item & SKU"}</th>
                     <th className="px-3 py-3 text-right">{isBangla ? "মূল্য" : "Purchase Price"}</th>
-                    <th className="px-3 py-3 text-center">{isBangla ? "ইনভেন্টরি" : "Current Stock"}</th>
+                    <th className="px-3 py-3 text-center">{isBangla ? "ক্রয় পরিমাণ" : "Purchase Qty"}</th>
                     <th className="px-4 py-3 text-center w-28">{isBangla ? "ফেরত পরিমাণ *" : "Return Qty *"}</th>
                     <th className="px-3 py-3">{isBangla ? "ফেরত টাইপ" : "Return Type"}</th>
                     <th className="px-3 py-3">{isBangla ? "কারণ" : "Reason"}</th>
@@ -905,36 +545,44 @@ function NewPurchaseReturnContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {selectedItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-muted/10 transition-colors">
+            
+                  {purchasedItems?.map((item) => (
+                    <tr 
+                      key={item?.id} 
+                      className={cn(
+                        "hover:bg-muted/20 transition-colors cursor-pointer",
+                        item?.isSelected ? "bg-primary/5" : ""
+                      )}
+                      onClick={() => updateItemField(item?.id, "isSelected", !item?.isSelected)}
+                    >
                       <td className="px-4 py-3.5 align-middle">
-                        <p className="font-semibold text-foreground text-xs leading-tight">{item.itemName || (isBangla ? "পণ্য নির্বাচন করুন" : "Select Product")}</p>
-                        <p className="text-[10px] text-muted-foreground">SKU: {item.sku}</p>
+                        <p className="font-semibold text-foreground text-xs leading-tight">{item?.itemName || (isBangla ? "পণ্য নির্বাচন করুন" : "Select Product")}</p>
+                        <p className="text-[10px] text-muted-foreground">SKU: {item?.sku}</p>
                       </td>
                       <td className="px-3 py-3.5 align-middle text-right font-medium text-foreground">
-                        {formatCurrency(item.unitCost)}
+                        {formatCurrency(item?.unitCost)}
                       </td>
                       <td className="px-3 py-3.5 align-middle text-center text-muted-foreground font-medium">
-                        {item.remainingQuantity} {item.unit}
+                        {item?.maxQuantity} {item?.unit}
                       </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <div className="flex items-center border border-input rounded bg-background/50 h-8 w-24 mx-auto">
+                        <div className="flex items-center border border-input rounded bg-background/50 h-8 w-24 mx-auto" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item?.id, item?.quantity - 1)}
                             className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20"
                           >
                             -
                           </button>
                           <input
                             type="number"
-                            value={item.quantity || 0}
-                            onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
+                            value={item?.quantity || 0}
+                            onChange={(e) => updateQuantity(item?.id, parseInt(e.target.value) || 0)}
                             className="w-full text-center h-full bg-transparent outline-none border-none text-xs font-semibold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item?.id, item?.quantity + 1)}
                             className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20"
                           >
                             +
@@ -942,50 +590,54 @@ function NewPurchaseReturnContent() {
                         </div>
                       </td>
                       <td className="px-3 py-3.5 align-middle">
-                        <Select
-                          value={item.returnType}
-                          onValueChange={(val: any) => updateItemField(item.id, "returnType", val)}
-                        >
-                          <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {returnTypes.map((t) => (
-                              <SelectItem key={t.value} value={t.value} className="text-xs">
-                                {t.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={item?.returnType}
+                            onValueChange={(val: any) => updateItemField(item?.id, "returnType", val)}
+                          >
+                            <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {returnTypes.map((t) => (
+                                <SelectItem key={t.value} value={t.value} className="text-xs">
+                                  {t.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 align-middle">
-                        <Select
-                          value={item.reason}
-                          onValueChange={(val: any) => updateItemField(item.id, "reason", val)}
-                        >
-                          <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
-                            <SelectValue placeholder={isBangla ? "কারণ বলুন" : "Reason"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {returnReasons.map((r) => (
-                              <SelectItem key={r.value} value={r.value} className="text-xs">
-                                {r.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={item?.reason}
+                            onValueChange={(val: any) => updateItemField(item?.id, "reason", val)}
+                          >
+                            <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
+                              <SelectValue placeholder={isBangla ? "কারণ বলুন" : "Reason"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {returnReasons.map((r) => (
+                                <SelectItem key={r.value} value={r.value} className="text-xs">
+                                  {r.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 align-middle text-right font-bold text-foreground">
-                        {formatCurrency(item.quantity * item.unitCost)}
+                        {formatCurrency(item?.quantity * item?.unitCost)}
                       </td>
                       <td className="px-4 py-3.5 align-middle text-right">
-                        <button
-                          type="button"
-                          onClick={() => removeItemRow(item.id)}
-                          className="text-muted-foreground hover:text-rose-500 p-1.5 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div onClick={(e) => e.stopPropagation()} className="inline-flex items-center justify-center">
+                          <Checkbox
+                            checked={item?.isSelected}
+                            onCheckedChange={(checked) => updateItemField(item?.id, "isSelected", !!checked)}
+                            className="h-[18px] w-[18px] border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -994,15 +646,8 @@ function NewPurchaseReturnContent() {
             </div>
 
             {/* Bottom summary bar */}
-            <div className="flex justify-between items-center px-5 py-3.5 bg-muted/10 border-t border-border">
-              <button
-                type="button"
-                onClick={addItemRow}
-                className="text-primary font-semibold text-xs flex items-center gap-1.5 hover:underline cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                {isBangla ? "আইটেম যোগ করুন" : "Add Return Item"}
-              </button>
+            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/10 border-t border-border">
+             
               <div className="flex items-center gap-4">
                 <span className="text-muted-foreground font-semibold text-xs">
                   {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
@@ -1014,73 +659,68 @@ function NewPurchaseReturnContent() {
             </div>
           </div>
 
-          {/* Section 4: Attachments Section */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-3.5 shadow-xs">
-            <Label className="text-xs font-semibold text-foreground">
-              {isBangla ? "প্রমাণপত্র / ক্রেডিট নোট / চালান ছবি সংযুক্ত করুন" : "Upload Credit Note / Return Invoices / Pictures"}
-            </Label>
-            <div className="flex flex-wrap gap-2.5 items-center">
-              <label className="h-14 w-14 rounded-lg border border-dashed border-border/80 flex flex-col items-center justify-center bg-background/20 hover:bg-muted/50 hover:border-primary transition-all text-muted-foreground hover:text-foreground cursor-pointer">
-                <Camera className="h-4 w-4 mb-0.5" />
-                <span className="text-[9px]">{isBangla ? "আপলোড" : "Upload"}</span>
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      const files = Array.from(e.target.files);
-                      setAttachments((prev) => [...prev, ...files]);
-                      toast.success(`${files.length} files attached.`);
-                    }
-                  }}
+          {/* Notes & Invoice Image Upload Card */}
+          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Remarks/Notes */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
+                </Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={
+                    isBangla
+                      ? "অতিরিক্ত বিবরণ লিখুন..."
+                      : "Enter additional purchase remarks..."
+                  }
+                  className="h-32 bg-background/50 border-input resize-none text-xs"
                 />
-              </label>
+              </div>
 
-              {attachments.map((file, idx) => (
-                <div
-                  key={idx}
-                  className="h-14 w-14 rounded-lg border border-border bg-background/40 flex items-center justify-center relative group p-1"
-                >
-                  {file.type.startsWith("image/") ? (
+              {/* Invoice Image Upload */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "ইনভয়েস বা রসিদের ছবি" : "Invoice / Receipt Image"}
+                </Label>
+                {invoiceImagePreview ? (
+                  <div className="relative h-32 w-full rounded-lg border border-border bg-background/50 overflow-hidden flex items-center justify-center group">
                     <img
-                      src={URL.createObjectURL(file)}
-                      alt="preview"
-                      className="h-full w-full object-cover rounded"
+                      src={invoiceImagePreview}
+                      alt="Invoice preview"
+                      className="h-full w-full object-contain p-1"
                     />
-                  ) : (
-                    <FileText className="h-6 w-6 text-muted-foreground" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
-                    className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                  <span className="text-[8px] text-muted-foreground truncate w-full absolute bottom-0 bg-background/80 text-center px-0.5">
-                    {file.name}
-                  </span>
-                </div>
-              ))}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRemoveInvoiceImage}
+                        className="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full transition-colors cursor-pointer shadow-xs"
+                        title={isBangla ? "মুছে ফেলুন" : "Remove Image"}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-background/30 hover:bg-background/50 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-1.5" />
+                    <span className="text-xs font-semibold text-foreground">
+                      {isBangla ? "ইনভয়েস ছবি আপলোড করুন" : "Upload Invoice Image"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                      PNG, JPG, WEBP ({isBangla ? "সর্বোচ্চ ৫ মেগাবাইট" : "Max 5MB"})
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleInvoiceImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Section 5: Notes Area */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              {isBangla ? "বিশেষ মন্তব্য বা নোট" : "Note"}
-            </Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={
-                isBangla
-                  ? "ফেরত সংক্রান্ত তথ্য বা বিশেষ নোট লিখুন..."
-                  : "Enter purchase return remarks, adjustments or audit notes..."
-              }
-              className="h-24 bg-background/50 border-input resize-none text-xs"
-            />
           </div>
         </div>
 
@@ -1228,15 +868,6 @@ function NewPurchaseReturnContent() {
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-              </div>
-
-              <div className="space-y-3 text-[11px] leading-relaxed">
-                {aiSuggestions.map((suggestion, idx) => (
-                  <div key={idx} className="p-2.5 bg-background/50 border border-border/50 rounded-lg flex items-start gap-2 shadow-2xs">
-                    <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground">{suggestion}</span>
-                  </div>
-                ))}
               </div>
             </div>
           )}

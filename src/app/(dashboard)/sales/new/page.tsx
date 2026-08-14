@@ -38,7 +38,11 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import {
+  Banknote,
+  CreditCard,
+  Smartphone,
   Plus,
   Trash2,
   Calendar as CalendarIcon,
@@ -63,8 +67,26 @@ import { useParties, useParty } from "@/hooks/api/useParties";
 import { useGetBatches } from "@/hooks/api/useBatches";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
+import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 import { Offer, POSAppliedOffer, calculateBogoOffer, calculatePercentageOffer, calculateFlatOffer, calculateBundleOffer } from "@/types/offer.types";
 import Image from "next/image";
+
+interface PaymentRow {
+  id: string;
+  method: "cash" | "bank" | "mobile_banking";
+  accountId: string;
+  reference: string;
+  transactionId: string;
+  receivedBy?: string;
+  amount: number;
+  date: Date;
+}
+
+const METHODS = [
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+];
 
 interface BillingItemRow {
   id: string;
@@ -193,11 +215,33 @@ function NewSaleContent() {
   const [isManualInvoiceNo, setIsManualInvoiceNo] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
 
+  const { data: paymentMethods = [] } = useGetPaymentMethods();
+  const accounts = useMemo(() => {
+    return paymentMethods.map((pm: any) => ({
+      id: pm.id,
+      name: pm.name || pm.bankName || pm.provider || '',
+      balance: pm.currentBalance || pm.openingBalance || 0,
+      type: pm.type
+    }));
+  }, [paymentMethods]);
+
   const [notes, setNotes] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<
-    "cash" | "card" | "mobile_banking" | "credit"
-  >("cash");
-  const [paidAmount, setPaidAmount] = useState<string>("");
+
+  // Payment states
+  const [payments, setPayments] = useState<PaymentRow[]>([
+    {
+      id: "pay-initial",
+      method: "cash",
+      accountId: "",
+      reference: "",
+      transactionId: "",
+      receivedBy: "",
+      amount: 0,
+      date: new Date(),
+    },
+  ]);
+  const [splitMode, setSplitMode] = useState(false);
+  const [activeSplitMethod, setActiveSplitMethod] = useState<string>("cash");
 
   // New Fields (Tax, VAT, Additional Charge)
   const [taxConfig, setTaxConfig] = useState<{ type: "flat" | "percent"; value: number }>({
@@ -373,22 +417,90 @@ function NewSaleContent() {
     return Math.max(0, subtotalAfterDiscount + taxVal + vatVal + additionalChargeVal);
   }, [subtotalAfterDiscount, taxVal, vatVal, additionalChargeVal]);
 
-  const effectivePaidAmount = useMemo(() => {
-    if (paymentMethod === "credit") return 0;
-    if (paidAmount === "") return 0;
-    return parseFloat(paidAmount) || 0;
-  }, [paymentMethod, paidAmount]);
+  const totalPaid = useMemo(() => {
+    return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  }, [payments]);
 
   const due = useMemo(() => {
-    return Math.max(0, grandTotal - effectivePaidAmount);
-  }, [grandTotal, effectivePaidAmount]);
+    return Math.max(0, grandTotal - totalPaid);
+  }, [grandTotal, totalPaid]);
+
+  const changeReturned = useMemo(() => {
+    return Math.max(0, totalPaid - grandTotal);
+  }, [totalPaid, grandTotal]);
 
   // Validation
   const isPaidAmountExceeded = useMemo(() => {
-    if (paymentMethod === "credit") return false;
-    const parsedPaid = parseFloat(paidAmount || "0");
-    return parsedPaid > grandTotal;
-  }, [paymentMethod, paidAmount, grandTotal]);
+    return totalPaid > grandTotal;
+  }, [totalPaid, grandTotal]);
+
+  const toggleSplitMode = () => {
+    if (splitMode) {
+      // Revert to single payment mode
+      setPayments([
+        {
+          id: Math.random().toString(),
+          method: "cash",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+      ]);
+    } else {
+      setActiveSplitMethod("cash");
+      // Enter split mode
+      setPayments([
+        {
+          id: "cash-split",
+          method: "cash",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+        {
+          id: "bank-split",
+          method: "bank",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        },
+        {
+          id: "mobile-split",
+          method: "mobile_banking",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        }
+      ]);
+    }
+    setSplitMode(!splitMode);
+  };
+
+  const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
+    setPayments((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          return {
+            ...p,
+            [field]: value,
+          };
+        }
+        return p;
+      })
+    );
+  };
 
   // Add Item Row
   // Add Product to Table from top search bar
@@ -928,7 +1040,7 @@ function NewSaleContent() {
 
     if (isPaidAmountExceeded) {
       toast.error(
-        isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণ অতিক্রম করতে পারে না" : "Paid amount cannot exceed total amount.",
+        isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না" : "Paid amount cannot exceed grand total",
       );
       return;
     }
@@ -951,8 +1063,15 @@ function NewSaleContent() {
         } : {}),
       })),
       discount: totalDiscount + totalOfferSavings,
-      paidAmount: effectivePaidAmount,
-      paymentMethod,
+      paidAmount: totalPaid || 0,
+      paymentMethod: payments.filter((p) => p.amount > 0).map((p) => ({
+        paymentId: p.id,
+        paymentType: p.method,
+        amount: p.amount || 0,
+        referenceNumber: p.reference || undefined,
+        txnId: p.transactionId || undefined,
+      })),
+      accountId: payments.length > 0 ? (payments[0].accountId || undefined) : undefined,
       notes: notes || undefined,
       tax: taxVal,
       vat: vatVal,
@@ -968,6 +1087,11 @@ function NewSaleContent() {
             : "Sale completed successfully",
         );
         router.push("/sales");
+      },
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message || (isBangla ? "বিক্রি সম্পন্ন করতে সমস্যা হয়েছে" : "Failed to save sale"),
+        );
       },
     });
   };
@@ -1538,84 +1662,228 @@ function NewSaleContent() {
 
             <hr className="border-border/60" />
 
-            {/* Dedicated Payment Section */}
-            <div className="flex items-center justify-between border-t border-border/40">
-              {/* Payment Mode Selector */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  {isBangla ? "পেমেন্ট মোড" : "Payment Mode"}
-                </Label>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={(val: any) => setPaymentMethod(val)}
-                >
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-foreground text-sm focus-visible:ring-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">
-                      {isBangla ? "নগদ (Cash)" : "Cash"}
-                    </SelectItem>
-                    <SelectItem value="card">
-                      {isBangla ? "কার্ড (Card)" : "Card"}
-                    </SelectItem>
-                    <SelectItem value="mobile_banking">
-                      {isBangla ? "মোবাইল ব্যাংকিং" : "Mobile Banking"}
-                    </SelectItem>
-                    <SelectItem value="credit">
-                      {isBangla ? "বাকি (Credit)" : "Credit"}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Payment Info Section */}
+            <div className="">
+              <div className="flex items-center justify-end gap-2 border-b border-border pb-2.5">
+                <div className="flex items-center gap-2 group">
+                  <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
+                    {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
+                  </Label>
+                  <Switch
+                    id="split-mode"
+                    checked={splitMode}
+                    onCheckedChange={toggleSplitMode}
+                  />
+                </div>
               </div>
 
-              {/* Paid Amount Input */}
-              {paymentMethod !== "credit" && (
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {isBangla ? "পরিশোধিত পরিমাণ" : "Paid Amount"}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 text-xs text-muted-foreground font-semibold">
-                      Tk.
-                    </span>
-                    <Input
-                      type="number"
-                      value={paidAmount}
-                      onChange={(e) => setPaidAmount(e.target.value)}
-                      placeholder="0.00"
-                      className={cn(
-                        "pl-9 h-10 bg-background/50 border-input text-right font-bold text-foreground text-sm focus-visible:ring-1",
-                        isPaidAmountExceeded && "border-destructive focus-visible:ring-destructive"
-                      )}
-                      min="0"
-                    />
-                  </div>
-                  {isPaidAmountExceeded && (
-                    <p className="text-[11px] text-destructive font-medium animate-pulse">
-                      {isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণ অতিক্রম করতে পারে না" : "Paid amount cannot exceed total amount."}
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="space-y-4 pt-2">
+                {(() => {
+                  const activePayment = splitMode
+                    ? payments.find(p => p.method === activeSplitMethod) || payments[0]
+                    : payments[0];
+                  
+                  if (!activePayment) return null;
+                  const p = activePayment;
 
-             
-            </div>
- {/* Due Amount Alert */}
-              {due > 0 && (paidAmount !== "" || paymentMethod === "credit") && (
-                <div className="pt-1">
-                  <div className="p-3 rounded-xl flex justify-between items-center text-xs font-semibold border transition-all duration-300 bg-rose-500/10 border-rose-500/20 text-rose-500">
-                    <span>
-                      {isBangla ? "বাকি পরিমাণ" : "Due Amount"}
-                    </span>
-                    <div className="text-right">
-                      <span className="font-extrabold text-sm block">
-                        Tk. {due.toFixed(2)}
-                      </span>
+                  return (
+                    <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
+                      {/* Method chips */}
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {METHODS.map((m) => {
+                          const Icon = m.icon;
+                          const active = splitMode ? activeSplitMethod === m.id : p.method === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                if (splitMode) {
+                                  setActiveSplitMethod(m.id);
+                                } else {
+                                  handlePaymentFieldChange(p.id, "method", m.id);
+                                }
+                              }}
+                              className={cn(
+                                "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all cursor-pointer",
+                                active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
+                              )}
+                            >
+                              <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
+                              <span
+                                className={cn(
+                                  "text-[10px] font-medium leading-tight text-center",
+                                  active ? m.colorClass : "text-muted-foreground"
+                                )}
+                              >
+                                {m.label}
+                                {splitMode && (() => {
+                                  const splitP = payments.find(pay => pay.method === m.id);
+                                  return splitP && splitP.amount > 0 ? (
+                                    <span className="block mt-0.5 font-bold text-foreground text-[11px]">
+                                      Tk.{splitP.amount}
+                                    </span>
+                                  ) : null;
+                                })()}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Common Amount Input (Rendered alone if method is somehow missing, though should be covered below) */}
+                      {!["cash", "bank", "mobile_banking"].includes(p.method) && (
+                        <div className="mb-3">
+                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                            <input
+                              type="number"
+                              value={p.amount || ""}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fields for Cash */}
+                      {p.method === "cash" && (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                            <input
+                              type="number"
+                              value={p.amount || ""}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={p.receivedBy || ""}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "receivedBy", e.target.value)}
+                            placeholder={isBangla ? "গ্রহীতার নাম" : "Received By (optional)"}
+                            className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                          />
+                        </div>
+                      )}
+
+                      {/* Fields for Bank */}
+                      {p.method === "bank" && (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                            <input
+                              type="number"
+                              value={p.amount || ""}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                            />
+                          </div>
+                          <Select
+                            value={p.accountId}
+                            onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                          >
+                            <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                              <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {accounts.filter((a: any) => a.type === 'bank').map((acc: any) => (
+                                <SelectItem key={acc.id} value={acc.id}>
+                                  {acc.name}  
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Fields for Mobile Banking */}
+                      {p.method === "mobile_banking" && (
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          <Select
+                            value={p.accountId}
+                            onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                          >
+                            <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                              <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {accounts.filter((a: any) => a.type === 'mobile_banking').map((acc: any) => (
+                                <SelectItem key={acc.id} value={acc.id}>
+                                  {acc.name} (Tk.{acc.balance})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
+                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                            <input
+                              type="number"
+                              value={p.amount || ""}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={p.transactionId}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
+                            placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
+                            className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                          />
+                          <input
+                            type="text"
+                            value={p.reference}
+                            onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
+                            placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
+                            className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                          />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })()}
+              </div>
+            </div>
+
+            {splitMode && payments.some(p => p.amount > 0) && (
+              <div className="pt-2 pb-1 space-y-1.5">
+                {payments.filter(p => p.amount > 0).map((p) => {
+                  const methodLabel = METHODS.find(m => m.id === p.method)?.label || p.method;
+                  const accountName = accounts.find((a: any) => String(a.id) === String(p.accountId))?.name;
+                  return (
+                    <div key={p.id} className="flex justify-between items-center text-xs text-muted-foreground">
+                      <span>{methodLabel} {accountName ? `(${accountName})` : ''}</span>
+                      <span>{formatCurrency(p.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
+              <span>{isBangla ? "পরিশোধিত" : "Paid Amount"}</span>
+              <span className="font-bold text-foreground">{formatCurrency(totalPaid)}</span>
+            </div>
+
+            {due > 0 && (
+              <div className="flex justify-between items-center text-rose-500 font-bold">
+                <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
+                <span>{formatCurrency(due)}</span>
+              </div>
+            )}
+
+            {changeReturned > 0 && (
+              <div className="flex justify-between items-center text-blue-500 font-bold">
+                <span>{isBangla ? "ফেরত (Change)" : "Change Return"}</span>
+                <span>{formatCurrency(changeReturned)}</span>
+              </div>
+            )}
             <hr className="border-border/60 pt-1" />
 
             {/* Action Buttons */}

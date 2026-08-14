@@ -11,10 +11,10 @@ export const useCreatePurchases = () => {
     })
 }
 
-export const useGetPurchases = () => {
+export const useGetPurchases = ({search}: {search?: string} ={search:''}) => {
     return useQuery({
-        queryKey: ['purchases'],
-        queryFn: getPurchases,
+        queryKey: ['purchases', search],
+        queryFn: () => getPurchases({search}),
         select: (data) => data.data
     })
 }
