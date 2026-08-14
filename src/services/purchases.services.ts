@@ -5,8 +5,8 @@ export const createPurchases = async (data: any) => {
     return res.data;
 }
 
-export const getPurchases = async () => {
-    const res = await client.get('/api/purchases');
+export const getPurchases = async ({search}: {search?: string}) => {
+    const res = await client.get(`/api/purchases?search=${search}`);
     return res.data;
 }
 

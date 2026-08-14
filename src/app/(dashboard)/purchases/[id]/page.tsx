@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   Loader2,
   Eye,
+  Download,
+  Undo2,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -412,11 +414,28 @@ function PurchaseDetailsContent() {
                 </div>
               )}
             </div>
-            <div className="space-y-2 pt-3 border-t border-border flex gap-2 pointer-events-auto">
+            <div className="space-y-3 pt-3 border-t border-border flex flex-col pointer-events-auto">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={() => router.push(`/purchases/returns/new?purchaseId=${id}`)}
+                  className="flex-1 h-10 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                >
+                  <Undo2 className="h-4 w-4" />
+                  <span>{isBangla ? "ফেরত দিন" : "Return"}</span>
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>{isBangla ? "ইনভয়েস" : "Invoice"}</span>
+                </Button>
+              </div>
               <Button
                 type="button"
                 onClick={() => router.push('/purchases')}
-                className="flex-1 h-10 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                className="w-full h-10 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>{isBangla ? "ফিরে যান" : "Back"}</span>
