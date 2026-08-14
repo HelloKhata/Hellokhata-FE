@@ -25,6 +25,9 @@ import {
   Building2,
   Loader2,
   SlidersHorizontal,
+  Eye,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { useCurrency, useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
@@ -32,7 +35,7 @@ import type { Party } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useParties, useDeleteParty } from '@/hooks/api/useParties';
 import { useSearch } from '@/hooks/api/useSearch';
-import { PartyCard } from '@/components/parties/PartyCard';
+import { getInitials } from '@/components/parties/utils';
 import { PartyDetailsAndTransactions } from '@/components/parties/PartyDetailsAndTransactions';
 import { toast } from 'sonner';
 
@@ -65,18 +68,16 @@ export default function PartiesPage() {
     }
   };
 
-  const { data: partiesData, isLoading } = useParties(
+  const { data: parties, isLoading } = useParties(
     typeFilter !== 'both' ? { type: typeFilter } : {}
   );
-
-  const parties = partiesData?.data || [];
 
   const { data: partiesSearchData } = useSearch({ index: "parties", query: searchTerm });
   const searchParties = partiesSearchData?.data.hits;
   const router = useRouter();
 
   // Client-side filtering (payment status only, type is filtered by API)
-  const filteredParties = parties.filter((party: any) => {
+  const filteredParties = parties?.filter((party: any) => {
     // Payment status filter
     if (paymentFilter !== 'all') {
       if (paymentFilter === 'receivable' && party.currentBalance <= 0) return false;
@@ -90,11 +91,11 @@ export default function PartiesPage() {
     <>
       <div className="space-y-6">
         <PageHeader
-          title={t('parties.title')}
+          title={t('parties?.title')}
           subtitle={isBangla ? 'গ্রাহক ও সরবরাহকারী ব্যবস্থাপনা' : 'Customer & supplier management'}
           icon={Users}
           action={{
-            label: t('parties.addParty'),
+            label: t('parties?.addParty'),
             onClick: () => router.push('/parties/new'),
             icon: Plus,
           }}
@@ -109,8 +110,8 @@ export default function PartiesPage() {
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{partiesData?.summary?.customers || 0}</div>
-                  <p className="text-sm text-gray-500 truncate">{t('parties.customers')}</p>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{parties?.summary?.customers || 0}</div>
+                  <p className="text-sm text-gray-500 truncate">{t('parties?.customers')}</p>
                 </div>
               </div>
             </CardContent>
@@ -122,8 +123,8 @@ export default function PartiesPage() {
                   <Building2 className="h-5 w-5 text-purple-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{partiesData?.summary?.suppliers || 0}</div>
-                  <p className="text-sm text-gray-500 truncate">{t('parties.suppliers')}</p>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{parties?.summary?.suppliers || 0}</div>
+                  <p className="text-sm text-gray-500 truncate">{t('parties?.suppliers')}</p>
                 </div>
               </div>
             </CardContent>
@@ -135,7 +136,7 @@ export default function PartiesPage() {
                   <Users className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl font-bold text-emerald-600 truncate">{formatCurrency(partiesData?.summary?.totalReceivable || 0)}</div>
+                  <div className="text-xl font-bold text-emerald-600 truncate">{formatCurrency(parties?.summary?.totalReceivable || 0)}</div>
                   <p className="text-sm text-gray-500 truncate">{t('dashboard.receivable')}</p>
                 </div>
               </div>
@@ -148,7 +149,7 @@ export default function PartiesPage() {
                   <Users className="h-5 w-5 text-red-600" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xl font-bold text-red-600 truncate">{formatCurrency(partiesData?.summary?.totalPayable || 0)}</div>
+                  <div className="text-xl font-bold text-red-600 truncate">{formatCurrency(parties?.summary?.totalPayable || 0)}</div>
                   <p className="text-sm text-gray-500 truncate">{t('dashboard.payable')}</p>
                 </div>
               </div>
@@ -171,7 +172,7 @@ export default function PartiesPage() {
               {/* added total count */}
               <div className="flex items-center justify-between mb-4 gap-4">
                 <h2 className="text-lg font-bold text-foreground">
-                  {isBangla ? `পার্টি (${partiesData?.summary?.total || 0})` : `Parties (${partiesData?.summary?.total || 0})`}
+                  {isBangla ? `পার্টি (${parties?.summary?.total || 0})` : `Parties (${parties?.summary?.total || 0})`}
                 </h2>
                 <Button
                   onClick={() => router.push('/parties/new')}
@@ -186,7 +187,7 @@ export default function PartiesPage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground shrink-0" />
                   <Input
-                    placeholder={isBangla ? 'পার্টি খুঁজুন...' : 'Search parties...'}
+                    placeholder={isBangla ? 'পার্টি খুঁজুন...' : 'Search parties?...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9 h-9 text-xs bg-background border-input"
@@ -246,43 +247,152 @@ export default function PartiesPage() {
                 <div className="flex items-center justify-center flex-1 py-12">
                   <Loader2 className="animate-spin h-8 w-8 text-primary" />
                 </div>
-              ) : filteredParties.length === 0 ? (
+              ) : (searchTerm !== '' ? searchParties : filteredParties)?.length === 0 ? (
                 <div className="flex-1 py-12">
                   <EmptyState
                     icon={Users}
                     title={isBangla ? 'কোনো পার্টি নেই' : 'No parties found'}
                     description={isBangla ? 'নতুন পার্টি যোগ করুন' : 'Add your first party'}
                     action={{
-                      label: t('parties.addParty'),
+                      label: t('parties?.addParty'),
                       onClick: () => router.push('/parties/new'),
                       icon: Plus,
                     }}
                   />
                 </div>
               ) : (
-                <ScrollArea className="flex-1 max-h-[550px] pr-2">
-                  <div className="space-y-2">
-                    {searchTerm !== '' ? searchParties?.map((party: any) => (
-                      <PartyCard
-                        key={party.id}
-                        party={party}
-                        isSelected={selectedParty?.id === party.id}
-                        onView={() => setSelectedParty(party)}
-                        onEdit={() => handleEditParty(party)}
-                        onDelete={() => handleDeleteParty(party.id, party.name)}
-                      />
-                    )) : filteredParties.map((party: any) => (
-                      <PartyCard
-                        key={party.id}
-                        party={party}
-                        isSelected={selectedParty?.id === party.id}
-                        onView={() => setSelectedParty(party)}
-                        onEdit={() => handleEditParty(party)}
-                        onDelete={() => handleDeleteParty(party.id, party.name)}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div className="flex-1 overflow-x-auto border border-border/60 rounded-lg">
+                  <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="bg-muted/30 text-muted-foreground border-b border-border/80 font-semibold">
+                        <th className="px-3.5 py-3 whitespace-nowrap">{isBangla ? 'পার্টি' : 'Party'}</th>
+                        <th className="px-3.5 py-3 whitespace-nowrap">{isBangla ? 'ফোন' : 'Phone'}</th>
+                        <th className="px-3.5 py-3 whitespace-nowrap">{isBangla ? 'ইমেইল' : 'Email'}</th>
+                        <th className="px-3.5 py-3 whitespace-nowrap">{isBangla ? 'ঠিকানা' : 'Address'}</th>
+                        <th className="px-3.5 py-3 text-right whitespace-nowrap">{isBangla ? 'মোট পরিশোধ' : 'Total Paid'}</th>
+                        <th className="px-3.5 py-3 text-right whitespace-nowrap">{isBangla ? 'মোট বাকি' : 'Total Due'}</th>
+                        <th className="px-3.5 py-3 text-right whitespace-nowrap">{isBangla ? 'অ্যাকশন' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {(searchTerm !== '' ? searchParties : filteredParties)?.map((party: any) => {
+                        const typeConfig = {
+                          customer: {
+                            label: isBangla ? 'গ্রাহক' : 'Customer',
+                            color: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                          },
+                          supplier: {
+                            label: isBangla ? 'সরবরাহকারী' : 'Supplier',
+                            color: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                          },
+                          both: {
+                            label: isBangla ? 'উভয়' : 'Both',
+                            color: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                          },
+                        };
+                        const currentType = typeConfig[party.type as keyof typeof typeConfig] || typeConfig.customer;
+                        const totalPaid = party.totalPaid ?? party.totalPayments ?? 0;
+                        const totalDue = party.totalDue ?? party.dueAmount ?? party.currentBalance ?? 0;
+
+                        return (
+                          <tr
+                            key={party.id}
+                            onClick={() => setSelectedParty(party)}
+                            className={cn(
+                              "hover:bg-muted/30 transition-colors cursor-pointer",
+                              selectedParty?.id === party.id ? "bg-primary/10 border-l-2 border-primary" : ""
+                            )}
+                          >
+                            {/* Party */}
+                            <td className="px-3.5 py-3 align-middle">
+                              <div className="flex items-center gap-2.5">
+                                <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 border border-primary/20">
+                                  {getInitials(party.name)}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-foreground truncate leading-tight text-xs">
+                                    {party.name}
+                                  </p>
+                                  <span className={cn("inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-medium border shrink-0 mt-0.5", currentType.color)}>
+                                    {currentType.label}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Phone */}
+                            <td className="px-3.5 py-3 align-middle text-muted-foreground font-mono text-xs whitespace-nowrap">
+                              {party.phone || '—'}
+                            </td>
+
+                            {/* Email */}
+                            <td className="px-3.5 py-3 align-middle text-muted-foreground text-xs truncate max-w-[160px]" title={party.email}>
+                              {party.email || '—'}
+                            </td>
+
+                            {/* Address */}
+                            <td className="px-3.5 py-3 align-middle text-muted-foreground text-xs truncate max-w-[180px]" title={party.address}>
+                              {party.address || '—'}
+                            </td>
+
+                            {/* Total Paid */}
+                            <td className="px-3.5 py-3 align-middle text-right font-medium text-foreground text-xs font-mono whitespace-nowrap">
+                              {formatCurrency(totalPaid)}
+                            </td>
+
+                            {/* Total Due */}
+                            <td className="px-3.5 py-3 align-middle text-right font-bold text-xs font-mono whitespace-nowrap">
+                              <span
+                                className={cn(
+                                  totalDue > 0
+                                    ? "text-rose-500"
+                                    : totalDue < 0
+                                    ? "text-emerald-500"
+                                    : "text-muted-foreground"
+                                )}
+                              >
+                                {formatCurrency(Math.abs(totalDue))}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="px-3.5 py-3 align-middle text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md cursor-pointer"
+                                  onClick={() => setSelectedParty(party)}
+                                  title={isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md cursor-pointer"
+                                  onClick={() => handleEditParty(party)}
+                                  title={isBangla ? "এডিট করুন" : "Edit Party"}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-md cursor-pointer"
+                                  onClick={() => handleDeleteParty(party.id, party.name)}
+                                  title={isBangla ? "মুছে ফেলুন" : "Delete Party"}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </Card>
           </div>

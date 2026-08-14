@@ -5,7 +5,7 @@
 'use client';
 
 import { useState, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, KPICard, Divider, EmptyState, Progress, Skeleton } from '@/components/ui/premium';
+import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -30,52 +30,19 @@ import {
   TrendingUp,
   TrendingDown,
   Box,
-  Eye,
   Edit,
-  MoreVertical,
-  ChevronRight,
-  BarChart3,
   DollarSign,
   Crown,
-  Star,
   Tag,
   Sparkles,
-  Calendar,
-  Layers,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  ArrowRightLeft,
-  Truck,
-  Settings,
-  Upload,
-  Download,
-  Tags,
   Trash2,
   ArrowUpDown,
-  Lock,
-  Copy,
-  Archive,
-  Printer,
-  QrCode,
-  FileText,
-  Receipt,
-  Delete,
 } from 'lucide-react';
-import { useItems, useCategories } from '@/hooks/queries';
-import { useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
+import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useNavigation } from '@/stores/uiStore';
 import { cn } from '@/lib/utils';
-import { DetailModal, DetailRow, DetailSection } from '@/components/shared/DetailModal';
 import type { Item } from '@/types';
 import { toast } from 'sonner';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ImportItemsModal } from '@/components/inventory/ImportItemsModal';
 import { ExportItemsModal } from '@/components/inventory/ExportItemsModal';
 import { CategoriesModal } from '@/components/inventory/CategoriesModal';
@@ -95,14 +62,12 @@ import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
 
 export default function InventoryPage() {
   const { t, isBangla } = useAppTranslation();
-  const { formatCurrency, formatNumber } = useCurrency();
-  const { navigateTo } = useNavigation();
+  const { formatCurrency } = useCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [priceFilter, setPriceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedBatchItem, setSelectedBatchItem] = useState<Item | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -482,46 +447,6 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Item Detail Modal */}
-      <DetailModal
-        isOpen={!!selectedItem}
-        onClose={() => setSelectedItem(null)}
-        title={selectedItem?.name || ''}
-        subtitle={selectedItem?.barcode || selectedItem?.sku || ''}
-        width="lg"
-      >
-        {selectedItem && (
-          <>
-            <DetailSection title={isBangla ? 'পণ্যের তথ্য' : 'Item Information'}>
-              <DetailRow
-                label={isBangla ? 'বর্তমান স্টক' : 'Current Stock'}
-                value={
-                  <span className={cn(
-                    'text-xl font-bold',
-                    (selectedItem.currentStock ?? 0) === 0 ? 'text-red-600' :
-                      (selectedItem.currentStock ?? 0) <= (selectedItem.minStock ?? 0) ? 'text-amber-600' : 'text-emerald-600'
-                  )}>
-                    {selectedItem.currentStock ?? 0} {selectedItem.unit || 'pcs'}
-                  </span>
-                }
-              />
-              <DetailRow
-                label={isBangla ? 'ক্রয় মূল্য' : 'Purchase Price'}
-                value={formatCurrency(selectedItem.costPrice)}
-              />
-              <DetailRow
-                label={isBangla ? 'বিক্রয় মূল্য' : 'Selling Price'}
-                value={formatCurrency(selectedItem.sellingPrice)}
-              />
-              <DetailRow
-                label={isBangla ? 'বারকোড' : 'Barcode'}
-                value={selectedItem.barcode || '—'}
-              />
-            </DetailSection>
-          </>
-        )}
-      </DetailModal>
-
       {/* View Batches Modal */}
       {selectedBatchItem && (
         <BatchesModal
@@ -563,7 +488,6 @@ const ItemRow = memo(function ItemRow({
   item,
   isBangla,
   index,
-  categories,
   onView,
   onViewBatches,
   refetchItems
@@ -582,12 +506,7 @@ const ItemRow = memo(function ItemRow({
   const router = useRouter();
 
   // Metadata Resolution
-  const categoryName = item.categoryId
-    ? categories?.find((c) => c.id === item.categoryId)?.name || (item as any).category?.name
-    : (item as any).category?.name;
-  const brandName = (item as any).brand;
   const batchesCount = (item as any).batchesCount ?? ((item as any).batches?.length ?? 1);
-  const branchesCount = (item as any).branchesCount ?? ((item as any).branches?.length ?? 1);
   const minStock = item.minStock ?? 10;
   const unit = item.unit || 'pcs';
 
@@ -634,11 +553,6 @@ const ItemRow = memo(function ItemRow({
   const hasVip = item.vipPrice && item.vipPrice > 0;
   const hasMinimum = item.minimumPrice && item.minimumPrice > 0;
   const hasMultiPrice = hasWholesale || hasVip || hasMinimum;
-
-  const handleDeleteButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteOpen(true);
-  };
 
   const handleConfirmDelete = () => {
     deleteItem.mutate(item.id, {
