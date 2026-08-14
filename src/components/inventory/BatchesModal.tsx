@@ -10,7 +10,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -24,9 +23,6 @@ import {
   Search,
   Package,
   Layers,
-  Calendar,
-  AlertTriangle,
-  CheckCircle2,
   XCircle,
   MoreVertical,
   Eye,
@@ -35,14 +31,8 @@ import {
   Printer,
   Plus,
   ArrowUpDown,
-  Tag,
-  DollarSign,
-  Building,
   Clock,
-  FileText,
   Building2,
-  X,
-  AlertCircle
 } from 'lucide-react';
 import { useGetBatches } from '@/hooks/api/useBatches';
 import { useCurrency } from '@/hooks/useAppTranslation';
@@ -221,13 +211,17 @@ export function BatchesModal({
                 )}
               </div>
               <div className="min-w-0 space-y-0.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-lg font-bold text-foreground  max-w-sm sm:max-w-md">
+                <div className="flex items-center justify-start gap-4">
+           
+                    <DialogTitle className="text-lg font-bold text-foreground">
                     {item.name}
                   </DialogTitle>
-                  <Badge variant="outline" className="text-xs font-mono">
-                    SKU: {item.sku || '—'}
+                 
+        
+                 <Badge variant="outline" className="text-xs font-mono">
+                     # SKU: {item.sku || '—'}
                   </Badge>
+         
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   {categoryName && <span>{categoryName}</span>}

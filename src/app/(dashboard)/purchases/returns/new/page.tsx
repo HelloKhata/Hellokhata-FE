@@ -23,8 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Banknote,
+  CreditCard,
+  Smartphone,
   Trash2,
   Calendar as CalendarIcon,
   X,
@@ -43,8 +47,25 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useReturnPurchase } from "@/hooks/api/useReturns";
 import { useGetPurchases, useGetPurchaseById } from "@/hooks/api/usePurchases";
-import { useAccounts } from "@/hooks/queries";
+import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 import { useParty } from "@/hooks/api/useParties";
+
+interface PaymentRow {
+  id: string;
+  method: "cash" | "bank" | "mobile_banking";
+  accountId: string;
+  reference: string;
+  transactionId: string;
+  receivedBy?: string;
+  amount: number;
+  date: Date;
+}
+
+const METHODS = [
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+];
 
 interface ReturnItemRow {
   id: string;
@@ -53,10 +74,12 @@ interface ReturnItemRow {
   itemName: string;
   sku: string;
   batchNo?: string;
+  batchId?: string;
   quantity: number;
   maxQuantity: number;
   remainingQuantity: number;
   unitCost: number;
+  taxPercent?: number;
   unit: string;
   returnType: "refund" | "replacement" | "exchange" | "damage" | "expired" | "warranty" | "supplier_credit";
   reason: string;
@@ -85,7 +108,6 @@ function NewPurchaseReturnContent() {
 
   // Queries
   // const { data: branches = [] } = useBranches();
-  const { data: accounts = [] } = useAccounts();
   
   // Selected Purchase & Supplier state
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(supplierIdParam);
@@ -100,18 +122,26 @@ function NewPurchaseReturnContent() {
         setPurchasedItems([])
       return
     }
+
+    console.log('purchase',purchase)
       const initialItems: ReturnItemRow[] = purchase.items.map((item: any) => ({
         id: item?.id,
         purchaseItemId: item?.id,
         itemId: item?.productId || item?.itemId || item?.id,
         itemName: item?.itemName || item?.name || "",
         sku: item?.sku || "—",
-        batchNo: item?.batchNo || "",
+        batchNo: item?.batchNo || item?.batchNumber || "",
+        batchId: item?.batchId || item?.batchNo || undefined,
         quantity: item?.remainingQuantity ?? item?.quantity ?? 1,
         maxQuantity: item?.quantity ?? item?.remainingQuantity ?? 1,
         remainingQuantity: item?.remainingQuantity ?? item?.quantity ?? 1,
         unitCost: item?.unitCost ?? item?.rate ?? 0,
-        unit: item?.unit || "pcs",
+        taxPercent: item?.taxPercent ?? item?.taxRate ?? item?.tax ?? 0,
+        unit: typeof item?.unit === "object"
+          ? item?.unit?.symbol || item?.unit?.name || "pcs"
+          : typeof item?.item?.unit === "object"
+          ? item?.item?.unit?.symbol || item?.item?.unit?.name || "pcs"
+          : item?.unit || item?.item?.unit || "pcs",
         returnType: "refund",
         reason: "damaged",
         total: (item?.remainingQuantity ?? item?.quantity ?? 1) * (item?.unitCost ?? item?.rate ?? 0),
@@ -124,6 +154,7 @@ function NewPurchaseReturnContent() {
     
   }, [purchase]);
 
+  console.log('purchasedItems',purchasedItems)
   const { data: singleSupplierData } = useParty(selectedSupplierId, {
     enabled: !!selectedSupplierId,
   });
@@ -138,20 +169,35 @@ function NewPurchaseReturnContent() {
   const [returnStatus, setReturnStatus] = useState<"draft" | "pending" | "approved" | "completed" | "cancelled">("completed");
 
   
+  const { data: paymentMethods = [] } = useGetPaymentMethods();
+  const accounts = useMemo(() => {
+    return paymentMethods.map((pm: any) => ({
+      id: pm.id,
+      name: pm.name || pm.bankName || pm.provider || '',
+      balance: pm.currentBalance || pm.openingBalance || 0,
+      type: pm.type
+    }));
+  }, [paymentMethods]);
+
   // Adjustments & Split Refund Configurations
-  const [orderDiscount, setOrderDiscount] = useState<number>(0);
-  const [taxPercent, setTaxPercent] = useState<number>(0);
   const [shippingAdjustment, setShippingAdjustment] = useState<number>(0);
   const [additionalCharges, setAdditionalCharges] = useState<number>(0);
 
-  const [refundAmount, setRefundAmount] = useState<number>(0);
-  const [supplierCredit, setSupplierCredit] = useState<number>(0);
-  const [paymentAdjustment, setPaymentAdjustment] = useState<number>(0);
-
-  const [refundMethod, setRefundMethod] = useState<
-    "cash" | "bank" | "card" | "bkash" | "nagad" | "rocket" | "wallet" | "supplier_credit" | "due_adjustment"
-  >("cash");
-  const [accountId, setAccountId] = useState<string>("");
+  // Payment/Refund states
+  const [payments, setPayments] = useState<PaymentRow[]>([
+    {
+      id: "pay-initial",
+      method: "cash",
+      accountId: "",
+      reference: "",
+      transactionId: "",
+      receivedBy: "",
+      amount: 0,
+      date: new Date(),
+    },
+  ]);
+  const [splitMode, setSplitMode] = useState(false);
+  const [activeSplitMethod, setActiveSplitMethod] = useState<string>("cash");
 
   const [attachments, setAttachments] = useState<File[]>([]);
   const [notes, setNotes] = useState("");
@@ -183,18 +229,103 @@ function NewPurchaseReturnContent() {
   }, [purchasedItems]);
 
   const taxAmount = useMemo(() => {
-    return Math.max(0, (subtotal - orderDiscount) * (taxPercent / 100));
-  }, [subtotal, orderDiscount, taxPercent]);
+    return purchasedItems?.reduce((sum, item) => {
+      if (!item?.isSelected) return sum;
+      const itemTotal = item?.quantity * item?.unitCost;
+      return sum + (itemTotal * ((item?.taxPercent || 0) / 100));
+    }, 0);
+  }, [purchasedItems]);
 
   const grandTotal = useMemo(() => {
-    return Math.max(0, subtotal - orderDiscount + taxAmount + shippingAdjustment + additionalCharges);
-  }, [subtotal, orderDiscount, taxAmount, shippingAdjustment, additionalCharges]);
+    return Math.max(0, subtotal + taxAmount + shippingAdjustment + additionalCharges);
+  }, [subtotal, taxAmount, shippingAdjustment, additionalCharges]);
+
+  const totalPaid = useMemo(() => {
+    return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  }, [payments]);
+
+  const due = useMemo(() => {
+    return Math.max(0, grandTotal - totalPaid);
+  }, [grandTotal, totalPaid]);
+
+  const changeReturned = useMemo(() => {
+    return Math.max(0, totalPaid - grandTotal);
+  }, [totalPaid, grandTotal]);
+
+  const toggleSplitMode = () => {
+    if (splitMode) {
+      // Revert to single payment mode
+      setPayments([
+        {
+          id: Math.random().toString(),
+          method: "cash",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+      ]);
+    } else {
+      setActiveSplitMethod("cash");
+      // Enter split mode
+      setPayments([
+        {
+          id: "cash-split",
+          method: "cash",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: grandTotal,
+          date: new Date(),
+        },
+        {
+          id: "bank-split",
+          method: "bank",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        },
+        {
+          id: "mobile-split",
+          method: "mobile_banking",
+          accountId: "",
+          reference: "",
+          transactionId: "",
+          receivedBy: "",
+          amount: 0,
+          date: new Date(),
+        }
+      ]);
+    }
+    setSplitMode(!splitMode);
+  };
+
+  const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
+    setPayments((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          return {
+            ...p,
+            [field]: value,
+          };
+        }
+        return p;
+      })
+    );
+  };
 
   const updateQuantity = (id: string, quantity: number) => {
     setPurchasedItems((prev) =>
       prev.map((item) => {
         if (item?.id === id) {
-          const newQty = Math.max(0, quantity);
+          const maxAllowed = item?.maxQuantity ?? item?.remainingQuantity ?? 0;
+          const newQty = Math.min(Math.max(0, quantity), maxAllowed);
           return {
             ...item,
             quantity: newQty,
@@ -224,7 +355,10 @@ function NewPurchaseReturnContent() {
   const handleSubmitWithStatus = (status: typeof returnStatus, andThen: "redirect" | "clear" | "print") => {
     const itemsToReturn = purchasedItems.filter((i) => i.isSelected && (i.itemId !== "" || i.itemName !== "") && i.quantity > 0);
 
-    if (!selectedSupplierId) {
+    const supplierId = selectedSupplierId || purchase?.supplierId || purchase?.supplier?.id || "";
+    const purchaseId = selectedPurchaseId || purchase?.id || "";
+
+    if (!supplierId) {
       toast.error(isBangla ? "সরবরাহকারী নির্বাচন করা নেই" : "No supplier selected");
       return;
     }
@@ -234,33 +368,20 @@ function NewPurchaseReturnContent() {
     }
 
     const payload = {
-      purchaseId: selectedPurchaseId || undefined,
-      supplierId: selectedSupplierId,
-      returnNo,
-      returnDate: returnDate.toISOString(),
-      // branchId,
-      responsiblePerson,
-      referenceNo,
-      status,
+      purchaseId: purchaseId || undefined,
+      supplierId: supplierId,
+      returnDate: format(returnDate, "yyyy-MM-dd"),
       items: itemsToReturn.map((item) => ({
-        purchaseItemId: item?.purchaseItemId,
+        purchaseItemId: item?.purchaseItemId || item?.id,
         itemId: item?.itemId,
         itemName: item?.itemName,
-        quantity: item?.quantity,
-        unitCost: item?.unitCost,
-        returnType: item?.returnType,
-        reason: item?.reason,
+        batchId: item?.batchId || item?.batchNo || undefined,
+        quantity: Number(item?.quantity) || 0,
+        returnType: item?.returnType || "refund",
+        reason: item?.reason || "damaged",
       })),
-      discount: orderDiscount,
-      tax: taxAmount,
-      shippingAdjustment,
-      additionalCharges,
-      grandTotal,
-      refundAmount,
-      supplierCredit,
-      paymentAdjustment,
-      refundMethod,
-      accountId: accountId || user?.id || "",
+      refundMethod: (splitMode ? payments.find(p => p.amount > 0)?.method : payments[0]?.method) || "cash",
+      accountId: (splitMode ? payments.find(p => p.amount > 0)?.accountId : payments[0]?.accountId) || undefined,
       notes: notes || undefined,
     };
 
@@ -279,6 +400,11 @@ function NewPurchaseReturnContent() {
         } else {
           router.push("/purchases/returns");
         }
+      },
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message || (isBangla ? "ক্রয় ফেরত সংরক্ষণ করতে সমস্যা হয়েছে" : "Failed to save purchase return"),
+        );
       },
     });
   };
@@ -374,11 +500,18 @@ function NewPurchaseReturnContent() {
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setPurchase(purchase);
-                          setInvoiceSearchQuery(purchase.grnNo)
+                          setSelectedPurchaseId(purchase.id);
+                          setSelectedSupplierId(purchase.supplierId || purchase.supplier?.id || "");
+                          setInvoiceSearchQuery(purchase.grnNo || purchase.invoiceNo || "");
                           setShowInvoiceSuggestions(false);
                         }}
 
-                        onClick={() =>{ setPurchase(purchase); setInvoiceSearchQuery(purchase.grnNo)}}
+                        onClick={() => {
+                          setPurchase(purchase);
+                          setSelectedPurchaseId(purchase.id);
+                          setSelectedSupplierId(purchase.supplierId || purchase.supplier?.id || "");
+                          setInvoiceSearchQuery(purchase.grnNo || purchase.invoiceNo || "");
+                        }}
                       >
                         <div>
                           <p className="font-semibold text-foreground">
@@ -536,6 +669,7 @@ function NewPurchaseReturnContent() {
                   <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-semibold">
                     <th className="px-4 py-3">{isBangla ? "আইটেম বিবরণ" : "Item & SKU"}</th>
                     <th className="px-3 py-3 text-right">{isBangla ? "মূল্য" : "Purchase Price"}</th>
+                    <th className="px-3 py-3 text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
                     <th className="px-3 py-3 text-center">{isBangla ? "ক্রয় পরিমাণ" : "Purchase Qty"}</th>
                     <th className="px-4 py-3 text-center w-28">{isBangla ? "ফেরত পরিমাণ *" : "Return Qty *"}</th>
                     <th className="px-3 py-3">{isBangla ? "ফেরত টাইপ" : "Return Type"}</th>
@@ -562,6 +696,9 @@ function NewPurchaseReturnContent() {
                       <td className="px-3 py-3.5 align-middle text-right font-medium text-foreground">
                         {formatCurrency(item?.unitCost)}
                       </td>
+                      <td className="px-3 py-3.5 align-middle text-center text-muted-foreground font-semibold">
+                        {item?.taxPercent || 0}%
+                      </td>
                       <td className="px-3 py-3.5 align-middle text-center text-muted-foreground font-medium">
                         {item?.maxQuantity} {item?.unit}
                       </td>
@@ -569,21 +706,25 @@ function NewPurchaseReturnContent() {
                         <div className="flex items-center border border-input rounded bg-background/50 h-8 w-24 mx-auto" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item?.id, item?.quantity - 1)}
-                            className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20"
+                            disabled={(item?.quantity || 0) <= 0}
+                            onClick={() => updateQuantity(item?.id, (item?.quantity || 0) - 1)}
+                            className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                           >
                             -
                           </button>
                           <input
                             type="number"
+                            min={0}
+                            max={item?.maxQuantity}
                             value={item?.quantity || 0}
                             onChange={(e) => updateQuantity(item?.id, parseInt(e.target.value) || 0)}
                             className="w-full text-center h-full bg-transparent outline-none border-none text-xs font-semibold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item?.id, item?.quantity + 1)}
-                            className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20"
+                            disabled={(item?.quantity || 0) >= (item?.maxQuantity || 0)}
+                            onClick={() => updateQuantity(item?.id, (item?.quantity || 0) + 1)}
+                            className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                           >
                             +
                           </button>
@@ -737,15 +878,21 @@ function NewPurchaseReturnContent() {
                 <span className="font-semibold text-foreground">{formatCurrency(subtotal)}</span>
               </div>
 
-              {/* Order Discount */}
+              {/* Calculated Tax */}
               <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
-                <span>{isBangla ? "ছাড়" : "Discount"}</span>
+                <span>{isBangla ? "ট্যাক্স" : "Tax"}</span>
+                <span className="font-semibold text-foreground">{formatCurrency(taxAmount)}</span>
+              </div>
+
+              {/* Additional Cost */}
+              <div className="flex justify-between items-center text-muted-foreground">
+                <span>{isBangla ? "অতিরিক্ত খরচ" : "Additional Cost"}</span>
                 <div className="relative w-28 flex items-center">
                   <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
                   <Input
                     type="number"
-                    value={orderDiscount || ""}
-                    onChange={(e) => setOrderDiscount(parseFloat(e.target.value) || 0)}
+                    value={additionalCharges || ""}
+                    onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
                     placeholder="0"
                     className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
                     min="0"
@@ -753,70 +900,232 @@ function NewPurchaseReturnContent() {
                 </div>
               </div>
 
-              {/* Tax Percent */}
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "ট্যাক্স" : "Tax"}</span>
-                <div className="relative w-28 flex items-center">
-                  <Input
-                    type="number"
-                    value={taxPercent || ""}
-                    onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-right pr-6 bg-background/40 text-xs text-foreground font-semibold"
-                    min="0"
-                    max="100"
-                  />
-                  <span className="absolute right-2 text-[10px] font-medium text-muted-foreground">%</span>
-                </div>
-              </div>
-
-           
-
               {/* Grand Total */}
               <div className="flex justify-between items-center border-t border-border pt-3 text-sm font-bold">
                 <span className="text-foreground">{isBangla ? "সর্বমোট ফেরতযোগ্য" : "Grand Total"}</span>
                 <span className="text-primary text-base">{formatCurrency(grandTotal)}</span>
               </div>
-            </div>
 
+              {/* Refund Info Section */}
+              <div>
+                <div className="flex items-center justify-end gap-2 border-b border-border pb-2.5">
+                  <div className="flex items-center gap-2 group">
+                    <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
+                      {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
+                    </Label>
+                    <Switch
+                      id="split-mode"
+                      checked={splitMode}
+                      onCheckedChange={toggleSplitMode}
+                    />
+                  </div>
+                </div>
 
-            {/* Refund Method & Accounts */}
-            <div className="flex items-center justify-between border-t border-border pt-3.5 space-y-3 text-xs">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-foreground">{isBangla ? "রিফান্ড পদ্ধতি" : "Refund Method"}</Label>
-                <Select value={refundMethod} onValueChange={(val: any) => setRefundMethod(val)}>
-                  <SelectTrigger className="h-9 bg-background/50 border-input text-xs font-medium">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">{isBangla ? "নগদ (Cash)" : "Cash"}</SelectItem>
-                    <SelectItem value="bank">{isBangla ? "ব্যাংক (Bank Transfer)" : "Bank Transfer"}</SelectItem>
-                    <SelectItem value="card">{isBangla ? "কার্ড (Card)" : "Card"}</SelectItem>
-                    <SelectItem value="bkash">bKash</SelectItem>
-                    <SelectItem value="nagad">Nagad</SelectItem>
-                    <SelectItem value="rocket">Rocket</SelectItem>
-                    <SelectItem value="wallet">{isBangla ? "ডিজিটাল ওয়ালেট" : "Digital Wallet"}</SelectItem>
-                    <SelectItem value="supplier_credit">{isBangla ? "ক্রেডিট নোট" : "Supplier Credit"}</SelectItem>
-                    <SelectItem value="due_adjustment">{isBangla ? "বকেয়া সমন্বয়" : "Due Adjustment"}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-4 pt-2">
+                  {(() => {
+                    const activePayment = splitMode
+                      ? payments.find(p => p.method === activeSplitMethod) || payments[0]
+                      : payments[0];
+                    
+                    if (!activePayment) return null;
+                    const p = activePayment;
+
+                    return (
+                      <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
+                        {/* Method chips */}
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          {METHODS.map((m) => {
+                            const Icon = m.icon;
+                            const active = splitMode ? activeSplitMethod === m.id : p.method === m.id;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  if (splitMode) {
+                                    setActiveSplitMethod(m.id);
+                                  } else {
+                                    handlePaymentFieldChange(p.id, "method", m.id);
+                                  }
+                                }}
+                                className={cn(
+                                  "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all cursor-pointer",
+                                  active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
+                                )}
+                              >
+                                <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-medium leading-tight text-center",
+                                    active ? m.colorClass : "text-muted-foreground"
+                                  )}
+                                >
+                                  {m.label}
+                                  {splitMode && (() => {
+                                    const splitP = payments.find(pay => pay.method === m.id);
+                                    return splitP && splitP.amount > 0 ? (
+                                      <span className="block mt-0.5 font-bold text-foreground text-[11px]">
+                                        Tk.{splitP.amount}
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Common Amount Input */}
+                        {!["cash", "bank", "mobile_banking"].includes(p.method) && (
+                          <div className="mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                              <input
+                                type="number"
+                                value={p.amount || ""}
+                                onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Fields for Cash */}
+                        {p.method === "cash" && (
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                              <input
+                                type="number"
+                                value={p.amount || ""}
+                                onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={p.receivedBy || ""}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "receivedBy", e.target.value)}
+                              placeholder={isBangla ? "গ্রহীতার নাম" : "Received By (optional)"}
+                              className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                            />
+                          </div>
+                        )}
+
+                        {/* Fields for Bank */}
+                        {p.method === "bank" && (
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                              <input
+                                type="number"
+                                value={p.amount || ""}
+                                onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                            <Select
+                              value={p.accountId}
+                              onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                            >
+                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                                <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {accounts.filter((a: any) => a.type === 'bank').map((acc: any) => (
+                                  <SelectItem key={acc.id} value={acc.id}>
+                                    {acc.name}  
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Fields for Mobile Banking */}
+                        {p.method === "mobile_banking" && (
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <Select
+                              value={p.accountId}
+                              onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
+                            >
+                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                                <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {accounts.filter((a: any) => a.type === 'mobile_banking').map((acc: any) => (
+                                  <SelectItem key={acc.id} value={acc.id}>
+                                    {acc.name} (Tk.{acc.balance})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
+                              <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
+                              <input
+                                type="number"
+                                value={p.amount || ""}
+                                onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={p.transactionId}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
+                              placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
+                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                            />
+                            <input
+                              type="text"
+                              value={p.reference}
+                              onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
+                              placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
+                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
-              {refundMethod !== "cash" && refundMethod !== "supplier_credit" && refundMethod !== "due_adjustment" && (
-                <div className="space-y-1">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase">{isBangla ? "রিফান্ড অ্যাকাউন্ট" : "Refund Account"}</Label>
-                  <Select value={accountId} onValueChange={setAccountId}>
-                    <SelectTrigger className="h-9 bg-background/50 border-input text-xs font-medium">
-                      <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((acc: any) => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name} (Tk.{acc.balance})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {splitMode && payments.some(p => p.amount > 0) && (
+                <div className="pt-2 pb-1 space-y-1.5">
+                  {payments.filter(p => p.amount > 0).map((p) => {
+                    const methodLabel = METHODS.find(m => m.id === p.method)?.label || p.method;
+                    const accountName = accounts.find((a: any) => String(a.id) === String(p.accountId))?.name;
+                    return (
+                      <div key={p.id} className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>{methodLabel} {accountName ? `(${accountName})` : ''}</span>
+                        <span>{formatCurrency(p.amount)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
+                <span>{isBangla ? "রিফান্ড পরিমাণ" : "Refund Amount"}</span>
+                <span className="font-bold text-foreground">{formatCurrency(totalPaid)}</span>
+              </div>
+
+              {due > 0 && (
+                <div className="flex justify-between items-center text-rose-500 font-bold">
+                  <span>{isBangla ? "বাকি পরিমাণ" : "Remaining Amount"}</span>
+                  <span>{formatCurrency(due)}</span>
+                </div>
+              )}
+
+              {changeReturned > 0 && (
+                <div className="flex justify-between items-center text-blue-500 font-bold">
+                  <span>{isBangla ? "অতিরিক্ত" : "Excess Return"}</span>
+                  <span>{formatCurrency(changeReturned)}</span>
                 </div>
               )}
             </div>

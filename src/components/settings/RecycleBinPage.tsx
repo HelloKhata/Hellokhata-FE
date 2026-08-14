@@ -32,20 +32,8 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
-import { DetailModal, DetailRow, DetailSection } from '@/components/shared/DetailModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 
 interface DeletedRecord {
   id: string;
@@ -284,87 +272,6 @@ export default function RecycleBinPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Record Detail Modal */}
-      <DetailModal
-        isOpen={!!selectedRecord}
-        onClose={() => setSelectedRecord(null)}
-        title={selectedRecord?.name || ''}
-        subtitle={isBangla ? 'মুছে ফেলা রেকর্ডের বিবরণ' : 'Deleted Record Details'}
-        width="lg"
-      >
-        {selectedRecord && (
-          <>
-            <DetailSection title={isBangla ? 'রেকর্ডের তথ্য' : 'Record Information'}>
-              <DetailRow
-                label={isBangla ? 'ধরন' : 'Type'}
-                value={<TypeBadge type={selectedRecord.type} isBangla={isBangla} />}
-              />
-              <DetailRow
-                label={isBangla ? 'নাম' : 'Name'}
-                value={selectedRecord.name}
-              />
-              <DetailRow
-                label={isBangla ? 'মুছে ফেলার তারিখ' : 'Deleted At'}
-                value={new Date(selectedRecord.deletedAt).toLocaleString()}
-              />
-              {selectedRecord.deletedBy && (
-                <DetailRow
-                  label={isBangla ? 'মুছে ফেলেছে' : 'Deleted By'}
-                  value={selectedRecord.deletedBy}
-                />
-              )}
-              <DetailRow
-                label={isBangla ? 'স্থায়ী মুছে ফেলার বাকি' : 'Days Until Permanent Deletion'}
-                value={
-                  <Badge variant={getDaysUntilDeletion(selectedRecord.deletedAt) <= 7 ? 'destructive' : 'warning'}>
-                    {getDaysUntilDeletion(selectedRecord.deletedAt)} {isBangla ? 'দিন' : 'days'}
-                  </Badge>
-                }
-              />
-            </DetailSection>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                variant="success"
-                className="flex-1 gap-2"
-                onClick={() => handleRestore(selectedRecord.id, selectedRecord.type)}
-                disabled={restoreMutation.isPending}
-              >
-                <RotateCcw className="h-4 w-4" />
-                {isBangla ? 'পুনরুদ্ধার' : 'Restore'}
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="gap-2">
-                    <Trash className="h-4 w-4" />
-                    {isBangla ? 'স্থায়ীভাবে মুছুন' : 'Delete Forever'}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{isBangla ? 'আপনি কি নিশ্চিত?' : 'Are you sure?'}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {isBangla 
-                        ? 'এই ক্রিয়া পূর্বাবস্থায় ফেরানো যাবে না। রেকর্ড স্থায়ীভাবে মুছে যাবে।'
-                        : 'This action cannot be undone. The record will be permanently deleted.'}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{isBangla ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handlePermanentDelete(selectedRecord.id, selectedRecord.type)}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      {isBangla ? 'মুছে ফেলুন' : 'Delete'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </>
-        )}
-      </DetailModal>
     </div>
   );
 }

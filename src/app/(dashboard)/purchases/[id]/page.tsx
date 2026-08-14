@@ -10,7 +10,6 @@ import {
   Calendar as CalendarIcon,
   ArrowLeft,
   Loader2,
-  Eye,
   Download,
   Undo2,
 } from "lucide-react";
@@ -36,9 +35,6 @@ function PurchaseDetailsContent() {
   const user = useUser();
 
   const { data: purchaseData, isLoading: isPurchaseLoading } = useGetPurchaseById(id);
-
-  // Track open Expiry Settings row ID
-  const [openExpiryRowId, setOpenExpiryRowId] = useState<string | null>(null);
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
@@ -132,14 +128,15 @@ function PurchaseDetailsContent() {
                 <thead>
                   <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
                     <th className="px-3 py-3 w-[4%] text-center">#</th>
-                    <th className="px-3 py-3 w-[30%]">{isBangla ? "পণ্য বা ডেসক্রিপশন" : "Item"}</th>
-                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}</th>
+                    <th className="px-3 py-3 w-[26%]">{isBangla ? "পণ্য বা ডেসক্রিপশন" : "Item"}</th>
+                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ব্যাচ নং" : "Batch No"}</th>
+                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "মেয়াদ" : "Expiry Date"}</th>
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
-                    <th className="px-3 py-3 w-[10%] text-center">{isBangla ? "পরিমাণ" : "Qty"}</th>
+                    <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "পরিমাণ" : "Qty"}</th>
                     <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ক্রয় মূল্য / দর" : "Rate"}</th>
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
-                    <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "মোট" : "Amount"}</th>
-                    <th className="px-3 py-3 w-[5%] text-center"></th>
+                    <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "মোট" : "Amount"}</th>
+                    <th className="px-3 py-3 w-[3%] text-center"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -151,13 +148,14 @@ function PurchaseDetailsContent() {
                       const unitCost = rawItem.unitCost || 0;
                       const total = rawItem.total || 0;
                       const sku = rawItem.item?.sku || "";
-                      const currentStock = rawItem.batch?.remainingQty || 0;
-                      const unit = "Pcs";
-                      const trackBatch = !!rawItem.batchId;
-                      const trackExpiry = !!rawItem.batch?.expiryDate;
-                      const expiryDate = rawItem.batch?.expiryDate;
-                      const manufactureDate = rawItem.batch?.manufactureDate;
-                      const taxAmount = rawItem.tax || 0;
+                      const currentStock = rawItem.batch?.remainingQty ?? rawItem.remainingQuantity ?? 0;
+                      const unit = typeof rawItem.item?.unit === "object" 
+                        ? rawItem.item?.unit?.symbol || rawItem.item?.unit?.name || "Pcs"
+                        : typeof rawItem.unit === "object"
+                        ? rawItem.unit?.symbol || rawItem.unit?.name || "Pcs"
+                        : rawItem.item?.unit || rawItem.unit || "Pcs";
+                      const batchNo = rawItem.batch?.batchNo || "—";
+                      const expiryDate = rawItem.batch?.expiryDate || "—";
 
                       return (
                       <Fragment key={itemId}>
@@ -208,31 +206,20 @@ function PurchaseDetailsContent() {
                             </div>
                           </td>
 
-                          {/* Track Batch Set / View Column */}
-                          <td className="px-3 py-3 align-middle text-center">
-                            <div className="flex items-center justify-center">
-                              {!trackBatch ? (
-                                <span className="text-muted-foreground font-semibold">—</span>
-                              ) : (
-                                <button
-                                  type="button"
-                                  data-expiry-container
-                                  onClick={() => { 
-                                    setOpenExpiryRowId((prev) => (prev === itemId ? null : itemId));
-                                  }}
-                                  className={cn(
-                                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs cursor-pointer",
-                                    openExpiryRowId === itemId
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                                  )}
-                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস দেখুন" : "View batch & expiry settings"}
-                                >
-                                  <Eye className="h-3 w-3" />
-                                  <span>{isBangla ? "ভিউ" : "View"}</span>
-                                </button>
-                              )}
-                            </div>
+                          {/* Batch No */}
+                          <td className="px-3 py-3 align-middle text-center text-xs font-mono text-foreground font-medium">
+                            {batchNo && batchNo !== "—" ? (
+                              <span className="bg-muted/40 px-2 py-0.5 rounded border border-border/60">
+                                {batchNo}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+
+                          {/* Expiry Date */}
+                          <td className="px-3 py-3 align-middle text-center text-xs text-muted-foreground font-medium">
+                            {expiryDate ? format(new Date(expiryDate), "dd MMM yyyy") : "—"}
                           </td>
 
                           {/* Stock */}
@@ -263,77 +250,6 @@ function PurchaseDetailsContent() {
                           {/* Delete Action - Removed */}
                           <td className="px-3 py-3 align-middle text-right"></td>
                         </tr>
-
-                        {/* Conditional Expiry & Batch Settings Sub-Row */}
-                        {openExpiryRowId === itemId && (
-                          <tr
-                            data-expiry-container
-                            className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
-                          >
-                            <td colSpan={9} className="px-4 py-2 text-xs">
-                              <div className="flex flex-wrap items-center gap-4 pl-7">
-                                
-
-                                {/* 1. Track Batch Checkbox inside Settings */}
-                                <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={trackBatch}
-                                    disabled={true}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
-                                  />
-                                  <span className="font-medium whitespace-nowrap">
-                                    {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
-                                  </span>
-                                </label>
-
-                                {/* 2. Track Expiry Checkbox inside Settings */}
-                                <label
-                                  className={cn(
-                                    "flex items-center gap-1.5 select-none text-[11px] px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0",
-                                    !trackBatch
-                                      ? "opacity-50 cursor-not-allowed bg-muted/20 text-muted-foreground"
-                                      : "cursor-pointer text-foreground bg-background hover:bg-muted/60"
-                                  )}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={trackExpiry}
-                                    disabled={true}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
-                                  />
-                                  <span className="font-medium whitespace-nowrap">
-                                    {isBangla ? "মেয়াদ ট্র্যাকিং" : "Track Expiry"}
-                                  </span>
-                                </label>
-
-                                {/* 4. Expiry Date Calendar */}
-                                {trackExpiry && (
-                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
-                                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
-                                      {isBangla ? "মেয়াদের তারিখ *" : "Expiry Date *"}
-                                    </span>
-                                    <span className="text-[12px] font-semibold text-foreground bg-background border border-border/60 rounded-md px-2.5 py-1">
-                                      {expiryDate ? format(new Date(expiryDate), "dd MMM yyyy") : "—"}
-                                    </span>
-                                  </div>
-                                )}
-                                {/* 3. Manufacture Date Calendar */}
-                                {trackExpiry && (
-                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0 ml-4">
-                                    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                                      {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
-                                    </span>
-                                    <span className="text-[12px] font-semibold text-foreground bg-background border border-border/60 rounded-md px-2.5 py-1">
-                                      {manufactureDate ? format(new Date(manufactureDate), "dd MMM yyyy") : "—"}
-                                    </span>
-                                  </div>
-                                )}
-
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </Fragment>
                     )})
 

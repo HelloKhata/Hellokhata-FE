@@ -14,67 +14,25 @@ import { Badge } from "@/components/ui/premium";
 import {
   RotateCcw,
   ArrowLeft,
-  Users,
   Loader2,
   Printer,
-  FileText,
   Calendar as CalendarIcon,
   Banknote,
-  Camera,
-  Image as ImageIcon,
+  CreditCard,
+  Smartphone,
+  Receipt,
+  FileText,
+  ImageIcon,
 } from "lucide-react";
 import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { useGetPurchaseReturnById } from "@/hooks/api/useReturns";
-import Image from "next/image";
+import { cn } from "@/lib/utils";
 
-const mockReturnDetails = {
-  id: "PRET-101",
-  returnNo: "PR-20260727-8932",
-  purchaseInvoiceNo: "PUR-20260715-0001",
-  createdAt: "2026-07-27T14:30:00Z",
-  purchaseDate: "2026-07-15T12:00:00Z",
-  branchName: "Main Branch (Chittagong)",
-  responsiblePerson: "Kazi Shohel",
-  referenceNo: "REF-RET-091",
-  status: "completed",
-  supplierName: "Apex Supplies Ltd",
-  supplier: {
-    name: "Apex Supplies Ltd",
-    phone: "01799887766",
-    currentBalance: 0,
-    creditLimit: 100000,
-  },
-  notes: "Products received were defective and returned to supplier for full cash refund.",
-  refundMethod: "cash",
-  subtotal: 4500,
-  discount: 0,
-  tax: 0,
-  shippingAdjustment: 0,
-  additionalCharges: 0,
-  total: 4500,
-  refundAmount: 4500,
-  supplierCredit: 0,
-  paymentAdjustment: 0,
-  uploadedImage: "/images/image.png",
-  returnInvoiceImage: "/backgrounds/ai-abstract-bg.png",
-  items: [
-    {
-      id: "1",
-      itemName: "Wireless Optical Mouse - Black",
-      sku: "SKU-LOG-M185",
-      batchNo: "BATCH-2026-A",
-      quantity: 10,
-      maxQuantity: 50,
-      remainingQuantity: 40,
-      unitCost: 450,
-      unit: "pcs",
-      returnType: "refund",
-      reason: "defective",
-      total: 4500,
-      imageUrl: "",
-    },
-  ],
-};
+const METHODS = [
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+];
 
 function PurchaseReturnDetailsContent() {
   const router = useRouter();
@@ -88,51 +46,71 @@ function PurchaseReturnDetailsContent() {
   const { data: apiReturnData, isLoading } = useGetPurchaseReturnById(id);
 
   const returnDetails = useMemo(() => {
-    if (apiReturnData?.data || apiReturnData) {
-      const data = apiReturnData.data || apiReturnData;
+    const data = apiReturnData?.data || apiReturnData || {};
+    const purchase = data.purchase || {};
+    const supplier = data.supplier || purchase.supplier || {};
+
+    const items = (data.items || []).map((item: any) => {
+      const unit = typeof item?.unit === "object"
+        ? item?.unit?.symbol || item?.unit?.name || "pcs"
+        : typeof item?.item?.unit === "object"
+        ? item?.item?.unit?.symbol || item?.item?.unit?.name || "pcs"
+        : item?.unit || item?.item?.unit || "pcs";
+
       return {
-        ...mockReturnDetails,
-        ...data,
-        returnNo: data.returnNo || data.returnInvoiceNo || data.invoiceNo || mockReturnDetails.returnNo,
-        purchaseInvoiceNo: data.purchase?.invoiceNo || data.purchaseInvoiceNo || mockReturnDetails.purchaseInvoiceNo,
-        createdAt: data.createdAt || data.returnDate || mockReturnDetails.createdAt,
-        branchName: data.branch?.name || data.branchName || mockReturnDetails.branchName,
-        responsiblePerson: data.responsiblePerson || data.user?.name || mockReturnDetails.responsiblePerson,
-        status: data.status || mockReturnDetails.status,
-        supplierName: data.supplier?.name || data.supplierName || mockReturnDetails.supplierName,
-        supplier: {
-          name: data.supplier?.name || data.supplierName || mockReturnDetails.supplier.name,
-          phone: data.supplier?.phone || mockReturnDetails.supplier.phone,
-          currentBalance: data.supplier?.currentBalance ?? mockReturnDetails.supplier.currentBalance,
-          creditLimit: data.supplier?.creditLimit ?? mockReturnDetails.supplier.creditLimit,
-        },
-        items: data.items && data.items.length > 0 ? data.items : mockReturnDetails.items,
-        notes: data.notes || mockReturnDetails.notes,
-        refundMethod: data.refundMethod || data.paymentMethod || mockReturnDetails.refundMethod,
-        subtotal: data.subtotal || mockReturnDetails.subtotal,
-        discount: data.discount || mockReturnDetails.discount,
-        tax: data.tax || mockReturnDetails.tax,
-        shippingAdjustment: data.shippingAdjustment || mockReturnDetails.shippingAdjustment,
-        additionalCharges: data.additionalCharges || mockReturnDetails.additionalCharges,
-        total: data.total || data.grandTotal || data.refundAmount || mockReturnDetails.total,
-        refundAmount: data.refundAmount ?? mockReturnDetails.refundAmount,
-        supplierCredit: data.supplierCredit ?? mockReturnDetails.supplierCredit,
-        paymentAdjustment: data.paymentAdjustment ?? mockReturnDetails.paymentAdjustment,
+        id: item.id || item.purchaseItemId,
+        itemName: item.itemName || item.item?.name || item.name || "Product",
+        sku: item.sku || item.item?.sku || "—",
+        batchNo: item.batchNo || item.batch?.batchNo || item.batchNumber || "",
+        unitCost: Number(item.unitCost ?? item.unitPrice ?? item.rate ?? 0),
+        taxPercent: Number(item.taxPercent ?? item.taxRate ?? item.tax ?? 0),
+        quantity: Number(item.quantity ?? 0),
+        maxQuantity: Number(item.maxQuantity ?? item.purchaseQuantity ?? item.quantity ?? 0),
+        unit,
+        returnType: item.returnType || "refund",
+        reason: item.reason || "damaged",
+        total: Number(item.total ?? (item.quantity * (item.unitCost ?? item.unitPrice ?? 0))),
+        imageUrl: item.imageUrl || item.item?.imageUrl || "",
       };
-    }
-    return mockReturnDetails;
-  }, [apiReturnData]);
+    });
 
-  const rawSubtotal = useMemo(() => {
-    return (returnDetails.items || []).reduce(
-      (sum: number, item: any) => sum + (item.total || item.quantity * item.unitCost),
-      0,
-    );
-  }, [returnDetails]);
+    const subtotal = data.subtotal != null
+      ? Number(data.subtotal)
+      : items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
 
-  const grandTotal = useMemo(() => {
-    return returnDetails.total || returnDetails.refundAmount || rawSubtotal;
-  }, [returnDetails, rawSubtotal]);
+    const taxAmount = data.tax != null
+      ? Number(data.tax)
+      : items.reduce((sum: number, item: any) => sum + ((item.quantity * item.unitCost * (item.taxPercent || 0)) / 100), 0);
+
+    const additionalCharges = Number(data.additionalCharges ?? data.shippingAdjustment ?? 0);
+    const grandTotal = data.total != null ? Number(data.total) : (subtotal + taxAmount + additionalCharges);
+
+    return {
+      id: data.id || id,
+      returnNo: data.returnNo || data.returnInvoiceNo || data.invoiceNo || `RET-${id.slice(-6)}`,
+      purchaseInvoiceNo: purchase.grnNo || purchase.invoiceNo || data.purchaseInvoiceNo || "—",
+      purchaseDate: purchase.createdAt || data.purchaseDate,
+      purchaseTotal: Number(purchase.total || 0),
+      purchasePaid: Number(purchase.paidAmount || 0),
+      purchaseDue: Number(purchase.dueAmount || 0),
+      supplierName: supplier.name || data.supplierName || "—",
+      supplierPhone: supplier.phone || data.supplierPhone || "",
+      supplierBalance: Number(supplier.currentBalance ?? 0),
+      returnDate: data.returnDate || data.createdAt,
+      status: data.status || "completed",
+      items,
+      subtotal,
+      taxAmount,
+      additionalCharges,
+      grandTotal,
+      refundMethod: data.refundMethod || data.paymentMethod || "cash",
+      accountId: data.accountId || data.account?.id || "",
+      accountName: data.account?.name || data.accountName || "",
+      refundAmount: data.refundAmount != null ? Number(data.refundAmount) : grandTotal,
+      notes: data.notes || "",
+      invoiceImage: data.invoiceImage || data.imageUrl || data.uploadedImage || "",
+    };
+  }, [apiReturnData, id]);
 
   const handlePrint = () => {
     window.print();
@@ -148,12 +126,12 @@ function PurchaseReturnDetailsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header Section - Exactly matching New Purchase Return Page Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-border/80">
+      {/* Top Header Section */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <RotateCcw className="h-6 w-6 text-primary" />
-            {isBangla ? "পারচেজ রিটার্ন বিবরণ" : "Purchase Return Details"}
+            {isBangla ? "ক্রয় ফেরত বিবরণ" : "Purchase Return Details"}
           </h1>
           <Badge
             variant="outline"
@@ -161,6 +139,10 @@ function PurchaseReturnDetailsContent() {
           >
             {returnDetails.returnNo}
           </Badge>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 capitalize">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {returnDetails.status}
+          </span>
         </div>
         <div className="flex items-center gap-2.5">
           <Button
@@ -169,7 +151,7 @@ function PurchaseReturnDetailsContent() {
             className="h-9 text-xs bg-primary hover:bg-primary/95 text-primary-foreground font-semibold flex items-center gap-1.5 cursor-pointer"
           >
             <Printer className="h-4 w-4" />
-            <span>{isBangla ? "ইনভয়েস প্রিন্ট করুন" : "Print Return Invoice"}</span>
+            <span>{isBangla ? "প্রিন্ট করুন" : "Print Invoice"}</span>
           </Button>
           <Button
             type="button"
@@ -183,250 +165,181 @@ function PurchaseReturnDetailsContent() {
         </div>
       </div>
 
-      {/* Main 12-column grid layout - Exactly matching New Purchase Return Page layout */}
+      {/* Top Card: Purchase Invoice & Return Overview (Matching new return form layout) */}
+      <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between border-b border-border/50 pb-3">
+          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+            <Receipt className="h-4 w-4" />
+            <span>{isBangla ? "ক্রয় ইনভয়েস তথ্য" : "Purchase Invoice Details"}</span>
+          </div>
+        </div>
+
+        {/* 4-Column Grid: Purchase Invoice, Supplier, Purchase Date, Return Date */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          {/* Field 1: Purchase Invoice */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ক্রয় ইনভয়েস" : "Purchase Invoice"}
+            </Label>
+            <Input
+              readOnly
+              disabled
+              value={returnDetails.purchaseInvoiceNo}
+              className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-90 font-mono"
+            />
+          </div>
+
+          {/* Field 2: Supplier */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "সরবরাহকারী" : "Supplier"}
+            </Label>
+            <Input
+              readOnly
+              disabled
+              value={returnDetails.supplierName}
+              className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-90"
+            />
+          </div>
+
+          {/* Field 3: Purchase Date */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ক্রয় তারিখ" : "Purchase Date"}
+            </Label>
+            <Input
+              readOnly
+              disabled
+              value={
+                returnDetails.purchaseDate
+                  ? format(new Date(returnDetails.purchaseDate), "dd MMM yyyy")
+                  : "—"
+              }
+              className="h-11 bg-muted/40 border-input text-sm font-semibold text-foreground cursor-not-allowed disabled:opacity-90"
+            />
+          </div>
+
+          {/* Field 4: Return Date */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-foreground">
+              {isBangla ? "ফেরতের তারিখ" : "Return Date"}
+            </Label>
+            <div className="relative">
+              <Input
+                readOnly
+                disabled
+                value={
+                  returnDetails.returnDate
+                    ? format(new Date(returnDetails.returnDate), "dd MMM yyyy")
+                    : "—"
+                }
+                className="h-11 bg-muted/40 border-input text-sm font-semibold text-foreground cursor-not-allowed disabled:opacity-90 pr-10"
+              />
+              <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main 12-column grid layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Section (Spans 9 columns on desktop) */}
         <div className="lg:col-span-9 space-y-6">
+          {/* Return Items List Table */}
+          <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs space-y-4">
+            {/* Purchase Billing Info Bar */}
+            {returnDetails.purchaseTotal > 0 && (
+              <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs font-medium">
+                <div className="flex items-center gap-2 flex-wrap text-muted-foreground text-xs">
+                  <span className="font-bold text-foreground">
+                    {isBangla ? "মূল ইনভয়েস বিলিং তথ্য:" : "Original Billing Info:"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3.5 flex-wrap text-xs">
+                  <span>
+                    {isBangla ? "মোট ইনভয়েস:" : "Total:"}{" "}
+                    <strong className="font-bold text-foreground font-mono">
+                      {formatCurrency(returnDetails.purchaseTotal)}
+                    </strong>
+                  </span>
+                  <span>
+                    {isBangla ? "পরিশোধিত:" : "Paid:"}{" "}
+                    <strong className="font-bold text-emerald-500 font-mono">
+                      {formatCurrency(returnDetails.purchasePaid)}
+                    </strong>
+                  </span>
+                  <span>
+                    {isBangla ? "বাকি:" : "Due:"}{" "}
+                    <strong className="font-bold text-rose-500 font-mono">
+                      {formatCurrency(returnDetails.purchaseDue)}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            )}
 
-          {/* Section 1: Purchase Return Information Card (Disabled Fields) */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-border pb-2.5">
+            <div className="px-5 py-2 border-b border-border flex items-center justify-between">
               <span className="text-sm font-semibold text-foreground">
-                {isBangla ? "ক্রয় ফেরত সংক্রান্ত তথ্য" : "Purchase Return Information"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 capitalize">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                {returnDetails.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-background/30 p-3.5 rounded-lg border border-border/40">
-              {/* Supplier Display */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "সরবরাহকারী" : "Supplier Name"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5">
-                  {returnDetails.supplierName}
-                </p>
-              </div>
-
-              {/* Purchase Invoice */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "মূল ক্রয় ইনভয়েস" : "Original Invoice"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5 font-mono">
-                  {returnDetails.purchaseInvoiceNo}
-                </p>
-              </div>
-
-              {/* Return Date */}
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                  {isBangla ? "ফেরতের তারিখ" : "Return Date"}
-                </p>
-                <p className="font-bold text-foreground text-sm mt-0.5">
-                  {returnDetails.createdAt
-                    ? format(new Date(returnDetails.createdAt), "dd MMM yyyy, hh:mm a")
-                    : "—"}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Return Number */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ক্রয় ফেরত নম্বর" : "Return Number"}
-                </Label>
-                <Input
-                  value={returnDetails.returnNo}
-                  disabled
-                  className="bg-background/50 border-input h-10 text-xs font-bold text-primary disabled:opacity-90 font-mono"
-                />
-              </div>
-
-              {/* Return Date */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "ফেরতের তারিখ" : "Return Date"}
-                </Label>
-                <div className="relative">
-                  <Input
-                    value={
-                      returnDetails.createdAt
-                        ? format(new Date(returnDetails.createdAt), "dd MMM yyyy")
-                        : "—"
-                    }
-                    disabled
-                    className="bg-background/50 border-input h-10 text-xs font-medium pr-9 disabled:opacity-90"
-                  />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-
-              {/* Branch */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "শাখা" : "Branch"}
-                </Label>
-                <Input
-                  value={returnDetails.branchName || "Main Branch"}
-                  disabled
-                  className="bg-background/50 border-input h-10 text-xs font-medium disabled:opacity-90"
-                />
-              </div>
-
-              {/* Responsible Person */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">
-                  {isBangla ? "দায়িত্বপ্রাপ্ত ব্যক্তি" : "Responsible Person"}
-                </Label>
-                <Input
-                  value={returnDetails.responsiblePerson || "System Manager"}
-                  disabled
-                  className="bg-background/50 border-input h-10 text-xs font-medium disabled:opacity-90"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Supplier Overview Card */}
-          {returnDetails.supplier && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-2xs space-y-3">
-              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
-                <Users className="h-4 w-4" />
-                <span>
-                  {isBangla ? "সরবরাহকারী সংক্ষিপ্ত বিবরণ ও আর্থিক অবস্থা" : "Supplier Overview"}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "সরবরাহকারীর নাম" : "Supplier Name"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {returnDetails.supplier.name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "মোবাইল নম্বর" : "Phone"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {returnDetails.supplier.phone || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-rose-400 uppercase tracking-wide">
-                    {isBangla ? "বর্তমান বকেয়া" : "Current Due"}
-                  </p>
-                  <p className="font-bold text-rose-500 mt-0.5">
-                    {formatCurrency(Math.abs(returnDetails.supplier.currentBalance || 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "বাকির সীমা (Credit Limit)" : "Credit Limit"}
-                  </p>
-                  <p className="font-semibold text-foreground mt-0.5">
-                    {returnDetails.supplier.creditLimit
-                      ? formatCurrency(returnDetails.supplier.creditLimit)
-                      : isBangla
-                        ? "সীমাহীন"
-                        : "Unlimited"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Section 3: Returned Items List Table */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <span className="text-sm font-semibold text-foreground">
-                {isBangla ? "ফেরতকৃত পণ্য তালিকা" : "Returned Items Details"}
+                {isBangla ? "ফেরতযোগ্য পণ্য তালিকা" : "Returnable Items Details"}
               </span>
               <span className="text-xs text-muted-foreground font-mono">
-                {returnDetails.items?.length || 0} {isBangla ? "টি আইটেম" : "item(s)"}
+                {returnDetails.items.length} {isBangla ? "টি আইটেম" : "item(s)"}
               </span>
             </div>
 
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
                   <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-semibold">
-                    <th className="px-4 py-3">{isBangla ? "ক্রমিক" : "S.N."}</th>
-                    <th className="px-3 py-3">{/* Thumbnail */}</th>
                     <th className="px-4 py-3">{isBangla ? "আইটেম বিবরণ" : "Item & SKU"}</th>
                     <th className="px-3 py-3 text-right">{isBangla ? "মূল্য" : "Purchase Price"}</th>
-                    <th className="px-3 py-3 text-center">{isBangla ? "ইনভেন্টরি" : "Current Stock"}</th>
-                    <th className="px-4 py-3 text-center">{isBangla ? "ফেরত পরিমাণ" : "Returned Qty"}</th>
+                    <th className="px-3 py-3 text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
+                    <th className="px-3 py-3 text-center">{isBangla ? "ক্রয় পরিমাণ" : "Purchase Qty"}</th>
+                    <th className="px-4 py-3 text-center">{isBangla ? "ফেরত পরিমাণ" : "Return Qty"}</th>
                     <th className="px-3 py-3">{isBangla ? "ফেরত টাইপ" : "Return Type"}</th>
                     <th className="px-3 py-3">{isBangla ? "কারণ" : "Reason"}</th>
-                    <th className="px-4 py-3 text-right">{isBangla ? "মোট" : "Total"}</th>
+                    <th className="px-3 py-3 text-right">{isBangla ? "মোট" : "Total"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {(returnDetails.items || []).map((item: any, idx: number) => (
+                  {returnDetails.items.map((item: any, idx: number) => (
                     <tr key={item.id || idx} className="hover:bg-muted/10 transition-colors">
-                      <td className="px-4 py-3.5 align-middle font-bold text-amber-500">
-                        {idx + 1}
-                      </td>
-                      <td className="px-3 py-3.5 align-middle">
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.itemName}
-                            className="h-8 w-8 rounded object-cover border border-border/80"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
-                            <Image
-                              src="/images/image.png"
-                              width={40}
-                              height={40}
-                              alt="Image"
-                              className="h-6 w-6 text-muted-foreground/60"
-                            />
-                          </div>
-                        )}
-                      </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <p className="font-semibold text-foreground text-xs leading-tight">
-                          {item.itemName || item.name || "Product"}
-                        </p>
-                        {item.sku && (
-                          <p className="text-[10px] text-muted-foreground">SKU: {item.sku}</p>
-                        )}
+                        <p className="font-semibold text-foreground text-xs leading-tight">{item.itemName}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">SKU: {item.sku}</p>
                         {item.batchNo && (
-                          <span className="text-[9px] bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                          <span className="inline-block mt-0.5 text-[9px] bg-muted/60 text-muted-foreground px-1.5 py-0.5 rounded font-mono">
                             Batch: {item.batchNo}
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3.5 align-middle text-right font-medium text-foreground">
-                        {formatCurrency(item.unitCost || item.unitPrice || 0)}
+                      <td className="px-3 py-3.5 align-middle text-right font-medium text-foreground font-mono">
+                        {formatCurrency(item.unitCost)}
+                      </td>
+                      <td className="px-3 py-3.5 align-middle text-center text-muted-foreground font-semibold">
+                        {item.taxPercent || 0}%
                       </td>
                       <td className="px-3 py-3.5 align-middle text-center text-muted-foreground font-medium">
-                        {item.remainingQuantity || item.maxQuantity || 0} {item.unit || "pcs"}
+                        {item.maxQuantity || item.quantity} {item.unit}
                       </td>
-                      <td className="px-4 py-3.5 align-middle text-center font-bold text-foreground">
-                        {item.quantity} {item.unit || "pcs"}
-                      </td>
-                      <td className="px-3 py-3.5 align-middle capitalize text-xs text-muted-foreground">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-primary/10 text-primary font-semibold">
-                          {item.returnType || "refund"}
+                      <td className="px-4 py-3.5 align-middle text-center">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary/10 text-primary font-bold text-xs">
+                          {item.quantity} {item.unit}
                         </span>
                       </td>
-                      <td className="px-3 py-3.5 align-middle capitalize text-xs text-muted-foreground">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-muted-foreground font-medium">
-                          {item.reason || "damaged"}
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-background/50 border border-border/60 text-xs font-semibold text-foreground capitalize">
+                          {item.returnType}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 align-middle text-right font-bold text-foreground font-mono">
-                        {formatCurrency(item.total || item.quantity * (item.unitCost || item.unitPrice || 0))}
+                      <td className="px-3 py-3.5 align-middle">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-background/50 border border-border/60 text-xs text-muted-foreground capitalize">
+                          {item.reason}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3.5 align-middle text-right font-bold text-foreground font-mono text-xs">
+                        {formatCurrency(item.total)}
                       </td>
                     </tr>
                   ))}
@@ -435,145 +348,147 @@ function PurchaseReturnDetailsContent() {
             </div>
 
             {/* Bottom summary bar */}
-            <div className="flex justify-between items-center px-5 py-3.5 bg-muted/10 border-t border-border">
-              <span className="text-muted-foreground font-semibold text-xs">
-                {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
-              </span>
-              <span className="font-bold text-foreground text-sm font-mono">
-                {formatCurrency(rawSubtotal)}
-              </span>
+            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/10 border-t border-border">
+              <div className="flex items-center gap-4">
+                <span className="text-muted-foreground font-semibold text-xs">
+                  {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
+                </span>
+                <span className="font-bold text-foreground text-sm font-mono">
+                  {formatCurrency(returnDetails.subtotal)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Section 4: Attachments Section */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-3.5 shadow-xs">
-            <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
-              <Camera className="h-4 w-4 text-primary" />
-              {isBangla ? "সংযুক্ত প্রমাণপত্র / ইনভয়েস ছবি" : "Uploaded Return Proofs & Invoices"}
-            </Label>
-            <div className="flex flex-wrap gap-3 items-center pt-1">
-              {returnDetails.uploadedImage && (
-                <div className="h-28 w-28 rounded-lg border border-border bg-background/40 relative overflow-hidden p-1 shadow-2xs">
-                  <img
-                    src={returnDetails.uploadedImage}
-                    alt="Proof"
-                    className="h-full w-full object-cover rounded"
-                  />
-                  <span className="text-[9px] text-muted-foreground truncate w-full absolute bottom-0 bg-background/80 text-center px-0.5 font-medium">
-                    {isBangla ? "পণ্য ছবি" : "Proof Image"}
-                  </span>
-                </div>
-              )}
-              {returnDetails.returnInvoiceImage && (
-                <div className="h-28 w-28 rounded-lg border border-border bg-background/40 relative overflow-hidden p-1 shadow-2xs">
-                  <img
-                    src={returnDetails.returnInvoiceImage}
-                    alt="Invoice"
-                    className="h-full w-full object-cover rounded"
-                  />
-                  <span className="text-[9px] text-muted-foreground truncate w-full absolute bottom-0 bg-background/80 text-center px-0.5 font-medium">
-                    {isBangla ? "ইনভয়েস কপি" : "Return Invoice"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Notes & Invoice Image Card */}
+          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Remarks/Notes */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
+                </Label>
+                <Textarea
+                  readOnly
+                  disabled
+                  value={returnDetails.notes || (isBangla ? "কোনো মন্তব্য নেই" : "No special remarks")}
+                  className="h-32 bg-background/50 border-input resize-none text-xs disabled:opacity-90"
+                />
+              </div>
 
-          {/* Section 5: Notes Area */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-1.5">
-            <Label className="text-xs font-semibold text-foreground">
-              {isBangla ? "বিশেষ মন্তব্য বা নোট" : "Note / Remarks"}
-            </Label>
-            <Textarea
-              value={returnDetails.notes || ""}
-              disabled
-              className="h-24 bg-background/50 border-input resize-none text-xs disabled:opacity-90"
-            />
+              {/* Invoice Image Preview */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">
+                  {isBangla ? "ইনভয়েস বা রসিদের ছবি" : "Invoice / Receipt Image"}
+                </Label>
+                {returnDetails.invoiceImage ? (
+                  <div className="relative h-32 w-full rounded-lg border border-border bg-background/50 overflow-hidden flex items-center justify-center">
+                    <img
+                      src={returnDetails.invoiceImage}
+                      alt="Invoice preview"
+                      className="h-full w-full object-contain p-1"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-32 w-full rounded-lg border-2 border-dashed border-input bg-background/30 flex flex-col items-center justify-center text-center p-4">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground mb-1.5 opacity-50" />
+                    <span className="text-xs text-muted-foreground">
+                      {isBangla ? "কোনো ছবি সংযুক্ত নেই" : "No invoice image attached"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Section: Refund Summary Sticky Sidebar */}
+        {/* Right Section: Refund Summary sticky card (3 columns on desktop) */}
         <div className="lg:col-span-3 lg:sticky lg:top-6 space-y-6">
           <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
-              {isBangla ? "ফেরত ও সমন্বয় বিবরণী" : "Refund & Calculation Summary"}
+              {isBangla ? "ফেরত বিবরণী" : "Refund Summary"}
             </h3>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-muted-foreground">
                 <span>{isBangla ? "আইটেম উপমোট" : "Item Subtotal"}</span>
-                <span className="font-semibold text-foreground">{formatCurrency(rawSubtotal)}</span>
+                <span className="font-semibold text-foreground font-mono">{formatCurrency(returnDetails.subtotal)}</span>
               </div>
 
+              {/* Calculated Tax */}
               <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
-                <span>{isBangla ? "অর্ডার ছাড়" : "Order Discount"}</span>
-                <span className="font-semibold text-foreground">
-                  -{formatCurrency(returnDetails.discount)}
-                </span>
+                <span>{isBangla ? "ট্যাক্স" : "Tax"}</span>
+                <span className="font-semibold text-foreground font-mono">{formatCurrency(returnDetails.taxAmount)}</span>
               </div>
 
+              {/* Additional Cost */}
               <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "ট্যাক্স / ভ্যাট" : "Tax / VAT"}</span>
-                <span className="font-semibold text-foreground">
-                  +{formatCurrency(returnDetails.tax)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "পরিবহন খরচ সমন্বয়" : "Shipping Adjustment"}</span>
-                <span className="font-semibold text-foreground">
-                  +{formatCurrency(returnDetails.shippingAdjustment)}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "অতিরিক্ত সমন্বয় খরচ" : "Additional Charges"}</span>
-                <span className="font-semibold text-foreground">
-                  +{formatCurrency(returnDetails.additionalCharges)}
-                </span>
+                <span>{isBangla ? "অতিরিক্ত খরচ" : "Additional Cost"}</span>
+                <span className="font-semibold text-foreground font-mono">{formatCurrency(returnDetails.additionalCharges)}</span>
               </div>
 
               {/* Grand Total */}
               <div className="flex justify-between items-center border-t border-border pt-3 text-sm font-bold">
                 <span className="text-foreground">{isBangla ? "সর্বমোট ফেরতযোগ্য" : "Grand Total"}</span>
-                <span className="text-primary text-base">{formatCurrency(grandTotal)}</span>
+                <span className="text-primary text-base font-mono">{formatCurrency(returnDetails.grandTotal)}</span>
+              </div>
+
+              {/* Refund Method Section */}
+              <div className="pt-3 border-t border-border space-y-3">
+                <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                  {isBangla ? "রিফান্ড মাধ্যম" : "Refund Method"}
+                </Label>
+
+                {/* Method Chip Display */}
+                <div className="grid grid-cols-3 gap-2">
+                  {METHODS.map((m) => {
+                    const Icon = m.icon;
+                    const isActive = returnDetails.refundMethod === m.id;
+                    return (
+                      <div
+                        key={m.id}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                          isActive
+                            ? cn(m.bgClass, m.borderClass)
+                            : "border-border/40 bg-transparent opacity-40"
+                        )}
+                      >
+                        <Icon
+                          size={18}
+                          className={isActive ? m.colorClass : "text-muted-foreground"}
+                          strokeWidth={2}
+                        />
+                        <span
+                          className={cn(
+                            "text-[10px] font-medium leading-tight text-center",
+                            isActive ? m.colorClass : "text-muted-foreground"
+                          )}
+                        >
+                          {m.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Account Details if applicable */}
+                {returnDetails.accountName && (
+                  <div className="flex justify-between items-center text-xs text-muted-foreground bg-background/40 p-2.5 rounded-lg border border-border/50">
+                    <span>{isBangla ? "অ্যাকাউন্ট" : "Account"}:</span>
+                    <span className="font-semibold text-foreground">{returnDetails.accountName}</span>
+                  </div>
+                )}
+
+                {/* Refund Paid Info */}
+                <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
+                  <span>{isBangla ? "রিফান্ড পরিমাণ" : "Refund Amount"}</span>
+                  <span className="font-bold text-foreground font-mono">{formatCurrency(returnDetails.refundAmount)}</span>
+                </div>
               </div>
             </div>
 
-            {/* Refund Splits */}
-            <div className="border-t border-border pt-3.5 space-y-2.5 text-xs">
-              <span className="font-semibold text-foreground block">
-                {isBangla ? "রিফান্ড বন্টন (Splits)" : "Refund Distributions"}
-              </span>
-
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "নগদ / ব্যাংক ফেরত" : "Cash / Bank Refund"}</span>
-                <span className="font-bold text-emerald-400">{formatCurrency(returnDetails.refundAmount)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "সরবরাহকারী ক্রেডিট" : "Supplier Credit"}</span>
-                <span className="font-semibold text-foreground">{formatCurrency(returnDetails.supplierCredit)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>{isBangla ? "বকেয়া সমন্বয়" : "Due Adjustment"}</span>
-                <span className="font-semibold text-foreground">{formatCurrency(returnDetails.paymentAdjustment)}</span>
-              </div>
-            </div>
-
-            {/* Refund Method Badge */}
-            <div className="border-t border-border pt-3.5 space-y-2 text-xs">
-              <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {isBangla ? "রিফান্ড পদ্ধতি" : "Refund Method"}
-              </Label>
-              <div className="p-3 rounded-lg bg-background/50 border border-input flex items-center gap-2 text-xs font-semibold text-foreground capitalize">
-                <Banknote className="h-4 w-4 text-emerald-500" />
-                <span>{returnDetails.refundMethod}</span>
-              </div>
-            </div>
-
-            {/* Bottom Action Buttons */}
+            {/* Bottom Actions inside Sticky Panel */}
             <div className="space-y-2 pt-3 border-t border-border">
               <Button
                 type="button"
