@@ -211,7 +211,7 @@ function PurchaseReturnDetailsContent() {
               readOnly
               disabled
               value={
-                returnDetails.purchaseDate
+                returnDetails.purchaseDate && !isNaN(new Date(returnDetails.purchaseDate).getTime())
                   ? format(new Date(returnDetails.purchaseDate), "dd MMM yyyy")
                   : "—"
               }
@@ -229,7 +229,7 @@ function PurchaseReturnDetailsContent() {
                 readOnly
                 disabled
                 value={
-                  returnDetails.returnDate
+                  returnDetails.returnDate && !isNaN(new Date(returnDetails.returnDate).getTime())
                     ? format(new Date(returnDetails.returnDate), "dd MMM yyyy")
                     : "—"
                 }

@@ -1,6 +1,7 @@
 import {
   createItem,
   deleteItem,
+  getItemBatches,
   getItems,
   getItemsCategories,
   getItemsStatus,
@@ -39,7 +40,15 @@ export const useGetSingleItem = (id: string) => {
     enabled: !!id,
   });
 };
-
+export const useGetItemBatches = (itemId: string, options?: { enabled?: boolean }) => {
+  return useQuery({
+    queryKey: ['itemBatches', itemId],
+    queryFn: () => getItemBatches(itemId),
+    enabled: !!itemId && (options?.enabled ?? true),
+    select: (data) => data?.data,
+    ...options,
+  });
+};
 export const useGetItemsStatus = () => {
   return useQuery({
     queryKey: ["itemsStatus"],

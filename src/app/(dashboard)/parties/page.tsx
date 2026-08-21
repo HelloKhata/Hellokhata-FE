@@ -2,14 +2,11 @@
 // হ্যালো খাতা - পার্টি পেজ
 
 'use client';
-
 import { useState } from 'react';
-import { AddPartyModal } from '@/components/parties/AddPartyModal';
 import { PageHeader, EmptyState } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -46,9 +43,6 @@ export default function PartiesPage() {
   const [typeFilter, setTypeFilter] = useState<'customer' | 'supplier' | 'both'>('both');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'receivable' | 'payable' | 'settled'>('all');
   const [selectedParty, setSelectedParty] = useState<Party | null>(null);
-  const [showAddPartyModal, setShowAddPartyModal] = useState(false);
-  const [partyToEdit, setPartyToEdit] = useState<Party | null>(null);
-
   const deletePartyMutation = useDeleteParty();
 
   const handleEditParty = (party: Party) => {
@@ -91,14 +85,14 @@ export default function PartiesPage() {
     <>
       <div className="space-y-6">
         <PageHeader
-          title={t('parties?.title')}
+          title={t('parties.title')}
           subtitle={isBangla ? 'গ্রাহক ও সরবরাহকারী ব্যবস্থাপনা' : 'Customer & supplier management'}
           icon={Users}
           action={{
-            label: t('parties?.addParty'),
+            label: t('parties.addParty'),
             onClick: () => router.push('/parties/new'),
             icon: Plus,
-          }}
+          }} 
         />
 
         {/* Stats Cards */}
@@ -111,7 +105,7 @@ export default function PartiesPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{parties?.summary?.customers || 0}</div>
-                  <p className="text-sm text-gray-500 truncate">{t('parties?.customers')}</p>
+                  <p className="text-sm text-gray-500 truncate">{t('parties.customers')}</p>
                 </div>
               </div>
             </CardContent>
@@ -124,7 +118,7 @@ export default function PartiesPage() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-2xl font-bold text-gray-900 dark:text-white">{parties?.summary?.suppliers || 0}</div>
-                  <p className="text-sm text-gray-500 truncate">{t('parties?.suppliers')}</p>
+                  <p className="text-sm text-gray-500 truncate">{t('parties.suppliers')}</p>
                 </div>
               </div>
             </CardContent>
@@ -254,7 +248,7 @@ export default function PartiesPage() {
                     title={isBangla ? 'কোনো পার্টি নেই' : 'No parties found'}
                     description={isBangla ? 'নতুন পার্টি যোগ করুন' : 'Add your first party'}
                     action={{
-                      label: t('parties?.addParty'),
+                      label: t('parties.addParty'),
                       onClick: () => router.push('/parties/new'),
                       icon: Plus,
                     }}

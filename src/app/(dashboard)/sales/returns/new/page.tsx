@@ -32,9 +32,8 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Plus,
-  Trash2,
   Calendar as CalendarIcon,
   Check,
   X,
@@ -67,8 +66,10 @@ interface ReturnItemRow {
   id: string;
   itemId: string;
   itemName: string;
+  sku?: string;
   batchNo?: string;
   quantity: number;
+  maxQuantity?: number;
   unitPrice: number;
   returnType: string;
   reason: string;
@@ -76,6 +77,7 @@ interface ReturnItemRow {
   searchQuery: string;
   showSuggestions: boolean;
   imageUrl?: string;
+  isSelected?: boolean;
 }
 
 function SalesReturnContent() {
@@ -125,11 +127,6 @@ function SalesReturnContent() {
     : Array.isArray(batchesData)
     ? batchesData
     : [];
-
-  const getItemBatches = (itemId: string) => {
-    if (!itemId || !Array.isArray(batches)) return [];
-    return batches.filter((b: any) => b.itemId === itemId);
-  };
 
   // Return Form Header Details
   const [returnNo, setReturnNo] = useState("RET-101");
@@ -193,11 +190,13 @@ function SalesReturnContent() {
       }
       if (sale.items && sale.items.length > 0) {
         const prefilledRows: ReturnItemRow[] = sale.items.map((it: any) => ({
-          id: Math.random().toString(),
-          itemId: it.itemId || it.item?.id || "",
+          id: it.id || Math.random().toString(),
+          itemId: it.id || it.itemId || it.item?.id || "",
           itemName: it.itemName || it.item?.name || "",
+          sku: it.item?.sku || it.sku || "—",
           batchNo: it.batchNo || "",
           quantity: it.quantity || 1,
+          maxQuantity: it.quantity || 1,
           unitPrice: it.unitPrice || 0,
           returnType: "refund",
           reason: "defective",
@@ -205,6 +204,7 @@ function SalesReturnContent() {
           searchQuery: "",
           showSuggestions: false,
           imageUrl: it.item?.imageUrl || "",
+          isSelected: false,
         }));
         setSelectedItems(prefilledRows);
       }
@@ -249,10 +249,10 @@ function SalesReturnContent() {
     return "";
   }, [salesList, selectedSaleId, singleSaleData]);
 
-  // Total Refund calculation
+  // Total Refund calculation based only on selected items
   const subtotalRefund = useMemo(() => {
     return selectedItems.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
+      (sum, item) => sum + (item.isSelected ? item.quantity * item.unitPrice : 0),
       0,
     );
   }, [selectedItems]);
@@ -261,78 +261,32 @@ function SalesReturnContent() {
     return Math.max(0, subtotalRefund);
   }, [subtotalRefund]);
 
-
-  // Remove Item Row
-  const removeItemRow = (id: string) => {
-    if (selectedItems.length === 1) {
-      setSelectedItems([
-        {
-          id: "initial-row",
-          itemId: "",
-          itemName: "",
-          batchNo: "",
-          quantity: 1,
-          unitPrice: 0,
-          returnType: "refund",
-          reason: "defective",
-          total: 0,
-          searchQuery: "",
-          showSuggestions: false,
-          imageUrl: "",
-        },
-      ]);
-      return;
-    }
-    setSelectedItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  // Product Search / Selection Handlers
-  const handleNameChange = (id: string, query: string) => {
+  // Item Selection Toggles
+  const toggleItemSelection = (id: string, isSelected?: boolean) => {
     setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          return {
-            ...item,
-            itemId: "",
-            itemName: "",
-            searchQuery: query,
-            showSuggestions: true,
-            imageUrl: "",
-          };
+          const nextVal = typeof isSelected === "boolean" ? isSelected : !item.isSelected;
+          return { ...item, isSelected: nextVal };
         }
         return item;
       }),
     );
   };
 
-  const handleSelectProduct = (rowId: string, product: any) => {
+  const toggleSelectAll = (checked: boolean) => {
     setSelectedItems((prev) =>
-      prev.map((item) => {
-        if (item.id === rowId) {
-          const qty = item.quantity || 1;
-          const price = product.unitPrice || product.sellingPrice || 0;
-          const name = product.itemName || product.item?.name || product.name || "";
-          return {
-            ...item,
-            itemId: product.itemId || product.id || product.item?.id || "",
-            itemName: name,
-            searchQuery: "",
-            unitPrice: price,
-            total: qty * price,
-            showSuggestions: false,
-            imageUrl: product.imageUrl || product.item?.imageUrl || "",
-          };
-        }
-        return item;
-      }),
+      prev.map((item) => ({ ...item, isSelected: checked })),
     );
   };
 
-  const handleQuantityChange = (id: string, val: string) => {
-    const qty = Math.max(1, parseInt(val) || 1);
+  const handleQuantityChange = (id: string, val: number | string) => {
+    const parsed = typeof val === "string" ? parseInt(val) || 0 : val;
     setSelectedItems((prev) =>
       prev.map((item) => {
         if (item.id === id) {
+          const max = item.maxQuantity !== undefined ? item.maxQuantity : 999999;
+          const qty = Math.max(0, Math.min(max, parsed));
           return {
             ...item,
             quantity: qty,
@@ -382,39 +336,26 @@ function SalesReturnContent() {
     );
   };
 
-  const getFilteredProducts = (query: string) => {
-    if (!query) return invoiceItems;
-    return invoiceItems.filter(
-      (it: any) =>
-        (it.itemName || it.item?.name || "")
-          .toLowerCase()
-          .includes(query.toLowerCase()) ||
-        (it.item?.sku || "").toLowerCase().includes(query.toLowerCase()),
-    );
-  };
-
   // Submit Sales Return Form
   const handleSubmit = async () => {
     const validItems = selectedItems.filter(
-      (i) => i.itemId !== "" && i.quantity > 0,
+      (i) => i.isSelected && i.itemId !== "" && i.quantity > 0,
     );
     if (validItems.length === 0) {
       toast.error(
         isBangla
-          ? "অন্তত একটি ফেরতযোগ্য পণ্য যোগ করুন"
-          : "Add at least one return item",
+          ? "অনুগ্রহ করে অন্তত একটি ফেরতযোগ্য পণ্য নির্বাচন করুন"
+          : "Please select at least one return item",
       );
       return;
     }
 
     const payload = {
-      partyId: selectedPartyId || undefined,
+      // partyId: selectedPartyId || undefined,
       saleId: selectedSaleId || undefined,
       items: validItems.map((item) => ({
-        itemId: item.itemId,
-        itemName: item.itemName,
+        saleItemId: item.itemId,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
         returnType: item.returnType || "refund",
         reason: item.reason || overallReason || undefined,
       })),
@@ -689,236 +630,200 @@ function SalesReturnContent() {
               </div>
             )}
 
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">
+                {isBangla ? "ফেরতযোগ্য পণ্য তালিকা" : "Returnable Items Details"}
+              </span>
+            </div>
+
             <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="px-3 py-3 w-[4%] text-xs font-semibold uppercase">
-                    {isBangla ? "ক্রম" : "S.N."}
+              <TableHeader className="bg-muted/20">
+                <TableRow className="border-b border-border/80 text-muted-foreground font-semibold">
+                  <TableHead className="px-4 py-3 text-xs font-semibold">
+                    {isBangla ? "আইটেম বিবরণ" : "Item & SKU"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[34%] text-xs font-semibold uppercase">
-                    {isBangla ? "পণ্য" : "Product"}
+                  <TableHead className="px-3 py-3 text-right text-xs font-semibold">
+                    {isBangla ? "বিক্রয় মূল্য" : "Selling Price"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[10%] text-xs font-semibold uppercase">
-                    {isBangla ? "পরিমাণ" : "Qty"}
+                  <TableHead className="px-3 py-3 text-center text-xs font-semibold">
+                    {isBangla ? "বিক্রয় পরিমাণ" : "Sold Qty"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[11%] text-xs font-semibold uppercase">
-                    {isBangla ? "দর" : "Rate"}
+                  <TableHead className="px-4 py-3 text-center w-28 text-xs font-semibold">
+                    {isBangla ? "ফেরত পরিমাণ *" : "Return Qty *"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[15%] text-xs font-semibold uppercase">
-                    {isBangla ? "ফেরতের ধরন" : "Return Type"}
+                  <TableHead className="px-3 py-3 text-xs font-semibold">
+                    {isBangla ? "ফেরত টাইপ" : "Return Type"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[15%] text-xs font-semibold uppercase">
-                    {isBangla ? "ফেরত কারণ" : "Return Reason"}
+                  <TableHead className="px-3 py-3 text-xs font-semibold">
+                    {isBangla ? "কারণ" : "Reason"}
                   </TableHead>
-                  <TableHead className="px-3 py-3 w-[10%] text-right text-xs font-semibold uppercase">
-                    {isBangla ? "মোট রিফান্ড" : "Total"}
+                  <TableHead className="px-3 py-3 text-right text-xs font-semibold">
+                    {isBangla ? "মোট" : "Total"}
                   </TableHead>
-                  <TableHead className="px-2 py-3 w-[4%]" />
+                  <TableHead className="px-4 py-3 text-right w-12">
+                    <div className="inline-flex items-center justify-center">
+                      <Checkbox
+                        checked={
+                          selectedItems.length > 0 &&
+                          selectedItems.every((i) => i.isSelected)
+                        }
+                        onCheckedChange={(checked) =>
+                          toggleSelectAll(!!checked)
+                        }
+                        className="h-[18px] w-[18px] border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                    </div>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-border">
-                {selectedItems.map((item, idx) => (
+              <TableBody className="divide-y divide-border/60">
+                {selectedItems.map((item) => (
                   <TableRow
                     key={item.id}
-                    className="hover:bg-muted/10 transition-colors"
+                    className={cn(
+                      "hover:bg-muted/20 transition-colors cursor-pointer",
+                      item.isSelected ? "bg-primary/5 dark:bg-primary/10" : ""
+                    )}
+                    onClick={() => toggleItemSelection(item.id)}
                   >
-                    {/* S.N. */}
-                    <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
-                      {idx + 1}
+                    {/* Item & SKU */}
+                    <TableCell className="px-4 py-3.5 align-middle">
+                      <p className="font-semibold text-foreground text-xs leading-tight">
+                        {item.itemName || (isBangla ? "পণ্য নির্বাচন করুন" : "Select Product")}
+                      </p>
+                      {item.sku && item.sku !== "—" && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          SKU: {item.sku}
+                        </p>
+                      )}
                     </TableCell>
 
-                    {/* Product Name / Search */}
-                    <TableCell className="px-4 py-3 align-middle relative">
-                      <Popover open={item.showSuggestions}>
-                        <PopoverAnchor asChild>
-                          <div className="w-full">
-                            <Input
-                              value={
-                                item.showSuggestions
-                                  ? item.searchQuery || ""
-                                  : item.itemName
-                              }
-                              placeholder={
-                                isBangla ? "পণ্য খুঁজুন..." : "Search item..."
-                              }
-                              className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 w-full font-medium"
-                              onFocus={() => {
-                                setSelectedItems((prev) =>
-                                  prev.map((i) =>
-                                    i.id === item.id
-                                      ? {
-                                          ...i,
-                                          searchQuery: i.itemName,
-                                          showSuggestions: true,
-                                        }
-                                      : i,
-                                  ),
-                                );
-                              }}
-                              onChange={(e) =>
-                                handleNameChange(item.id, e.target.value)
-                              }
-                            />
-                          </div>
-                        </PopoverAnchor>
+                    {/* Unit Price */}
+                    <TableCell className="px-3 py-3.5 align-middle text-right font-medium text-foreground text-xs">
+                      {formatCurrency(item.unitPrice)}
+                    </TableCell>
 
-                        <PopoverContent
-                          className="w-[360px] p-0 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border z-50 text-foreground"
-                          align="start"
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                          onCloseAutoFocus={(e) => e.preventDefault()}
+                    {/* Sold Quantity */}
+                    <TableCell className="px-3 py-3.5 align-middle text-center text-muted-foreground font-medium text-xs">
+                      {item.maxQuantity ?? item.quantity ?? 1}
+                    </TableCell>
+
+                    {/* Return Quantity with Stepper */}
+                    <TableCell className="px-4 py-3.5 align-middle" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center border border-input rounded bg-background/50 h-8 w-24 mx-auto">
+                        <button
+                          type="button"
+                          disabled={(item.quantity || 0) <= 0}
+                          onClick={() => handleQuantityChange(item.id, (item.quantity || 0) - 1)}
+                          className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                         >
-                          {getFilteredProducts(item.searchQuery || "")
-                            .length === 0 ? (
-                            <div className="p-3 text-center text-sm text-muted-foreground">
-                              {isBangla
-                                ? "ইনভয়েসে কোনো পণ্য পাওয়া যায়নি"
-                                : "No items found in invoice"}
-                            </div>
-                          ) : (
-                            getFilteredProducts(item.searchQuery || "").map(
-                              (product: any) => (
-                                <button
-                                  key={product.id || product.itemId}
-                                  type="button"
-                                  className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleSelectProduct(item.id, product);
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                                      <FileText className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="font-semibold text-foreground truncate text-xs">
-                                        {product.itemName || product.item?.name || product.name}
-                                      </p>
-                                      <p className="text-[10px] text-muted-foreground truncate">
-                                        Sold Qty: {product.quantity ?? 1}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <span className="font-bold text-xs text-primary shrink-0">
-                                    {formatCurrency(product.unitPrice || product.sellingPrice || 0)}
-                                  </span>
-                                </button>
-                              ),
-                            )
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-
-                    {/* Quantity */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleQuantityChange(item.id, e.target.value)
-                        }
-                        className="h-8 w-20 text-center font-semibold bg-background/50 border-input"
-                      />
-                    </TableCell>
-
-                    {/* Rate */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.unitPrice}
-                        onChange={(e) =>
-                          handleRateChange(item.id, e.target.value)
-                        }
-                        className="h-8 w-24 font-medium bg-background/50 border-input"
-                      />
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={item.maxQuantity}
+                          value={item.quantity || 0}
+                          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                          className="w-full text-center h-full bg-transparent outline-none border-none text-xs font-semibold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={item.maxQuantity !== undefined && (item.quantity || 0) >= item.maxQuantity}
+                          onClick={() => handleQuantityChange(item.id, (item.quantity || 0) + 1)}
+                          className="h-full px-2 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
                     </TableCell>
 
                     {/* Return Type */}
-                    <TableCell className="px-3 py-3 align-middle">
+                    <TableCell className="px-3 py-3.5 align-middle" onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={item.returnType || "refund"}
-                        onValueChange={(val) =>
-                          handleItemReturnTypeChange(item.id, val)
-                        }
+                        onValueChange={(val) => handleItemReturnTypeChange(item.id, val)}
                       >
-                        <SelectTrigger className="h-8 text-xs bg-background/50 border-input">
+                        <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="refund">
+                          <SelectItem value="refund" className="text-xs">
                             {isBangla ? "রিফান্ড" : "Refund"}
                           </SelectItem>
-                          <SelectItem value="exchange">
-                            {isBangla ? "বিনিময়" : "Exchange / Replace"}
+                          <SelectItem value="exchange" className="text-xs">
+                            {isBangla ? "বিনিময়" : "Exchange"}
                           </SelectItem>
-                          <SelectItem value="restock">
+                          <SelectItem value="restock" className="text-xs">
                             {isBangla ? "স্টকে ফেরত" : "Return to Stock"}
                           </SelectItem>
-                          <SelectItem value="damage">
-                            {isBangla ? "ড্যামেজ" : "Damaged / Scrap"}
+                          <SelectItem value="damage" className="text-xs">
+                            {isBangla ? "ড্যামেজ" : "Damaged"}
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
 
-                    {/* Item Reason */}
-                    <TableCell className="px-3 py-3 align-middle">
+                    {/* Return Reason */}
+                    <TableCell className="px-3 py-3.5 align-middle" onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={item.reason || "defective"}
-                        onValueChange={(val) =>
-                          handleItemReasonChange(item.id, val)
-                        }
+                        onValueChange={(val) => handleItemReasonChange(item.id, val)}
                       >
-                        <SelectTrigger className="h-8 text-xs bg-background/50 border-input">
-                          <SelectValue />
+                        <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
+                          <SelectValue placeholder={isBangla ? "কারণ বলুন" : "Reason"} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="defective">
-                            {isBangla
-                              ? "ত্রুটিপূর্ণ / ড্যামেজ"
-                              : "Defective / Damaged"}
+                          <SelectItem value="defective" className="text-xs">
+                            {isBangla ? "ত্রুটিপূর্ণ / ড্যামেজ" : "Defective / Damaged"}
                           </SelectItem>
-                          <SelectItem value="expired">
+                          <SelectItem value="expired" className="text-xs">
                             {isBangla ? "মেয়াদোত্তীর্ণ" : "Expired"}
                           </SelectItem>
-                          <SelectItem value="wrong_item">
+                          <SelectItem value="wrong_item" className="text-xs">
                             {isBangla ? "ভুল পণ্য" : "Wrong Item"}
                           </SelectItem>
-                          <SelectItem value="not_satisfied">
-                            {isBangla
-                              ? "গ্রাহক অসন্তুষ্ট"
-                              : "Customer Dissatisfied"}
+                          <SelectItem value="not_satisfied" className="text-xs">
+                            {isBangla ? "গ্রাহক অসন্তুষ্ট" : "Not Satisfied"}
                           </SelectItem>
-                          <SelectItem value="other">
+                          <SelectItem value="other" className="text-xs">
                             {isBangla ? "অন্যান্য" : "Other"}
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
 
-                    {/* Line Total */}
-                    <TableCell className="px-4 py-3 align-middle text-right font-bold text-slate-100">
-                      {formatCurrency(item.total)}
+                    {/* Total Refund for line */}
+                    <TableCell className="px-3 py-3.5 align-middle text-right font-bold text-foreground text-xs">
+                      {formatCurrency(item.quantity * item.unitPrice)}
                     </TableCell>
 
-                    {/* Remove Row */}
-                    <TableCell className="px-4 py-3 align-middle text-right">
-                      <button
-                        type="button"
-                        onClick={() => removeItemRow(item.id)}
-                        className="text-muted-foreground hover:text-rose-500 p-1.5 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    {/* Select Checkbox */}
+                    <TableCell className="px-4 py-3.5 align-middle text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-flex items-center justify-center">
+                        <Checkbox
+                          checked={item.isSelected}
+                          onCheckedChange={(checked) => toggleItemSelection(item.id, !!checked)}
+                          className="h-[18px] w-[18px] border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+
+            {/* Bottom summary bar */}
+            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/10 border-t border-border">
+              <div className="flex items-center gap-4">
+                <span className="text-muted-foreground font-semibold text-xs">
+                  {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
+                </span>
+                <span className="font-bold text-foreground text-sm">
+                  {formatCurrency(subtotalRefund)}
+                </span>
+              </div>
+            </div>
 
             
           </div>
@@ -1005,7 +910,7 @@ function SalesReturnContent() {
               <div className="flex justify-between text-muted-foreground">
                 <span>{isBangla ? "মোট ফেরত পণ্য" : "Total Return Items"}</span>
                 <span className="font-semibold text-foreground">
-                  {selectedItems.filter((i) => i.itemId).length}
+                  {selectedItems.filter((i) => i.isSelected && i.itemId).length}
                 </span>
               </div>
 

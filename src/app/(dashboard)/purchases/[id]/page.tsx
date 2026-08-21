@@ -83,8 +83,14 @@ function PurchaseDetailsContent() {
               {isBangla ? "ক্রয়ের তারিখ" : "Purchase Date"}
             </Label>
             <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center justify-between px-3.5">
-              <span className="text-white font-semibold text-xs">{purchaseData?.purchaseDate && format(parseISO(purchaseData?.purchaseDate), "dd MMM yyyy")
-}</span>
+              <span className="text-white font-semibold text-xs">
+                {(() => {
+                  const dateStr = purchaseData?.purchaseDate || purchaseData?.createdAt;
+                  if (!dateStr) return "—";
+                  const parsed = new Date(dateStr);
+                  return !isNaN(parsed.getTime()) ? format(parsed, "dd MMM yyyy") : "—";
+                })()}
+              </span>
               <CalendarIcon className="h-3.5 w-3.5 text-white/40 shrink-0" />
             </div>
           </div>
@@ -155,7 +161,8 @@ function PurchaseDetailsContent() {
                         ? rawItem.unit?.symbol || rawItem.unit?.name || "Pcs"
                         : rawItem.item?.unit || rawItem.unit || "Pcs";
                       const batchNo = rawItem.batch?.batchNo || "—";
-                      const expiryDate = rawItem.batch?.expiryDate || "—";
+                      const rawExpiry = rawItem.batch?.expiryDate || rawItem.expiryDate;
+                      const isValidExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime());
 
                       return (
                       <Fragment key={itemId}>
@@ -219,7 +226,7 @@ function PurchaseDetailsContent() {
 
                           {/* Expiry Date */}
                           <td className="px-3 py-3 align-middle text-center text-xs text-muted-foreground font-medium">
-                            {expiryDate ? format(new Date(expiryDate), "dd MMM yyyy") : "—"}
+                            {isValidExpiry ? format(new Date(rawExpiry), "dd MMM yyyy") : "—"}
                           </td>
 
                           {/* Stock */}

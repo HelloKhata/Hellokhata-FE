@@ -115,52 +115,67 @@ function NewPurchaseReturnContent() {
 
   // Search queries for supplier, invoice, product search
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
-  const [showInvoiceSuggestions,setShowInvoiceSuggestions] = useState(false);
- 
-  useEffect(() => {
-      if (!purchase) {
-        setPurchasedItems([])
-      return
-    }
+  const [showInvoiceSuggestions, setShowInvoiceSuggestions] = useState(false);
 
-    console.log('purchase',purchase)
-      const initialItems: ReturnItemRow[] = purchase.items.map((item: any) => ({
-        id: item?.id,
-        purchaseItemId: item?.id,
-        itemId: item?.productId || item?.itemId || item?.id,
-        itemName: item?.itemName || item?.name || "",
-        sku: item?.sku || "—",
-        batchNo: item?.batchNo || item?.batchNumber || "",
-        batchId: item?.batchId || item?.batchNo || undefined,
-        quantity: item?.remainingQuantity ?? item?.quantity ?? 1,
-        maxQuantity: item?.quantity ?? item?.remainingQuantity ?? 1,
-        remainingQuantity: item?.remainingQuantity ?? item?.quantity ?? 1,
-        unitCost: item?.unitCost ?? item?.rate ?? 0,
-        taxPercent: item?.taxPercent ?? item?.taxRate ?? item?.tax ?? 0,
-        unit: typeof item?.unit === "object"
-          ? item?.unit?.symbol || item?.unit?.name || "pcs"
-          : typeof item?.item?.unit === "object"
-          ? item?.item?.unit?.symbol || item?.item?.unit?.name || "pcs"
-          : item?.unit || item?.item?.unit || "pcs",
-        returnType: "refund",
-        reason: "damaged",
-        total: (item?.remainingQuantity ?? item?.quantity ?? 1) * (item?.unitCost ?? item?.rate ?? 0),
-        searchQuery: "",
-        showSuggestions: false,
-        imageUrl: item?.imageUrl || "",
-        isSelected: false,
-      }));
-      setPurchasedItems(initialItems);
-    
-  }, [purchase]);
-
-  console.log('purchasedItems',purchasedItems)
   const { data: singleSupplierData } = useParty(selectedSupplierId, {
     enabled: !!selectedSupplierId,
   });
 
-  const { data: purchaseData = [] } = useGetPurchases({search:invoiceSearchQuery});
-  const { data: singlePurchaseData } = useGetPurchaseById(selectedPurchaseId);
+  const { data: purchaseData = [] } = useGetPurchases({ search: invoiceSearchQuery });
+  const { data: singlePurchaseData, isLoading: isPurchaseLoading } = useGetPurchaseById(selectedPurchaseId);
+
+  // Sync purchaseIdParam if search params change
+  useEffect(() => {
+    if (purchaseIdParam && purchaseIdParam !== selectedPurchaseId) {
+      setSelectedPurchaseId(purchaseIdParam);
+    }
+  }, [purchaseIdParam]);
+
+  // Set purchase state when singlePurchaseData is fetched
+  useEffect(() => {
+    if (singlePurchaseData) {
+      setPurchase(singlePurchaseData);
+      setSelectedSupplierId(singlePurchaseData.supplierId || singlePurchaseData.supplier?.id || "");
+      setInvoiceSearchQuery(singlePurchaseData.grnNo || singlePurchaseData.invoiceNo || "");
+    }
+  }, [singlePurchaseData]);
+ 
+  useEffect(() => {
+    if (!purchase) {
+      setPurchasedItems([]);
+      return;
+    }
+
+    const items = purchase.items || purchase.purchaseItems || [];
+    const initialItems: ReturnItemRow[] = items.map((item: any) => ({
+      id: item?.id,
+      purchaseItemId: item?.id,
+      itemId: item?.productId || item?.itemId || item?.item?.id || item?.id,
+      itemName: item?.itemName || item?.item?.name || item?.name || "",
+      sku: item?.sku || item?.item?.sku || "—",
+      batchNo: item?.batchNo || item?.batchNumber || item?.batch?.batchNo || "",
+      batchId: item?.batchId || item?.batchNo || item?.batch?.id || undefined,
+      quantity: item?.remainingQuantity ?? item?.quantity ?? 1,
+      maxQuantity: item?.quantity ?? item?.remainingQuantity ?? 1,
+      remainingQuantity: item?.remainingQuantity ?? item?.quantity ?? 1,
+      unitCost: item?.unitCost ?? item?.rate ?? 0,
+      taxPercent: item?.taxPercent ?? item?.taxRate ?? item?.tax ?? 0,
+      unit: typeof item?.unit === "object"
+        ? item?.unit?.symbol || item?.unit?.name || "pcs"
+        : typeof item?.item?.unit === "object"
+        ? item?.item?.unit?.symbol || item?.item?.unit?.name || "pcs"
+        : item?.unit || item?.item?.unit || "pcs",
+      returnType: "refund",
+      reason: "damaged",
+      total: (item?.remainingQuantity ?? item?.quantity ?? 1) * (item?.unitCost ?? item?.rate ?? 0),
+      searchQuery: "",
+      showSuggestions: false,
+      imageUrl: item?.imageUrl || item?.item?.imageUrl || "",
+      isSelected: false,
+    }));
+    setPurchasedItems(initialItems);
+  }, [purchase]);
+
   const [returnNo, setReturnNo] = useState("");
 
   const [returnDate, setReturnDate] = useState<Date>(new Date());
@@ -168,7 +183,6 @@ function NewPurchaseReturnContent() {
   const [referenceNo, setReferenceNo] = useState("");
   const [returnStatus, setReturnStatus] = useState<"draft" | "pending" | "approved" | "completed" | "cancelled">("completed");
 
-  
   const { data: paymentMethods = [] } = useGetPaymentMethods();
   const accounts = useMemo(() => {
     return paymentMethods.map((pm: any) => ({
@@ -481,7 +495,11 @@ function NewPurchaseReturnContent() {
                 }
                 className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1 text-sm font-medium w-full"
               />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {isPurchaseLoading ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
+              ) : (
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              )}
 
               {showInvoiceSuggestions && (
                 <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border">
@@ -543,7 +561,7 @@ function NewPurchaseReturnContent() {
                   readOnly
                   disabled
                   value={
-                    purchase?.supplier?.name  || purchase?.name || "—"
+                    purchase?.supplier?.name || purchase?.supplierName || purchase?.party?.name || purchase?.name || "—"
                   }
                   placeholder={isBangla ? "ইনভয়েস নির্বাচন করুন" : "Select invoice"}
                   className="h-11 bg-muted/40 border-input text-sm font-bold text-foreground cursor-not-allowed disabled:opacity-80"
@@ -559,7 +577,9 @@ function NewPurchaseReturnContent() {
                   readOnly
                   disabled
                   value={
-                    purchase?.createdAt
+                    purchase?.purchaseDate && !isNaN(new Date(purchase.purchaseDate).getTime())
+                      ? format(new Date(purchase.purchaseDate), "dd MMM yyyy")
+                      : purchase?.createdAt && !isNaN(new Date(purchase.createdAt).getTime())
                       ? format(new Date(purchase.createdAt), "dd MMM yyyy")
                       : ""
                   }
@@ -602,13 +622,27 @@ function NewPurchaseReturnContent() {
       {!purchase ? (
         <div className="bg-card/50 border border-dashed border-border rounded-xl p-12 text-center space-y-3">
           <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-            <Receipt className="h-6 w-6" />
+            {isPurchaseLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <Receipt className="h-6 w-6" />
+            )}
           </div>
           <h3 className="text-base font-semibold text-foreground">
-            {isBangla ? "কোনো ক্রয় ইনভয়েস নির্বাচন করা হয়নি" : "No Purchase Invoice Selected"}
+            {isPurchaseLoading
+              ? isBangla
+                ? "ক্রয় তথ্য লোড হচ্ছে..."
+                : "Loading Purchase Invoice..."
+              : isBangla
+              ? "কোনো ক্রয় ইনভয়েস নির্বাচন করা হয়নি"
+              : "No Purchase Invoice Selected"}
           </h3>
           <p className="text-xs text-muted-foreground mx-auto">
-            {isBangla
+            {isPurchaseLoading
+              ? isBangla
+                ? "অনুগ্রহ করে অপেক্ষা করুন, ক্রয়ের বিবরণ সংগ্রহ করা হচ্ছে।"
+                : "Please wait while fetching the purchase invoice details."
+              : isBangla
               ? "ক্রয় ফেরত প্রক্রিয়া শুরু করতে উপরে যেকোনো মূল ক্রয় ইনভয়েস সার্চ করে সিলেক্ট করুন।"
               : "Please search and select an original purchase invoice above to view purchase details, product info, and process return items."}
           </p>
