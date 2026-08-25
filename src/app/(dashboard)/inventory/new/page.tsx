@@ -17,6 +17,7 @@ import { useGetUnits } from "@/hooks/api/useUnits";
 import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
 import { useCreateItem } from "@/hooks/api/useItems";
 import { useRouter } from "next/navigation";
+import { useGetMasterItems } from "@/hooks/api/useMasterItems";
 
 export default function AddProductPage() {
   // Form State matching API JSON schema
@@ -53,15 +54,85 @@ export default function AddProductPage() {
 
   const [incomeRevenueAccount, setIncomeRevenueAccount] = useState("Sales Revenue");
   const [showAdvancePricing, setShowAdvancePricing] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // fetch api's and get tax categories, units and others 
+  const { data: masterItemsData } = useGetMasterItems(name);
+  const masterItems = masterItemsData?.items;
+  console.log('masterItems',masterItems)
   const { data: taxCategories } = useGetTaxCategories();
   const { data: units } = useGetUnits();
   const { data: itemCategories } = useGetItemsCategories();
-  const {mutate:saveProduct,isPending:isSaving} = useCreateItem();
+  const { mutate: saveProduct, isPending: isSaving } = useCreateItem();
 
+  const handleSelectMasterItem = (item: any) => {
+    if (!item) return;
 
+    if (item.name) setName(item.name);
+    if (item.sku) setSku(item.sku);
+    if (item.barcode) setBarcode(item.barcode);
+    if (item.brand) setBrand(item.brand);
+    if (item.description) setDescription(item.description);
+
+    if (item.costPrice !== undefined && item.costPrice !== null) {
+      setCostPrice(Number(item.costPrice));
+    }
+    if (item.sellingPrice !== undefined && item.sellingPrice !== null) {
+      setSellingPrice(Number(item.sellingPrice));
+    }
+    if (item.productType) {
+      setProductType(item.productType);
+    }
+    if (item.image || item.imageUrl) {
+      setImageUrl(item.image || item.imageUrl);
+    }
+
+    // Match Category
+    if (item.category || item.categoryId) {
+      const catVal = item.category || item.categoryId;
+      const foundCategory = itemCategories?.find(
+        (cat: any) =>
+          cat.id === catVal ||
+          cat.name?.toLowerCase() === (typeof catVal === "string" ? catVal : catVal?.name || "").toLowerCase()
+      );
+      if (foundCategory) {
+        setCategoryId(foundCategory.id);
+      } else if (typeof catVal === "string") {
+        setCategoryId(catVal);
+      }
+    }
+
+    // Match Unit
+    if (item.unit || item.unitId) {
+      const unitVal = item.unit || item.unitId;
+      const foundUnit = units?.find(
+        (u: any) =>
+          u.id === unitVal ||
+          u.name?.toLowerCase() === (typeof unitVal === "string" ? unitVal : unitVal?.name || "").toLowerCase()
+      );
+      if (foundUnit) {
+        setUnitId(foundUnit.id);
+      } else if (typeof unitVal === "string") {
+        setUnitId(unitVal);
+      }
+    }
+
+    // Clear validation errors for filled fields
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated.name;
+      delete updated.unitId;
+      delete updated.costPrice;
+      delete updated.sellingPrice;
+      return updated;
+    });
+
+    setShowSuggestions(false);
+  };
+ 
+  
+  
   // router 
   const router = useRouter()
   // Show date fields when batch tracking, expiry tracking is on and current stock has value
@@ -82,11 +153,6 @@ export default function AddProductPage() {
   const generateSku = () => {
     const randomSku = `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
     setSku(randomSku);
-  };
-
-  const generateBarcode = () => {
-    const randomBarcode = `890${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-    setBarcode(randomBarcode);
   };
 
   const validateForm = () => {
@@ -213,8 +279,8 @@ export default function AddProductPage() {
               </div>
 
               <div className="space-y-3.5">
-                {/* Prominent Product Name Field */}
-                <div>
+                {/* Prominent Product Name Field with Master Items Suggestion */}
+                <div className="relative">
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     Product Name <span className="text-primary">*</span>
                   </label>
@@ -223,9 +289,11 @@ export default function AddProductPage() {
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
+                      setShowSuggestions(true);
                       if (errors.name)
                         setErrors((prev) => ({ ...prev, name: "" }));
                     }}
+                    onFocus={() => setShowSuggestions(true)}
                     placeholder="e.g. Premium Jasmine Rice 5kg"
                     className={`w-full bg-slate-900/90 border ${
                       errors.name ? "border-red-500" : "border-slate-800"
@@ -235,6 +303,72 @@ export default function AddProductPage() {
                     <p className="text-red-500 text-[11px] mt-1">
                       {errors.name}
                     </p>
+                  )}
+
+                  {/* Master Items Suggestion Dropdown */}
+                  {showSuggestions && name.trim().length > 0 && Array.isArray(masterItems) && masterItems.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 top-full mt-1.5 bg-[#161a29] border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto backdrop-blur-md divide-y divide-slate-800/70">
+                      <div className="px-3 py-1.5 bg-slate-900/90 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                        <span className="text-primary font-medium">Suggestions from Master Items</span>
+                        <span>{masterItems.length} found</span>
+                      </div>
+                      {masterItems.map((item: any) => {
+                        const categoryName =
+                          typeof item.category === "object"
+                            ? item.category?.name
+                            : item.category ||
+                              itemCategories?.find((c: any) => c.id === item.categoryId)?.name ||
+                              "";
+                        const unitName =
+                          typeof item.unit === "object"
+                            ? item.unit?.name
+                            : item.unit ||
+                              units?.find((u: any) => u.id === item.unitId)?.name ||
+                              "";
+
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectMasterItem(item);
+                            }}
+                            className="w-full text-left p-3 hover:bg-primary/10 hover:border-l-2 hover:border-l-primary transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-100 group-hover:text-primary transition-colors truncate">
+                                {item.name} {item.nameBn ? `(${item.nameBn})` : ""}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-400">
+                                {categoryName && (
+                                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">
+                                    {categoryName}
+                                  </span>
+                                )}
+                                {unitName && <span>Unit: {unitName}</span>}
+                                {item.barcode && <span>• Barcode: {item.barcode}</span>}
+                                {item.sku && <span>• SKU: {item.sku}</span>}
+                                {item.brand && <span>• Brand: {item.brand}</span>}
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              {item.sellingPrice !== undefined && item.sellingPrice !== null && (
+                                <div className="text-xs font-bold font-mono text-primary">
+                                  ${Number(item.sellingPrice).toFixed(2)}
+                                </div>
+                              )}
+                              {item.costPrice !== undefined && item.costPrice !== null && (
+                                <div className="text-[10px] font-mono text-slate-500">
+                                  Cost: ${Number(item.costPrice).toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 

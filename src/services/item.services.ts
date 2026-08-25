@@ -28,6 +28,10 @@ export const getSingleItem = async (id: string) => {
   return res.data;
 };
 
+export const getItemBatches = async(id:string)=>{
+  const res = await client.get(`/api/items/${id}/batches`);
+  return res.data;
+}
 export const updateItem = async (item: any) => {
   const res = await client.patch(`/api/items/${item.id}`, item.data);
   return res.data;

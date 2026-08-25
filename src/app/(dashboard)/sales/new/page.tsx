@@ -14,7 +14,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  PopoverAnchor,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -43,13 +42,11 @@ import {
   Banknote,
   CreditCard,
   Smartphone,
-  Plus,
   Trash2,
   Calendar as CalendarIcon,
   Check,
   X,
   ArrowLeft,
-  Camera,
   Users,
   Loader2,
   Pencil,
@@ -57,14 +54,14 @@ import {
   Gift,
   Search,
   Phone,
+  Package,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useGetItems } from "@/hooks/api/useItems";
-import { useParties, useParty } from "@/hooks/api/useParties";
-import { useGetBatches } from "@/hooks/api/useBatches";
+import { useGetItemBatches, useGetItems } from "@/hooks/api/useItems";
+import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
 import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
@@ -123,125 +120,35 @@ function NewSaleContent() {
   const [debouncedPartySearchQuery, setDebouncedPartySearchQuery] =
     useState("");
 
+  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
+  const [showPartyNameSuggestions, setShowPartyNameSuggestions] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
+  const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
+
+    // Form State
+  const [selectedParty, setSelectedParty] = useState<any>(null);
+  const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
+
   // Debounce party search query
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedPartySearchQuery(partySearchQuery);
+      setDebouncedPartySearchQuery(partySearchQuery || phoneSearchQuery);
     }, 300);
     return () => clearTimeout(timer);
-  }, [partySearchQuery]);
+  }, [partySearchQuery, phoneSearchQuery]);
 
-  const { data: itemsData } = useGetItems({ page: 1, limit: 100 });
-  const items = itemsData?.data || [];
-  const { data: partiesData } = useParties();
-  const parties = partiesData?.data || [];
 
-  const { data: batchesData } = useGetBatches({ status: "active", limit: 1000 });
-  const batches = batchesData || [];
 
-  // Fetch active offers for auto-detection
-  const { data: offersData } = useGetOffers({ status: "active" });
-  const activeOffers: Offer[] = offersData?.data || [];
+  // Batch selection in search suggestion dropdown
+  const [selectedProductForBatch, setSelectedProductForBatch] = useState<any>(null);
+  const [loadingBatchProductId, setLoadingBatchProductId] = useState<string | null>(null);
 
-  // Find active offer for a product+batch combination
-  const findActiveOffer = (itemId: string, batchNo?: string): Offer | null => {
-    if (!itemId) return null;
-    const match = activeOffers.find(
-      (o) =>
-        o.productId === itemId &&
-        o.status === "active" &&
-        (!o.batchId || !batchNo || o.batchId === batchNo)
-    );
-    return match || null;
-  };
 
-  // Calculate offer for a cart item
-  const calculateOfferForItem = (item: BillingItemRow): POSAppliedOffer | null => {
-    if (!item.itemId || item.quantity <= 0) return null;
-    const offer = findActiveOffer(item.itemId, item.batchNo);
-    if (!offer) return null;
-
-    switch (offer.type) {
-      case 'bogo':
-        return calculateBogoOffer(
-          item.quantity,
-          offer.bogoConfig?.buyQuantity || 1,
-          offer.bogoConfig?.freeQuantity || 1,
-          item.unitPrice
-        );
-      case 'percentage':
-        return calculatePercentageOffer(
-          item.quantity,
-          offer.percentageConfig?.percentage || 0,
-          item.unitPrice
-        );
-      case 'flat':
-        return calculateFlatOffer(
-          item.quantity,
-          offer.flatConfig?.amount || 0,
-          offer.flatConfig?.scope || 'per_unit',
-          item.unitPrice
-        );
-      case 'bundle':
-        return calculateBundleOffer(
-          item.quantity,
-          offer.bundleConfig?.bundleQuantity || 2,
-          offer.bundleConfig?.bundlePrice || 0,
-          item.unitPrice
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getItemBatches = (itemId: string) => {
-    if (!itemId) return [];
-    return batches?.filter((b: any) => b.itemId === itemId);
-  };
-
-  // Form State
-  const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
-
-  // Fetch individual party if selectedPartyId is set
-  const { data: singlePartyData } = useParty(selectedPartyId, {
-    enabled: !!selectedPartyId,
-  });
-  const [showPartySuggestions, setShowPartySuggestions] = useState(false);
-
-  const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [showProductSuggestions, setShowProductSuggestions] = useState(false);
-
-  const [invoiceNo, setInvoiceNo] = useState("8");
-  const [isManualInvoiceNo, setIsManualInvoiceNo] = useState(false);
-  const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
-
-  const { data: paymentMethods = [] } = useGetPaymentMethods();
-  const accounts = useMemo(() => {
-    return paymentMethods.map((pm: any) => ({
-      id: pm.id,
-      name: pm.name || pm.bankName || pm.provider || '',
-      balance: pm.currentBalance || pm.openingBalance || 0,
-      type: pm.type
-    }));
-  }, [paymentMethods]);
-
-  const [notes, setNotes] = useState("");
-
-  // Payment states
-  const [payments, setPayments] = useState<PaymentRow[]>([
-    {
-      id: "pay-initial",
-      method: "cash",
-      accountId: "",
-      reference: "",
-      transactionId: "",
-      receivedBy: "",
-      amount: 0,
-      date: new Date(),
-    },
-  ]);
   const [splitMode, setSplitMode] = useState(false);
   const [activeSplitMethod, setActiveSplitMethod] = useState<string>("cash");
+
+
 
   // New Fields (Tax, VAT, Additional Charge)
   const [taxConfig, setTaxConfig] = useState<{ type: "flat" | "percent"; value: number }>({
@@ -288,13 +195,86 @@ function NewSaleContent() {
     },
   ]);
 
+
+
+    const { data: items } = useGetItems({search: productSearchQuery, page: 1, limit: 100 });
+  const { data: partiesData = [] } = useParties({search:debouncedPartySearchQuery, page: 1, limit: 100});
+  const {data:batchesData, isLoading:isLoadingBatches} = useGetItemBatches(selectedProductForBatch?.id?? '');
+  const batches = batchesData?.batches;
+ const { data: paymentMethods = [] } = useGetPaymentMethods();
+
+ console.log('batches',batches)
+ console.log('items',items?.items)
+  // Fetch active offers for auto-detection
+  const { data: offersData } = useGetOffers({ status: "active" });
+  const activeOffers: Offer[] = offersData?.data || [];
+
+    const parties = useMemo(() => {
+    return Array.isArray(partiesData) ? partiesData : (partiesData as any)?.data || [];
+  }, [partiesData]);
+
+  // Find active offer for a product+batch combination
+  const findActiveOffer = (itemId: string, batchNo?: string): Offer | null => {
+    if (!itemId) return null;
+    const match = activeOffers.find(
+      (o) =>
+        o.productId === itemId &&
+        o.status === "active" &&
+        (!o.batchId || !batchNo || o.batchId === batchNo)
+    );
+    return match || null;
+  };
+
+
+
+ 
+  const accounts = useMemo(() => {
+    return paymentMethods.map((pm: any) => ({
+      id: pm.id,
+      name: pm.name || pm.bankName || pm.provider || '',
+      balance: pm.currentBalance || pm.openingBalance || 0,
+      type: pm.type
+    }));
+  }, [paymentMethods]);
+
+  const [notes, setNotes] = useState("");
+
+  // Payment states
+  const [payments, setPayments] = useState<PaymentRow[]>([
+    {
+      id: "pay-initial",
+      method: "cash",
+      accountId: "",
+      reference: "",
+      transactionId: "",
+      receivedBy: "",
+      amount: 0,
+      date: new Date(),
+    },
+  ]);
+  
+
+  // Handle selecting party
+  const handleSelectParty = (party: any) => {
+    setSelectedParty(party);
+    setSelectedPartyId(party.id);
+    setPartySearchQuery(party.name || "");
+    setPhoneSearchQuery(party.phone || "");
+    setShowPartySuggestions(false);
+    setShowPartyNameSuggestions(false);
+  };
+
   // Handle Customer Phone change with auto-selection
   const handlePhoneChange = (inputVal: string) => {
     setPhoneSearchQuery(inputVal);
     const cleanInput = inputVal.trim().replace(/[\s\-\+\(\)]/g, "");
 
     if (!cleanInput) {
-      setSelectedPartyId("");
+      if (selectedParty) {
+        setSelectedParty(null);
+        setSelectedPartyId("");
+        setPartySearchQuery("");
+      }
       return;
     }
 
@@ -306,77 +286,30 @@ function NewSaleContent() {
     });
 
     if (matched) {
+      setSelectedParty(matched);
       setSelectedPartyId(matched.id);
+      setPartySearchQuery(matched.name || "");
     } else {
-      setSelectedPartyId("");
+      if (selectedParty) {
+        setSelectedParty(null);
+        setSelectedPartyId("");
+      }
     }
   };
 
-  // Auto-match party by phone when parties list finishes loading
-  useEffect(() => {
-    if (!phoneSearchQuery || selectedPartyId) return;
-    const cleanInput = phoneSearchQuery.trim().replace(/[\s\-\+\(\)]/g, "");
-    if (!cleanInput) return;
-
-    const matched = parties.find((p: any) => {
-      if (!p.phone) return false;
-      const cleanPhone = p.phone.trim().replace(/[\s\-\+\(\)]/g, "");
-      return cleanPhone === cleanInput || p.phone.trim() === phoneSearchQuery.trim();
-    });
-
-    if (matched) {
-      setSelectedPartyId(matched.id);
+  // Handle Customer Name change
+  const handlePartyNameChange = (inputVal: string) => {
+    setPartySearchQuery(inputVal);
+    if (selectedParty) {
+      setSelectedParty(null);
+      setSelectedPartyId("");
+      setPhoneSearchQuery("");
     }
-  }, [parties, phoneSearchQuery, selectedPartyId]);
+  };
 
   // Default customer name fallback
-  const defaultCustomerName = isBangla ? "সাধারণ গ্রাহক" : "Walk-in Customer";
-
-  // Parties Filtering
-  const filteredParties = useMemo(() => {
-    const query = (partySearchQuery || phoneSearchQuery).trim().toLowerCase();
-    if (!query) return parties;
-    return parties.filter(
-      (p: any) =>
-        p.name?.toLowerCase().includes(query) ||
-        p.phone?.includes(query),
-    );
-  }, [parties, partySearchQuery, phoneSearchQuery]);
-
-  // Selected Party Name
-  const selectedPartyName = useMemo(() => {
-    const party = parties.find((p: any) => p.id === selectedPartyId);
-    if (party) return party.name;
-    if (singlePartyData?.data && singlePartyData.data.id === selectedPartyId) {
-      return singlePartyData.data.name;
-    }
-    return "";
-  }, [parties, selectedPartyId, singlePartyData]);
-
-  // Selected Party Phone
-  const selectedPartyPhone = useMemo(() => {
-    const party = parties.find((p: any) => p.id === selectedPartyId);
-    if (party) return party.phone || "";
-    if (singlePartyData?.data && singlePartyData.data.id === selectedPartyId) {
-      return singlePartyData.data.phone || "";
-    }
-    return "";
-  }, [parties, selectedPartyId, singlePartyData]);
-
-  // Display Party Name (Auto Walk-in Customer fallback)
-  const displayPartyName = useMemo(() => {
-    if (selectedPartyName) return selectedPartyName;
-    if (partySearchQuery) return partySearchQuery;
-    return defaultCustomerName;
-  }, [selectedPartyName, partySearchQuery, defaultCustomerName]);
-
-  // Display Party Phone
-  const displayPartyPhone = useMemo(() => {
-    if (selectedPartyPhone) return selectedPartyPhone;
-    return phoneSearchQuery;
-  }, [selectedPartyPhone, phoneSearchQuery]);
-
-  // Calculations
+  const defaultCustomerName = isBangla ? "সাধারণ গ্রাহক" : "Walking Customer";
+  // Calculations 
   const rawSubtotal = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
   }, [selectedItems]);
@@ -502,21 +435,26 @@ function NewSaleContent() {
     );
   };
 
-  // Add Item Row
-  // Add Product to Table from top search bar
-  const handleAddProductToTable = (product: any) => {
+  // Add Product to Table with chosen batch
+  const handleSelectBatchAndAdd = (product: any, batch?: any) => {
+    if (!product) return;
+    const batchNo = batch?.batchNumber || batch?.batchNo || batch?.name || "";
+    const price = batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
+    const costPrice = batch?.costPrice || product.costPrice || 0;
+
     setSelectedItems((prev) => {
-      const existingIndex = prev.findIndex((i) => i.itemId === product.id);
+      const existingIndex = prev.findIndex(
+        (item) => item.itemId === product.id && (item.batchNo || "") === batchNo
+      );
 
       if (existingIndex > -1) {
         return prev.map((item, idx) => {
           if (idx === existingIndex) {
             const newQty = item.quantity + 1;
-            const price = item.unitPrice || product.sellingPrice || 0;
             const flatDiscount = item.discountFlat || 0;
             const total = calculateRowTotal(newQty, price, flatDiscount);
 
-            const offer = findActiveOffer(product.id, item.batchNo);
+            const offer = findActiveOffer(product.id, batchNo);
             let appliedOffer: POSAppliedOffer | null = null;
             let chargedQty = newQty;
             let freeQty = 0;
@@ -557,6 +495,7 @@ function NewSaleContent() {
                   break;
               }
               if (appliedOffer) {
+                appliedOffer.offerId = offer.id;
                 chargedQty = appliedOffer.chargedQuantity;
                 freeQty = appliedOffer.freeQuantity;
                 offerSavings = appliedOffer.savings;
@@ -566,6 +505,7 @@ function NewSaleContent() {
             return {
               ...item,
               quantity: newQty,
+              unitPrice: price,
               total,
               appliedOffer,
               chargedQuantity: chargedQty,
@@ -577,8 +517,7 @@ function NewSaleContent() {
         });
       }
 
-      const price = product.sellingPrice || 0;
-      const offer = findActiveOffer(product.id, "");
+      const offer = findActiveOffer(product.id, batchNo);
       let appliedOffer: POSAppliedOffer | null = null;
       let chargedQty = 1;
       let freeQty = 0;
@@ -619,20 +558,21 @@ function NewSaleContent() {
             break;
         }
         if (appliedOffer) {
+          appliedOffer.offerId = offer.id;
           chargedQty = appliedOffer.chargedQuantity;
           freeQty = appliedOffer.freeQuantity;
           offerSavings = appliedOffer.savings;
         }
       }
 
-      const newItemRow = {
+      const newItemRow: BillingItemRow = {
         id: Math.random().toString(),
         itemId: product.id,
         itemName: product.name,
-        batchNo: "",
+        batchNo: batchNo,
         quantity: 1,
         unitPrice: price,
-        costPrice: product.costPrice || 0,
+        costPrice: costPrice,
         discountPercent: 0,
         discountFlat: 0,
         total: price,
@@ -655,31 +595,7 @@ function NewSaleContent() {
 
     setProductSearchQuery("");
     setShowProductSuggestions(false);
-  };
-
-  const addItemRow = () => {
-    setSelectedItems((prev) => [
-      ...prev,
-      {
-        id: Math.random().toString(),
-        itemId: "",
-        itemName: "",
-        batchNo: "",
-        quantity: 1,
-        unitPrice: 0,
-        costPrice: 0,
-        discountPercent: 0,
-        discountFlat: 0,
-        total: 0,
-        searchQuery: "",
-        showSuggestions: false,
-        imageUrl: "",
-        appliedOffer: null,
-        chargedQuantity: 0,
-        freeQuantity: 0,
-        offerSavings: 0,
-      },
-    ]);
+    setSelectedProductForBatch(null);
   };
 
   // Remove Item Row
@@ -718,106 +634,6 @@ function NewSaleContent() {
     flatDiscount: number,
   ) => {
     return Math.max(0, qty * price - flatDiscount);
-  };
-
-  // Handle Name field input (search items)
-  const handleNameChange = (id: string, query: string) => {
-    setSelectedItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            // Clear selected item when user starts typing
-            itemId: "",
-            itemName: "",
-            searchQuery: query,
-            showSuggestions: true,
-            imageUrl: "",
-          };
-        }
-        return item;
-      }),
-    );
-  };
-
-  // Handle product selection from dropdown
-  const handleSelectProduct = (rowId: string, product: any) => {
-    setSelectedItems((prev) =>
-      prev.map((item) => {
-        if (item.id === rowId) {
-          const qty = item.quantity || 1;
-          const price = product.sellingPrice || 0;
-          const flatDiscount = item.discountFlat || 0;
-          const total = calculateRowTotal(qty, price, flatDiscount);
-
-          // Auto-detect offer for this product
-          const offer = findActiveOffer(product.id, item.batchNo);
-          let appliedOffer: POSAppliedOffer | null = null;
-          let chargedQty = qty;
-          let freeQty = 0;
-          let offerSavings = 0;
-
-          if (offer) {
-            switch (offer.type) {
-              case 'bogo':
-                appliedOffer = calculateBogoOffer(
-                  qty,
-                  offer.bogoConfig?.buyQuantity || 1,
-                  offer.bogoConfig?.freeQuantity || 1,
-                  price
-                );
-                break;
-              case 'percentage':
-                appliedOffer = calculatePercentageOffer(
-                  qty,
-                  offer.percentageConfig?.percentage || 0,
-                  price
-                );
-                break;
-              case 'flat':
-                appliedOffer = calculateFlatOffer(
-                  qty,
-                  offer.flatConfig?.amount || 0,
-                  offer.flatConfig?.scope || 'per_unit',
-                  price
-                );
-                break;
-              case 'bundle':
-                appliedOffer = calculateBundleOffer(
-                  qty,
-                  offer.bundleConfig?.bundleQuantity || 2,
-                  offer.bundleConfig?.bundlePrice || 0,
-                  price
-                );
-                break;
-            }
-            if (appliedOffer) {
-              appliedOffer.offerId = offer.id;
-              chargedQty = appliedOffer.chargedQuantity;
-              freeQty = appliedOffer.freeQuantity;
-              offerSavings = appliedOffer.savings;
-            }
-          }
-
-          return {
-            ...item,
-            itemId: product.id,
-            itemName: product.name,
-            searchQuery: "",
-            unitPrice: price,
-            costPrice: product.costPrice || 0,
-            total,
-            showSuggestions: false,
-            imageUrl: product.imageUrl,
-            appliedOffer,
-            chargedQuantity: chargedQty,
-            freeQuantity: freeQty,
-            offerSavings,
-          };
-        }
-        return item;
-      }),
-    );
   };
 
   // Handle Quantity Change
@@ -924,83 +740,6 @@ function NewSaleContent() {
     );
   };
 
-  // Handle Row Discount % Change
-  const handleDiscountPercentChange = (id: string, val: string) => {
-    const percent = parseFloat(val) || 0;
-    setSelectedItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const qty = item.quantity || 0;
-          const price = item.unitPrice || 0;
-          const flat =
-            parseFloat((price * qty * (percent / 100)).toFixed(2)) || 0;
-          const total = calculateRowTotal(qty, price, flat);
-          return {
-            ...item,
-            discountPercent: percent,
-            discountFlat: flat,
-            total,
-          };
-        }
-        return item;
-      }),
-    );
-  };
-
-  // Handle Row Discount Flat Tk Change
-  const handleDiscountFlatChange = (id: string, val: string) => {
-    const flat = parseFloat(val) || 0;
-    setSelectedItems((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const qty = item.quantity || 0;
-          const price = item.unitPrice || 0;
-          const totalCost = price * qty;
-          const percent =
-            totalCost > 0
-              ? parseFloat(((flat / totalCost) * 100).toFixed(2))
-              : 0;
-          const total = calculateRowTotal(qty, price, flat);
-          return {
-            ...item,
-            discountPercent: percent,
-            discountFlat: flat,
-            total,
-          };
-        }
-        return item;
-      }),
-    );
-  };
-
-  // Handle row blur with delay to register suggestion clicks
-  const handleRowBlur = (id: string) => {
-    setTimeout(() => {
-      setSelectedItems((prev) =>
-        prev.map((item) => {
-          if (item.id === id) {
-            return { ...item, showSuggestions: false };
-          }
-          return item;
-        }),
-      );
-    }, 300);
-  };
-
-  // Filter available items for inline suggestions dropdown
-  const getFilteredProducts = (query: string) => {
-    if (!query?.trim()) {
-      return items.slice(0, 10);
-    }
-    const search = query.toLowerCase();
-    return items.filter((product: any) => {
-      return (
-        product.name?.toLowerCase().includes(search) ||
-        product.sku?.toLowerCase().includes(search) ||
-        product.barcode?.toLowerCase().includes(search)
-      );
-    });
-  };
 
   // Modal Actions
   const openEditTax = () => {
@@ -1045,40 +784,32 @@ function NewSaleContent() {
       return;
     }
 
+
     const payload = {
-      partyId: selectedPartyId || undefined,
+      customerPhone: selectedParty?.phone || phoneSearchQuery || undefined,
+      customerName: selectedParty?.name || partySearchQuery || defaultCustomerName,
+      discount: totalDiscount,
+      tax: taxVal,
+      additionalCharges: additionalChargeVal,
+      notes: notes || undefined,
       items: validItems.map((item) => ({
         itemId: item.itemId,
+        batchId: item.batchNo,
         itemName: item.itemName,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        discount: item.discountFlat,
-        // Offer data
-        ...(item.appliedOffer ? {
-          appliedOfferId: item.appliedOffer.offerId,
-          offerType: item.appliedOffer.offerType,
-          chargedQuantity: item.appliedOffer.chargedQuantity,
-          freeQuantity: item.appliedOffer.freeQuantity,
-          offerSavings: item.offerSavings,
-        } : {}),
       })),
-      discount: totalDiscount + totalOfferSavings,
-      paidAmount: totalPaid || 0,
-      paymentMethod: payments.filter((p) => p.amount > 0).map((p) => ({
-        paymentId: p.id,
-        paymentType: p.method,
-        amount: p.amount || 0,
-        referenceNumber: p.reference || undefined,
-        txnId: p.transactionId || undefined,
-      })),
-      accountId: payments.length > 0 ? (payments[0].accountId || undefined) : undefined,
-      notes: notes || undefined,
-      tax: taxVal,
-      vat: vatVal,
-      additionalCharge: additionalChargeVal,
-      totalOfferSavings,
+      paymentMethods: payments
+        .filter((p) => p.amount > 0)
+        .map((p) => ({
+          paymentId: p.accountId || (accounts.find((a: any) => a.type === p.method)?.id) || p.id,
+          paymentType: p.method,
+          amount: p.amount || 0,
+          receivedBy: p.receivedBy || undefined,
+        })),
     };
 
+    console.log(payload)
     mutate(payload, {
       onSuccess: () => {
         toast.success(
@@ -1087,11 +818,6 @@ function NewSaleContent() {
             : "Sale completed successfully",
         );
         router.push("/sales");
-      },
-      onError: (err: any) => {
-        toast.error(
-          err?.response?.data?.message || (isBangla ? "বিক্রি সম্পন্ন করতে সমস্যা হয়েছে" : "Failed to save sale"),
-        );
       },
     });
   };
@@ -1128,11 +854,13 @@ function NewSaleContent() {
                   value={productSearchQuery}
                   onChange={(e) => {
                     setProductSearchQuery(e.target.value);
+                    setSelectedProductForBatch(null);
                     setShowProductSuggestions(true);
                   }}
                   onFocus={() => setShowProductSuggestions(true)}
                   onBlur={() => {
-                    setTimeout(() => setShowProductSuggestions(false), 200);
+                      setShowProductSuggestions(false);
+                      setSelectedProductForBatch(null);
                   }}
                   placeholder={
                     isBangla
@@ -1144,59 +872,160 @@ function NewSaleContent() {
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 
                 {showProductSuggestions && (
-                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                    {getFilteredProducts(productSearchQuery).length === 0 ? (
-                      <div className="p-3 text-center text-xs text-muted-foreground">
-                        {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
-                      </div>
-                    ) : (
-                      getFilteredProducts(productSearchQuery).map((product: any) => (
-                        <button
-                          key={product.id}
-                          type="button"
-                          className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleAddProductToTable(product);
-                          }}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            {product.imageUrl ? (
-                              <img
-                                src={product.imageUrl}
-                                alt={product.name}
-                                className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                                <Image
-                                  src="/images/image.png"
-                                  width={20}
-                                  height={20}
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-72 overflow-y-auto divide-y divide-border text-foreground">
+                    {!selectedProductForBatch ? (
+                      /* STEP 1: PRODUCT LIST */
+                      items?.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-muted-foreground">
+                          {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
+                        </div>
+                      ) : (
+                        items?.map((product: any) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                               setSelectedProductForBatch(product)
+                            }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {product.imageUrl ? (
+                                <img
+                                  src={product.imageUrl}
                                   alt={product.name}
-                                  className="h-4 w-4 text-muted-foreground/60"
+                                  className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
                                 />
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="font-semibold text-foreground truncate text-xs">
-                                {product.name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                                <span>SKU: {product.sku || "-"}</span>
-                                <span>•</span>
-                                <span>Stock: {product.currentStock} {product.unit || ""}</span>
+                              ) : (
+                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                  <Image
+                                    src="/images/image.png"
+                                    width={20}
+                                    height={20}
+                                    alt={product.name}
+                                    className="h-4 w-4 text-muted-foreground/60"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground truncate text-xs">
+                                  {product.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                                  <span>SKU: {product.sku || "-"}</span>
+                                  <span>•</span>
+                                  <span>Stock: {product.currentStock} {product.unit || ""}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="text-right shrink-0">
-                            <p className="font-bold text-primary text-xs">
-                              {formatCurrency(product.sellingPrice || 0)}
-                            </p>
-                          </div>
-                        </button>
-                      ))
+                            <div className="text-right shrink-0 flex items-center gap-2">
+                              {loadingBatchProductId === product.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                              ) : (
+                                <div>
+                                  <p className="font-bold text-primary text-xs">
+                                    {formatCurrency(product.sellingPrice || 0)}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        ))
+                      )
+                    ) : (
+                      /* STEP 2: BATCH LIST FOR SELECTED PRODUCT */
+                      <div className="divide-y divide-border">
+                        {/* Header with back button */}
+                        <div className="p-2.5 bg-muted/40 flex items-center justify-between gap-2 text-xs border-b border-border">
+                          <button
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSelectedProductForBatch(null);
+                            }}
+                            className="flex items-center gap-1 font-medium text-primary hover:underline hover:text-primary-hover cursor-pointer"
+                          >
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            <span>{isBangla ? "পণ্য তালিকায় ফিরুন" : "Back to products"}</span>
+                          </button>
+                          <span className="font-semibold text-foreground truncate max-w-[150px]">
+                            {selectedProductForBatch.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-bold font-mono">
+                            {formatCurrency(selectedProductForBatch.sellingPrice || 0)}
+                          </span>
+                        </div>
+
+                        {/* Batches list */}
+                        <div className="divide-y divide-border/60 max-h-56 overflow-y-auto">
+                          {isLoadingBatches || batches?.map((batch: any) => {
+                            const bNo = batch?.batchNumber
+                            const stock = batch.quantity
+                            const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
+                            const expiry = batch.expiryDate ? format(new Date(batch.expiryDate), "dd MMM yyyy") : null;
+
+                            return (
+                              <button
+                                key={batch.id || bNo}
+                                type="button"
+                                className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between text-xs group cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleSelectBatchAndAdd(selectedProductForBatch, batch);
+                                }}
+                              >
+                                <div className="space-y-0.5 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-foreground font-mono truncate group-hover:text-primary transition-colors">
+                                      {bNo}
+                                    </span>
+                                    {batch.status && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/10 text-emerald-500 font-medium">
+                                        {batch.status}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                    {stock !== undefined && (
+                                      <span>
+                                        {isBangla ? "স্টক" : "Stock"}: <strong className="text-foreground">{stock}</strong>
+                                      </span>
+                                    )}
+                                    {expiry && (
+                                      <span>
+                                        {isBangla ? "মেয়াদ" : "Exp"}: {expiry}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  <span className="font-bold text-primary text-xs block">
+                                    {formatCurrency(price)}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground group-hover:text-primary font-medium">
+                                    {isBangla ? "যোগ করুন +" : "Select +"}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+
+                          {/* Option to add without specific batch */}
+                          <button
+                            type="button"
+                            className="w-full text-left p-2 bg-muted/20 hover:bg-muted/60 transition-colors text-[11px] text-muted-foreground text-center font-medium cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectBatchAndAdd(selectedProductForBatch, null);
+                            }}
+                          >
+                            {isBangla ? "+ ব্যাচ ছাড়া যোগ করুন" : "+ Add without specific batch"}
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -1210,14 +1039,14 @@ function NewSaleContent() {
               </Label>
               <div className="relative">
                 <Input
-                  value={displayPartyPhone}
+                  value={selectedParty ? (selectedParty.phone || "") : phoneSearchQuery}
                   onChange={(e) => {
                     handlePhoneChange(e.target.value);
                     setShowPartySuggestions(true);
                   }}
                   onFocus={() => setShowPartySuggestions(true)}
                   onBlur={() => {
-                    setTimeout(() => setShowPartySuggestions(false), 200);
+                    setShowPartySuggestions(false)
                   }}
                   placeholder={isBangla ? "ফোন নম্বর..." : "Search phone..."}
                   className="pr-9 h-11 bg-background/50 border-input text-xs font-mono focus-visible:ring-1"
@@ -1226,24 +1055,21 @@ function NewSaleContent() {
 
                 {showPartySuggestions && (
                   <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                    {filteredParties.length === 0 ? (
+                    {parties.length === 0 ? (
                       <div className="p-3 text-center text-xs text-muted-foreground">
                         {isBangla
                           ? "কোনো পার্টি পাওয়া যায়নি"
                           : "No parties found"}
                       </div>
                     ) : (
-                      filteredParties.map((party: any) => (
+                      parties.map((party: any) => (
                         <button
                           key={party.id}
                           type="button"
                           className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between items-center"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            setSelectedPartyId(party.id);
-                            setPartySearchQuery("");
-                            setPhoneSearchQuery(party.phone || "");
-                            setShowPartySuggestions(false);
+                            handleSelectParty(party);
                           }}
                         >
                           <span className="font-semibold text-foreground truncate max-w-[140px]">
@@ -1262,22 +1088,59 @@ function NewSaleContent() {
               </div>
             </div>
 
-            {/* 3. Customer Name (Auto filled or default Walk-in Customer) */}
+            {/* 3. Customer Name (Auto filled or default Walking Customer) */}
             <div className="relative space-y-2">
               <Label className="text-sm font-medium text-foreground">
                 {isBangla ? "গ্রাহক" : "Customer"}
               </Label>
               <div className="relative">
                 <Input
-                  value={displayPartyName}
+                  value={selectedParty ? selectedParty.name : (partySearchQuery || defaultCustomerName)}
                   onChange={(e) => {
-                    setPartySearchQuery(e.target.value);
-                    if (selectedPartyId) setSelectedPartyId("");
+                    handlePartyNameChange(e.target.value);
+                    setShowPartyNameSuggestions(true);
+                  }}
+                  onFocus={() => setShowPartyNameSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowPartyNameSuggestions(false), 200);
                   }}
                   placeholder={defaultCustomerName}
                   className="pr-9 h-11 bg-background/50 border-input text-xs focus-visible:ring-1"
                 />
                 <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+                {showPartyNameSuggestions && (
+                  <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                    {parties.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-muted-foreground">
+                        {isBangla
+                          ? "কোনো পার্টি পাওয়া যায়নি"
+                          : "No parties found"}
+                      </div>
+                    ) : (
+                      parties.map((party: any) => (
+                        <button
+                          key={party.id}
+                          type="button"
+                          className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between items-center"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectParty(party);
+                          }}
+                        >
+                          <span className="font-semibold text-foreground truncate max-w-[140px]">
+                            {party.name}
+                          </span>
+                          {party.phone && (
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {party.phone}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1379,6 +1242,11 @@ function NewSaleContent() {
                           <p className="font-semibold text-foreground text-sm">
                             {item.itemName}
                           </p>
+                          {item.batchNo && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
+                              Batch: {item.batchNo}
+                            </span>
+                          )}
                           {item.appliedOffer && (
                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
@@ -1460,14 +1328,6 @@ function NewSaleContent() {
 
             {/* Table Bottom Add Action */}
             <div className="flex justify-end items-center px-6 py-4 bg-muted/10 border-t border-border">
-              {/* <button
-                type="button"
-                onClick={addItemRow}
-                className="text-primary font-semibold text-sm flex items-center gap-1.5 hover:text-primary-hover transition-colors cursor-pointer"
-              >
-                <Plus className="h-4 w-4" />
-                {isBangla ? "বিল আইটেম যোগ করুন" : "Add Billing Item"}
-              </button> */}
               <div className="flex items-center gap-8">
                 <span className="text-sm text-muted-foreground font-medium">
                   {isBangla ? "উপমোট" : "Sub Total"}
@@ -1492,24 +1352,6 @@ function NewSaleContent() {
                 className="min-h-[100px] bg-background/50 border-input resize-none focus-visible:ring-1"
               />
             </div>
-
-            {/* Attach Images */}
-            {/* <div className="space-y-2">
-              <Label className="text-sm font-semibold text-foreground">
-                {isBangla ? "ছবি সংযুক্ত করুন" : "Attach Images"}
-              </Label>
-              <div className="flex flex-wrap gap-3 items-center">
-                <button
-                  type="button"
-                  className="h-16 w-16 rounded-xl border border-dashed border-border flex flex-col items-center justify-center bg-background/30 hover:bg-muted/50 hover:border-primary transition-all text-muted-foreground hover:text-foreground"
-                >
-                  <Camera className="h-5 w-5 mb-1" />
-                  <span className="text-[10px]">
-                    {isBangla ? "ক্যামেরা" : "Upload"}
-                  </span>
-                </button>
-              </div>
-            </div> */}
           </div>
 
         {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
@@ -1566,7 +1408,7 @@ function NewSaleContent() {
               </div>
 
               {/* VAT Display Row */}
-              <div className="flex justify-between items-center text-sm font-medium py-0.5">
+              {/* <div className="flex justify-between items-center text-sm font-medium py-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">{isBangla ? "ভ্যাট" : "VAT"}</span>
                   <button
@@ -1582,7 +1424,7 @@ function NewSaleContent() {
                     ? `${vatConfig.value}% (Tk. ${vatVal.toFixed(2)})`
                     : `Tk. ${vatVal.toFixed(2)}`}
                 </span>
-              </div>
+              </div> */}
 
               {/* Additional Charge Input */}
               <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
@@ -2068,6 +1910,8 @@ function NewSaleContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+
     </div>
   );
 }

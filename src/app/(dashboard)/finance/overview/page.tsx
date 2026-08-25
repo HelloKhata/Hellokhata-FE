@@ -1,834 +1,1044 @@
 'use client';
 
-import React from 'react';
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, KPICard, Badge } from '@/components/ui/premium';
-import { useAppTranslation } from '@/hooks/useAppTranslation';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Wallet,
   Building2,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
   Receipt,
   FileClock,
-  Landmark,
-  BarChart3,
-  Activity,
-  Scale,
+  ArrowLeftRight,
+  TrendingUp,
+  TrendingDown,
+  Info,
   Calendar,
   Download,
-  RefreshCw,
-  ClipboardList,
-  CalendarClock,
-  Sparkles,
-  ChevronRight,
-  CheckSquare,
-  ReceiptText,
-  FolderTree,
+  ChevronDown,
   ArrowRight,
-  Plus,
-  Minus,
-  ArrowLeftRight,
-  Sliders,
-  Settings,
+  CreditCard,
+  Smartphone,
+  AlertTriangle,
+  FileText,
+  Clock,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
+  Printer,
+  FileSpreadsheet,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import { useAppTranslation } from '@/hooks/useAppTranslation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
+
+// --- DATA STRUCTURES & MOCK DATA ---
+
+const INCOME_EXPENSE_DATA = [
+  { date: 'Jul 23', dateBn: '২৩ জুলাই', income: 42000, expense: 28000 },
+  { date: 'Jul 28', dateBn: '২৮ জুলাই', income: 68000, expense: 34000 },
+  { date: 'Aug 02', dateBn: '০২ আগস্ট', income: 94000, expense: 45000 },
+  { date: 'Aug 07', dateBn: '০৭ আগস্ট', income: 48000, expense: 38000 },
+  { date: 'Aug 12', dateBn: '১২ আগস্ট', income: 58000, expense: 42000 },
+  { date: 'Aug 17', dateBn: '১৭ আগস্ট', income: 75000, expense: 39000 },
+  { date: 'Aug 22', dateBn: '২২ আগস্ট', income: 88000, expense: 52000 },
+];
+
+const CASH_FLOW_DATA = [
+  { name: 'Cash Inflow', nameBn: 'নগদ আগমন', value: 186340, percentage: '62%', colorHex: '#10b981' },
+  { name: 'Cash Outflow', nameBn: 'নগদ নির্গমন', value: 87720, percentage: '29%', colorHex: '#f43f5e' },
+  { name: 'Transfers In', nameBn: 'ট্রান্সফার ইন', value: 15000, percentage: '5%', colorHex: '#3b82f6' },
+  { name: 'Transfers Out', nameBn: 'ট্রান্সফার আউট', value: 5000, percentage: '4%', colorHex: '#f59e0b' },
+];
+
+const TOP_INCOME_CATEGORIES = [
+  { name: 'Sales Income', nameBn: 'বিক্রয় আয়', amount: 120700, percentage: 65, color: '#10b981', bg: 'bg-emerald-500/10 text-emerald-400' },
+  { name: 'Service Income', nameBn: 'সার্ভিস আয়', amount: 27900, percentage: 15, color: '#0FBF9F', bg: 'bg-teal-500/10 text-teal-400' },
+  { name: 'Other Income', nameBn: 'অন্যান্য আয়', amount: 18600, percentage: 10, color: '#06b6d4', bg: 'bg-cyan-500/10 text-cyan-400' },
+  { name: 'Interest Income', nameBn: 'সুদ আয়', amount: 9250, percentage: 5, color: '#3b82f6', bg: 'bg-blue-500/10 text-blue-400' },
+  { name: 'Discount Received', nameBn: 'প্রাপ্ত বাট্টা', amount: 3300, percentage: 5, color: '#10b981', bg: 'bg-emerald-500/10 text-emerald-400' },
+];
+
+const TOP_EXPENSE_CATEGORIES = [
+  { name: 'Rent', nameBn: 'দোকান/অফিস ভাড়া', amount: 15800, percentage: 32, color: '#f43f5e', bg: 'bg-rose-500/10 text-rose-400' },
+  { name: 'Utilities', nameBn: 'ইউটিলিটি বিল', amount: 6860, percentage: 14, color: '#f97316', bg: 'bg-orange-500/10 text-orange-400' },
+  { name: 'Salary', nameBn: 'কর্মচারী বেতন', amount: 9800, percentage: 20, color: '#6366f1', bg: 'bg-indigo-500/10 text-indigo-400' },
+  { name: 'Inventory', nameBn: 'ইনভেন্টরি খরচ', amount: 8820, percentage: 18, color: '#a855f7', bg: 'bg-purple-500/10 text-purple-400' },
+  { name: 'Transport', nameBn: 'যাতায়াত ও পরিবহন', amount: 3900, percentage: 8, color: '#ec4899', bg: 'bg-pink-500/10 text-pink-400' },
+];
+
+const RECENT_TRANSACTIONS = [
+  {
+    id: 'tx-1',
+    title: 'Sales Income',
+    titleBn: 'বিক্রয় আয়',
+    subtitle: 'Walk-in Customer',
+    subtitleBn: 'সরাসরি খদ্দের',
+    date: 'Aug 22, 2026',
+    dateBn: '২২ আগস্ট, ২০২৬',
+    amount: 850,
+    type: 'income',
+  },
+  {
+    id: 'tx-2',
+    title: 'Transport Expense',
+    titleBn: 'পরিবহন খরচ',
+    subtitle: 'Courier dispatch charges',
+    subtitleBn: 'কুরিয়ার ডেলিভারি চার্জ',
+    date: 'Aug 22, 2026',
+    dateBn: '২২ আগস্ট, ২০২৬',
+    amount: -850,
+    type: 'expense',
+  },
+  {
+    id: 'tx-3',
+    title: 'Service Income',
+    titleBn: 'সার্ভিস আয়',
+    subtitle: 'Showroom internet bill (July)',
+    subtitleBn: 'শোরুম ইন্টারনেট বিল (জুলাই)',
+    date: 'Aug 21, 2026',
+    dateBn: '২১ আগস্ট, ২০২৬',
+    amount: 2500,
+    type: 'income',
+  },
+  {
+    id: 'tx-4',
+    title: 'Rent Expense',
+    titleBn: 'ভাড়া খরচ',
+    subtitle: 'Gulshan showroom shop rent',
+    subtitleBn: 'গুলশান শোরুমের দোকান ভাড়া',
+    date: 'Aug 20, 2026',
+    dateBn: '২০ আগস্ট, ২০২৬',
+    amount: -15000,
+    type: 'expense',
+  },
+  {
+    id: 'tx-5',
+    title: 'Interest Income',
+    titleBn: 'সুদ আয়',
+    subtitle: 'Savings account interest',
+    subtitleBn: 'সঞ্চয়ী হিসাবের অর্জিত সুদ',
+    date: 'Aug 19, 2026',
+    dateBn: '১৯ আগস্ট, ২০২৬',
+    amount: 1250,
+    type: 'income',
+  },
+];
 
 export default function FinanceOverviewPage() {
   const { isBangla } = useAppTranslation();
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('Jul 23, 2026 - Aug 22, 2026');
+  const [periodLabel, setPeriodLabel] = useState<string>('This Month');
 
-  // Quick Action card details
-  const quickActions = [
-    {
-      title: 'Add Expense',
-      titleBn: 'খরচ যোগ করুন',
-      desc: 'Record a new operational expense',
-      descBn: 'একটি নতুন পরিচালন ব্যয় রেকর্ড করুন',
-      icon: Minus,
-      iconColor: 'text-warning bg-warning-subtle',
-    },
-    {
-      title: 'Record Income',
-      titleBn: 'আয় রেকর্ড করুন',
-      desc: 'Log non-POS business income stream',
-      descBn: 'নন-পিওএস ব্যবসায়ের আয়ের উৎস রেকর্ড করুন',
-      icon: Plus,
-      iconColor: 'text-emerald bg-emerald-subtle',
-    },
-    {
-      title: 'Deposit Cash',
-      titleBn: 'নগদ জমা',
-      desc: 'Deposit cash into a bank account',
-      descBn: 'ব্যাংক অ্যাকাউন্টে নগদ জমা করুন',
-      icon: ArrowRight,
-      iconColor: 'text-indigo bg-indigo-subtle',
-    },
-    {
-      title: 'Withdraw Cash',
-      titleBn: 'নগদ উত্তোলন',
-      desc: 'Withdraw cash from bank or wallet',
-      descBn: 'ব্যাংক বা ওয়ালেট থেকে নগদ উত্তোলন করুন',
-      icon: Wallet,
-      iconColor: 'text-indigo bg-indigo-subtle',
-    },
-    {
-      title: 'View Reports',
-      titleBn: 'রিপোর্ট দেখুন',
-      desc: 'Analyze P&L and Balance Sheet',
-      descBn: 'লাভ-ক্ষতি ও ব্যালেন্স শীট বিশ্লেষণ করুন',
-      icon: FileSpreadsheet,
-      iconColor: 'text-indigo bg-indigo-subtle',
-    },
-    {
-      title: 'Manage Loans',
-      titleBn: 'ঋণ পরিচালনা',
-      desc: 'Manage liabilities and repayments',
-      descBn: 'দায় ও ঋণ পরিশোধ পরিচালনা করুন',
-      icon: Landmark,
-      iconColor: 'text-destructive bg-destructive-subtle',
-    },
-    {
-      title: 'Manage Bank Accounts',
-      titleBn: 'ব্যাংক হিসাব',
-      desc: 'Configure connected accounts',
-      descBn: 'সংযুক্ত অ্যাকাউন্টগুলি কনফিগার করুন',
-      icon: Building2,
-      iconColor: 'text-indigo bg-indigo-subtle',
-    },
-    {
-      title: 'Manage Chart of Accounts',
-      titleBn: 'হিসাব তালিকা',
-      desc: 'Structure your ledger categories',
-      descBn: 'আপনার খতিয়ান ক্যাটাগরিগুলি সাজান',
-      icon: FolderTree,
-      iconColor: 'text-indigo bg-indigo-subtle',
-    },
-  ];
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat(isBangla ? 'bn-BD' : 'en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const handleExport = (type: string) => {
+    toast.success(
+      isBangla
+        ? `${type} ফরম্যাটে রিপোর্ট তৈরি হচ্ছে...`
+        : `Generating ${type} report export...`
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 1. HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="space-y-1.5">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/" className="text-muted-foreground hover:text-foreground">
-                  {isBangla ? 'ড্যাশবোর্ড' : 'Dashboard'}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <span className="text-muted-foreground">
-                  {isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান' : 'Finance & Accounting'}
-                </span>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="font-medium text-foreground">
-                  {isBangla ? 'ওভারভিউ' : 'Overview'}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান' : 'Finance & Accounting'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isBangla
-              ? 'এক নজরে আপনার ব্যবসায়ের সম্পূর্ণ আর্থিক স্বাস্থ্য পর্যবেক্ষণ করুন।'
-              : 'Monitor your complete business financial health in one place.'}
-          </p>
-        </div>
-
-        {/* Header Controls (Date range, Export, Refresh placeholders) */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <div className="h-9 px-3 bg-muted/30 border border-border-subtle rounded-xl flex items-center gap-2 text-xs font-semibold text-muted-foreground cursor-not-allowed">
-            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span>{isBangla ? 'গত ৩০ দিন' : 'Last 30 Days'}</span>
-          </div>
-          <button className="h-9 px-3 bg-muted/30 border border-border-subtle rounded-xl flex items-center gap-2 text-xs font-semibold text-muted-foreground cursor-not-allowed" disabled>
-            <Download className="h-3.5 w-3.5 shrink-0" />
-            <span>{isBangla ? 'রপ্তানি' : 'Export'}</span>
-          </button>
-          <button className="h-9 w-9 bg-muted/30 border border-border-subtle rounded-xl flex items-center justify-center text-muted-foreground cursor-not-allowed" disabled>
-            <RefreshCw className="h-3.5 w-3.5 shrink-0" />
-          </button>
-        </div>
-      </div>
-
-      {/* 2. FINANCIAL HEALTH SUMMARY BANNER */}
-      <Card className="border border-[rgba(255,255,255,0.06)] bg-gradient-to-br from-primary/5 to-indigo/5 backdrop-blur-sm relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-full bg-gradient-to-l from-indigo/5 to-transparent pointer-events-none" />
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>{isBangla ? 'আর্থিক স্বাস্থ্য' : 'Financial Health'}</span>
-          </CardTitle>
-          <CardDescription>
-            {isBangla ? 'আপনার ব্যবসায়ের আর্থিক অবস্থানের দ্রুত সারাংশ।' : 'Quick summary of your business financial position.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <HealthIndicator
-              title={isBangla ? 'নগদ অবস্থান' : 'Cash Position'}
-              status="healthy"
-              statusLabel={isBangla ? 'স্বাস্থ্যকর' : 'Healthy'}
-            />
-            <HealthIndicator
-              title={isBangla ? 'প্রাপ্য স্বাস্থ্য' : 'Receivable Health'}
-              status="warning"
-              statusLabel={isBangla ? 'সতর্কতা' : 'Warning'}
-            />
-            <HealthIndicator
-              title={isBangla ? 'ব্যয় নিয়ন্ত্রণ' : 'Expense Control'}
-              status="attention"
-              statusLabel={isBangla ? 'মনোযোগ প্রয়োজন' : 'Attention'}
-            />
-            <HealthIndicator
-              title={isBangla ? 'লাভজনকতা' : 'Profitability'}
-              status="comingSoon"
-              statusLabel={isBangla ? 'শীঘ্রই আসছে' : 'Coming Soon'}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. KPI CARDS GRID */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <FinancialStatCard
-          title={isBangla ? 'নগদ ব্যালেন্স' : 'Cash Balance'}
-          desc={isBangla ? 'বর্তমানে উপলব্ধ নগদ টাকা' : 'Current available cash'}
-          icon={Wallet}
-          iconColor="indigo"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'ব্যাংক ব্যালেন্স' : 'ব্যাংক ব্যালেন্স'}
-          desc={isBangla ? 'সব ব্যাংক হিসাবের মোট ব্যালেন্স' : 'Combined balance across bank accounts'}
-          icon={Building2}
-          iconColor="indigo"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'মাসিক আয়' : 'Monthly Income'}
-          desc={isBangla ? 'চলতি মাসে রেকর্ডকৃত মোট আয়' : 'Income recorded this month'}
-          icon={TrendingUp}
-          iconColor="emerald"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'মাসিক ব্যয়' : 'Monthly Expenses'}
-          desc={isBangla ? 'চলতি মাসে রেকর্ডকৃত মোট ব্যয়' : 'Expenses recorded this month'}
-          icon={TrendingDown}
-          iconColor="warning"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'নিট মুনাফা' : 'Net Profit'}
-          desc={isBangla ? 'চলতি মাসে নিট আয় বা লাভ' : 'Net profit recorded this month'}
-          icon={DollarSign}
-          iconColor="emerald"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'প্রাপ্য হিসাব' : 'Receivables'}
-          desc={isBangla ? 'গ্রাহকের নিকট মোট বকেয়া বকেয়া' : 'Outstanding customer invoice balances'}
-          icon={Receipt}
-          iconColor="warning"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'প্রদেয় হিসাব' : 'Payables'}
-          desc={isBangla ? 'সরবরাহকারীকে প্রদেয় বকেয়া' : 'Outstanding vendor balances due'}
-          icon={FileClock}
-          iconColor="destructive"
-          isBangla={isBangla}
-        />
-        <FinancialStatCard
-          title={isBangla ? 'ঋণ ব্যালেন্স' : 'Loan Balance'}
-          desc={isBangla ? 'ব্যবসায়ের বর্তমান মোট ঋণের পরিমাণ' : 'Combined outstanding business liabilities'}
-          icon={Landmark}
-          iconColor="destructive"
-          isBangla={isBangla}
-        />
-      </div>
-
-      {/* 4. FINANCIAL SNAPSHOT SECTION */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-bold tracking-tight text-foreground">
-          {isBangla ? 'আর্থিক বিবরণী স্ন্যাপশট' : 'Financial Snapshot'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <SnapshotCard
-            title={isBangla ? 'লাভ ও ক্ষতি' : 'Profit & Loss'}
-            desc={isBangla ? 'লাভ ও ক্ষতি সারাংশ এখানে প্রদর্শিত হবে।' : 'Profit & Loss summary will appear here.'}
-            icon={BarChart3}
-            btnLabel={isBangla ? 'রিপোর্ট দেখুন' : 'View Report'}
-            isBangla={isBangla}
-          />
-          <SnapshotCard
-            title={isBangla ? 'ক্যাশ ফ্লো' : 'Cash Flow'}
-            desc={isBangla ? 'নগদ প্রবাহের বিবরণী ও কার্যক্রম।' : 'Cash movement overview.'}
-            icon={Activity}
-            btnLabel={isBangla ? 'রিপোর্ট দেখুন' : 'View Report'}
-            isBangla={isBangla}
-          />
-          <SnapshotCard
-            title={isBangla ? 'ব্যালেন্স শীট' : 'Balance Sheet'}
-            desc={isBangla ? 'ব্যবসায়ের মোট সম্পদ, দায় এবং ইকুইটি।' : 'Assets, liabilities and equity.'}
-            icon={Scale}
-            btnLabel={isBangla ? 'রিপোর্ট দেখুন' : 'View Report'}
-            isBangla={isBangla}
-          />
-        </div>
-      </div>
-
-      {/* 5. VISUALIZATIONS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow Preview */}
-        <Card className="lg:col-span-1 border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm flex flex-col justify-between">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold text-foreground">
-              {isBangla ? 'ক্যাশ ফ্লো' : 'Cash Flow'}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isBangla ? 'ব্যবসায়ের নগদ অর্থের আগমন ও নির্গমন।' : 'Money moving in and out.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 flex flex-col items-center justify-center text-center p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <div className="h-16 w-16 rounded-full bg-muted/40 flex items-center justify-center mb-4 relative">
-              <Activity className="h-6 w-6 text-muted-foreground/60 animate-pulse" />
-              <div className="absolute inset-0 rounded-full border border-dashed border-muted-foreground/20 animate-spin-slow" />
-            </div>
-            <h4 className="text-sm font-semibold text-foreground">
-              {isBangla ? 'এখনো কোনো আর্থিক কার্যক্রম নেই' : 'No financial activity yet'}
-            </h4>
-            <p className="text-xs text-muted-foreground max-w-[200px] mt-1">
+    <TooltipProvider>
+      <div className="space-y-6 pb-12">
+        {/* =========================================================================
+            1. HEADER SECTION
+           ========================================================================= */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <span>{isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান ওভারভিউ' : 'Finance & Accounting Overview'}</span>
+            </h1>
+            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
               {isBangla
-                ? 'লেনদেন পাওয়া গেলে নগদ প্রবাহের চিত্র এখানে দেখা যাবে।'
-                : 'Cash flow visualization will appear once transactions are available.'}
+                ? 'আপনার ব্যবসায়ের আর্থিক অবস্থার রিয়েল-টাইম সামগ্রিক সারসংক্ষেপ'
+                : 'Real-time summary of your business financial health'}
             </p>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Income vs Expense Placeholder Chart */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm flex flex-col justify-between">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
-              <span>{isBangla ? 'আয় বনাম ব্যয়' : 'Income vs Expense'}</span>
-              <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal text-muted-foreground uppercase tracking-wider">
-                {isBangla ? 'আসন্ন' : 'Coming Soon'}
-              </Badge>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isBangla ? 'মাসিক আয় ও ব্যয়ের তুলনামূলক চিত্র।' : 'Monthly comparison of incoming vs outgoing cash.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <div className="h-60 rounded-xl border border-dashed border-border-subtle flex flex-col items-center justify-center p-4 relative overflow-hidden bg-muted/10">
-              {/* Premium Background Gridlines */}
-              <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 opacity-10 pointer-events-none">
-                {[...Array(16)].map((_, i) => (
-                  <div key={i} className="border-t border-l border-white" />
-                ))}
-              </div>
-              
-              {/* Fake Premium SVG Visual */}
-              <svg className="w-full h-32 text-indigo opacity-30 mt-2" fill="none" viewBox="0 0 100 50">
-                <path d="M0,50 L20,40 L40,45 L60,25 L80,30 L100,5" stroke="currentColor" strokeWidth="2" strokeDasharray="3" />
-                <path d="M0,50 L20,30 L40,35 L60,10 L80,20 L100,2" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              </svg>
+          {/* Header Controls: Date Filter & Export Button */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Date Range Picker Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-card border border-white/10 hover:border-white/20 text-foreground transition-all shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
+                <span>{selectedPeriod}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-card border border-white/10 backdrop-blur-xl">
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('Today'); setPeriodLabel('Today'); }}>
+                  {isBangla ? 'আজ' : 'Today'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('This Week'); setPeriodLabel('This Week'); }}>
+                  {isBangla ? 'এই সপ্তাহ' : 'This Week'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('Jul 23, 2026 - Aug 22, 2026'); setPeriodLabel('This Month'); }}>
+                  {isBangla ? 'এই মাস (গত ৩০ দিন)' : 'Jul 23, 2026 - Aug 22, 2026 (This Month)'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('Last 30 Days'); setPeriodLabel('Last 30 Days'); }}>
+                  {isBangla ? 'গত ৩০ দিন' : 'Last 30 Days'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('This Quarter'); setPeriodLabel('This Quarter'); }}>
+                  {isBangla ? 'এই কোয়ার্টার' : 'This Quarter'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setSelectedPeriod('This Year (2026)'); setPeriodLabel('This Year'); }}>
+                  {isBangla ? 'এই বছর (২০২৬)' : 'This Year (2026)'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-              <span className="text-xs font-semibold text-muted-foreground mt-4 z-10">
-                {isBangla ? 'আয় বনাম ব্যয় চার্ট' : 'Income vs Expense Chart'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Export Report Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium bg-card border border-white/10 hover:border-white/20 text-foreground transition-all shadow-sm">
+                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>{isBangla ? 'রিপোর্ট রপ্তানি' : 'Export Report'}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-card border border-white/10 backdrop-blur-xl">
+                <DropdownMenuItem onClick={() => handleExport('PDF')} className="gap-2">
+                  <FileText className="h-4 w-4 text-rose-400" />
+                  <span>{isBangla ? 'পিডিএফ (PDF)' : 'PDF Document'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('Excel')} className="gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
+                  <span>{isBangla ? 'এক্সেল (Excel/CSV)' : 'Excel Sheet (.xlsx)'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.print()} className="gap-2">
+                  <Printer className="h-4 w-4 text-blue-400" />
+                  <span>{isBangla ? 'প্রিন্ট করুন' : 'Print Overview'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
-        {/* Receivable vs Payable Placeholder Chart */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm flex flex-col justify-between">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
-              <span>{isBangla ? 'প্রাপ্য বনাম প্রদেয়' : 'Receivable vs Payable'}</span>
-              <Badge variant="outline" className="text-[10px] py-0 px-2 font-normal text-muted-foreground uppercase tracking-wider">
-                {isBangla ? 'আসন্ন' : 'Coming Soon'}
-              </Badge>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isBangla ? 'বকেয়া আদায় বনাম বকেয়া পরিশোধের অনুপাত।' : 'Dues outstanding to collect vs bills to pay.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <div className="h-60 rounded-xl border border-dashed border-border-subtle flex flex-col items-center justify-center p-4 relative overflow-hidden bg-muted/10">
-              {/* Premium Background Gridlines */}
-              <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 opacity-10 pointer-events-none">
-                {[...Array(16)].map((_, i) => (
-                  <div key={i} className="border-t border-l border-white" />
-                ))}
+        {/* =========================================================================
+            2. TOP KPI METRIC CARDS ROW (5 Cards)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {/* Card 1: Cash in Hand */}
+          <TopKpiCard
+            title={isBangla ? 'হাতে নগদ' : 'Cash in Hand'}
+            infoTooltip={isBangla ? 'ক্যাশ বাক্সে এবং ড্রয়ারে বর্তমান নগদ অর্থ' : 'Physical cash available in cash register and vault'}
+            amount="৳125,430.00"
+            trend="+8.12% vs last month"
+            isPositive={true}
+            trendColor="text-emerald-400"
+            icon={Wallet}
+            iconBg="bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+            sparklinePath="M0,22 Q12,18 24,20 T48,12 T72,16 T96,4"
+            sparklineColor="#10b981"
+          />
+
+          {/* Card 2: Bank Balance */}
+          <TopKpiCard
+            title={isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
+            amount="৳385,750.00"
+            trend="+12.45% vs last month"
+            isPositive={true}
+            trendColor="text-blue-400"
+            icon={Building2}
+            iconBg="bg-blue-500/10 border-blue-500/20 text-blue-400"
+            sparklinePath="M0,24 Q16,20 32,22 T64,10 T96,5"
+            sparklineColor="#3b82f6"
+          />
+
+          {/* Card 3: Total Receivables */}
+          <TopKpiCard
+            title={isBangla ? 'মোট প্রাপ্য বকেয়া' : 'Total Receivables'}
+            infoTooltip={isBangla ? 'গ্রাহকদের কাছ থেকে মোট আদায়যোগ্য বকেয়া' : 'Outstanding dues to collect from customers'}
+            amount="৳256,800.00"
+            trend="-5.32% vs last month"
+            isPositive={false}
+            trendColor="text-amber-400"
+            icon={Receipt}
+            iconBg="bg-amber-500/10 border-amber-500/20 text-amber-400"
+            sparklinePath="M0,8 Q20,10 40,16 T70,22 T96,20"
+            sparklineColor="#f59e0b"
+          />
+
+          {/* Card 4: Total Payables */}
+          <TopKpiCard
+            title={isBangla ? 'মোট প্রদেয় দেনা' : 'Total Payables'}
+            infoTooltip={isBangla ? 'সরবরাহকারীদের পরিশোধযোগ্য মোট দেনা' : 'Outstanding bills due to suppliers & vendors'}
+            amount="৳148,950.00"
+            trend="+3.25% vs last month"
+            isPositive={true}
+            trendColor="text-purple-400"
+            icon={FileClock}
+            iconBg="bg-purple-500/10 border-purple-500/20 text-purple-400"
+            sparklinePath="M0,20 Q18,22 36,15 T72,12 T96,6"
+            sparklineColor="#a855f7"
+          />
+
+          {/* Card 5: Net Cash Flow */}
+          <TopKpiCard
+            title={isBangla ? 'নিট ক্যাশ ফ্লো' : 'Net Cash Flow'}
+            amount="৳98,620.00"
+            trend="+18.75% vs last month"
+            isPositive={true}
+            trendColor="text-emerald-400"
+            icon={ArrowLeftRight}
+            iconBg="bg-teal-500/10 border-teal-500/20 text-teal-400"
+            sparklinePath="M0,24 Q15,22 30,16 T65,8 T96,3"
+            sparklineColor="#0FBF9F"
+          />
+        </div>
+
+        {/* =========================================================================
+            3. MIDDLE SECTION - ROW 1 (Charts & Account Breakdown)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+          {/* 3.1 Income vs Expense Clustered Bar Chart (xl:col-span-5) */}
+          <div className="xl:col-span-5 rounded-2xl border border-white/[0.06] bg-card p-5 flex flex-col justify-between shadow-sm relative overflow-hidden">
+            {/* Header with Title, Legends & Period Dropdown */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">
+                  {isBangla ? 'আয় বনাম ব্যয়' : 'Income vs Expense'}
+                </h3>
+                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block" />
+                    <span className="text-foreground/80 font-medium">{isBangla ? 'আয়' : 'Income'}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block" />
+                    <span className="text-foreground/80 font-medium">{isBangla ? 'ব্যয়' : 'Expense'}</span>
+                  </span>
+                </div>
               </div>
 
-              {/* Fake Premium SVG Visual */}
-              <svg className="w-full h-32 text-warning opacity-30 mt-2" fill="none" viewBox="0 0 100 50">
-                <rect x="10" y="25" width="8" height="25" fill="currentColor" opacity="0.7" />
-                <rect x="25" y="15" width="8" height="35" fill="currentColor" opacity="0.3" />
-                <rect x="40" y="30" width="8" height="20" fill="currentColor" opacity="0.7" />
-                <rect x="55" y="10" width="8" height="40" fill="currentColor" opacity="0.3" />
-                <rect x="70" y="20" width="8" height="30" fill="currentColor" opacity="0.7" />
-                <rect x="85" y="5" width="8" height="45" fill="currentColor" opacity="0.3" />
-              </svg>
-
-              <span className="text-xs font-semibold text-muted-foreground mt-4 z-10">
-                {isBangla ? 'প্রাপ্য বনাম প্রদেয়' : 'Receivable vs Payable'}
-              </span>
+              {/* Period Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-muted/40 border border-white/5 text-muted-foreground hover:text-foreground transition-colors">
+                  <span>{isBangla ? 'এই মাস' : periodLabel}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36 bg-card border border-white/10">
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Week')}>
+                    {isBangla ? 'এই সপ্তাহ' : 'This Week'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Month')}>
+                    {isBangla ? 'এই মাস' : 'This Month'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Year')}>
+                    {isBangla ? 'এই বছর' : 'This Year'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* 6. ACTIVITIES & DUE PAYMENTS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Financial Activity */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground">
-              {isBangla ? 'সাম্প্রতিক আর্থিক লেনদেন' : 'Recent Activity'}
-            </CardTitle>
-            <CardDescription>
-              {isBangla ? 'আপনার সর্বশেষ আর্থিক কার্যক্রমের তালিকা।' : 'Latest financial transactions.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 flex flex-col items-center justify-center text-center p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <ClipboardList className="h-10 w-10 text-muted-foreground/60 mb-2 animate-pulse" />
-            <h4 className="text-sm font-semibold text-foreground">
-              {isBangla ? 'কোনো লেনদেন বিবরণী পাওয়া যায়নি' : 'No financial activity available'}
-            </h4>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs mb-4">
-              {isBangla
-                ? 'লেনদেন শুরু করতে প্রথম পেমেন্ট অথবা খরচ যোগ করুন।'
-                : 'Start recording transactions by creating your first entry.'}
-            </p>
-            <button className="h-8 px-4 bg-muted text-muted-foreground border border-border-subtle rounded-xl text-xs font-semibold cursor-not-allowed" disabled>
-              {isBangla ? 'প্রথম লেনদেন যোগ করুন' : 'Add First Transaction'}
-            </button>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Due Payments */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground">
-              {isBangla ? 'আসন্ন প্রদেয় কিস্তি ও বিল' : 'Upcoming Due Payments'}
-            </CardTitle>
-            <CardDescription>
-              {isBangla ? 'আসন্ন বিল এবং ঋণের কিস্তি পরিশোধের সময়সূচী।' : 'Bills and loan repayments.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 flex flex-col items-center justify-center text-center p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <CalendarClock className="h-10 w-10 text-muted-foreground/60 mb-2 animate-pulse" />
-            <h4 className="text-sm font-semibold text-foreground">
-              {isBangla ? 'আসন্ন কোনো প্রদেয় বিল নেই' : 'Nothing due'}
-            </h4>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              {isBangla
-                ? 'আপনার পরিশোধের কিস্তি তালিকা এখানে স্বয়ংক্রিয়ভাবে আপডেট হবে।'
-                : 'All scheduled repayments and outstanding bills will show up here.'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 7. PREVIEWS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bank & Wallets Preview */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground">
-              {isBangla ? 'ব্যাংক ও মোবাইল ওয়ালেট' : 'Bank & Wallets'}
-            </CardTitle>
-            <CardDescription>
-              {isBangla ? 'সংযুক্ত আর্থিক ব্যাংক হিসাব এবং পেমেন্ট গেটওয়ে।' : 'Connected financial accounts.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 border-t border-[rgba(255,255,255,0.04)] space-y-4">
-            <BankPreviewRow label="Cash Account" labelBn="নগদ ক্যাশ" type="Cash" />
-            <BankPreviewRow label="Primary Bank Account" labelBn="প্রধান ব্যাংক হিসাব" type="Bank" />
-            <BankPreviewRow label="bKash Wallet" labelBn="বিকাশ ওয়ালেট" type="MFS" />
-            <BankPreviewRow label="Nagad Wallet" labelBn="নগদ ওয়ালেট" type="MFS" />
-            <BankPreviewRow label="Rocket Wallet" labelBn="রকেট ওয়ালেট" type="MFS" />
-          </CardContent>
-        </Card>
-
-        {/* Expense Categories Chart */}
-        <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground">
-              {isBangla ? 'ব্যয় ক্যাটাগরি' : 'Expense Categories'}
-            </CardTitle>
-            <CardDescription>
-              {isBangla ? 'বিভিন্ন ক্যাটাগরিতে ব্যয়ের শতকরা অনুপাত।' : 'Distribution of expenses by category.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 flex flex-col items-center justify-center text-center p-6 border-t border-[rgba(255,255,255,0.04)] relative overflow-hidden">
-            <div className="relative h-28 w-28 mb-3 flex items-center justify-center">
-              {/* Premium Fake Pie Chart Vector */}
-              <div className="absolute inset-0 rounded-full border-[10px] border-muted/30" />
-              <div className="absolute inset-0 rounded-full border-[10px] border-indigo border-r-transparent border-b-transparent border-l-transparent transform rotate-45" />
-              <div className="absolute inset-0 rounded-full border-[10px] border-emerald border-t-transparent border-b-transparent border-l-transparent" />
-              <div className="absolute inset-0 rounded-full border-[10px] border-warning border-t-transparent border-r-transparent border-l-transparent" />
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">{isBangla ? 'ব্যয়' : 'Expenses'}</span>
+            {/* Recharts Bar Chart */}
+            <div className="h-[210px] w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={INCOME_EXPENSE_DATA}
+                  margin={{ top: 10, right: 8, left: -18, bottom: 0 }}
+                  barGap={3}
+                >
+                  <XAxis
+                    dataKey={isBangla ? 'dateBn' : 'date'}
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fill: '#8899A8', fontSize: 10.5 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => `৳${val / 1000}K`}
+                    tick={{ fill: '#8899A8', fontSize: 10.5 }}
+                    domain={[0, 100000]}
+                    ticks={[0, 20000, 40000, 60000, 80000, 100000]}
+                  />
+                  <RechartsTooltip content={<CustomBarTooltip isBangla={isBangla} />} />
+                  <Bar
+                    dataKey="income"
+                    fill="#10b981"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={11}
+                  />
+                  <Bar
+                    dataKey="expense"
+                    fill="#f43f5e"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={11}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-            <p className="text-xs text-muted-foreground max-w-[240px]">
-              {isBangla
-                ? 'খরচ রেকর্ড করা শুরু হলে ব্যয়ের ক্যাটাগরি পাই-চার্ট এখানে প্রদর্শিত হবে।'
-                : 'Expense category breakdown will appear here once expenses are recorded.'}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* 8. BUSINESS HEALTH SCORE & AI INSIGHTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Business Health Score */}
-        <Card className="lg:col-span-1 border border-[rgba(255,255,255,0.06)] bg-gradient-to-b from-card to-card/50 flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-              <Scale className="h-5 w-5 text-indigo shrink-0" />
-              <span>{isBangla ? 'আর্থিক স্কোর' : 'Business Health Score'}</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isBangla ? 'ব্যবসায়ের সামগ্রিক আর্থিক পারফরম্যান্স স্কোর।' : 'AI-powered metric of your overall financial standing.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-64 flex flex-col items-center justify-center text-center p-6 border-t border-[rgba(255,255,255,0.04)] relative">
-            {/* Elegant Radial Progress Skeleton */}
-            <div className="h-32 w-32 rounded-full border border-dashed border-border-subtle flex flex-col items-center justify-center p-6 mb-2">
-              <span className="text-3xl font-extrabold text-foreground/40">—</span>
-              <span className="text-[9px] font-bold text-primary tracking-wider uppercase mt-1">{isBangla ? 'আসন্ন' : 'Coming Soon'}</span>
+            {/* Bottom Summary Bar */}
+            <div className="grid grid-cols-3 gap-2 pt-4 mt-2 border-t border-white/[0.06] text-center">
+              <div>
+                <div className="text-[11px] text-muted-foreground">{isBangla ? 'মোট আয়' : 'Total Income'}</div>
+                <div className="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">৳185,750.00</div>
+                <div className="text-[10px] text-emerald-400 font-medium">+8.41%</div>
+              </div>
+              <div className="border-x border-white/[0.06]">
+                <div className="text-[11px] text-muted-foreground">{isBangla ? 'মোট ব্যয়' : 'Total Expense'}</div>
+                <div className="text-xs sm:text-sm font-bold text-rose-400 mt-0.5">৳87,130.00</div>
+                <div className="text-[10px] text-rose-400 font-medium">-6.12%</div>
+              </div>
+              <div>
+                <div className="text-[11px] text-muted-foreground">{isBangla ? 'নিট লাভ' : 'Net Profit'}</div>
+                <div className="text-xs sm:text-sm font-bold text-blue-400 mt-0.5">৳98,620.00</div>
+                <div className="text-[10px] text-emerald-400 font-medium">+18.75%</div>
+              </div>
             </div>
-            <p className="text-[11px] text-muted-foreground max-w-[200px]">
-              {isBangla
-                ? 'পর্যাপ্ত ডাটা সংগৃহীত হওয়ার পর AI আপনার ব্যবসার আর্থিক অবস্থা বিশ্লেষণ করবে।'
-                : 'AI will analyze your financial health after enough data is available.'}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* AI Financial Insights */}
-        <Card className="lg:col-span-2 border border-[rgba(255,255,255,0.06)] bg-gradient-to-br from-card to-indigo/5 flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary shrink-0" />
-              <span>{isBangla ? 'কাস্টম এআই আর্থিক অন্তর্দৃষ্টি' : 'AI Financial Insights'}</span>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {isBangla ? 'কৃত্রিম বুদ্ধিমত্তা দ্বারা পরিচালিত স্বয়ংক্রিয় পর্যবেক্ষণ।' : 'Automated detections by HelloKhata intelligent engine.'}
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 border-t border-[rgba(255,255,255,0.04)]">
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {isBangla ? 'স্বয়ংক্রিয়ভাবে চিহ্নিত হবে' : 'HelloKhata AI will automatically detect'}
-              </h4>
-              <ul className="space-y-2 text-xs text-foreground/90">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'মুনাফার সুযোগসমূহ' : 'Profit opportunities'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'অস্বাভাবিক ব্যয় সনাক্তকরণ' : 'Expense anomalies'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'নগদ অর্থের ঘাটতি বা পূর্বাভাস' : 'Cash shortages'}</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div className="space-y-3 md:pt-7">
-              <ul className="space-y-2 text-xs text-foreground/90">
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'দীর্ঘমেয়াদী বকেয়া আদায়ের তাগিদ' : 'Outstanding dues'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'ব্যবসায়িক ট্রেন্ড বিশ্লেষণ' : 'Business trends'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  <span>{isBangla ? 'আর্থিক ঝুঁকি পর্যালোচনা' : 'Financial risks'}</span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-
-          <div className="p-4 border-t border-[rgba(255,255,255,0.04)] flex justify-end">
-            <button className="h-9 px-4 bg-muted text-muted-foreground border border-border-subtle rounded-xl text-xs font-semibold flex items-center gap-2 cursor-not-allowed" disabled>
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>{isBangla ? 'বিশ্লেষণ করুন' : 'Generate Insights'}</span>
-            </button>
           </div>
-        </Card>
-      </div>
 
-      {/* 9. QUICK ACTIONS GRID */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-bold tracking-tight text-foreground">
-          {isBangla ? 'দ্রুত অ্যাকশন প্যানেল' : 'Quick Actions'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => {
-            const ActionIcon = action.icon;
-            return (
-              <div
-                key={index}
-                className="p-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-all cursor-not-allowed group flex items-start gap-3 relative overflow-hidden"
+          {/* 3.2 Cash Flow Summary (Donut Chart & Legend) (xl:col-span-4) */}
+          <div className="xl:col-span-4 rounded-2xl border border-white/[0.06] bg-card p-5 flex flex-col justify-between shadow-sm">
+            {/* Header with Period Dropdown */}
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-bold text-foreground">
+                {isBangla ? 'ক্যাশ ফ্লো সারাংশ' : 'Cash Flow Summary'}
+              </h3>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-muted/40 border border-white/5 text-muted-foreground hover:text-foreground transition-colors">
+                  <span>{isBangla ? 'এই মাস' : periodLabel}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36 bg-card border border-white/10">
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Week')}>
+                    {isBangla ? 'এই সপ্তাহ' : 'This Week'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Month')}>
+                    {isBangla ? 'এই মাস' : 'This Month'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPeriodLabel('This Year')}>
+                    {isBangla ? 'এই বছর' : 'This Year'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Donut Chart & Side Breakdown */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2 my-auto">
+              {/* Donut Chart with Center Text */}
+              <div className="relative w-44 h-44 flex items-center justify-center shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={CASH_FLOW_DATA}
+                      innerRadius={54}
+                      outerRadius={74}
+                      paddingAngle={2}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {CASH_FLOW_DATA.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.colorHex} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Center Content */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                  <span className="text-base font-extrabold text-foreground tracking-tight">
+                    ৳98,620
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {isBangla ? 'নিট ক্যাশ ফ্লো' : 'Net Cash Flow'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Side Breakdown Legend */}
+              <div className="space-y-2.5 w-full sm:w-auto flex-1 text-xs">
+                {CASH_FLOW_DATA.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: item.colorHex }}
+                      />
+                      <span className="text-muted-foreground truncate text-[11px]">
+                        {isBangla ? item.nameBn : item.name}
+                      </span>
+                    </div>
+                    <div className="text-right shrink-0 font-medium">
+                      <span className="text-foreground text-[11px]">৳{formatCurrency(item.value)}</span>
+                      <span className="text-[10px] text-muted-foreground ml-1.5">{item.percentage}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer Navigation Link */}
+            <div className="pt-3 border-t border-white/[0.06]">
+              <Link
+                href="/finance/reports"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium transition-colors"
               >
-                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${action.iconColor}`}>
-                  <ActionIcon className="h-4 w-4 shrink-0" />
+                <span>{isBangla ? 'ক্যাশ ফ্লো রিপোর্ট দেখুন' : 'View cash flow report'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* 3.3 Side Stacked Widgets (Quick Summary & Account Balances) (xl:col-span-3) */}
+          <div className="xl:col-span-3 flex flex-col gap-4">
+            {/* Quick Summary Widget */}
+            <div className="rounded-2xl border border-white/[0.06] bg-card p-4 shadow-sm space-y-2.5">
+              <h3 className="text-sm font-bold text-foreground">
+                {isBangla ? 'দ্রুত সারসংক্ষেপ' : 'Quick Summary'}
+              </h3>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{isBangla ? 'মোট আয়' : 'Total Income'}</span>
+                  <span className="font-semibold text-emerald-400">৳185,750.00</span>
                 </div>
-                <div className="space-y-1 pr-6">
-                  <h3 className="text-xs font-semibold text-foreground">
-                    {isBangla ? action.titleBn : action.title}
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground leading-normal line-clamp-2">
-                    {isBangla ? action.descBn : action.desc}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{isBangla ? 'মোট ব্যয়' : 'Total Expense'}</span>
+                  <span className="font-semibold text-rose-400">৳87,130.00</span>
                 </div>
-                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{isBangla ? 'মোট লাভ' : 'Gross Profit'}</span>
+                  <span className="font-semibold text-blue-400">৳98,620.00</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{isBangla ? 'ব্যয় অনুপাত' : 'Expense Ratio'}</span>
+                  <span className="font-semibold text-foreground">46.93%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{isBangla ? 'নিট লাভ মার্জিন' : 'Net Profit Margin'}</span>
+                  <span className="font-semibold text-foreground">53.07%</span>
+                </div>
               </div>
-            );
-          })}
+            </div>
+
+            {/* Account Balances Widget */}
+            <div className="rounded-2xl border border-white/[0.06] bg-card p-4 shadow-sm space-y-2.5 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-foreground">
+                    {isBangla ? 'অ্যাকাউন্ট ব্যালেন্স' : 'Account Balances'}
+                  </h3>
+                  <Link
+                    href="/finance/bank-wallets"
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  >
+                    {isBangla ? 'সব দেখুন' : 'View All'}
+                  </Link>
+                </div>
+
+                <div className="space-y-2.5 text-xs">
+                  {/* Cash in Hand */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
+                        <Wallet className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-foreground/90 font-medium text-[11px]">
+                        {isBangla ? 'হাতে নগদ' : 'Cash in Hand'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-emerald-400 text-[11px]">৳125,430.00</span>
+                  </div>
+
+                  {/* Bank Accounts */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-teal-500/10 flex items-center justify-center text-teal-400 shrink-0">
+                        <Building2 className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-foreground/90 font-medium text-[11px]">
+                        {isBangla ? 'ব্যাংক হিসাব' : 'Bank Accounts'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-teal-400 text-[11px]">৳385,750.00</span>
+                  </div>
+
+                  {/* Mobile Banking */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-purple-500/10 flex items-center justify-center text-purple-400 shrink-0">
+                        <Smartphone className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-foreground/90 font-medium text-[11px]">
+                        {isBangla ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-purple-400 text-[11px]">৳12,430.00</span>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0">
+                        <CreditCard className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-foreground/90 font-medium text-[11px]">
+                        {isBangla ? 'কার্ড ব্যালেন্স' : 'Cards'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-muted-foreground text-[11px]">৳0.00</span>
+                  </div>
+
+                  {/* Wallets */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-md bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">
+                        <Wallet className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-foreground/90 font-medium text-[11px]">
+                        {isBangla ? 'ডিজিটাল ওয়ালেট' : 'Wallets'}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-emerald-400 text-[11px]">৳2,850.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            4. MIDDLE SECTION - ROW 2 (Categories Breakdown & Recent Transactions)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* 4.1 Top Income Categories Card */}
+          <div className="rounded-2xl border border-white/[0.06] bg-card p-5 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-foreground">
+                  {isBangla ? 'শীর্ষ আয়ের ক্যাটাগরি' : 'Top Income Categories'}
+                </h3>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-muted/40 border border-white/5 text-muted-foreground hover:text-foreground transition-colors">
+                    <span>{isBangla ? 'এই মাস' : periodLabel}</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-36 bg-card border border-white/10">
+                    <DropdownMenuItem onClick={() => setPeriodLabel('This Month')}>
+                      {isBangla ? 'এই মাস' : 'This Month'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriodLabel('This Year')}>
+                      {isBangla ? 'এই বছর' : 'This Year'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="space-y-3.5">
+                {TOP_INCOME_CATEGORIES.map((cat, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 ${cat.bg}`}>
+                          <DollarSign className="h-3 w-3" />
+                        </div>
+                        <span className="font-medium text-foreground/90 text-[11.5px]">
+                          {isBangla ? cat.nameBn : cat.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground text-[11.5px]">
+                          ৳{formatCurrency(cat.amount)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground w-7 text-right">
+                          {cat.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    {/* Progress Track */}
+                    <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${cat.percentage}%`,
+                          backgroundColor: cat.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 mt-3 border-t border-white/[0.06]">
+              <Link
+                href="/finance/income"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium transition-colors"
+              >
+                <span>{isBangla ? 'সব আয়ের ক্যাটাগরি দেখুন' : 'View all income categories'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* 4.2 Top Expense Categories Card */}
+          <div className="rounded-2xl border border-white/[0.06] bg-card p-5 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-foreground">
+                  {isBangla ? 'শীর্ষ ব্যয়ের ক্যাটাগরি' : 'Top Expense Categories'}
+                </h3>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-muted/40 border border-white/5 text-muted-foreground hover:text-foreground transition-colors">
+                    <span>{isBangla ? 'এই মাস' : periodLabel}</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-36 bg-card border border-white/10">
+                    <DropdownMenuItem onClick={() => setPeriodLabel('This Month')}>
+                      {isBangla ? 'এই মাস' : 'This Month'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriodLabel('This Year')}>
+                      {isBangla ? 'এই বছর' : 'This Year'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div className="space-y-3.5">
+                {TOP_EXPENSE_CATEGORIES.map((cat, i) => (
+                  <div key={i} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 ${cat.bg}`}>
+                          <Receipt className="h-3 w-3" />
+                        </div>
+                        <span className="font-medium text-foreground/90 text-[11.5px]">
+                          {isBangla ? cat.nameBn : cat.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground text-[11.5px]">
+                          ৳{formatCurrency(cat.amount)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground w-7 text-right">
+                          {cat.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    {/* Progress Track */}
+                    <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${cat.percentage * 2}%`,
+                          backgroundColor: cat.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 mt-3 border-t border-white/[0.06]">
+              <Link
+                href="/finance/expenses"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium transition-colors"
+              >
+                <span>{isBangla ? 'সব ব্যয়ের ক্যাটাগরি দেখুন' : 'View all expense categories'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* 4.3 Recent Transactions Card */}
+          <div className="rounded-2xl border border-white/[0.06] bg-card p-5 flex flex-col justify-between shadow-sm">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground">
+                  {isBangla ? 'সাম্প্রতিক লেনদেন' : 'Recent Transactions'}
+                </h3>
+                <Link
+                  href="/finance/transactions"
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  {isBangla ? 'সব দেখুন' : 'View All'}
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                {RECENT_TRANSACTIONS.map((tx) => {
+                  const isIncome = tx.type === 'income';
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${
+                            isIncome
+                              ? 'bg-emerald-500/10 text-emerald-400'
+                              : 'bg-rose-500/10 text-rose-400'
+                          }`}
+                        >
+                          {isIncome ? (
+                            <ArrowUpRight className="h-3.5 w-3.5" />
+                          ) : (
+                            <ArrowDownRight className="h-3.5 w-3.5" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-foreground text-[11.5px] truncate">
+                            {isBangla ? tx.titleBn : tx.title}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {isBangla ? tx.subtitleBn : tx.subtitle} • {isBangla ? tx.dateBn : tx.date}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className={`font-semibold text-[11.5px] shrink-0 ${
+                          isIncome ? 'text-emerald-400' : 'text-rose-400'
+                        }`}
+                      >
+                        {isIncome ? `+৳${formatCurrency(tx.amount)}` : `-৳${formatCurrency(Math.abs(tx.amount))}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-4 mt-3 border-t border-white/[0.06]">
+              <Link
+                href="/finance/transactions"
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium transition-colors"
+              >
+                <span>{isBangla ? 'সব লেনদেন দেখুন' : 'View all transactions'}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            5. BOTTOM ALERT / ACTION CARDS STRIP (5 Cards)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          {/* Card 1: Overdue Receivables */}
+          <Link
+            href="/finance/receivables"
+            className="group rounded-2xl border border-white/[0.06] bg-card p-4 hover:border-amber-500/30 transition-all shadow-sm flex items-center gap-3.5"
+          >
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {isBangla ? 'মেয়াদোত্তীর্ণ প্রাপ্য' : 'Overdue Receivables'}
+              </div>
+              <div className="text-sm font-bold text-amber-400 mt-0.5">৳48,600.00</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isBangla ? '৮টি চালান' : '8 Invoices'}
+              </div>
+            </div>
+          </Link>
+
+          {/* Card 2: Overdue Payables */}
+          <Link
+            href="/finance/payables"
+            className="group rounded-2xl border border-white/[0.06] bg-card p-4 hover:border-rose-500/30 transition-all shadow-sm flex items-center gap-3.5"
+          >
+            <div className="h-10 w-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0 group-hover:scale-105 transition-transform">
+              <FileClock className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {isBangla ? 'মেয়াদোত্তীর্ণ প্রদেয়' : 'Overdue Payables'}
+              </div>
+              <div className="text-sm font-bold text-rose-400 mt-0.5">৳32,400.00</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isBangla ? '৫টি বিল' : '5 Bills'}
+              </div>
+            </div>
+          </Link>
+
+          {/* Card 3: Due Today (Receivable) */}
+          <Link
+            href="/finance/receivables"
+            className="group rounded-2xl border border-white/[0.06] bg-card p-4 hover:border-cyan-500/30 transition-all shadow-sm flex items-center gap-3.5"
+          >
+            <div className="h-10 w-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-105 transition-transform">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {isBangla ? 'আজকের প্রাপ্য' : 'Due Today (Receivable)'}
+              </div>
+              <div className="text-sm font-bold text-cyan-400 mt-0.5">৳18,200.00</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isBangla ? '৩টি চালান' : '3 Invoices'}
+              </div>
+            </div>
+          </Link>
+
+          {/* Card 4: Due Today (Payable) */}
+          <Link
+            href="/finance/payables"
+            className="group rounded-2xl border border-white/[0.06] bg-card p-4 hover:border-purple-500/30 transition-all shadow-sm flex items-center gap-3.5"
+          >
+            <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0 group-hover:scale-105 transition-transform">
+              <ArrowLeftRight className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {isBangla ? 'আজকের প্রদেয়' : 'Due Today (Payable)'}
+              </div>
+              <div className="text-sm font-bold text-purple-400 mt-0.5">৳7,800.00</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isBangla ? '২টি বিল' : '2 Bills'}
+              </div>
+            </div>
+          </Link>
+
+          {/* Card 5: Unreconciled Transactions */}
+          <Link
+            href="/finance/bank-wallets"
+            className="group rounded-2xl border border-white/[0.06] bg-card p-4 hover:border-amber-500/30 transition-all shadow-sm flex items-center gap-3.5"
+          >
+            <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-105 transition-transform">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {isBangla ? 'অমিমাংসিত লেনদেন' : 'Unreconciled Transactions'}
+              </div>
+              <div className="text-sm font-bold text-amber-400 mt-0.5">12</div>
+              <div className="text-[10px] text-muted-foreground">
+                {isBangla ? 'ব্যাংক / ক্যাশ' : 'Bank / Cash'}
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
-
-      {/* 10. BOTTOM SETUP / INFORMATION CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-        <BottomInfoCard
-          title={isBangla ? 'হিসাববিজ্ঞান সেটআপ' : 'Accounting Setup'}
-          desc={isBangla ? 'আপনার হিসাব মডিউল সেটিংস সম্পন্ন করুন।' : 'Finish setting up your accounting module.'}
-          icon={CheckSquare}
-          isBangla={isBangla}
-        />
-        <BottomInfoCard
-          title={isBangla ? 'কর ও ভ্যাট' : 'Tax & VAT'}
-          desc={isBangla ? 'ভ্যাট এবং ট্যাক্স প্রাধিকার হার সেট করুন।' : 'Configure VAT and tax preferences.'}
-          icon={ReceiptText}
-          isBangla={isBangla}
-        />
-        <BottomInfoCard
-          title={isBangla ? 'চার্ট অফ অ্যাকাউন্টস' : 'Chart of Accounts'}
-          desc={isBangla ? 'আপনার হিসাবের কাঠামো পরিচালনা করুন।' : 'Manage your accounting structure.'}
-          icon={FolderTree}
-          isBangla={isBangla}
-        />
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
-// Reusable HealthIndicator component
-function HealthIndicator({
-  title,
-  status,
-  statusLabel,
-}: {
+// --- HELPER SUB-COMPONENTS ---
+
+interface TopKpiCardProps {
   title: string;
-  status: 'healthy' | 'warning' | 'attention' | 'comingSoon';
-  statusLabel: string;
-}) {
-  const badgeColors = {
-    healthy: 'bg-emerald/10 text-emerald border-emerald/20',
-    warning: 'bg-warning/10 text-warning border-warning/20',
-    attention: 'bg-destructive/10 text-destructive border-destructive/20',
-    comingSoon: 'bg-muted text-muted-foreground border-border-subtle',
-  };
-
-  return (
-    <div className="p-4 rounded-xl border border-[rgba(255,255,255,0.04)] bg-card flex flex-col justify-between gap-3">
-      <span className="text-xs font-semibold text-muted-foreground">{title}</span>
-      <div className="flex items-center gap-2">
-        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${badgeColors[status]}`}>
-          {statusLabel}
-        </span>
-      </div>
-    </div>
-  );
+  amount: string;
+  trend: string;
+  isPositive: boolean;
+  trendColor: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconBg: string;
+  infoTooltip?: string;
+  sparklinePath: string;
+  sparklineColor: string;
 }
 
-// Reusable FinancialStatCard component
-function FinancialStatCard({
+function TopKpiCard({
   title,
-  desc,
+  amount,
+  trend,
+  isPositive,
+  trendColor,
   icon: Icon,
-  iconColor,
-  isBangla,
-}: {
-  title: string;
-  desc: string;
-  icon: any;
-  iconColor: 'indigo' | 'emerald' | 'warning' | 'destructive';
-  isBangla: boolean;
-}) {
-  const iconColorClasses = {
-    indigo: 'text-primary bg-primary-subtle',
-    emerald: 'text-emerald bg-emerald-subtle',
-    warning: 'text-warning bg-warning-subtle',
-    destructive: 'text-destructive bg-destructive-subtle',
-  };
-
+  iconBg,
+  infoTooltip,
+  sparklinePath,
+  sparklineColor,
+}: TopKpiCardProps) {
   return (
-    <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] flex flex-col justify-between h-36">
-      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0">
-        <div className="space-y-0.5">
-          <span className="text-xs font-semibold text-muted-foreground">{title}</span>
-          <p className="text-[10px] text-muted-foreground/80 leading-normal line-clamp-1">{desc}</p>
+    <div className="rounded-2xl border border-white/[0.06] bg-card p-4 flex flex-col justify-between shadow-sm relative overflow-hidden group hover:border-white/10 transition-all">
+      {/* Header of KPI card: Icon & Title */}
+      <div className="flex items-center gap-2.5">
+        <div className={`h-8 w-8 rounded-lg border flex items-center justify-center shrink-0 ${iconBg}`}>
+          <Icon className="h-4 w-4" />
         </div>
-        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${iconColorClasses[iconColor]}`}>
-          <Icon className="h-4.5 w-4.5 shrink-0" />
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="text-lg font-bold text-foreground">—</div>
-        <div className="text-[10px] text-muted-foreground mt-1 border-t border-[rgba(255,255,255,0.04)] pt-1">
-          {isBangla ? 'সেটআপ সম্পন্ন করার পর উপলব্ধ হবে' : 'Will be available after setup'}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Reusable SnapshotCard component
-function SnapshotCard({
-  title,
-  desc,
-  icon: Icon,
-  btnLabel,
-  isBangla,
-}: {
-  title: string;
-  desc: string;
-  icon: any;
-  btnLabel: string;
-  isBangla: boolean;
-}) {
-  return (
-    <Card className="border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] flex flex-col justify-between">
-      <CardHeader className="pb-3 flex flex-row items-start gap-3">
-        <div className="h-8 w-8 rounded-lg bg-indigo-subtle flex items-center justify-center shrink-0">
-          <Icon className="h-4.5 w-4.5 text-primary shrink-0" />
-        </div>
-        <div className="space-y-1">
-          <CardTitle className="text-sm font-bold text-foreground">{title}</CardTitle>
-          <CardDescription className="text-xs leading-normal">{desc}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0 pb-4 pr-4 flex justify-end">
-        <button className="h-7 px-3 bg-muted text-muted-foreground border border-border-subtle rounded-lg text-[10px] font-semibold cursor-not-allowed" disabled>
-          {btnLabel}
-        </button>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Reusable BottomInfoCard component
-function BottomInfoCard({
-  title,
-  desc,
-  icon: Icon,
-  isBangla,
-}: {
-  title: string;
-  desc: string;
-  icon: any;
-  isBangla: boolean;
-}) {
-  return (
-    <div className="p-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] transition-all cursor-not-allowed group flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-lg bg-indigo-subtle flex items-center justify-center shrink-0">
-          <Icon className="h-4.5 w-4.5 text-primary shrink-0" />
-        </div>
-        <div className="space-y-0.5">
-          <h3 className="text-xs font-semibold text-foreground">{title}</h3>
-          <p className="text-[10px] text-muted-foreground leading-normal">{desc}</p>
-        </div>
-      </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-    </div>
-  );
-}
-
-// Simple local FileSpreadsheet placeholder icon definition since it's not imported
-function FileSpreadsheet(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M8 13h2" />
-      <path d="M14 13h2" />
-      <path d="M8 17h2" />
-      <path d="M14 17h2" />
-    </svg>
-  );
-}
-
-// Local BankPreviewRow helper component
-function BankPreviewRow({
-  label,
-  labelBn,
-  type,
-}: {
-  label: string;
-  labelBn: string;
-  type: string;
-}) {
-  const { isBangla } = useAppTranslation();
-  return (
-    <div className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.03)] last:border-0 last:pb-0 first:pt-0">
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-xl bg-muted/40 flex items-center justify-center shrink-0">
-          <Wallet className="h-4 w-4 text-muted-foreground/60" />
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-foreground">
-            {isBangla ? labelBn : label}
-          </p>
-          <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground uppercase">
-            {type}
+        <div className="flex items-center gap-1 min-w-0">
+          <span className="text-xs text-muted-foreground font-medium truncate">
+            {title}
           </span>
+          {infoTooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/60 hover:text-foreground transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-popover text-popover-foreground border border-white/10 text-xs max-w-xs">
+                {infoTooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
-      
-      {/* Premium Skeleton Indicator */}
-      <div className="flex items-center gap-2">
-        <div className="h-4 w-12 bg-muted/30 rounded-md animate-pulse" />
-        <span className="text-xs font-bold text-muted-foreground/40">৳—</span>
+
+      {/* Main Amount */}
+      <div className="mt-3.5">
+        <div className="text-lg md:text-xl font-bold tracking-tight text-foreground font-sans">
+          {amount}
+        </div>
+      </div>
+
+      {/* Footer: Trend and SVG Sparkline */}
+      <div className="flex items-center justify-between mt-2 pt-1">
+        <div className={`text-[11px] font-semibold flex items-center gap-1 ${trendColor}`}>
+          <span>{trend}</span>
+        </div>
+        {/* Curved Sparkline */}
+        <div className="w-16 h-6 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
+          <svg viewBox="0 0 96 28" className="w-full h-full overflow-visible" fill="none">
+            <path
+              d={sparklinePath}
+              stroke={sparklineColor}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
       </div>
     </div>
   );
+}
+
+// Custom Tooltip for Clustered Bar Chart
+function CustomBarTooltip({ active, payload, label, isBangla }: any) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-card/95 backdrop-blur-md p-2.5 shadow-xl text-xs space-y-1">
+        <div className="font-semibold text-foreground border-b border-white/10 pb-1 mb-1">
+          {label}
+        </div>
+        <div className="flex items-center justify-between gap-4 text-emerald-400">
+          <span>{isBangla ? 'আয়' : 'Income'}:</span>
+          <span className="font-bold">৳{payload[0]?.value?.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4 text-rose-400">
+          <span>{isBangla ? 'ব্যয়' : 'Expense'}:</span>
+          <span className="font-bold">৳{payload[1]?.value?.toLocaleString()}</span>
+        </div>
+      </div>
+    );
+  }
+  return null;
 }

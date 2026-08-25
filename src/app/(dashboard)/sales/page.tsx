@@ -287,9 +287,9 @@ export default function SalesPage() {
                       <th className="px-4 py-3.5 whitespace-nowrap">
                         {isBangla ? "বাকি" : "Due"}
                       </th>
-                      <th className="px-4 py-3.5 whitespace-nowrap">
+                      {/* <th className="px-4 py-3.5 whitespace-nowrap">
                         {isBangla ? "স্ট্যাটাস" : "Status"}
-                      </th>
+                      </th> */}
                       <th className="px-4 py-3.5 text-right whitespace-nowrap">
                         {isBangla ? "অ্যাকশন" : "Actions"}
                       </th>
@@ -366,14 +366,14 @@ export default function SalesPage() {
                               {formatCurrency(sale.dueAmount)}
                             </span>
                           </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
+                          {/* <td className="px-4 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border ${status.color}`}
                             >
                               <span className="h-1.5 w-1.5 rounded-full bg-current" />
                               {status.label}
                             </span>
-                          </td>
+                          </td> */}
                           <td
                             className="px-4 py-4 text-right whitespace-nowrap"
                             onClick={(e) => e.stopPropagation()}

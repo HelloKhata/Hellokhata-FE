@@ -20,8 +20,10 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  ChevronDown,
   ArrowUpRight,
   ArrowDownLeft,
+  ArrowLeftRight,
   ShieldCheck,
   Sparkles,
   CreditCard,
@@ -29,13 +31,15 @@ import {
   EyeOff,
   Signal,
   Wifi,
+  Banknote,
+  Send,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
 interface BankAccount {
   id: string;
   name: string;
-  type: 'bank' | 'wallet';
+  type: 'bank' | 'wallet' | 'cash';
   provider: string;
   providerBn: string;
   accountNumber: string;
@@ -61,6 +65,19 @@ interface ActivityLog {
 
 // ─── Mock Data ─────────────────────────────────────────────
 const INITIAL_ACCOUNTS: BankAccount[] = [
+  {
+    id: 'ACC-000',
+    name: 'Main Cash Vault',
+    type: 'cash',
+    provider: 'Cash Vault (Till)',
+    providerBn: 'ক্যাশ ভল্ট (নগদ তহবিল)',
+    accountNumber: 'CASH-VAULT-01',
+    balance: 245000,
+    branch: 'Head Office POS Counter',
+    branchBn: 'প্রধান কার্যালয় ক্যাশ কাউন্টার',
+    color: 'from-[#78350f] via-[#92400e] to-[#d97706]',
+    accentColor: '#fbbf24',
+  },
   {
     id: 'ACC-001',
     name: 'Corporate Current Account',
@@ -108,7 +125,9 @@ const INITIAL_ACCOUNTS: BankAccount[] = [
 const INITIAL_ACTIVITIES: ActivityLog[] = [
   { id: 'ACT-001', date: '2026-08-05', type: 'inflow', amount: 60000, description: 'Cash deposit contra', descriptionBn: 'নগদ জমা স্থানান্তর (কনট্রা)', accountName: 'Sonali Bank PLC', accountNameBn: 'সোনালী ব্যাংক পিএলসি' },
   { id: 'ACT-002', date: '2026-08-04', type: 'inflow', amount: 30000, description: 'Bank statement adjustment', descriptionBn: 'ব্যাংক স্টেটমেন্ট সমন্বয়', accountName: 'Dutch-Bangla Bank', accountNameBn: 'ডাচ-বাংলা ব্যাংক' },
+  { id: 'ACT-002', date: '2026-08-04', type: 'inflow', amount: 30000, description: 'Bank statement adjustment', descriptionBn: 'ব্যাংক স্টেটমেন্ট সমন্বয়', accountName: 'Dutch-Bangla Bank', accountNameBn: 'ডাচ-বাংলা ব্যাংক' },
   { id: 'ACT-003', date: '2026-08-03', type: 'outflow', amount: 15000, description: 'Vendor payment transfer', descriptionBn: 'সাপ্লায়ার পেমেন্ট', accountName: 'bKash', accountNameBn: 'বিকাশ' },
+  { id: 'ACT-004', date: '2026-08-02', type: 'inflow', amount: 200000, description: 'Sale proceeds deposit', descriptionBn: 'বিক্রয় আয় জমা', accountName: 'Dutch-Bangla Bank', accountNameBn: 'ডাচ-বাংলা ব্যাংক' },
   { id: 'ACT-004', date: '2026-08-02', type: 'inflow', amount: 200000, description: 'Sale proceeds deposit', descriptionBn: 'বিক্রয় আয় জমা', accountName: 'Dutch-Bangla Bank', accountNameBn: 'ডাচ-বাংলা ব্যাংক' },
 ];
 
@@ -135,6 +154,14 @@ function VirtualCard({
   hideBalance: boolean;
 }) {
   const isWallet = account.type === 'wallet';
+  const isCash = account.type === 'cash';
+
+  const typeLabel = isCash
+    ? (isBangla ? 'ক্যাশ ভল্ট' : 'Cash Vault')
+    : isWallet
+    ? (isBangla ? 'মোবাইল ওয়ালেট' : 'Mobile Wallet')
+    : (isBangla ? 'ব্যাংক অ্যাকাউন্ট' : 'Bank Account');
+
   return (
     <motion.div
       layout
@@ -157,18 +184,18 @@ function VirtualCard({
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-0.5">
               {isBangla ? account.providerBn : account.provider}
             </p>
-           
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
               style={{ background: 'rgba(255,255,255,0.15)', color: account.accentColor }}
             >
-              {isWallet
-                ? (isBangla ? 'মোবাইল ওয়ালেট' : 'Mobile Wallet')
-                : (isBangla ? 'ব্যাংক অ্যাকাউন্ট' : 'Bank Account')}
+              {isCash && <Banknote className="h-3 w-3" />}
+              {typeLabel}
             </span>
-            {isWallet ? (
+            {isCash ? (
+              <ShieldCheck className="h-4 w-4 text-white/40" />
+            ) : isWallet ? (
               <Wifi className="h-4 w-4 text-white/40" />
             ) : (
               <Signal className="h-4 w-4 text-white/40" />
@@ -178,9 +205,12 @@ function VirtualCard({
 
         {/* Account number chip */}
         <div className="flex items-center gap-1.5">
-          {!isWallet && (
+          {isCash && <Banknote className="h-3.5 w-3.5 text-white/60 mr-0.5" />}
+          {!isWallet && !isCash && (
             <div className="flex gap-1 mr-1">
-              {[0,1,2].map(i => <div key={i} className="w-5 h-3 rounded-sm bg-white/20" />)}
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="w-5 h-3 rounded-sm bg-white/20" />
+              ))}
             </div>
           )}
           {isWallet && <Phone className="h-3 w-3 text-white/50" />}
@@ -188,8 +218,11 @@ function VirtualCard({
             {hideBalance ? '•••• •••• ••••' : account.accountNumber}
           </span>
           <button
-            onClick={e => { e.stopPropagation(); onCopy(account.accountNumber); }}
-            className="h-5 w-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy(account.accountNumber);
+            }}
+            className="h-5 w-5 rounded flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
           >
             <Copy className="h-3 w-3 text-white/50" />
           </button>
@@ -208,16 +241,22 @@ function VirtualCard({
           {/* Quick action row */}
           <div className="flex gap-1.5">
             <button
-              onClick={e => { e.stopPropagation(); onReconcile(account.id); }}
-              className="h-8 px-3 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all hover:scale-105"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReconcile(account.id);
+              }}
+              className="h-8 px-3 rounded-xl text-[10px] font-bold flex items-center gap-1 transition-all hover:scale-105 cursor-pointer"
               style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}
             >
               <RefreshCw className="h-3 w-3" />
               {isBangla ? 'সমন্বয়' : 'Adjust'}
             </button>
             <button
-              onClick={e => { e.stopPropagation(); onDelete(account.id); }}
-              className="h-8 w-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 hover:bg-rose-500/30"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(account.id);
+              }}
+              className="h-8 w-8 rounded-xl flex items-center justify-center transition-all hover:scale-105 hover:bg-rose-500/30 cursor-pointer"
               style={{ background: 'rgba(255,255,255,0.1)' }}
             >
               <Trash2 className="h-3.5 w-3.5 text-white/60" />
@@ -226,27 +265,26 @@ function VirtualCard({
         </div>
       </div>
 
-      {/* Branch footer */}
-      {!isWallet && (
-        <div
-          className="px-5 py-2 flex items-center justify-between text-[10px]"
-          style={{ background: 'rgba(0,0,0,0.3)' }}
-        >
-          <span className="text-white/40">{isBangla ? account.branchBn : account.branch}</span>
-          {account.routingNumber && (
-            <span className="font-mono text-white/30">RT: {account.routingNumber}</span>
-          )}
-        </div>
-      )}
-      {isWallet && account.walletType && (
-        <div
-          className="px-5 py-2 flex items-center justify-between text-[10px]"
-          style={{ background: 'rgba(0,0,0,0.3)' }}
-        >
+      {/* Branch / Vault footer */}
+      <div
+        className="px-5 py-2 flex items-center justify-between text-[10px]"
+        style={{ background: 'rgba(0,0,0,0.3)' }}
+      >
+        <span className="text-white/40">
+          {isBangla ? account.branchBn : account.branch}
+        </span>
+        {isCash ? (
+          <span className="font-mono text-amber-300/70 font-bold tracking-wider text-[9px] uppercase">
+            CASH IN HAND
+          </span>
+        ) : account.routingNumber ? (
+          <span className="font-mono text-white/30">
+            RT: {account.routingNumber}
+          </span>
+        ) : account.walletType ? (
           <span className="text-white/40">{account.walletType} Account</span>
-          <ShieldCheck className="h-3 w-3 text-white/30" />
-        </div>
-      )}
+        ) : null}
+      </div>
     </motion.div>
   );
 }
@@ -263,10 +301,16 @@ export default function FinanceBankWalletsPage() {
 
   // UI State
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'bank' | 'wallet'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'bank' | 'wallet' | 'cash'>('all');
   const [hideBalances, setHideBalances] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
   const [alertType, setAlertType] = useState<'success' | 'error'>('success');
+
+  // Quick Transfer State
+  const [transferFrom, setTransferFrom] = useState('');
+  const [transferTo, setTransferTo] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
 
   // Add Account Form State
   const [formCategory, setFormCategory] = useState<'bank' | 'wallet'>('bank');
@@ -293,6 +337,7 @@ export default function FinanceBankWalletsPage() {
   const totalLiquid  = accounts.reduce((s, a) => s + a.balance, 0);
   const totalBank    = accounts.filter(a => a.type === 'bank').reduce((s, a) => s + a.balance, 0);
   const totalWallet  = accounts.filter(a => a.type === 'wallet').reduce((s, a) => s + a.balance, 0);
+  const totalCash    = accounts.filter(a => a.type === 'cash').reduce((s, a) => s + a.balance, 0);
   const bankPct      = totalLiquid > 0 ? Math.round((totalBank / totalLiquid) * 100) : 0;
   const walletPct    = 100 - bankPct;
 
@@ -323,6 +368,79 @@ export default function FinanceBankWalletsPage() {
     setAccounts(prev => prev.filter(a => a.id !== id));
     if (activeCardId === id) setActiveCardId(null);
     showAlert(isBangla ? 'অ্যাকাউন্ট মুছে ফেলা হয়েছে।' : 'Account deleted.');
+  };
+
+  const handleQuickTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferFrom) {
+      toast.error(isBangla ? 'উৎস অ্যাকাউন্ট নির্বাচন করুন' : 'Please select source account');
+      return;
+    }
+    if (!transferTo) {
+      toast.error(isBangla ? 'গন্তব্য অ্যাকাউন্ট নির্বাচন করুন' : 'Please select destination account');
+      return;
+    }
+    if (transferFrom === transferTo) {
+      toast.error(isBangla ? 'উৎস ও গন্তব্য অ্যাকাউন্ট ভিন্ন হতে হবে' : 'Source and destination accounts must be different');
+      return;
+    }
+    const amt = parseFloat(transferAmount);
+    if (!amt || amt <= 0) {
+      toast.error(isBangla ? 'সঠিক টাকার পরিমাণ লিখুন' : 'Please enter a valid amount');
+      return;
+    }
+
+    const sourceAcc = accounts.find(a => a.id === transferFrom);
+    const destAcc = accounts.find(a => a.id === transferTo);
+
+    if (!sourceAcc || !destAcc) {
+      toast.error(isBangla ? 'অ্যাকাউন্ট খুঁজে পাওয়া যায়নি' : 'Account not found');
+      return;
+    }
+
+    if (sourceAcc.balance < amt) {
+      toast.error(isBangla ? 'উৎস অ্যাকাউন্টে পর্যাপ্ত ব্যালেন্স নেই' : 'Insufficient balance in source account');
+      return;
+    }
+
+    setIsTransferring(true);
+
+    setTimeout(() => {
+      setAccounts(prev => prev.map(acc => {
+        if (acc.id === transferFrom) return { ...acc, balance: acc.balance - amt };
+        if (acc.id === transferTo) return { ...acc, balance: acc.balance + amt };
+        return acc;
+      }));
+
+      const newActivity1: ActivityLog = {
+        id: `ACT-${(activities.length + 1).toString().padStart(3, '0')}`,
+        date: new Date().toISOString().split('T')[0],
+        type: 'outflow',
+        amount: amt,
+        description: `Transfer to ${destAcc.provider || destAcc.name}`,
+        descriptionBn: `${destAcc.providerBn || destAcc.provider} এ ট্রান্সফার`,
+        accountName: sourceAcc.provider,
+        accountNameBn: sourceAcc.providerBn,
+      };
+
+      const newActivity2: ActivityLog = {
+        id: `ACT-${(activities.length + 2).toString().padStart(3, '0')}`,
+        date: new Date().toISOString().split('T')[0],
+        type: 'inflow',
+        amount: amt,
+        description: `Transfer from ${sourceAcc.provider || sourceAcc.name}`,
+        descriptionBn: `${sourceAcc.providerBn || sourceAcc.provider} থেকে প্রাপ্ত`,
+        accountName: destAcc.provider,
+        accountNameBn: destAcc.providerBn,
+      };
+
+      setActivities(prev => [newActivity1, newActivity2, ...prev]);
+      setTransferAmount('');
+      setTransferFrom('');
+      setTransferTo('');
+      setIsTransferring(false);
+      toast.success(isBangla ? 'টাকা সফলভাবে ট্রান্সফার করা হয়েছে!' : 'Money transferred successfully!');
+    }, 350);
   };
 
   const handleAddAccount = (e: React.FormEvent) => {
@@ -453,14 +571,14 @@ export default function FinanceBankWalletsPage() {
       </AnimatePresence>
 
       {/* ══ SECTION A: LIQUIDITY OVERVIEW CARDS ══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">
         {/* Total */}
         <div className="rounded-2xl p-5 border bg-emerald-500/10 border-emerald-500/20 shadow-xs relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-1 relative z-10">
             {isBangla ? 'সর্বমোট তারল্য' : 'Total Liquidity'}
           </p>
-          <p className="text-3xl font-bold text-foreground font-mono relative z-10">
+          <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono relative z-10 truncate">
             {hideBalances ? '৳ ••••••' : formatCurrency(totalLiquid)}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
@@ -475,15 +593,12 @@ export default function FinanceBankWalletsPage() {
             <Landmark className="h-3 w-3" />
             {isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
           </p>
-          <p className="text-2xl font-bold text-foreground font-mono relative z-10">
+          <p className="text-2xl font-bold text-foreground font-mono relative z-10 truncate">
             {hideBalances ? '৳ ••••••' : formatCurrency(totalBank)}
           </p>
-          {/* <div className="mt-2.5 flex items-center gap-2 relative z-10">
-            <div className="flex-1 h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${bankPct}%` }} />
-            </div>
-            <span className="text-[10px] text-blue-500 font-bold">{bankPct}%</span>
-          </div> */}
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {accounts.filter(a => a.type === 'bank').length} {isBangla ? 'টি ব্যাংক' : 'banks'}
+          </p>
         </div>
 
         {/* Wallet */}
@@ -493,25 +608,157 @@ export default function FinanceBankWalletsPage() {
             <Wallet className="h-3 w-3" />
             {isBangla ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance'}
           </p>
-          <p className="text-2xl font-bold text-foreground font-mono relative z-10">
+          <p className="text-2xl font-bold text-foreground font-mono relative z-10 truncate">
             {hideBalances ? '৳ ••••••' : formatCurrency(totalWallet)}
           </p>
-          {/* <div className="mt-2.5 flex items-center gap-2 relative z-10">
-            <div className="flex-1 h-1.5 rounded-full bg-pink-500/20 overflow-hidden">
-              <div className="h-full bg-pink-500 rounded-full transition-all" style={{ width: `${walletPct}%` }} />
-            </div>
-            <span className="text-[10px] text-pink-500 font-bold">{walletPct}%</span>
-          </div> */}
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {accounts.filter(a => a.type === 'wallet').length} {isBangla ? 'টি ওয়ালেট' : 'wallets'}
+          </p>
+        </div>
+
+        {/* Cash Vault */}
+        <div className="rounded-2xl p-5 border bg-amber-500/10 border-amber-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1 flex items-center gap-1 relative z-10">
+            <Banknote className="h-3 w-3" />
+            {isBangla ? 'ক্যাশ ভল্ট' : 'Cash Vault'}
+          </p>
+          <p className="text-2xl font-bold text-foreground font-mono relative z-10 truncate">
+            {hideBalances ? '৳ ••••••' : formatCurrency(totalCash)}
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {accounts.filter(a => a.type === 'cash').length} {isBangla ? 'টি ক্যাশ ভল্ট' : 'vault'}
+          </p>
         </div>
       </div>
 
       {/* ══ SECTION B: VIRTUAL CARDS + ADD FORM ══ */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-{/* left: Add Account Panel ─────────────────────────── */}
-        <div
-          className="rounded-2xl border overflow-hidden h-fit"
-          style={{ borderColor: 'rgba(79,91,255,0.12)', background: 'rgba(79,91,255,0.02)' }}
-        >
+        {/* left: Quick Transfer & Add Account Panels ─────────────────────────── */}
+        <div className="space-y-6">
+          {/* Quick Transfer Card */}
+          <div className="rounded-2xl border border-slate-800/80 bg-[#121624] p-5 shadow-lg space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-sm">
+                  <ArrowLeftRight className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  {isBangla ? 'দ্রুত ট্রান্সফার' : 'Quick Transfer'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('recent-activity-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              >
+                {isBangla ? 'সব দেখুন' : 'See All'}
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleQuickTransfer} className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* From Account */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-slate-300 block">
+                    {isBangla ? 'উৎস অ্যাকাউন্ট' : 'From Account'}
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={transferFrom}
+                      onChange={(e) => setTransferFrom(e.target.value)}
+                      className="w-full h-10 rounded-xl border border-slate-800 bg-[#090d16] px-3.5 pr-8 text-xs text-slate-200 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/40 transition-all appearance-none cursor-pointer truncate"
+                    >
+                      <option value="" className="bg-[#090d16] text-slate-500">
+                        {isBangla ? 'উৎস অ্যাকাউন্ট নির্বাচন করুন' : 'Select source account'}
+                      </option>
+                      {accounts.map((acc) => (
+                        <option key={acc.id} value={acc.id} className="bg-[#090d16] text-slate-200">
+                          {isBangla ? acc.providerBn : acc.provider} ({acc.accountNumber.slice(-4)}) - ৳{acc.balance.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* To Account */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-slate-300 block">
+                    {isBangla ? 'গন্তব্য অ্যাকাউন্ট' : 'To Account'}
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={transferTo}
+                      onChange={(e) => setTransferTo(e.target.value)}
+                      className="w-full h-10 rounded-xl border border-slate-800 bg-[#090d16] px-3.5 pr-8 text-xs text-slate-200 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/40 transition-all appearance-none cursor-pointer truncate"
+                    >
+                      <option value="" className="bg-[#090d16] text-slate-500">
+                        {isBangla ? 'গন্তব্য অ্যাকাউন্ট নির্বাচন করুন' : 'Select destination account'}
+                      </option>
+                      {accounts.map((acc) => (
+                        <option
+                          key={acc.id}
+                          value={acc.id}
+                          disabled={acc.id === transferFrom}
+                          className="bg-[#090d16] text-slate-200"
+                        >
+                          {isBangla ? acc.providerBn : acc.provider} ({acc.accountNumber.slice(-4)}) - ৳{acc.balance.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Amount (৳) */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-slate-300 block">
+                  {isBangla ? 'পরিমাণ (৳)' : 'Amount (৳)'}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  step="any"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                  placeholder={isBangla ? 'টাকার পরিমাণ লিখুন' : 'Enter amount'}
+                  className="w-full h-10 rounded-xl border border-slate-800 bg-[#090d16] px-3.5 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/40 transition-all font-mono"
+                />
+              </div>
+
+              {/* Transfer Now Button */}
+              <button
+                type="submit"
+                disabled={isTransferring}
+                className="w-full h-11 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              >
+                {isTransferring ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span>{isBangla ? 'ট্রান্সফার হচ্ছে...' : 'Transferring...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 text-white -rotate-12" />
+                    <span>{isBangla ? 'এখন ট্রান্সফার করুন' : 'Transfer Now'}</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Add Account Panel */}
+          <div
+            className="rounded-2xl border overflow-hidden h-fit"
+            style={{ borderColor: 'rgba(79,91,255,0.12)', background: 'rgba(79,91,255,0.02)' }}
+          >
           {/* Panel header */}
           <div
             className="px-5 py-4 border-b"
@@ -696,16 +943,17 @@ export default function FinanceBankWalletsPage() {
             </AnimatePresence>
           </div>
         </div>
+      </div>
         {/* Right: Virtual Card Carousel */}
         <div className="xl:col-span-2 space-y-4">
           {/* Filter pills */}
           <div className="flex items-center gap-2">
-            {(['all', 'bank', 'wallet'] as const).map(type => (
+            {(['all', 'bank', 'wallet', 'cash'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
                 className={cn(
-                  'px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all',
+                  'px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer',
                   filterType === type
                     ? 'bg-primary text-primary-foreground border-primary shadow-md'
                     : 'border-border text-muted-foreground hover:text-foreground bg-card'
@@ -715,7 +963,9 @@ export default function FinanceBankWalletsPage() {
                   ? (isBangla ? 'সকল' : 'All')
                   : type === 'bank'
                     ? (isBangla ? 'ব্যাংক' : 'Bank')
-                    : (isBangla ? 'ওয়ালেট' : 'Wallet')}
+                    : type === 'wallet'
+                      ? (isBangla ? 'ওয়ালেট' : 'Wallet')
+                      : (isBangla ? 'ক্যাশ ভল্ট' : 'Cash Vault')}
                 <span className="ml-1.5 opacity-60">
                   {type === 'all' ? accounts.length : accounts.filter(a => a.type === type).length}
                 </span>
@@ -753,6 +1003,7 @@ export default function FinanceBankWalletsPage() {
 
           {/* ── Recent Activity ─────────────────────────────── */}
           <div
+            id="recent-activity-section"
             className="rounded-2xl border overflow-hidden"
             style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}
           >

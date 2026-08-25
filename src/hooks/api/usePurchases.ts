@@ -23,7 +23,8 @@ export const useGetPurchaseById = (id: string) => {
     return useQuery({
         queryKey: ['purchase', id],
         queryFn: () => getPurchaseById(id),
-        select: (data) => data.data
+        select: (data) => data.data,
+        enabled: !!id,
     })
 }
 
