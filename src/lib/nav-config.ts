@@ -36,6 +36,9 @@ import {
   Building2,
   SlidersHorizontal,
   ArrowRightLeft,
+  BadgeDollarSign,
+  UserCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export interface SubnavItem {
@@ -298,8 +301,13 @@ export const navGroups: NavItem[] = [
     labelKey: "Reports",
     labelBn: "রিপোর্ট",
     icon: BarChart3,
-    page: "/reports",
     submenu: [
+      {
+        page: "/reports/dashboard",
+        icon: BarChart3,
+        labelKey: "Dashboard",
+        labelBn: "ড্যাশবোর্ড",
+      },
       {
         page: "/reports/sales",
         icon: ShoppingCart,
@@ -313,22 +321,52 @@ export const navGroups: NavItem[] = [
         labelBn: "ক্রয় রিপোর্ট",
       },
       {
-        page: "/reports/profit-loss",
-        icon: Receipt,
-        labelKey: "Profit/Loss",
-        labelBn: "লাভ-লোকসান",
-      },
-      {
-        page: "/reports/stock",
+        page: "/reports/inventory",
         icon: Package,
-        labelKey: "Stock",
-        labelBn: "স্টক",
+        labelKey: "Inventory",
+        labelBn: "ইনভেন্টরি",
       },
       {
-        page: "/reports/health-score",
+        page: "/reports/finance",
+        icon: BadgeDollarSign,
+        labelKey: "Finance",
+        labelBn: "ফাইনান্স",
+      },
+      {
+        page: "/reports/customers",
+        icon: Users,
+        labelKey: "Customers",
+        labelBn: "কাস্টমার",
+      },
+      {
+        page: "/reports/suppliers",
+        icon: Users,
+        labelKey: "Suppliers",
+        labelBn: "সরবরাহকারী",
+      },
+      {
+        page: "/reports/branches",
+        icon: Building2,
+        labelKey: "Branches",
+        labelBn: "শাখা",
+      },
+      {
+        page: "/reports/employees",
+        icon: UserCheck,
+        labelKey: "Employees",
+        labelBn: "কর্মচারী",
+      },
+      {
+        page: "/reports/ai",
         icon: Sparkles,
-        labelKey: "Health Score",
-        labelBn: "হেলথ স্কোর",
+        labelKey: "AI Insights",
+        labelBn: "এআই ইনসাইটস",
+      },
+      {
+        page: "/reports/saved",
+        icon: FileSpreadsheet,
+        labelKey: "Saved Reports",
+        labelBn: "সংরক্ষিত রিপোর্ট",
       },
     ],
   },

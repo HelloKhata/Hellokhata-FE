@@ -4,19 +4,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SalesFocusProvider, useSalesFocus } from '@/components/reports/sales/SalesFocusContext';
-import { ReportHeader } from '@/components/reports/sales/ReportHeader';
-import { SalesSummaryTrend } from '@/components/reports/sales/SalesSummaryTrend';
-import { SalesDrivers } from '@/components/reports/sales/SalesDrivers';
-import { SalesRecords } from '@/components/reports/sales/SalesRecords';
-import { ViewAllDriversModal } from '@/components/reports/sales/ViewAllDriversModal';
+import { SalesFocusProvider, useSalesFocus } from './SalesFocusContext';
+import { ReportHeader } from './ReportHeader';
+import { SalesSummaryTrend } from './SalesSummaryTrend';
+import { SalesDrivers } from './SalesDrivers';
+import { SalesRecords } from './SalesRecords';
+import { ViewAllDriversModal } from './ViewAllDriversModal';
 import { PrintReportPreview, ReportColumn } from '@/components/reports/PrintReportPreview';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useBranchStore } from '@/stores/branchStore';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-// import { SalesTransactionRecord } from '@/types/sales-report';
+import { SalesTransactionRecord } from '@/types/sales-report';
 
 function MinimalSalesReportContent() {
   const { isBangla } = useAppTranslation();
@@ -34,7 +34,7 @@ function MinimalSalesReportContent() {
   } = useSalesFocus();
 
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
-  const [printInvoiceData, setPrintInvoiceData] = useState([]);
+  const [printInvoiceData, setPrintInvoiceData] = useState<SalesTransactionRecord[]>([]);
 
   // CSV Export
   const handleExportCsv = () => {
@@ -63,7 +63,7 @@ function MinimalSalesReportContent() {
   };
 
   // Handle single invoice print
-  const handlePrintSpecificInvoice = (record) => {
+  const handlePrintSpecificInvoice = (record: SalesTransactionRecord) => {
     setPrintInvoiceData([record]);
     setPrintPreviewOpen(true);
   };
@@ -73,7 +73,7 @@ function MinimalSalesReportContent() {
     setPrintPreviewOpen(true);
   };
 
-  const printColumns: ReportColumn<any>[] = [
+  const printColumns: ReportColumn<SalesTransactionRecord>[] = [
     {
       header: 'Invoice No',
       headerBn: 'ইনভয়েস নং',
@@ -187,7 +187,7 @@ function MinimalSalesReportContent() {
   );
 }
 
-export default function MinimalSalesReport() {
+export function MinimalSalesReport() {
   const branches = useBranchStore((state) => state.branches);
   const isSingleBranch = branches ? branches.length <= 1 : false;
 

@@ -1408,7 +1408,7 @@ function NewSaleContent() {
               </div>
 
               {/* VAT Display Row */}
-              <div className="flex justify-between items-center text-sm font-medium py-0.5">
+              {/* <div className="flex justify-between items-center text-sm font-medium py-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">{isBangla ? "ভ্যাট" : "VAT"}</span>
                   <button
@@ -1424,7 +1424,7 @@ function NewSaleContent() {
                     ? `${vatConfig.value}% (Tk. ${vatVal.toFixed(2)})`
                     : `Tk. ${vatVal.toFixed(2)}`}
                 </span>
-              </div>
+              </div> */}
 
               {/* Additional Charge Input */}
               <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
