@@ -184,15 +184,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
           <ShoppingCart className="h-4 w-4" />
           <span className="text-xs font-bold">POS</span>
         </button>
-        <button
-          onClick={() => window.location.href = '/reports/health-score'}
-          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-primary-subtle hover:bg-primary/10 transition-colors"
-        >
-          <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-primary">{healthScore}</span>
-          </div>
-        </button>
-
+        
         {/* Voice Mic (Primary CTA) */}
         <button
           onClick={() => {

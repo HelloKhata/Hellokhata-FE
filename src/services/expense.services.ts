@@ -23,6 +23,11 @@ export const getExpenseCategories = async () => {
     return res.data;
 }
 
+export const createExpenseCategories = async (category: any) =>{
+    const res = await client.post('/api/expenses/categories/', category);
+    return res.data;
+}
+
 export const createExpense = async(expenseData: any) => {
     const res = await client.post('/api/expenses', expenseData);
     return res.data;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { useToast } from "@/hooks/use-toast";
 import { useBranchStore } from "@/stores/branchStore";
@@ -21,10 +22,7 @@ import {
   Info,
   ChevronDown,
   Home,
-  Zap,
-  Users,
   Package,
-  Truck,
   Layers,
   ArrowRight,
   Search,
@@ -33,15 +31,12 @@ import {
   Printer,
   Clock,
   Eye,
-  CheckCircle2,
   Copy,
   ChevronLeft,
   X,
   CreditCard,
   Tag,
   TrendingUp,
-  DollarSign,
-  Wallet,
   ShoppingBag,
   Briefcase,
   PiggyBank,
@@ -55,6 +50,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
@@ -291,6 +292,29 @@ const toBnNum = (num: number | string): string => {
   return String(num).replace(/[0-9]/g, (w) => bnDigits[+w]);
 };
 
+// Bengali month mapping
+const BN_MONTHS: Record<string, string> = {
+  "01": "জানুয়ারি",
+  "02": "ফেব্রুয়ারি",
+  "03": "মার্চ",
+  "04": "এপ্রিল",
+  "05": "মে",
+  "06": "জুন",
+  "07": "জুলাই",
+  "08": "আগস্ট",
+  "09": "সেপ্টেম্বর",
+  "10": "অক্টোবর",
+  "11": "নভেম্বর",
+  "12": "ডিসেম্বর",
+};
+
+const formatBnDate = (date: Date): string => {
+  const day = toBnNum(format(date, "dd"));
+  const month = BN_MONTHS[format(date, "MM")] || format(date, "MM");
+  const year = toBnNum(format(date, "yyyy"));
+  return `${day} ${month}, ${year}`;
+};
+
 // Payment Method Labels
 const PAYMENT_METHOD_MAP: Record<string, { en: string; bn: string; badgeColor: string }> = {
   cash: { en: "Cash", bn: "ক্যাশ", badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
@@ -316,13 +340,14 @@ export default function IncomePageContent() {
 
   // Form State
   const [amount, setAmount] = useState("");
-  const [entryDate, setEntryDate] = useState("2026-08-22");
+  const [entryDate, setEntryDate] = useState<Date>(new Date(2026, 7, 22));
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [selectedBranch, setSelectedBranch] = useState(branches[0]?.name || "Main Branch");
   const [incomeNote, setIncomeNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
+  const [recurringDueDate, setRecurringDueDate] = useState<Date>(new Date(2026, 8, 22));
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -388,8 +413,8 @@ export default function IncomePageContent() {
         titleBn: cat.nameBn,
         subtitleEn: incomeNote.trim() || "Direct Income Receipt",
         subtitleBn: incomeNote.trim() || "সরাসরি আয় রসিদ",
-        dateEn: "Today",
-        dateBn: "আজ",
+        dateEn: format(entryDate, "MMM dd, yyyy"),
+        dateBn: formatBnDate(entryDate),
         branch: selectedBranch,
         paymentMethod: paymentMethod,
         isRecurring: isRecurring,
@@ -419,10 +444,12 @@ export default function IncomePageContent() {
 
       // Reset form
       setAmount("");
+      setEntryDate(new Date(2026, 7, 22));
       setSelectedCategoryId("");
       setIncomeNote("");
       setAttachmentName(null);
       setIsRecurring(false);
+      setRecurringDueDate(new Date(2026, 8, 22));
     } finally {
       setIsSubmitting(false);
     }
@@ -430,10 +457,12 @@ export default function IncomePageContent() {
 
   const handleCancelForm = () => {
     setAmount("");
+    setEntryDate(new Date(2026, 7, 22));
     setSelectedCategoryId("");
     setIncomeNote("");
     setAttachmentName(null);
     setIsRecurring(false);
+    setRecurringDueDate(new Date(2026, 8, 22));
   };
 
   // Category Add/Edit Actions
@@ -787,11 +816,11 @@ export default function IncomePageContent() {
             {/* Row 1: Amount & Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Amount Field with Prefix */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "পরিমাণ" : "Amount"} <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative flex items-center">
+                <div className="relative flex items-center w-full">
                   <span className="absolute left-3 text-sm font-bold text-emerald-400 select-none">
                     ৳
                   </span>
@@ -801,34 +830,52 @@ export default function IncomePageContent() {
                     placeholder="0.00"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="h-10 pl-8 font-mono text-sm bg-muted/20 border-border focus:border-emerald-500 text-emerald-400 font-bold"
+                    className="w-full h-10 pl-8 font-mono text-sm bg-muted/20 border-border focus:border-emerald-500 text-emerald-400 font-bold"
                     required
                   />
                 </div>
               </div>
 
-              {/* Date Field */}
-              <div className="space-y-1.5">
+              {/* Date Field with Popover and Calendar */}
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "তারিখ" : "Date"} <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative flex items-center">
-                  <Input
-                    type="date"
-                    value={entryDate}
-                    onChange={(e) => setEntryDate(e.target.value)}
-                    className="h-10 text-xs bg-muted/20 border-border focus:border-primary pr-9"
-                    required
-                  />
-                  <Calendar className="absolute right-3 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-10 px-3 justify-between text-left font-normal bg-muted/20 border-border text-foreground hover:bg-muted/30 text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <span className="truncate">
+                        {entryDate
+                          ? isBangla
+                            ? formatBnDate(entryDate)
+                            : format(entryDate, "dd MMM yyyy")
+                          : isBangla
+                          ? "তারিখ নির্বাচন করুন"
+                          : "Select date"}
+                      </span>
+                      <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
+                    <CalendarPicker
+                      mode="single"
+                      selected={entryDate}
+                      onSelect={(date) => date && setEntryDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
             {/* Row 2: Category & Payment Method */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Category Dropdown */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "ক্যাটাগরি" : "Category"} <span className="text-destructive">*</span>
                 </Label>
@@ -837,7 +884,7 @@ export default function IncomePageContent() {
                   onValueChange={setSelectedCategoryId}
                   required
                 >
-                  <SelectTrigger className="h-10 text-xs bg-muted/20 border-border">
+                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
                     <SelectValue placeholder={isBangla ? "ক্যাটাগরি নির্বাচন করুন" : "Select Category"} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
@@ -851,12 +898,12 @@ export default function IncomePageContent() {
               </div>
 
               {/* Payment Method Dropdown */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"} <span className="text-destructive">*</span>
                 </Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger className="h-10 text-xs bg-muted/20 border-border">
+                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
                     <SelectValue placeholder={isBangla ? "পদ্ধতি নির্বাচন করুন" : "Select Payment Method"} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
@@ -886,33 +933,43 @@ export default function IncomePageContent() {
             {/* Row 3: Branch & Income Note */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Branch Select */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "ব্রাঞ্চ / শাখা" : "Branch"} <span className="text-destructive">*</span>
                 </Label>
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                  <SelectTrigger className="h-10 text-xs bg-muted/20 border-border">
+                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
                     <SelectValue placeholder="Select Branch" />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
-                    <SelectItem value="Main Branch">
-                      {isBangla ? "প্রধান শাখা (ধানমন্ডি)" : "Main Branch"}
-                    </SelectItem>
-                    <SelectItem value="Gulshan Store">
-                      {isBangla ? "গুলশান স্টোর" : "Gulshan Store"}
-                    </SelectItem>
-                    <SelectItem value="Tejgaon Central Depot">
-                      {isBangla ? "তেজগাঁও সেন্ট্রাল ডিপো" : "Tejgaon Central Depot"}
-                    </SelectItem>
-                    <SelectItem value="Uttara Branch">
-                      {isBangla ? "উত্তরা শাখা" : "Uttara Branch"}
-                    </SelectItem>
+                    {branches.length > 0 ? (
+                      branches.map((b) => (
+                        <SelectItem key={b.id || b.name} value={b.name}>
+                          {b.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="Main Branch">
+                          {isBangla ? "প্রধান শাখা (ধানমন্ডি)" : "Main Branch"}
+                        </SelectItem>
+                        <SelectItem value="Gulshan Store">
+                          {isBangla ? "গুলশান স্টোর" : "Gulshan Store"}
+                        </SelectItem>
+                        <SelectItem value="Tejgaon Central Depot">
+                          {isBangla ? "তেজগাঁও সেন্ট্রাল ডিপো" : "Tejgaon Central Depot"}
+                        </SelectItem>
+                        <SelectItem value="Uttara Branch">
+                          {isBangla ? "উত্তরা শাখা" : "Uttara Branch"}
+                        </SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Income Note */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 w-full">
                 <Label className="text-xs font-semibold text-muted-foreground">
                   {isBangla ? "ভাউচার নোট" : "Income Note"}
                 </Label>
@@ -921,7 +978,7 @@ export default function IncomePageContent() {
                   placeholder={isBangla ? "রসিদ / আয়ের বিবরণ (ঐচ্ছিক)" : "Receipt / income details (optional)"}
                   value={incomeNote}
                   onChange={(e) => setIncomeNote(e.target.value)}
-                  className="h-10 text-xs bg-muted/20 border-border"
+                  className="w-full h-10 text-xs bg-muted/20 border-border"
                 />
               </div>
             </div>
@@ -958,7 +1015,7 @@ export default function IncomePageContent() {
                     {isBangla ? "পুনরাবৃত্তির ধরণ" : "Frequency"}
                   </Label>
                   <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
-                    <SelectTrigger className="h-8 text-xs bg-card">
+                    <SelectTrigger className="w-full h-8 text-xs bg-card">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -972,7 +1029,34 @@ export default function IncomePageContent() {
                   <Label className="text-[11px] text-muted-foreground">
                     {isBangla ? "পরবর্তী গ্রহণের তারিখ" : "Next Due Date"}
                   </Label>
-                  <Input type="date" defaultValue="2026-09-22" className="h-8 text-xs bg-card" />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-8 px-2.5 justify-between text-left font-normal bg-card border border-border rounded-lg text-foreground hover:bg-muted/30 text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <span className="truncate">
+                          {recurringDueDate
+                            ? isBangla
+                              ? formatBnDate(recurringDueDate)
+                              : format(recurringDueDate, "dd MMM yyyy")
+                            : isBangla
+                            ? "তারিখ নির্বাচন করুন"
+                            : "Select date"}
+                        </span>
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
+                      <CalendarPicker
+                        mode="single"
+                        selected={recurringDueDate}
+                        onSelect={(date) => date && setRecurringDueDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             )}

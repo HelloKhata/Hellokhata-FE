@@ -1,4 +1,4 @@
-import { createExpense, deleteExpense, getExpenseById, getExpenseCategories, getExpenses, getExpenseSummary, updateExpense, uploadExpenseImage } from "@/services/expense.services"
+import { createExpense, createExpenseCategories, deleteExpense, getExpenseById, getExpenseCategories, getExpenses, getExpenseSummary, updateExpense, uploadExpenseImage } from "@/services/expense.services"
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 
@@ -24,12 +24,20 @@ export const useGetExpenseCategories = () => {
   })
 }
 
-
+export const useCreateExpenseCategories = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createExpenseCategories,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenseCategories'] });
+    },
+  });
+};
 
 export const useGetExpenses = (filter: {search?: string, categoryId?: string}) => {
   return useQuery({
     queryKey: ['expenses', filter],
-    queryFn: () => getExpenses(filter),
+    queryFn: () => getExpenses(filter), 
     select: (data) => data.data
   })
 }
