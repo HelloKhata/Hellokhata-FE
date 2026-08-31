@@ -3,13 +3,9 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Button,
-  Badge,
-  Card,
-  CardContent,
-  Divider,
 } from "@/components/ui/premium";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,6 +151,29 @@ export default function InvoiceSettingsPage() {
   const [printerType, setPrinterType] = useState<"normal" | "thermal">("normal");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Load saved settings from localStorage if available
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("hk_invoice_settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.logoUrl !== undefined) setLogoPreview(parsed.logoUrl);
+          if (parsed.businessName) setBusinessName(parsed.businessName);
+          if (parsed.businessAddress) setBusinessAddress(parsed.businessAddress);
+          if (parsed.businessPhone) setBusinessPhone(parsed.businessPhone);
+          if (parsed.invoicePrefix) setInvoicePrefix(parsed.invoicePrefix);
+          if (parsed.footerNote) setFooterNote(parsed.footerNote);
+          if (parsed.returnPolicy) setReturnPolicy(parsed.returnPolicy);
+          if (parsed.paperSize) setPaperSize(parsed.paperSize);
+          if (parsed.printerType) setPrinterType(parsed.printerType);
+        }
+      }
+    } catch (e) {
+      console.error("Error reading saved invoice settings:", e);
+    }
+  }, []);
+
   // Mock data for live invoice preview
   const sampleItems = [
     {
@@ -256,7 +275,21 @@ export default function InvoiceSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      if (typeof window !== "undefined") {
+        const settings = {
+          logoUrl: logoPreview,
+          businessName,
+          businessAddress,
+          businessPhone,
+          invoicePrefix,
+          footerNote,
+          returnPolicy,
+          paperSize,
+          printerType,
+        };
+        localStorage.setItem("hk_invoice_settings", JSON.stringify(settings));
+      }
       toast({
         title: isBangla ? "সফল হয়েছে" : "Success",
         description: isBangla

@@ -28,6 +28,24 @@ export const downloadInvoiceAsPdf = async (
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        onclone: (clonedDoc: Document) => {
+          // Sanitize any computed or inline colors that use oklab/oklch
+          const allElements = clonedDoc.querySelectorAll("*");
+          allElements.forEach((node) => {
+            const el = node as HTMLElement;
+            if (el.style) {
+              if (el.style.color && el.style.color.includes("okl")) {
+                el.style.color = "#0f172a";
+              }
+              if (el.style.backgroundColor && el.style.backgroundColor.includes("okl")) {
+                el.style.backgroundColor = "#ffffff";
+              }
+              if (el.style.borderColor && el.style.borderColor.includes("okl")) {
+                el.style.borderColor = "#e2e8f0";
+              }
+            }
+          });
+        },
       },
       jsPDF: isThermal
         ? { unit: "mm", format: [80, 200], orientation: "portrait" }

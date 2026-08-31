@@ -3,13 +3,11 @@
 
 "use client";
 
-import { useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableHeader,
@@ -18,261 +16,428 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { ArrowLeft, Users, Loader2, Sparkles, Gift } from "lucide-react";
-import { useCurrency } from "@/hooks/useAppTranslation";
-import { useAppTranslation } from "@/hooks/useAppTranslation";
+import {
+  ArrowLeft,
+  Users,
+  Loader2,
+  Sparkles,
+  Gift,
+  Phone,
+  Calendar as CalendarIcon,
+  Receipt,
+  RotateCcw,
+  Printer,
+  Download,
+  Eye,
+  Banknote,
+  CreditCard,
+  Smartphone,
+  Package,
+} from "lucide-react";
+import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { useGetSaleById } from "@/hooks/api/useSales";
-import Image from "next/image";
+import { useParty } from "@/hooks/api/useParties";
+import { useSessionStore } from "@/stores/sessionStore";
+import { useBranchStore } from "@/stores/branchStore";
+import {
+  useInvoiceActions,
+  InvoiceOffscreen,
+  InvoicePreviewDialog,
+} from "@/components/invoice/InvoiceActions";
+import { InvoiceData, InvoiceItem } from "@/types/invoice";
+import { cn } from "@/lib/utils";
 
-const mockTxData = {
-  partyName: "Kazi Shohel",
-  party: {
-    name: "Kazi Shohel",
-    phone: "01712345678",
-    currentBalance: -5000,
-    creditLimit: 50000,
+const METHODS = [
+  {
+    id: "cash",
+    label: "Cash",
+    labelBn: "নগদ",
+    icon: Banknote,
+    colorClass: "text-emerald-500",
+    bgClass: "bg-emerald-500/10",
+    borderClass: "border-emerald-500/20",
   },
-  invoiceNo: "HK-89324",
-  createdAt: "2026-07-16T12:00:00Z",
-  paymentMethod: "cash",
-  notes:
-    "Thank you for shopping at Hello Khata! Please review our return policies in case of damaged packaging.",
-  paidAmount: 12000,
-  subtotal: 15000,
-  discount: 500,
-  tax: 300,
-  vat: 450,
-  additionalCharge: 250,
-  total: 15500,
-  dueAmount: 3500,
-  totalOfferSavings: 500,
-  items: [
-    {
-      id: "1",
-      itemName: "Premium Basmati Rice 5kg",
-      batchNo: "BATCH-R204",
-      quantity: 2,
-      unitPrice: 4200,
-      discount: 200,
-      total: 8000,
-      imageUrl: "",
-      // Offer data
-      offerType: "bogo",
-      offerTitle: "Buy 1 Get 1 Free",
-      chargedQuantity: 1,
-      freeQuantity: 1,
-      offerSavings: 4200,
-    },
-    {
-      id: "2",
-      itemName: "Pure Soybean Oil 5L",
-      batchNo: "BATCH-O802",
-      quantity: 3,
-      unitPrice: 2200,
-      discount: 300,
-      total: 6300,
-      imageUrl: "",
-    },
-  ],
-};
+  {
+    id: "bank",
+    label: "Bank/Card",
+    labelBn: "ব্যাংক/কার্ড",
+    icon: CreditCard,
+    colorClass: "text-blue-500",
+    bgClass: "bg-blue-500/10",
+    borderClass: "border-blue-500/20",
+  },
+  {
+    id: "mobile_banking",
+    label: "Mobile Banking",
+    labelBn: "মোবাইল ব্যাংকিং",
+    icon: Smartphone,
+    colorClass: "text-orange-500",
+    bgClass: "bg-orange-500/10",
+    borderClass: "border-orange-500/20",
+  },
+];
 
 function SaleDetailsContent() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id as string;
-  const { t, isBangla } = useAppTranslation();
+  const id = (params?.id as string) || "";
+  const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  // API Integration (Uncomment to fetch real database transactions)
-  // const { data: saleData } = useGetSaleById(id);
-  // const txData = saleData?.data || mockTxData;
-  const txData = mockTxData;
-  const party = txData.party;
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [invoiceSettings, setInvoiceSettings] = useState<any>({});
 
-  const partyName =
-    txData.partyName ||
+  // Synchronize invoice settings from localStorage
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("hk_invoice_settings");
+        if (saved) {
+          setInvoiceSettings(JSON.parse(saved));
+        }
+      }
+    } catch (e) {
+      console.error("Error reading saved invoice settings:", e);
+    }
+  }, []);
+
+  // Business and branch stores for fallback invoice info
+  const sessionBusiness = useSessionStore((state) => state.business);
+  const currentBranch = useBranchStore((state) => state.currentBranch);
+
+  // Fetch real sale details from API
+  const { data: apiSaleData, isLoading } = useGetSaleById(id);
+  const txData = apiSaleData?.data || apiSaleData;
+
+  // Resolve customer party details if available
+  const partyId = txData?.partyId || txData?.party?.id || "";
+  const { data: partyData } = useParty(partyId, { enabled: !!partyId });
+  const party = partyData?.data || partyData || txData?.party || {};
+
+  const customerName =
+    txData?.customerName ||
     party?.name ||
-    (isBangla ? "ক্যাশ কাস্টমার" : "Cash Customer");
-  const invoiceNo = txData.invoiceNo || "—";
-  const invoiceDate = txData.createdAt
-    ? new Date(txData.createdAt)
-    : new Date();
-  const paymentMethod = txData.paymentMethod || "cash";
-  const notes = txData.notes || "";
-  const paidAmount = txData.paidAmount || 0;
+    txData?.partyName ||
+    (isBangla ? "খুচরা গ্রাহক" : "Retail Customer");
 
-  // Selected items formatted for the table view
+  const customerPhone =
+    txData?.customerPhone ||
+    txData?.phone ||
+    party?.phone ||
+    "—";
+
+  const invoiceNo = txData?.invoiceNo || (id ? `INV-${id.slice(-6)}` : "—");
+  const invoiceDate = txData?.createdAt ? new Date(txData.createdAt) : new Date();
+  const notes = txData?.notes || "";
+
+  // Selected items formatted for the table view matching new sale page
   const selectedItems = useMemo(() => {
-    const items = txData.items || [];
-    return items.map((item: any, idx: number) => ({
-      id: item.id || String(idx),
-      itemName: item.itemName,
-      batchNo: item.batchNo || "—",
-      quantity: item.quantity || 0,
-      unitPrice: item.unitPrice || 0,
-      discountFlat: item.discount || 0,
-      total:
-        item.total || item.quantity * item.unitPrice - (item.discount || 0),
-      imageUrl: item.imageUrl || "",
-      // Offer fields
-      offerType: item.offerType || null,
-      offerTitle: item.offerTitle || null,
-      chargedQuantity: item.chargedQuantity || item.quantity || 0,
-      freeQuantity: item.freeQuantity || 0,
-      offerSavings: item.offerSavings || 0,
-    }));
+    if (!txData?.items) return [];
+    return txData.items.map((item: any, idx: number) => {
+      const rawPrice = Number(item.unitPrice ?? item.price ?? 0);
+      const rawQty = Number(item.quantity ?? 1);
+      const rawDiscount = Number(item.discount ?? item.discountFlat ?? 0);
+      const lineTotal = Number(item.total ?? (rawPrice * rawQty - rawDiscount));
+
+      return {
+        id: item.id || String(idx),
+        itemId: item.itemId || item.id,
+        itemName: item.itemName || item.item?.name || "Product",
+        batchNo: item.batchNo || item.batch?.batchNumber || item.batchId || "—",
+        unit: item.unit || item.item?.unit || "pc",
+        quantity: rawQty,
+        unitPrice: rawPrice,
+        discountFlat: rawDiscount,
+        total: lineTotal,
+        imageUrl: item.imageUrl || item.item?.imageUrl || "",
+        // Offer fields
+        appliedOffer: item.appliedOffer || item.offer || null,
+        chargedQuantity: item.chargedQuantity ?? rawQty,
+        freeQuantity: Number(item.freeQuantity || 0),
+        offerSavings: Number(item.offerSavings || 0),
+      };
+    });
   }, [txData]);
 
-  // Calculations
-  const rawSubtotal = txData?.subtotal || txData?.total || 0;
-  const totalDiscount = txData?.discount || 0;
-  const subtotalAfterDiscount = Math.max(0, rawSubtotal - totalDiscount);
-  const taxVal = txData?.tax || 0;
-  const vatVal = txData?.vat || 0;
-  const additionalChargeVal = txData?.additionalCharge || 0;
-  const grandTotal = txData?.total || 0;
-  const due = txData?.dueAmount || 0;
+  // Calculations matching new sale page
+  const rawSubtotal = Number(
+    txData?.subtotal ??
+      selectedItems.reduce((acc: number, it: any) => acc + it.unitPrice * it.quantity, 0),
+  );
+  const totalDiscount = Number(txData?.discount || 0);
+  const totalOfferSavings = Number(
+    txData?.totalOfferSavings ??
+      selectedItems.reduce((acc: number, it: any) => acc + (it.offerSavings || 0), 0),
+  );
+  const taxVal = Number(txData?.tax || 0);
+  const additionalChargeVal = Number(
+    txData?.additionalCharge ?? txData?.additionalCharges ?? 0,
+  );
+  const grandTotal = Number(txData?.total ?? rawSubtotal - totalDiscount + taxVal + additionalChargeVal);
+  const paidAmount = Number(txData?.paidAmount ?? txData?.paid ?? 0);
+  const due = Number(txData?.dueAmount ?? Math.max(0, grandTotal - paidAmount));
+  const changeReturned = Math.max(0, paidAmount - grandTotal);
+
+  const paymentMethod = (txData?.paymentMethod || "cash").toLowerCase();
+
+  // Constructed Invoice Data Object based on user's Invoice Settings
+  const invoiceData: InvoiceData = useMemo(() => {
+    const business = {
+      name:
+        invoiceSettings?.businessName ||
+        sessionBusiness?.name ||
+        (isBangla ? "স্মার্টস্টোর" : "SmartStore"),
+      address:
+        invoiceSettings?.businessAddress ||
+        currentBranch?.address ||
+        (isBangla ? "ঢাকা, বাংলাদেশ" : "Dhaka, Bangladesh"),
+      phone:
+        invoiceSettings?.businessPhone ||
+        currentBranch?.phone ||
+        "01XXXXXXXXX",
+      logoUrl: invoiceSettings?.logoUrl ?? sessionBusiness?.logo ?? null,
+    };
+
+    const customer = {
+      name: customerName,
+      phone: customerPhone !== "—" ? customerPhone : undefined,
+      address: party?.address || undefined,
+    };
+
+    const items: InvoiceItem[] = selectedItems.map((item: any) => ({
+      id: item.id,
+      name: item.itemName,
+      qty: item.quantity,
+      price: item.unitPrice,
+      unit: item.unit || "pc",
+    }));
+
+    const status: "PAID" | "DUE" | "PARTIAL" =
+      due <= 0 ? "PAID" : paidAmount > 0 ? "PARTIAL" : "DUE";
+
+    return {
+      invoiceNumber: invoiceNo,
+      date: format(invoiceDate, "dd MMM yyyy"),
+      status,
+      business,
+      customer,
+      items,
+      subtotal: rawSubtotal,
+      discount: totalDiscount,
+      tax: taxVal,
+      paidAmount,
+      dueAmount: due,
+      changeAmount: changeReturned,
+      returnPolicy:
+        invoiceSettings?.returnPolicy ||
+        (isBangla
+          ? "পণ্য বিক্রয়ের ৭ দিনের মধ্যে ক্যাশ মেমোসহ পরিবর্তনযোগ্য। ব্যবহৃত বা ক্ষতিগ্রস্ত পণ্য ফেরতযোগ্য নয়।"
+          : "Exchangeable within 7 days of purchase with cash memo. Used or damaged goods are not returnable."),
+      footerNote:
+        invoiceSettings?.footerNote ||
+        (isBangla ? "ধন্যবাদ আপনার কেনাকাটার জন্য!" : "Thank you for your business!"),
+      paperSize: (invoiceSettings?.paperSize as "A4" | "A5") || "A4",
+      printerType: (invoiceSettings?.printerType as "normal" | "thermal") || "normal",
+      inWords: undefined,
+    };
+  }, [
+    txData,
+    selectedItems,
+    customerName,
+    customerPhone,
+    party,
+    invoiceNo,
+    invoiceDate,
+    rawSubtotal,
+    totalDiscount,
+    taxVal,
+    paidAmount,
+    due,
+    changeReturned,
+    sessionBusiness,
+    currentBranch,
+    invoiceSettings,
+    isBangla,
+  ]);
+
+  // Reusable invoice actions hook from InvoiceActions
+  const { invoiceRef, isDownloading, handleDownloadPdf, handlePrint } =
+    useInvoiceActions(invoiceData);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!txData) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-12 text-center space-y-3">
+        <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+          <Receipt className="h-6 w-6" />
+        </div>
+        <h3 className="text-base font-semibold text-foreground">
+          {isBangla ? "বিক্রয় তথ্য পাওয়া যায়নি" : "Sale Record Not Found"}
+        </h3>
+        <Button variant="outline" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {isBangla ? "পেছনে ফিরে যান" : "Go Back"}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Top Header Section */}
+      {/* Top Header Section (matching new sale page) */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          {isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
-        </h1>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Receipt className="h-6 w-6 text-primary" />
+            {isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isBangla
+              ? "সম্পন্ন বিক্রয়ের বিস্তারিত তথ্য ও অর্ডার সারাংশ"
+              : "Completed sale details and order summary"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Download Invoice Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadPdf}
+            disabled={isDownloading}
+            className="text-xs gap-1.5 cursor-pointer text-primary border-primary/30 hover:bg-primary/10"
+          >
+            {isDownloading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {isBangla ? "ইনভয়েস ডাউনলোড" : "Download Invoice"}
+          </Button>
+
+          {/* Return Sale Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/sales/returns/new?saleId=${id}`)}
+            className="text-xs gap-1.5 cursor-pointer text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            {isBangla ? "বিক্রি ফেরত" : "Return Sale"}
+          </Button>
+
+          {/* Preview Invoice Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPreviewOpen(true)}
+            className="text-xs gap-1.5 cursor-pointer"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            {isBangla ? "প্রিভিউ" : "Preview"}
+          </Button>
+
+          {/* Print Invoice Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="text-xs gap-1.5 cursor-pointer"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            {isBangla ? "ইনভয়েস প্রিন্ট" : "Print"}
+          </Button>
+
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {isBangla ? "পেছনে" : "Back"}
+          </Button>
+        </div>
       </div>
 
-      {/* 75% / 25% Split Layout Container */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* Left Side (75% on Desktop) */}
-        <div className="w-full lg:w-[75%] space-y-6">
-          {/* Row 1 Layout: Select Party, Invoice No, Invoice Date */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
-            {/* Party Name */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "পার্টি" : "Party"}
-              </Label>
-              <div className="relative">
-                <Input
-                  value={partyName}
-                  readOnly
-                  className="pr-10 h-11 bg-background/50 border-input cursor-default focus-visible:ring-0"
-                />
-                <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-
-            {/* Invoice No */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "ইনভয়েস নম্বর" : "Invoice No"}
-              </Label>
-              <Input
-                value={invoiceNo}
-                readOnly
-                className="h-11 bg-background/50 border-input font-medium cursor-default focus-visible:ring-0"
-              />
-            </div>
-
-            {/* Invoice Date */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "ইনভয়েস তারিখ" : "Invoice Date"}
-              </Label>
-              <Input
-                value={format(invoiceDate, "dd MMM yyyy")}
-                readOnly
-                className="h-11 bg-background/50 border-input font-medium cursor-default focus-visible:ring-0"
-              />
-            </div>
+      {/* Row 1 Layout: 4 Columns Container (matching new sale page layout) */}
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">
+        {/* 1. Invoice No */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-foreground">
+            {isBangla ? "ইনভয়েস নম্বর" : "Invoice No"}
+          </Label>
+          <div className="h-11 px-3.5 flex items-center justify-between bg-background/50 border border-input rounded-md text-xs font-mono font-bold text-primary">
+            <span>{invoiceNo}</span>
+            <Receipt className="h-4 w-4 text-muted-foreground" />
           </div>
+        </div>
 
-          {/* Customer Info Card (if selected) */}
-          {party && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 text-primary font-semibold text-xs border-b border-primary/10 pb-2">
-                <Users className="h-4 w-4" />
-                <span>
-                  {isBangla ? "গ্রাহক সংক্ষিপ্ত বিবরণ" : "Customer Overview"}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "গ্রাহকের নাম" : "Customer Name"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {party.name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "মোবাইল" : "Phone"}
-                  </p>
-                  <p className="font-semibold text-foreground truncate mt-0.5">
-                    {party.phone || "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-rose-400/80 uppercase tracking-wide">
-                    {isBangla ? "বর্তমান বাকি" : "Current Due"}
-                  </p>
-                  <p className="font-bold text-rose-500 mt-0.5">
-                    {formatCurrency(Math.abs(party.currentBalance || 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {isBangla ? "ক্রেডিট লিমিট" : "Credit Limit"}
-                  </p>
-                  <p className="font-semibold text-foreground mt-0.5">
-                    {party.creditLimit
-                      ? formatCurrency(party.creditLimit)
-                      : isBangla
-                        ? "সীমাহীন"
-                        : "Unlimited"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* 2. Customer Phone Number */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-foreground">
+            {isBangla ? "ফোন নম্বর" : "Customer Phone"}
+          </Label>
+          <div className="h-11 px-3.5 flex items-center justify-between bg-background/50 border border-input rounded-md text-xs font-mono font-medium text-foreground">
+            <span>{customerPhone}</span>
+            <Phone className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
 
+        {/* 3. Customer Name */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-foreground">
+            {isBangla ? "গ্রাহক" : "Customer"}
+          </Label>
+          <div className="h-11 px-3.5 flex items-center justify-between bg-background/50 border border-input rounded-md text-xs font-semibold text-foreground">
+            <span>{customerName}</span>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+
+        {/* 4. Invoice Date */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-foreground">
+            {isBangla ? "ইনভয়েস তারিখ" : "Invoice Date"}
+          </Label>
+          <div className="h-11 px-3.5 flex items-center justify-between bg-background/50 border border-input rounded-md text-xs font-medium text-foreground">
+            <span>{format(invoiceDate, "dd MMM yyyy")}</span>
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      </div>
+
+      {/* 75% / 25% Split Layout Container (matching new sale page structure) */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+        {/* Left Side (75% on Desktop) */}
+        <div className="w-full lg:flex-[3] min-w-0 flex flex-col gap-5 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
           {/* Row 2: Billing Items Table */}
-          <div className="border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
+          <div className="w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
                   <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
                     {isBangla ? "ক্রমিক" : "S.N."}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[6%] text-xs font-semibold uppercase">
+                  <TableHead className="px-3 py-3 w-[6%] text-xs font-semibold uppercase">
                     {/* Thumbnail Image column */}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[32%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[44%] text-xs font-semibold uppercase">
                     {isBangla ? "প্রোডাক্ট" : "Product"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
-                    {isBangla ? "ব্যাচ নম্বর" : "Batch No"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
-                    {isBangla ? "পরিমাণ" : "Quantity"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[16%] text-xs font-semibold uppercase">
                     {isBangla ? "দর" : "Rate"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[18%] text-xs font-semibold uppercase">
-                    {isBangla ? "ছাড়" : "Discount"}
+                  <TableHead className="px-4 py-3 w-[14%] text-xs font-semibold uppercase">
+                    {isBangla ? "পরিমাণ" : "Quantity"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[11%] text-right text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[14%] text-right text-xs font-semibold uppercase">
                     {isBangla ? "মোট" : "Amount"}
                   </TableHead>
                 </TableRow>
@@ -280,7 +445,7 @@ function SaleDetailsContent() {
               <TableBody className="divide-y divide-border">
                 {selectedItems.map((item, idx) => (
                   <TableRow
-                    key={item.id}
+                    key={item.id || idx}
                     className="hover:bg-muted/10 transition-colors"
                   >
                     {/* SN */}
@@ -298,35 +463,31 @@ function SaleDetailsContent() {
                         />
                       ) : (
                         <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
-                          <Image
-                            src="/images/image.png"
-                            width={50}
-                            height={50}
-                            alt="Image"
-                            className="h-8 w-8 text-muted-foreground/60"
-                          />
+                          <Package className="h-4 w-4 text-muted-foreground/60" />
                         </div>
                       )}
                     </TableCell>
 
-                    {/* Name */}
-                    <TableCell className="px-4 py-3 align-middle relative w-[32%]">
-                      <div className="w-full">
-                        <Input
-                          value={item.itemName}
-                          readOnly
-                          className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 cursor-default"
-                        />
-                        {/* Offer Breakdown for Receipt */}
-                        {item.offerTitle && (
+                    {/* Product Name */}
+                    <TableCell className="px-4 py-3 align-middle font-medium">
+                      <div>
+                        <p className="font-semibold text-foreground text-sm">
+                          {item.itemName}
+                        </p>
+                        {item.batchNo && item.batchNo !== "—" && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
+                            Batch: {item.batchNo}
+                          </span>
+                        )}
+                        {item.appliedOffer && (
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
                               <Sparkles className="h-2.5 w-2.5" />
-                              {item.offerTitle}
+                              {item.appliedOffer.title || item.appliedOffer.name}
                             </span>
                             {item.freeQuantity > 0 && (
-                              <span className="text-[10px] text-emerald-400 font-semibold">
-                                {item.chargedQuantity} Charged /{" "}
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                <Gift className="h-2.5 w-2.5" />
                                 {item.freeQuantity} Free
                               </span>
                             )}
@@ -340,144 +501,51 @@ function SaleDetailsContent() {
                       </div>
                     </TableCell>
 
-                    {/* Batch No */}
-                    <TableCell className="px-4 py-3 align-middle w-[15%]">
-                      <Input
-                        value={item.batchNo}
-                        readOnly
-                        className="bg-transparent border-none outline-none focus-visible:ring-0 px-0 h-9 cursor-default text-left"
-                      />
+                    {/* Rate (Normal info text) */}
+                    <TableCell className="px-4 py-3 align-middle font-mono font-medium text-foreground text-sm">
+                      {formatCurrency(item.unitPrice)}
                     </TableCell>
 
-                    {/* Quantity */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <Input
-                        type="number"
-                        value={item.quantity || ""}
-                        readOnly
-                        className="bg-background/30 h-9 text-center border-input focus:ring-0 focus-visible:ring-0 cursor-default font-mono"
-                      />
-                    </TableCell>
-
-                    {/* Rate */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <div className="relative flex items-center">
-                        <span className="absolute left-3 text-xs text-muted-foreground font-medium">
-                          Tk.
-                        </span>
-                        <Input
-                          type="number"
-                          value={item.unitPrice || ""}
-                          readOnly
-                          className="pl-9 bg-background/30 h-9 border-input focus:ring-0 focus-visible:ring-0 cursor-default font-mono"
-                        />
-                      </div>
-                    </TableCell>
-
-                    {/* Discount */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <div className="flex gap-1.5 items-center">
-                        <div className="relative flex-1 flex items-center">
-                          <span className="absolute left-2.5 text-[10px] text-muted-foreground font-medium">
-                            Tk.
-                          </span>
-                          <Input
-                            type="number"
-                            value={item.discountFlat || ""}
-                            readOnly
-                            className="pl-7 bg-background/30 h-9 text-right border-input focus:ring-0 focus-visible:ring-0 cursor-default font-mono"
-                          />
-                        </div>
-                      </div>
+                    {/* Quantity (Normal info text) */}
+                    <TableCell className="px-4 py-3 align-middle font-mono font-bold text-foreground text-sm">
+                      {item.quantity} {item.unit || ""}
                     </TableCell>
 
                     {/* Amount */}
-                    <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
-                      <span className="font-semibold text-foreground text-sm font-mono">
-                        Tk. {item.total.toFixed(2)}
-                      </span>
+                    <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground font-mono">
+                      {formatCurrency(item.total)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
 
-            {/* Table Bottom Action */}
+            {/* Table Bottom Subtotal Bar */}
             <div className="flex justify-end items-center px-6 py-4 bg-muted/10 border-t border-border">
               <div className="flex items-center gap-8">
                 <span className="text-sm text-muted-foreground font-medium">
                   {isBangla ? "উপমোট" : "Sub Total"}
                 </span>
                 <span className="font-bold text-foreground text-base font-mono">
-                  Tk. {subtotalAfterDiscount.toFixed(2)}
+                  {formatCurrency(rawSubtotal)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Row 3 Layout: Notes, Attachments */}
-          <div className="flex items-center justiy-between gap-6 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
-            {/* Notes Section */}
-            <div className="space-y-3 grid-col-8">
-              <Label className="text-sm font-semibold text-foreground">
-                {isBangla ? "নোট বা মন্তব্য" : "Notes or Remarks"}
-              </Label>
-              <Textarea
-                value={notes}
-                readOnly
-                className="py-5 min-h-[100px] bg-background/50 border-input resize-none focus-visible:ring-0 cursor-default"
-              />
-            </div>
-
-            {/* Attachments Section */}
-            <div className="flex gap-20">
-              {/* Attached Image */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">
-                  {isBangla ? "সংযুক্ত ছবি" : "Attached Image"}
-                </Label>
-                <div className="pt-1">
-                  <div className="relative group overflow-hidden h-40 w-58 rounded-xl border border-border bg-muted/20 flex flex-col items-center justify-center transition-all cursor-zoom-in">
-                    <Image
-                      src="/images/image.png"
-                      width={96}
-                      height={80}
-                      alt="product attachment"
-                      className="h-full w-full object-cover rounded-xl"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[9px] text-white text-center py-0.5 truncate px-1 font-sans">
-                      product_slip.jpg
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Attached Invoice */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-foreground">
-                  {isBangla ? "ইনভয়েস" : "Invoice"}
-                </Label>
-                <div className="pt-1">
-                  <div className="relative group overflow-hidden h-40 w-58 rounded-xl border border-border bg-muted/20 flex flex-col items-center justify-center transition-all cursor-zoom-in">
-                    <Image
-                      src="/backgrounds/ai-abstract-bg.png"
-                      width={96}
-                      height={80}
-                      alt="invoice attachment"
-                      className="h-full w-full object-cover rounded-xl"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[9px] text-white text-center py-0.5 truncate px-1 font-sans">
-                      invoice_slip.png
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Notes Section (matching new sale page) */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-foreground">
+              {isBangla ? "নোট বা মন্তব্য" : "Notes or Remarks"}
+            </Label>
+            <div className="min-h-[100px] bg-background/50 border border-input rounded-md p-3 text-sm text-foreground whitespace-pre-wrap">
+              {notes || (isBangla ? "কোনো নোট নেই" : "No notes or remarks")}
             </div>
           </div>
         </div>
 
-        {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
-        <div className="w-full lg:w-[25%] lg:sticky lg:top-6">
+        {/* Right Side: Sticky Order Details Card (25% on Desktop, matching new sale page) */}
+        <div className="w-full lg:flex-[1] lg:min-w-[340px] lg:max-w-[380px] lg:sticky lg:top-6">
           <div className="bg-card border border-border/80 rounded-2xl shadow-md p-6 space-y-5">
             <h2 className="text-lg font-bold tracking-tight text-foreground border-b border-border/50 pb-2">
               {isBangla ? "অর্ডার সারাংশ" : "Order Summary"}
@@ -486,16 +554,12 @@ function SaleDetailsContent() {
             {/* Financial Details */}
             <div className="space-y-3">
               {/* Subtotal */}
-              <div className="flex justify-between items-center text-sm font-medium">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">
                   {isBangla ? "উপমোট" : "Subtotal"}
                 </span>
-                <span className="text-foreground font-mono">
-                  Tk.{" "}
-                  {rawSubtotal.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                <span className="text-foreground font-mono font-semibold">
+                  {formatCurrency(rawSubtotal)}
                 </span>
               </div>
 
@@ -505,27 +569,19 @@ function SaleDetailsContent() {
                   {isBangla ? "ছাড়" : "Discount"}
                 </span>
                 <span className="text-amber-600 dark:text-amber-500 font-medium font-mono">
-                  -Tk.{" "}
-                  {totalDiscount.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  -{formatCurrency(totalDiscount)}
                 </span>
               </div>
 
               {/* Offer Savings */}
-              {(txData.totalOfferSavings || 0) > 0 && (
+              {totalOfferSavings > 0 && (
                 <div className="flex justify-between items-center text-sm font-medium bg-purple-500/5 -mx-2 px-2 py-1 rounded-lg border border-purple-500/10">
                   <span className="text-purple-500 flex items-center gap-1.5 text-xs font-semibold">
                     <Sparkles className="h-3 w-3" />
                     {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
                   </span>
                   <span className="text-purple-400 font-bold text-xs font-mono">
-                    -Tk.{" "}
-                    {(txData.totalOfferSavings || 0).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    -{formatCurrency(totalOfferSavings)}
                   </span>
                 </div>
               )}
@@ -536,21 +592,11 @@ function SaleDetailsContent() {
                   {isBangla ? "ট্যাক্স" : "Tax"}
                 </span>
                 <span className="text-foreground text-xs font-semibold font-mono">
-                  Tk. {taxVal.toFixed(2)}
+                  {formatCurrency(taxVal)}
                 </span>
               </div>
 
-              {/* VAT Display Row */}
-              <div className="flex justify-between items-center text-sm font-medium py-0.5">
-                <span className="text-muted-foreground">
-                  {isBangla ? "ভ্যাট" : "VAT"}
-                </span>
-                <span className="text-foreground text-xs font-semibold font-mono">
-                  Tk. {vatVal.toFixed(2)}
-                </span>
-              </div>
-
-              {/* Additional Charge */}
+              {/* Additional Charge Display */}
               <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-foreground">
@@ -563,7 +609,7 @@ function SaleDetailsContent() {
                   </span>
                 </div>
                 <span className="text-foreground text-sm font-bold font-mono">
-                  Tk. {additionalChargeVal.toFixed(2)}
+                  {formatCurrency(additionalChargeVal)}
                 </span>
               </div>
             </div>
@@ -574,102 +620,154 @@ function SaleDetailsContent() {
                 {isBangla ? "সর্বমোট" : "Grand Total"}
               </span>
               <span className="text-lg font-extrabold text-primary font-mono">
-                Tk.{" "}
-                {grandTotal.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {formatCurrency(grandTotal)}
               </span>
             </div>
 
             <hr className="border-border/60" />
 
-            {/* Dedicated Payment Section */}
-            <div className="space-y-4 pt-2 border-t border-border/40">
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                {isBangla ? "পেমেন্ট" : "Payment"}
-              </h3>
-
-              {/* Payment Mode */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  {isBangla ? "পেমেন্ট মোড" : "Payment Mode"}
+            {/* Payment Section (matching new sale page) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isBangla ? "পেমেন্ট পদ্ধতি" : "Payment Method"}
                 </Label>
-                <Input
-                  value={
-                    paymentMethod === "cash"
-                      ? isBangla
-                        ? "নগদ (Cash)"
-                        : "Cash"
-                      : paymentMethod === "card"
-                        ? isBangla
-                          ? "কার্ড (Card)"
-                          : "Card"
-                        : paymentMethod === "mobile_banking"
-                          ? isBangla
-                            ? "মোবাইল ব্যাংকিং"
-                            : "Mobile Banking"
-                          : isBangla
-                            ? "বাকি (Credit)"
-                            : "Credit"
-                  }
-                  readOnly
-                  className="h-10 bg-background/50 border-input text-foreground text-sm cursor-default focus-visible:ring-0"
-                />
               </div>
 
-              {/* Paid Amount */}
-              {paymentMethod !== "credit" && (
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {isBangla ? "পরিশোধিত পরিমাণ" : "Paid Amount"}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3 text-xs text-muted-foreground font-semibold">
-                      Tk.
-                    </span>
-                    <Input
-                      type="number"
-                      value={paidAmount || ""}
-                      readOnly
-                      className="pl-9 h-10 bg-background/50 border-input text-right font-bold text-foreground text-sm cursor-default focus-visible:ring-0 font-mono"
-                    />
-                  </div>
+              {/* Method display chip */}
+              <div className="grid grid-cols-3 gap-2">
+                {METHODS.map((m) => {
+                  const Icon = m.icon;
+                  const active = paymentMethod.includes(m.id);
+                  return (
+                    <div
+                      key={m.id}
+                      className={cn(
+                        "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                        active
+                          ? cn(m.bgClass, m.borderClass)
+                          : "border-border/40 bg-transparent opacity-40",
+                      )}
+                    >
+                      <Icon
+                        size={18}
+                        className={active ? m.colorClass : "text-muted-foreground"}
+                        strokeWidth={2}
+                      />
+                      <span
+                        className={cn(
+                          "text-[10px] font-medium leading-tight text-center",
+                          active ? m.colorClass : "text-muted-foreground",
+                        )}
+                      >
+                        {isBangla ? m.labelBn : m.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Payment details list if split / multiple payments */}
+              {Array.isArray(txData?.paymentMethods) && txData.paymentMethods.length > 0 && (
+                <div className="pt-2 pb-1 space-y-1.5 border-t border-border/40">
+                  {txData.paymentMethods.map((p: any, pIdx: number) => (
+                    <div
+                      key={p.id || pIdx}
+                      className="flex justify-between items-center text-xs text-muted-foreground"
+                    >
+                      <span className="capitalize">{p.paymentType || p.method || "Payment"}</span>
+                      <span className="font-mono font-semibold text-foreground">
+                        {formatCurrency(p.amount || 0)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
 
+              {/* Paid Amount */}
+              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
+                <span>{isBangla ? "পরিশোধিত" : "Paid Amount"}</span>
+                <span className="font-bold text-foreground font-mono">
+                  {formatCurrency(paidAmount)}
+                </span>
+              </div>
+
               {/* Due Amount Alert */}
               {due > 0 && (
-                <div className="pt-1">
-                  <div className="p-3 rounded-xl flex justify-between items-center text-xs font-semibold border transition-all duration-300 bg-rose-500/10 border-rose-500/20 text-rose-500">
-                    <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
-                    <div className="text-right">
-                      <span className="font-extrabold text-sm block font-mono">
-                        Tk. {due.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex justify-between items-center text-rose-500 font-bold text-sm">
+                  <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
+                  <span className="font-mono">{formatCurrency(due)}</span>
+                </div>
+              )}
+
+              {/* Change Return Alert */}
+              {changeReturned > 0 && (
+                <div className="flex justify-between items-center text-blue-500 font-bold text-sm">
+                  <span>{isBangla ? "ফেরত (Change)" : "Change Return"}</span>
+                  <span className="font-mono">{formatCurrency(changeReturned)}</span>
                 </div>
               )}
             </div>
 
             <hr className="border-border/60 pt-1" />
 
-            {/* Back Action Button */}
-            <div className="flex flex-col gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2.5">
+              {/* Download Invoice Button */}
+              <Button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isDownloading}
+                className="w-full h-11 bg-primary hover:bg-primary/95 text-primary-foreground font-bold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {isBangla ? "ইনভয়েস ডাউনলোড করুন" : "Download Invoice"}
+              </Button>
+
+              {/* Return Sale Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push(`/sales/returns/new?saleId=${id}`)}
+                className="w-full h-10 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <RotateCcw className="h-4 w-4" />
+                {isBangla ? "বিক্রি ফেরত দিন" : "Return Sale"}
+              </Button>
+
+              {/* Back Action */}
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                className="w-full h-10 text-sm border-input hover:bg-muted"
+                className="w-full h-10 border-input hover:bg-muted font-medium flex items-center justify-center gap-2 cursor-pointer"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4" />
                 {isBangla ? "পেছনে ফিরে যান" : "Back to Sales"}
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Invoice Preview Dialog Modal from InvoiceActions */}
+      <InvoicePreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        data={invoiceData}
+        isBangla={isBangla}
+      />
+
+      {/* Offscreen Invoice Template for PDF generation & printing from InvoiceActions */}
+      <InvoiceOffscreen
+        invoiceRef={invoiceRef}
+        data={invoiceData}
+        isBangla={isBangla}
+      />
     </div>
   );
 }
@@ -687,3 +785,5 @@ export default function SaleDetailsPage() {
     </Suspense>
   );
 }
+
+
