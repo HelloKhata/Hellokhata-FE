@@ -359,7 +359,7 @@ export default function FinanceTransactionsPage() {
                 <TableHead className="p-3">{isBangla ? 'তারিখ' : 'Date'}</TableHead>
                 <TableHead className="p-3">{isBangla ? 'লেনদেন আইডি' : 'TXN ID'}</TableHead>
                 <TableHead className="p-3">{isBangla ? 'লেনদেনের ধরণ' : 'Type'}</TableHead>
-                <TableHead className="p-3">{isBangla ? 'হিসাবের নাম' : 'Account Name'}</TableHead>
+                <TableHead className="p-3">{isBangla ? 'হিসাবের নাম' : 'Title'}</TableHead>
                 <TableHead className="p-3">{isBangla ? 'বিবরণ' : 'Description'}</TableHead>
                 <TableHead className="p-3">{isBangla ? 'পার্টি' : 'Particulars/Party'}</TableHead>
                 <TableHead className="p-3 text-right">{isBangla ? 'পরিমাণ' : 'Amount'}</TableHead>

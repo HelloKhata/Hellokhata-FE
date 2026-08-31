@@ -18,6 +18,24 @@ export const useReturnPurchase = () => {
   });
 };
 
+export const useGetPurchaseReturns = () => {
+  return useQuery({
+    queryKey: ["purchase-returns"],
+    queryFn: getPurchaseReturns,
+    select: (data) => data.data,
+  });
+};
+
+export const useGetPurchaseReturnById = (id: string) => {
+  return useQuery({
+    queryKey: ["purchase-returns", id],
+    queryFn: () => getPurchaseReturnById(id),
+    enabled: !!id,
+    select: (data) => data?.data || data,
+  });
+};
+
+
 export const useReturnSale = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -45,22 +63,3 @@ export const useGetSalesReturnById = (id: string) => {
     select: (data) => data?.data || data,
   });
 };
-
-export const useGetPurchaseReturns = () => {
-  return useQuery({
-    queryKey: ["purchase-returns"],
-    queryFn: getPurchaseReturns,
-    select: (data) => data.data,
-  });
-};
-
-export const useGetPurchaseReturnById = (id: string) => {
-  return useQuery({
-    queryKey: ["purchase-returns", id],
-    queryFn: () => getPurchaseReturnById(id),
-    enabled: !!id,
-    select: (data) => data?.data || data,
-  });
-};
-
-
