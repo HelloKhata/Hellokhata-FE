@@ -37,6 +37,7 @@ import {
   Sparkles,
   Trash2,
   ArrowUpDown,
+  Eye,
 } from 'lucide-react';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
@@ -62,13 +63,13 @@ import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
 
 export default function InventoryPage() {
   const { t, isBangla } = useAppTranslation();
-  const { formatCurrency } = useCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [priceFilter, setPriceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
   const [selectedBatchItem, setSelectedBatchItem] = useState<Item | null>(null);
+  console.log('selectedBatchItem',selectedBatchItem)
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
@@ -215,43 +216,6 @@ export default function InventoryPage() {
             </>
           )}
         </div>
-
-        {/* Multi-Price Summary Container */}
-        {multiPriceItems > 0 && (
-          <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 shadow-sm hover:shadow-md transition-all duration-200">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-foreground whitespace-nowrap">
-                  {isBangla ? 'মাল্টি-প্রাইস পণ্য' : 'Multi-Price Items'}
-                </h3>
-                <p className="text-xs text-muted-foreground/80 whitespace-nowrap">
-                  {isBangla
-                    ? `${multiPriceItems}টি পণ্যে একাধিক মূল্য সেট করা আছে`
-                    : `${multiPriceItems} items have multiple price tiers`}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {wholesaleItems > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo/10 border border-indigo/20 whitespace-nowrap">
-                    <Package className="h-3.5 w-3.5 text-indigo shrink-0" />
-                    <span className="text-xs font-medium text-indigo">{wholesaleItems}</span>
-                    <span className="text-xs text-muted-foreground">{isBangla ? 'পাইকারি' : 'Wholesale'}</span>
-                  </div>
-                )}
-                {vipItems > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warning/10 border border-warning/20 whitespace-nowrap">
-                    <Crown className="h-3.5 w-3.5 text-warning shrink-0" />
-                    <span className="text-xs font-medium text-warning">{vipItems}</span>
-                    <span className="text-xs text-muted-foreground">VIP</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Filters Container */}
         <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 sm:p-5 shadow-sm space-y-3">
@@ -755,7 +719,22 @@ const ItemRow = memo(function ItemRow({
               <p>{isBangla ? 'সম্পাদনা' : 'Edit'}</p>
             </TooltipContent>
           </Tooltip>
-          <Tooltip>
+           <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+                onClick={(e) => handleAction(e, onView)}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
+            </TooltipContent>
+          </Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -769,7 +748,7 @@ const ItemRow = memo(function ItemRow({
             <TooltipContent side="top">
               <p>{isBangla ? 'ডিলিট' : 'Delete'}</p>
             </TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
         </div>
       </div>
     </TooltipProvider>

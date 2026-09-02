@@ -12,8 +12,13 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useCreateItem = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      queryClient.invalidateQueries({ queryKey: ["itemsStatus"] });
+    },
   });
 };
 

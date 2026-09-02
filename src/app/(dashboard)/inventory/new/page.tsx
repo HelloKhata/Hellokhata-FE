@@ -60,7 +60,6 @@ export default function AddProductPage() {
   // fetch api's and get tax categories, units and others 
   const { data: masterItemsData } = useGetMasterItems(name);
   const masterItems = masterItemsData?.items;
-  console.log('masterItems',masterItems)
   const { data: taxCategories } = useGetTaxCategories();
   const { data: units } = useGetUnits();
   const { data: itemCategories } = useGetItemsCategories();
@@ -695,10 +694,10 @@ export default function AddProductPage() {
                     Tax Category
                   </label>
                   <select
-                    value={taxCategoryId}
+                    value={taxCategoryId || ""}
                     onChange={(e) => {
                       const selectedId = e.target.value;
-                      setTaxCategoryId(selectedId);
+                      setTaxCategoryId(selectedId || null);
                       const selected = taxCategories?.find(
                         (tc: any) => tc.id === selectedId,
                       );
@@ -711,7 +710,7 @@ export default function AddProductPage() {
                     <option value="">Select Tax Category</option>
                     {taxCategories?.map((tc: any) => (
                       <option key={tc.id} value={tc.id}>
-                        {tc.name}
+                        {tc.name} {tc.rate}%
                       </option>
                     ))}
                   </select>
