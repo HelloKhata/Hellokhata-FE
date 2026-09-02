@@ -7,90 +7,95 @@ import {
   Boxes,
   CheckCircle2,
   CircleDollarSign,
-  Receipt,
-  ShieldCheck,
+  Loader2,
   Tag,
   UploadCloud,
 } from "lucide-react";
 import { useGetTaxCategories } from "@/hooks/api/useTaxCategories";
 import { useGetUnits } from "@/hooks/api/useUnits";
 import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
-import { useCreateItem } from "@/hooks/api/useItems";
-import { useRouter } from "next/navigation";
+import { useGetSingleItem, useUpdateItem } from "@/hooks/api/useItems";
+import { useParams, useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
 
-export default function AddProductPage() {
-  // Form State matching API JSON schema
-  const [name, setName] = useState("");
-  const [sku, setSku] = useState("");
-  const [barcode, setBarcode] = useState("");
-  const [brand, setBrand] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [taxCategoryId, setTaxCategoryId] = useState<string | null>(null);
-  const [unitId, setUnitId] = useState("");
-  const [description, setDescription] = useState("");
+function EditProductForm({ id, item }: { id: string; item: any }) {
+  const router = useRouter();
 
-  const [costPrice, setCostPrice] = useState<number | "">(0);
-  const [sellingPrice, setSellingPrice] = useState<number | "">(0);
-  const [wholesalePrice, setWholesalePrice] = useState<number | "">(0);
-  const [vipPrice, setVipPrice] = useState<number | "">(0);
-  const [minimumPrice, setMinimumPrice] = useState<number | "">(0);
+  // Form State initialized directly from product data
+  const [name, setName] = useState(item.name || "");
+  const [sku, setSku] = useState(item.sku || "");
+  const [barcode, setBarcode] = useState(item.barcode || "");
+  const [brand, setBrand] = useState(item.brand || "");
+  const [categoryId, setCategoryId] = useState(item.categoryId || "");
+  const [taxCategoryId, setTaxCategoryId] = useState<string | null>(item.taxCategoryId || null);
+  const [unitId, setUnitId] = useState(item.unitId || "");
+  const [description, setDescription] = useState(item.description || "");
 
-  const [currentStock, setCurrentStock] = useState<number | "">(0);
-  const [minStock, setMinStock] = useState<number | "">(10);
-  const [vatRate, setVatRate] = useState<number | "">(5);
-  const [lowStockAlert, setLowStockAlert] = useState(false);
+  const [costPrice, setCostPrice] = useState<number | "">(item.costPrice ?? 0);
+  const [sellingPrice, setSellingPrice] = useState<number | "">(item.sellingPrice ?? 0);
+  const [wholesalePrice, setWholesalePrice] = useState<number | "">(item.wholesalePrice ?? 0);
+  const [vipPrice, setVipPrice] = useState<number | "">(item.vipPrice ?? 0);
+  const [minimumPrice, setMinimumPrice] = useState<number | "">(item.minimumPrice ?? 0);
 
-  const [trackExpiry, setTrackExpiry] = useState(false);
-  const [trackBatch, setTrackBatch] = useState(false);
-  const [status, setStatus] = useState("ACTIVE");
-  const [warranty, setWarranty] = useState<"YES" | "NO">("NO");
-  const [warrantyDays, setWarrantyDays] = useState<number | "">("");
-  const [productType, setProductType] = useState("PRODUCT");
-  const [imageUrl, setImageUrl] = useState("");
+  const [currentStock, setCurrentStock] = useState<number | "">(item.currentStock ?? 0);
+  const [minStock, setMinStock] = useState<number | "">(item.minStock ?? 10);
+  const [vatRate, setVatRate] = useState<number | "">(item.vatRate ?? 0);
+  const [lowStockAlert, setLowStockAlert] = useState(Boolean(item.lowStockAlert));
 
-  const [manufactureDate, setManufactureDate] = useState<string>("");
-  const [expiryDate, setExpiryDate] = useState<string>("");
+  const [trackExpiry, setTrackExpiry] = useState(Boolean(item.trackExpiry));
+  const [trackBatch, setTrackBatch] = useState(Boolean(item.trackBatch));
+  const [status, setStatus] = useState(item.status || "ACTIVE");
+  const [warranty, setWarranty] = useState<"YES" | "NO">(item.warrantyDays ? "YES" : "NO");
+  const [warrantyDays, setWarrantyDays] = useState<number | "">(item.warrantyDays || "");
+  const [productType, setProductType] = useState(item.productType || "PRODUCT");
+  const [imageUrl, setImageUrl] = useState(item.imageUrl || "");
 
-  const [incomeRevenueAccount, setIncomeRevenueAccount] = useState("Sales Revenue");
-  const [showAdvancePricing, setShowAdvancePricing] = useState(false);
+  const [manufactureDate, setManufactureDate] = useState<string>(
+    item.manufactureDate ? item.manufactureDate.split("T")[0] : ""
+  );
+  const [expiryDate, setExpiryDate] = useState<string>(
+    item.expiryDate ? item.expiryDate.split("T")[0] : ""
+  );
+
+  const [showAdvancePricing, setShowAdvancePricing] = useState(
+    Boolean(item.wholesalePrice || item.vipPrice || item.minimumPrice)
+  );
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // fetch api's and get tax categories, units and others 
   const { data: masterItemsData } = useGetMasterItems(name);
   const masterItems = masterItemsData?.items;
-  console.log('masterItems',masterItems)
   const { data: taxCategories } = useGetTaxCategories();
   const { data: units } = useGetUnits();
   const { data: itemCategories } = useGetItemsCategories();
-  const { mutate: saveProduct, isPending: isSaving } = useCreateItem();
+  const { mutate: updateProduct, isPending: isSaving } = useUpdateItem();
 
-  const handleSelectMasterItem = (item: any) => {
-    if (!item) return;
+  const handleSelectMasterItem = (selectedItem: any) => {
+    if (!selectedItem) return;
 
-    if (item.name) setName(item.name);
-    if (item.sku) setSku(item.sku);
-    if (item.barcode) setBarcode(item.barcode);
-    if (item.brand) setBrand(item.brand);
-    if (item.description) setDescription(item.description);
+    if (selectedItem.name) setName(selectedItem.name);
+    if (selectedItem.sku) setSku(selectedItem.sku);
+    if (selectedItem.barcode) setBarcode(selectedItem.barcode);
+    if (selectedItem.brand) setBrand(selectedItem.brand);
+    if (selectedItem.description) setDescription(selectedItem.description);
 
-    if (item.costPrice !== undefined && item.costPrice !== null) {
-      setCostPrice(Number(item.costPrice));
+    if (selectedItem.costPrice !== undefined && selectedItem.costPrice !== null) {
+      setCostPrice(Number(selectedItem.costPrice));
     }
-    if (item.sellingPrice !== undefined && item.sellingPrice !== null) {
-      setSellingPrice(Number(item.sellingPrice));
+    if (selectedItem.sellingPrice !== undefined && selectedItem.sellingPrice !== null) {
+      setSellingPrice(Number(selectedItem.sellingPrice));
     }
-    if (item.productType) {
-      setProductType(item.productType);
+    if (selectedItem.productType) {
+      setProductType(selectedItem.productType);
     }
-    if (item.image || item.imageUrl) {
-      setImageUrl(item.image || item.imageUrl);
+    if (selectedItem.image || selectedItem.imageUrl) {
+      setImageUrl(selectedItem.image || selectedItem.imageUrl);
     }
 
     // Match Category
-    if (item.category || item.categoryId) {
-      const catVal = item.category || item.categoryId;
+    if (selectedItem.category || selectedItem.categoryId) {
+      const catVal = selectedItem.category || selectedItem.categoryId;
       const foundCategory = itemCategories?.find(
         (cat: any) =>
           cat.id === catVal ||
@@ -104,8 +109,8 @@ export default function AddProductPage() {
     }
 
     // Match Unit
-    if (item.unit || item.unitId) {
-      const unitVal = item.unit || item.unitId;
+    if (selectedItem.unit || selectedItem.unitId) {
+      const unitVal = selectedItem.unit || selectedItem.unitId;
       const foundUnit = units?.find(
         (u: any) =>
           u.id === unitVal ||
@@ -130,11 +135,7 @@ export default function AddProductPage() {
 
     setShowSuggestions(false);
   };
- 
-  
-  
-  // router 
-  const router = useRouter()
+
   // Show date fields when batch tracking, expiry tracking is on and current stock has value
   const showDateFields =
     trackBatch &&
@@ -161,7 +162,6 @@ export default function AddProductPage() {
     if (!name.trim()) {
       newErrors.name = "Product Name is required";
     }
-
     if (!unitId.trim()) {
       newErrors.unitId = "Unit Measure is required";
     }
@@ -172,15 +172,6 @@ export default function AddProductPage() {
 
     if (sellingPrice === "") {
       newErrors.sellingPrice = "Retail Selling Price is required";
-    }
-
-    if (showDateFields) {
-      // if (!manufactureDate) {
-      //   newErrors.manufactureDate = "Manufacture Date is required";
-      // }
-      // if (!expiryDate) {
-      //   newErrors.expiryDate = "Expiry Date is required";
-      // }
     }
 
     setErrors(newErrors);
@@ -221,18 +212,22 @@ export default function AddProductPage() {
       manufactureDate: showDateFields ? manufactureDate : null,
     };
 
-    saveProduct(formData,{
-      onSuccess:(data)=>{
-      if(data.success){
-        toast.success(data.message || "Product added successfully");
-        console.log('inventory data', data)
-        router.push("/inventory");
-      }else{
-        toast.error(data.message || "Failed to add product");
+    updateProduct(
+      { id, data: formData },
+      {
+        onSuccess: (data: any) => {
+          if (data?.success || data?.data) {
+            toast.success(data?.message || "Product updated successfully");
+            router.push("/inventory");
+          } else {
+            toast.error(data?.message || "Failed to update product");
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || "Failed to update product");
+        },
       }
-    }
-    })
-    
+    );
   };
 
   // Dynamic calculation logic
@@ -252,15 +247,18 @@ export default function AddProductPage() {
         {/* Header Action Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 mb-1 transition-opacity">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 mb-1 transition-opacity cursor-pointer"
+            >
               <ArrowLeft className="w-3.5 h-3.5" /> BACK TO INVENTORY
             </button>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Add New Product
+              Edit Product
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Initialize a new stock item, pricing, stock levels, and accounting
-              settings.
+              Update stock item details, pricing, stock levels, and accounting settings.
             </p>
           </div>
         </div>
@@ -312,33 +310,33 @@ export default function AddProductPage() {
                         <span className="text-primary font-medium">Suggestions from Master Items</span>
                         <span>{masterItems.length} found</span>
                       </div>
-                      {masterItems.map((item: any) => {
+                      {masterItems.map((sItem: any) => {
                         const categoryName =
-                          typeof item.category === "object"
-                            ? item.category?.name
-                            : item.category ||
-                              itemCategories?.find((c: any) => c.id === item.categoryId)?.name ||
+                          typeof sItem.category === "object"
+                            ? sItem.category?.name
+                            : sItem.category ||
+                              itemCategories?.find((c: any) => c.id === sItem.categoryId)?.name ||
                               "";
                         const unitName =
-                          typeof item.unit === "object"
-                            ? item.unit?.name
-                            : item.unit ||
-                              units?.find((u: any) => u.id === item.unitId)?.name ||
+                          typeof sItem.unit === "object"
+                            ? sItem.unit?.name
+                            : sItem.unit ||
+                              units?.find((u: any) => u.id === sItem.unitId)?.name ||
                               "";
 
                         return (
                           <button
-                            key={item.id}
+                            key={sItem.id}
                             type="button"
                             onMouseDown={(e) => {
                               e.preventDefault();
-                              handleSelectMasterItem(item);
+                              handleSelectMasterItem(sItem);
                             }}
                             className="w-full text-left p-3 hover:bg-muted/80 hover:border-l-2 hover:border-l-primary transition-all flex items-center justify-between gap-3 group cursor-pointer"
                           >
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                {item.name} {item.nameBn ? `(${item.nameBn})` : ""}
+                                {sItem.name} {sItem.nameBn ? `(${sItem.nameBn})` : ""}
                               </p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground">
                                 {categoryName && (
@@ -347,21 +345,21 @@ export default function AddProductPage() {
                                   </span>
                                 )}
                                 {unitName && <span>Unit: {unitName}</span>}
-                                {item.barcode && <span>• Barcode: {item.barcode}</span>}
-                                {item.sku && <span>• SKU: {item.sku}</span>}
-                                {item.brand && <span>• Brand: {item.brand}</span>}
+                                {sItem.barcode && <span>• Barcode: {sItem.barcode}</span>}
+                                {sItem.sku && <span>• SKU: {sItem.sku}</span>}
+                                {sItem.brand && <span>• Brand: {sItem.brand}</span>}
                               </div>
                             </div>
 
                             <div className="text-right shrink-0">
-                              {item.sellingPrice !== undefined && item.sellingPrice !== null && (
+                              {sItem.sellingPrice !== undefined && sItem.sellingPrice !== null && (
                                 <div className="text-xs font-bold font-mono text-primary">
-                                  ${Number(item.sellingPrice).toFixed(2)}
+                                  ${Number(sItem.sellingPrice).toFixed(2)}
                                 </div>
                               )}
-                              {item.costPrice !== undefined && item.costPrice !== null && (
+                              {sItem.costPrice !== undefined && sItem.costPrice !== null && (
                                 <div className="text-[10px] font-mono text-muted-foreground">
-                                  Cost: ${Number(item.costPrice).toFixed(2)}
+                                  Cost: ${Number(sItem.costPrice).toFixed(2)}
                                 </div>
                               )}
                             </div>
@@ -416,7 +414,7 @@ export default function AddProductPage() {
                       <label className="text-xs font-medium text-foreground">
                         Category
                       </label>
-                      <button className="text-[11px] text-primary hover:underline font-medium">
+                      <button type="button" className="text-[11px] text-primary hover:underline font-medium">
                         + Add
                       </button>
                     </div>
@@ -439,7 +437,7 @@ export default function AddProductPage() {
                       <label className="text-xs font-medium text-foreground">
                         Brand
                       </label>
-                      <button className="text-[11px] text-primary hover:underline font-medium">
+                      <button type="button" className="text-[11px] text-primary hover:underline font-medium">
                         + Add
                       </button>
                     </div>
@@ -690,32 +688,32 @@ export default function AddProductPage() {
                         </p>
                       )}
                     </div>
-                      <div>
-                  <label className="block text-xs font-medium text-foreground mb-1">
-                    Tax Category
-                  </label>
-                  <select
-                    value={taxCategoryId}
-                    onChange={(e) => {
-                      const selectedId = e.target.value;
-                      setTaxCategoryId(selectedId);
-                      const selected = taxCategories?.find(
-                        (tc: any) => tc.id === selectedId,
-                      );
-                      if (selected && typeof selected.rate === "number") {
-                        setVatRate(selected.rate);
-                      }
-                    }}
-                    className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
-                  >
-                    <option value="">Select Tax Category</option>
-                    {taxCategories?.map((tc: any) => (
-                      <option key={tc.id} value={tc.id}>
-                        {tc.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-xs font-medium text-foreground mb-1">
+                        Tax Category
+                      </label>
+                      <select
+                        value={taxCategoryId || ""}
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          setTaxCategoryId(selectedId || null);
+                          const selected = taxCategories?.find(
+                            (tc: any) => tc.id === selectedId,
+                          );
+                          if (selected && typeof selected.rate === "number") {
+                            setVatRate(selected.rate);
+                          }
+                        }}
+                        className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      >
+                        <option value="">Select Tax Category</option>
+                        {taxCategories?.map((tc: any) => (
+                          <option key={tc.id} value={tc.id}>
+                            {tc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -986,8 +984,6 @@ export default function AddProductPage() {
                 )}
               </div>
             </section>
-
-         
           </div>
 
           {/* RIGHT COLUMN SIDEBAR CARDS - STICKY WRAPPER */}
@@ -1017,36 +1013,7 @@ export default function AddProductPage() {
               </div>
             </section>
 
-            {/* Creation Summary Card */}
-            {/* <section className="bg-zinc-900/20 border border-border rounded-xl p-4.5 space-y-3 shadow-xs">
-              <div className="flex items-center gap-2 pb-2 border-b border-border">
-                <ShieldCheck className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">
-                  Creation Summary
-                </h3>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Created By:</span>
-                  <span className="font-medium text-foreground">Admin_MGR</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Tax Class:</span>
-                  <span className="font-medium text-foreground">
-                    Standard (5%)
-                  </span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-muted-foreground">System Status:</span>
-                  <span className="inline-flex items-center gap-1.5 text-primary font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    Validating Entry
-                  </span>
-                </div>
-              </div>
-            </section> */}
-               {/* CARD 5: Description Section */}
+            {/* Description Section */}
             <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Tag className="w-4 h-4 text-primary" />
@@ -1077,24 +1044,49 @@ export default function AddProductPage() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
           <span className="hidden sm:inline">
-            Ready to register item into inventory master data
+            Ready to update item in inventory master data
           </span>
           <span className="sm:hidden">Ready to submit</span>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+          >
             Cancel
           </button>
           <button
             type="button"
+            disabled={isSaving}
             onClick={handleSaveProduct}
-            className="px-8 py-4 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-all shadow-sm shadow-primary/20 cursor-pointer"
+            className="px-8 py-4 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-all shadow-sm shadow-primary/20 cursor-pointer flex items-center gap-2"
           >
-            Save Product
+            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {isSaving ? "Updating..." : "Update Product"}
           </button>
         </div>
       </footer>
     </div>
   );
+}
+
+export default function EditProductPage() {
+  const params = useParams();
+  const id = (params?.id as string) || "";
+  const { data: itemData, isLoading: isItemLoading } = useGetSingleItem(id);
+
+  if (isItemLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs font-medium">Loading product details...</p>
+      </div>
+    );
+  }
+
+  const item = itemData?.data;
+
+  return <EditProductForm key={item?.id || id} id={id} item={item} />;
 }
