@@ -746,7 +746,7 @@ const ItemRow = memo(function ItemRow({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                onClick={(e) => handleAction(e, () => router.push(`/inventory/${item.id}/edit`))}
+                onClick={(e) => handleAction(e, () => router.push(`/inventory/edit/${item.id}`))}
               >
                 <Edit className="h-4 w-4" />
               </Button>
