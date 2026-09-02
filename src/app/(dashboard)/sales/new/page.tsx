@@ -55,12 +55,14 @@ import {
   Search,
   Phone,
   Package,
+  AlertCircle,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGetItemBatches, useGetItems } from "@/hooks/api/useItems";
+import { getItemBatches } from "@/services/item.services";
 import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
@@ -362,12 +364,25 @@ function NewSaleContent() {
     return Math.max(0, totalPaid - grandTotal);
   }, [totalPaid, grandTotal]);
 
-  // Validation
+  // Validation & Warnings
+  const [paymentWarning, setPaymentWarning] = useState<string | null>(null);
+
   const isPaidAmountExceeded = useMemo(() => {
     return totalPaid > grandTotal;
   }, [totalPaid, grandTotal]);
 
+  const currentWarning = useMemo(() => {
+    if (paymentWarning) return paymentWarning;
+    if (totalPaid > grandTotal) {
+      return isBangla
+        ? `পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না (সর্বোচ্চ: ${formatCurrency(grandTotal)})`
+        : `Paid amount cannot exceed grand total (Max allowed: ${formatCurrency(grandTotal)})`;
+    }
+    return null;
+  }, [paymentWarning, totalPaid, grandTotal, isBangla, formatCurrency]);
+
   const toggleSplitMode = () => {
+    setPaymentWarning(null);
     if (splitMode) {
       // Revert to single payment mode
       setPayments([
@@ -378,7 +393,7 @@ function NewSaleContent() {
           reference: "",
           transactionId: "",
           receivedBy: "",
-          amount: grandTotal,
+          amount: Math.min(totalPaid || grandTotal, grandTotal),
           date: new Date(),
         },
       ]);
@@ -393,7 +408,7 @@ function NewSaleContent() {
           reference: "",
           transactionId: "",
           receivedBy: "",
-          amount: grandTotal,
+          amount: Math.min(totalPaid || grandTotal, grandTotal),
           date: new Date(),
         },
         {
@@ -422,6 +437,37 @@ function NewSaleContent() {
   };
 
   const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
+    if (field === "amount") {
+      const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
+
+      if (numValue < 0) {
+        setPaymentWarning(
+          isBangla
+            ? "পরিশোধের পরিমাণ ঋণাত্মক হতে পারে না"
+            : "Paid amount cannot be negative"
+        );
+        return;
+      }
+
+      // Calculate total paid by other payments (in split mode)
+      const otherPaymentsTotal = payments
+        .filter((p) => p.id !== id)
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      const maxAllowed = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
+
+      if (numValue > maxAllowed) {
+        setPaymentWarning(
+          isBangla
+            ? `পরিশোধের পরিমাণ সর্বমোট টাকার বেশি হতে পারবে না (সর্বোচ্চ: ${formatCurrency(maxAllowed)})`
+            : `Paid amount cannot exceed grand total (Max allowed: ${formatCurrency(maxAllowed)})`
+        );
+        return; // The input field cannot receive data when exceeded
+      } else {
+        setPaymentWarning(null);
+      }
+    }
+
     setPayments((prev) =>
       prev.map((p) => {
         if (p.id === id) {
@@ -596,6 +642,29 @@ function NewSaleContent() {
     setProductSearchQuery("");
     setShowProductSuggestions(false);
     setSelectedProductForBatch(null);
+  };
+
+  // Handle product click in search suggestions:
+  // When no batches found for a product, add directly to items table without showing batch list.
+  const handleProductSelect = async (product: any) => {
+    if (!product) return;
+
+    // 1. If product explicitly does not track batch
+    if (product.trackBatch === false) {
+      handleSelectBatchAndAdd(product, null);
+      return;
+    }
+
+    // 2. If product already has pre-loaded batches array
+    if (Array.isArray(product.batches)) {
+      if (product.batches.length === 0) {
+        handleSelectBatchAndAdd(product, null);
+        return;
+      } else {
+        setSelectedProductForBatch(product);
+        return;
+      }
+    }
   };
 
   // Remove Item Row
@@ -887,7 +956,7 @@ function NewSaleContent() {
                             className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
-                               setSelectedProductForBatch(product)
+                              handleProductSelect(product);
                             }}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -960,58 +1029,69 @@ function NewSaleContent() {
 
                         {/* Batches list */}
                         <div className="divide-y divide-border/60 max-h-56 overflow-y-auto">
-                          {isLoadingBatches || batches?.map((batch: any) => {
-                            const bNo = batch?.batchNumber
-                            const stock = batch.quantity
-                            const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
-                            const expiry = batch.expiryDate ? format(new Date(batch.expiryDate), "dd MMM yyyy") : null;
+                          {isLoadingBatches ? (
+                            <div className="p-4 flex items-center justify-center text-muted-foreground gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                              <span className="text-xs">{isBangla ? "ব্যাচ লোড হচ্ছে..." : "Loading batches..."}</span>
+                            </div>
+                          ) : (batches && batches.length > 0) ? (
+                            batches.map((batch: any) => {
+                              const bNo = batch?.batchNumber;
+                              const stock = batch.quantity;
+                              const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
+                              const expiry = batch.expiryDate ? format(new Date(batch.expiryDate), "dd MMM yyyy") : null;
 
-                            return (
-                              <button
-                                key={batch.id || bNo}
-                                type="button"
-                                className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between text-xs group cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  handleSelectBatchAndAdd(selectedProductForBatch, batch);
-                                }}
-                              >
-                                <div className="space-y-0.5 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-foreground font-mono truncate group-hover:text-primary transition-colors">
-                                      {bNo}
+                              return (
+                                <button
+                                  key={batch.id || bNo}
+                                  type="button"
+                                  className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between text-xs group cursor-pointer"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSelectBatchAndAdd(selectedProductForBatch, batch);
+                                  }}
+                                >
+                                  <div className="space-y-0.5 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-semibold text-foreground font-mono truncate group-hover:text-primary transition-colors">
+                                        {bNo}
+                                      </span>
+                                      {batch.status && (
+                                        <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/10 text-emerald-500 font-medium">
+                                          {batch.status}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                      {stock !== undefined && (
+                                        <span>
+                                          {isBangla ? "স্টক" : "Stock"}: <strong className="text-foreground">{stock}</strong>
+                                        </span>
+                                      )}
+                                      {expiry && (
+                                        <span>
+                                          {isBangla ? "মেয়াদ" : "Exp"}: {expiry}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    <span className="font-bold text-primary text-xs block">
+                                      {formatCurrency(price)}
                                     </span>
-                                    {batch.status && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/10 text-emerald-500 font-medium">
-                                        {batch.status}
-                                      </span>
-                                    )}
+                                    <span className="text-[10px] text-muted-foreground group-hover:text-primary font-medium">
+                                      {isBangla ? "যোগ করুন +" : "Select +"}
+                                    </span>
                                   </div>
-                                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                                    {stock !== undefined && (
-                                      <span>
-                                        {isBangla ? "স্টক" : "Stock"}: <strong className="text-foreground">{stock}</strong>
-                                      </span>
-                                    )}
-                                    {expiry && (
-                                      <span>
-                                        {isBangla ? "মেয়াদ" : "Exp"}: {expiry}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="text-right shrink-0">
-                                  <span className="font-bold text-primary text-xs block">
-                                    {formatCurrency(price)}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground group-hover:text-primary font-medium">
-                                    {isBangla ? "যোগ করুন +" : "Select +"}
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                              {isBangla ? "কোনো ব্যাচ পাওয়া যায়নি" : "No batches found"}
+                            </div>
+                          )}
 
                           {/* Option to add without specific batch */}
                           <button
@@ -1527,6 +1607,10 @@ function NewSaleContent() {
                   
                   if (!activePayment) return null;
                   const p = activePayment;
+                  const otherPaymentsTotal = payments
+                    .filter((pay) => pay.id !== p.id)
+                    .reduce((sum, pay) => sum + (pay.amount || 0), 0);
+                  const maxAllowedForActive = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
 
                   return (
                     <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
@@ -1540,6 +1624,7 @@ function NewSaleContent() {
                               key={m.id}
                               type="button"
                               onClick={() => {
+                                setPaymentWarning(null);
                                 if (splitMode) {
                                   setActiveSplitMethod(m.id);
                                 } else {
@@ -1580,6 +1665,9 @@ function NewSaleContent() {
                             <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                             <input
                               type="number"
+                              min={0}
+                              max={maxAllowedForActive}
+                              step="any"
                               value={p.amount || ""}
                               onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                               className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1596,6 +1684,9 @@ function NewSaleContent() {
                             <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                             <input
                               type="number"
+                              min={0}
+                              max={maxAllowedForActive}
+                              step="any"
                               value={p.amount || ""}
                               onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                               className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1619,6 +1710,9 @@ function NewSaleContent() {
                             <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                             <input
                               type="number"
+                              min={0}
+                              max={maxAllowedForActive}
+                              step="any"
                               value={p.amount || ""}
                               onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                               className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1665,6 +1759,9 @@ function NewSaleContent() {
                             <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                             <input
                               type="number"
+                              min={0}
+                              max={maxAllowedForActive}
+                              step="any"
                               value={p.amount || ""}
                               onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                               className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1685,6 +1782,14 @@ function NewSaleContent() {
                             placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
                             className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
                           />
+                        </div>
+                      )}
+
+                      {/* Warning below payment method */}
+                      {currentWarning && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg mt-1 animate-in fade-in duration-150">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>{currentWarning}</span>
                         </div>
                       )}
                     </div>

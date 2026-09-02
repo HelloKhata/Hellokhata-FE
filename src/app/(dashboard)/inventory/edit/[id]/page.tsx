@@ -709,7 +709,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                         <option value="">Select Tax Category</option>
                         {taxCategories?.map((tc: any) => (
                           <option key={tc.id} value={tc.id}>
-                            {tc.name}
+                            {tc.name} ({tc.rate}%)
                           </option>
                         ))}
                       </select>

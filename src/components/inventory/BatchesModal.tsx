@@ -62,6 +62,7 @@ export function BatchesModal({
   const [sortBy, setSortBy] = useState<'date' | 'expiry' | 'quantity' | 'batchNumber'>('date');
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
 
+  console.log('item',item)
   // Query batches for the specific item
   const { data: batchesData, isLoading } = useGetBatches({
     itemId: item?.id,
