@@ -43,6 +43,35 @@ export async function submitAiTextRequest(
   return response.data;
 }
 
+export async function createActionFromRequest(requestId: string) {
+  const response = await api.post<{ success: true; data: unknown }>(
+    `/ai/actions/from-request/${requestId}`,
+  );
+  return response.data;
+}
+
+export async function confirmAiAction(
+  actionId: string,
+  decisionNotes?: string,
+) {
+  const response = await api.post<{ success: true; data: unknown }>(
+    `/ai/actions/${actionId}/confirm`,
+    { decisionNotes },
+  );
+  return response.data;
+}
+
+export async function rejectAiAction(
+  actionId: string,
+  decisionNotes?: string,
+) {
+  const response = await api.post<{ success: true; data: unknown }>(
+    `/ai/actions/${actionId}/reject`,
+    { decisionNotes },
+  );
+  return response.data;
+}
+
 export function formatAiProposalText(
   response: AiProposalResponse,
   language: AiLanguage,
