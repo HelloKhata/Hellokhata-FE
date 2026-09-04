@@ -68,8 +68,7 @@ export default function InventoryPage() {
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [priceFilter, setPriceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [selectedBatchItem, setSelectedBatchItem] = useState<Item | null>(null);
-  console.log('selectedBatchItem',selectedBatchItem)
+  const [selectedBatchItemId, setSelectedBatchItemId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
@@ -94,11 +93,6 @@ export default function InventoryPage() {
   const totalStock = statusData?.data?.totalStock ?? 0;
   const stockValue = statusData?.data?.stockValue ?? 0;
   const lowStockCount = statusData?.data?.lowStock ?? 0;
-
-  // Multi-price stats (still derived from the items list)
-  const wholesaleItems = (products || []).filter((item) => item.wholesalePrice && item.wholesalePrice > 0).length;
-  const vipItems = (products || []).filter((item) => item.vipPrice && item.vipPrice > 0).length;
-  const multiPriceItems = (products || []).filter((item) => item.wholesalePrice || item.vipPrice || item.minimumPrice).length;
 
   // Client-side price filtering
   const priceFilteredItems = (products || []).filter((item) => {
@@ -400,7 +394,7 @@ export default function InventoryPage() {
                       index={index}
                       categories={categories || []}
                       onView={() => router.push(`/inventory/${item.id}`)}
-                      onViewBatches={() => setSelectedBatchItem(item)}
+                      onViewBatches={(itemId) => setSelectedBatchItemId(itemId)}
                       refetchItems={refetch}
                     />
                   ))}
@@ -412,11 +406,12 @@ export default function InventoryPage() {
       </div>
 
       {/* View Batches Modal */}
-      {selectedBatchItem && (
+      {selectedBatchItemId && (
         <BatchesModal
-          isOpen={!!selectedBatchItem}
-          onClose={() => setSelectedBatchItem(null)}
-          item={selectedBatchItem}
+          isOpen={!!selectedBatchItemId}
+          onClose={() => setSelectedBatchItemId(null)}
+          itemId={selectedBatchItemId}
+          item={products?.find((p) => p.id === selectedBatchItemId) || null}
           isBangla={isBangla}
           categories={categories || []}
         />
@@ -452,6 +447,7 @@ const ItemRow = memo(function ItemRow({
   item,
   isBangla,
   index,
+  categories,
   onView,
   onViewBatches,
   refetchItems
@@ -461,7 +457,7 @@ const ItemRow = memo(function ItemRow({
   index: number;
   categories?: any[];
   onView: () => void;
-  onViewBatches: () => void;
+  onViewBatches: (itemId: string) => void;
   refetchItems: () => void
 }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -652,7 +648,7 @@ const ItemRow = memo(function ItemRow({
           <button
             type="button"
             className="h-auto py-1 px-3.5 text-foreground whitespace-nowrap text-xs font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded-full transition-colors w-fit cursor-pointer flex items-center"
-            onClick={(e) => handleAction(e, onViewBatches)}
+            onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
           >
             <span className="text-xs font-medium text-slate-200">
               {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 

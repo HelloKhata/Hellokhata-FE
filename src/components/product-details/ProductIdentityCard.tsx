@@ -112,7 +112,7 @@ export function ProductIdentityCard({
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={onEdit || (() => onEditField?.("all"))}
+                  onClick={onEdit}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-3.5 text-xs font-semibold rounded-xl cursor-pointer flex items-center gap-1.5"
                 >
                   <Pencil className="h-3.5 w-3.5" />

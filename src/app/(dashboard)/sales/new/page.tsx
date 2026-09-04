@@ -62,7 +62,6 @@ import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useGetItemBatches, useGetItems } from "@/hooks/api/useItems";
-import { getItemBatches } from "@/services/item.services";
 import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
@@ -644,29 +643,6 @@ function NewSaleContent() {
     setSelectedProductForBatch(null);
   };
 
-  // Handle product click in search suggestions:
-  // When no batches found for a product, add directly to items table without showing batch list.
-  const handleProductSelect = async (product: any) => {
-    if (!product) return;
-
-    // 1. If product explicitly does not track batch
-    if (product.trackBatch === false) {
-      handleSelectBatchAndAdd(product, null);
-      return;
-    }
-
-    // 2. If product already has pre-loaded batches array
-    if (Array.isArray(product.batches)) {
-      if (product.batches.length === 0) {
-        handleSelectBatchAndAdd(product, null);
-        return;
-      } else {
-        setSelectedProductForBatch(product);
-        return;
-      }
-    }
-  };
-
   // Remove Item Row
   const removeItemRow = (id: string) => {
     if (selectedItems.length === 1) {
@@ -956,7 +932,7 @@ function NewSaleContent() {
                             className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
-                              handleProductSelect(product);
+                              setSelectedProductForBatch(product);
                             }}
                           >
                             <div className="flex items-center gap-3 min-w-0">
