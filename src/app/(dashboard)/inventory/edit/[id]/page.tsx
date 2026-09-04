@@ -17,9 +17,12 @@ import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
 import { useGetSingleItem, useUpdateItem } from "@/hooks/api/useItems";
 import { useParams, useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
+import { cn } from "@/lib/utils";
+import { useUiStore } from "@/stores/uiStore";
 
 function EditProductForm({ id, item }: { id: string; item: any }) {
   const router = useRouter();
+  const { sidebarCollapsed } = useUiStore();
 
   // Form State initialized directly from product data
   const [name, setName] = useState(item.name || "");
@@ -211,7 +214,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
       expiryDate: showDateFields ? expiryDate : null,
       manufactureDate: showDateFields ? manufactureDate : null,
     };
-
+    
     updateProduct(
       { id, data: formData },
       {
@@ -851,7 +854,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                 <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className="block text-xs font-medium text-foreground mb-1">
-                      Opening Stock
+                      Current Stock
                     </label>
                     <input
                       type="number"
@@ -1040,7 +1043,13 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
       </main>
 
       {/* ================= FIXED BOTTOM ACTION BAR ================= */}
-      <footer className="fixed bottom-0 right-0 left-0 h-20 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg">
+      <footer
+        className={cn(
+          "fixed bottom-0 right-0 h-20 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg transition-all duration-300 ease-smooth",
+          "left-0 md:left-64",
+          sidebarCollapsed && "md:left-16"
+        )}
+      >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
           <span className="hidden sm:inline">

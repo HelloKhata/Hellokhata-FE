@@ -93,8 +93,8 @@ function ProductDetailsContent() {
       {/* 2. Product Identity Hero Card */}
       <ProductIdentityCard
         product={product}
-        onEdit={() => alert("Edit product triggered")}
-        onEditField={(field) => alert(`Edit field [${field}] triggered`)}
+        onEdit={() => router.push(`/inventory/edit/${product.id}`)}
+        onEditField={(field) => router.push(`/inventory/edit/${product.id}`)}
         onChangeImage={() => alert("Change image triggered")}
         onShare={() => alert("Share product triggered")}
         onArchive={() => alert("Archive product triggered")}

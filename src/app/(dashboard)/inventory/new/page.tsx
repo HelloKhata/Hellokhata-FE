@@ -18,8 +18,13 @@ import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
 import { useCreateItem } from "@/hooks/api/useItems";
 import { useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
+import { cn } from "@/lib/utils";
+import { useUiStore } from "@/stores/uiStore";
 
 export default function AddProductPage() {
+  const router = useRouter();
+  const { sidebarCollapsed } = useUiStore();
+
   // Form State matching API JSON schema
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
@@ -52,7 +57,6 @@ export default function AddProductPage() {
   const [manufactureDate, setManufactureDate] = useState<string>("");
   const [expiryDate, setExpiryDate] = useState<string>("");
 
-  const [incomeRevenueAccount, setIncomeRevenueAccount] = useState("Sales Revenue");
   const [showAdvancePricing, setShowAdvancePricing] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,8 +73,8 @@ export default function AddProductPage() {
     if (!item) return;
 
     if (item.name) setName(item.name);
-    if (item.sku) setSku(item.sku);
-    if (item.barcode) setBarcode(item.barcode);
+    // if (item.sku) setSku(item.sku);
+    // if (item.barcode) setBarcode(item.barcode);
     if (item.brand) setBrand(item.brand);
     if (item.description) setDescription(item.description);
 
@@ -83,8 +87,8 @@ export default function AddProductPage() {
     if (item.productType) {
       setProductType(item.productType);
     }
-    if (item.image || item.imageUrl) {
-      setImageUrl(item.image || item.imageUrl);
+    if (item.image) {
+      setImageUrl(item.image);
     }
 
     // Match Category
@@ -108,7 +112,7 @@ export default function AddProductPage() {
       const foundUnit = units?.find(
         (u: any) =>
           u.id === unitVal ||
-          u.name?.toLowerCase() === (typeof unitVal === "string" ? unitVal : unitVal?.name || "").toLowerCase()
+          u.symbol?.toLowerCase() === (typeof unitVal === "string" ? unitVal : unitVal?.name || "").toLowerCase()
       );
       if (foundUnit) {
         setUnitId(foundUnit.id);
@@ -130,10 +134,7 @@ export default function AddProductPage() {
     setShowSuggestions(false);
   };
  
-  
-  
-  // router 
-  const router = useRouter()
+
   // Show date fields when batch tracking, expiry tracking is on and current stock has value
   const showDateFields =
     trackBatch &&
@@ -1072,7 +1073,13 @@ export default function AddProductPage() {
       </main>
 
       {/* ================= FIXED BOTTOM ACTION BAR ================= */}
-      <footer className="fixed bottom-0 right-0 left-0 h-20 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg">
+      <footer
+        className={cn(
+          "fixed bottom-0 right-0 h-20 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg transition-all duration-300 ease-smooth",
+          "left-0 md:left-64",
+          sidebarCollapsed && "md:left-16"
+        )}
+      >
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
           <span className="hidden sm:inline">
@@ -1082,7 +1089,11 @@ export default function AddProductPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+          >
             Cancel
           </button>
           <button

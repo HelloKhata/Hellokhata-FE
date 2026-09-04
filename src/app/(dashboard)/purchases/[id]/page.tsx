@@ -101,7 +101,7 @@ function PurchaseDetailsContent() {
               {isBangla ? "শাখা" : "Branch"}
             </Label>
             <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center px-3.5">
-              <span className="text-white font-semibold text-xs truncate">{'branchName'}</span>
+              <span className="text-white font-semibold text-xs truncate">{purchaseData?.branchName}</span>
             </div>
           </div>
 
@@ -137,7 +137,7 @@ function PurchaseDetailsContent() {
                     <th className="px-3 py-3 w-[26%]">{isBangla ? "পণ্য বা ডেসক্রিপশন" : "Item"}</th>
                     <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ব্যাচ নং" : "Batch No"}</th>
                     <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "মেয়াদ" : "Expiry Date"}</th>
-                    <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th>
+                    {/* <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "স্টক" : "Stock"}</th> */}
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "পরিমাণ" : "Qty"}</th>
                     <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ক্রয় মূল্য / দর" : "Rate"}</th>
                     <th className="px-3 py-3 w-[8%] text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
@@ -160,7 +160,7 @@ function PurchaseDetailsContent() {
                         : typeof rawItem.unit === "object"
                         ? rawItem.unit?.symbol || rawItem.unit?.name || "Pcs"
                         : rawItem.item?.unit || rawItem.unit || "Pcs";
-                      const batchNo = rawItem.batch?.batchNo || "—";
+                      const batchNo = rawItem.batch?.batchNumber || "—";
                       const rawExpiry = rawItem.batch?.expiryDate || rawItem.expiryDate;
                       const isValidExpiry = rawExpiry && !isNaN(new Date(rawExpiry).getTime());
 
@@ -228,15 +228,15 @@ function PurchaseDetailsContent() {
                           <td className="px-3 py-3 align-middle text-center text-xs text-muted-foreground font-medium">
                             {isValidExpiry ? format(new Date(rawExpiry), "dd MMM yyyy") : "—"}
                           </td>
-
+                          
                           {/* Stock */}
-                          <td className="px-3 py-3 align-middle text-center text-muted-foreground font-medium">
+                          {/* <td className="px-3 py-3 align-middle text-center text-muted-foreground font-medium">
                             {currentStock} {unit}
-                          </td>
+                          </td> */}
 
                           {/* Quantity */}
                           <td className="px-3 py-3 align-middle text-center font-semibold text-foreground text-sm">
-                            {quantity}
+                            {quantity} ({unit})
                           </td>
 
                           {/* Rate */}

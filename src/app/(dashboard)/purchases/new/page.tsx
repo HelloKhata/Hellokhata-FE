@@ -38,6 +38,7 @@ import {
   Upload,
   Settings,
   Eye,
+  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -52,8 +53,8 @@ import { toast } from "sonner";
 import { useGetItems } from "@/hooks/api/useItems";
 import { AddPartyModal } from "@/components/parties/AddPartyModal";
 import { InventoryItemForm } from "@/components/inventory/InventoryItemForm";
-import { useParties, useParty } from "@/hooks/api/useParties";
-import { useCreatePurchases, useGetPurchases } from "@/hooks/api/usePurchases";
+import { useParties } from "@/hooks/api/useParties";
+import { useCreatePurchases } from "@/hooks/api/usePurchases";
 import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 import { useGetWarehouses } from "@/hooks/api/useWarehouse";
 import { getBatches } from "@/services/batches.services";
@@ -147,10 +148,10 @@ function NewPurchaseContent() {
   const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
  
   const { data: searchItems = [] } = useGetItems({ page: 1, limit: 10,search: topProductSearchQuery });
+  console.log('searchItems',searchItems)
   const { data: suppliers } = useParties({ type: "supplier",search: supplierSearchQuery });
   const {data: brnaches} = useGetBranches();
 
-  console.log('brnaches',brnaches)
   const { data: paymentMethods = [] } = useGetPaymentMethods();
   const accounts = useMemo(() => {
     return paymentMethods.map((pm: any) => ({
@@ -213,28 +214,8 @@ function NewPurchaseContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isAiPanelOpen, setIsAiPanelOpen] = useState<boolean>(false);
 
-  // Billing Items Table Rows
-  const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([
-    {
-      itemId: "",
-      itemName: "",
-      quantity: 1,
-      unitCost: 0,
-      total: 0,
-      searchQuery: "",
-      showSuggestions: false,
-      sku: "",
-      currentStock: 0,
-      unit: "Pcs",
-      taxPercent: 0,
-      taxAmount: 0,
-      trackBatch: false,
-      batchNumber: "",
-      trackExpiry: false,
-      rowNote: "",
-      isExpanded: false,
-    },
-  ]);
+  // Billing Items Table Rows - initialized empty
+  const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([]);
 
   // Track open Expiry Settings row ID
   const [openExpiryRowId, setOpenExpiryRowId] = useState<string | null>(null);
@@ -299,32 +280,25 @@ function NewPurchaseContent() {
     return Math.max(0, totalPaid - grandTotal);
   }, [totalPaid, grandTotal]);
 
+  // Validation & Payment Warnings
+  const [paymentWarning, setPaymentWarning] = useState<string | null>(null);
+
+  const isPaidAmountExceeded = useMemo(() => {
+    return totalPaid > grandTotal;
+  }, [totalPaid, grandTotal]);
+
+  const currentWarning = useMemo(() => {
+    if (paymentWarning) return paymentWarning;
+    if (totalPaid > grandTotal) {
+      return isBangla
+        ? `পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না (সর্বোচ্চ: ${formatCurrency(grandTotal)})`
+        : `Paid amount cannot exceed grand total (Max allowed: ${formatCurrency(grandTotal)})`;
+    }
+    return null;
+  }, [paymentWarning, totalPaid, grandTotal, isBangla, formatCurrency]);
+
 
   const removeItemRow = (id: string) => {
-    if (selectedItems.length === 1) {
-      setSelectedItems([
-        {
-          itemId: "",
-          itemName: "",
-          quantity: 1,
-          unitCost: 0,
-          total: 0,
-          searchQuery: "",
-          showSuggestions: false,
-          sku: "",
-          currentStock: 0,
-          unit: "Pcs",
-          taxPercent: 0,
-          taxAmount: 0,
-          trackBatch: false,
-          batchNumber: "",
-          trackExpiry: false,
-          rowNote: "",
-          isExpanded: false,
-        },
-      ]);
-      return;
-    }
     setSelectedItems((prev) => prev.filter((item) => item.itemId !== id));
   };
 
@@ -484,6 +458,14 @@ function NewPurchaseContent() {
       newErrors.supplier = isBangla ? "সরবরাহকারী নির্বাচন করা আবশ্যক" : "Supplier is required";
     }
 
+    if (purchaseType === "in_store" && !branch.id) {
+      newErrors.branch = isBangla ? "শাখা নির্বাচন করা আবশ্যক" : "Branch name is required";
+    }
+
+    if (purchaseType === "warehouse" && !warehouseId) {
+      newErrors.warehouse = isBangla ? "ওয়্যারহাউস নির্বাচন করা আবশ্যক" : "Warehouse name is required";
+    }
+
     const validItems = selectedItems.filter((i) => i.itemId !== "");
     if (validItems.length === 0) {
       newErrors.items = isBangla ? "অন্তত একটি পণ্য যোগ করুন" : "Add at least one item";
@@ -492,7 +474,7 @@ function NewPurchaseContent() {
     // Row-level validations
     selectedItems.forEach((item) => {
       if (item.itemId) {
-        if (!item.quantity || item.quantity <= 0) {
+        if (!item.quantity || item.quantity <= 0) { 
           newErrors[`qty-${item.itemId}`] = isBangla ? "পরিমাণ ০ এর বেশি হতে হবে" : "Qty must be > 0";
         }
         if (item.unitCost <= 0) {
@@ -580,6 +562,7 @@ function NewPurchaseContent() {
   };
 
   const toggleSplitMode = () => {
+    setPaymentWarning(null);
     if (splitMode) {
       // Revert to single payment mode
       setPayments([
@@ -590,7 +573,7 @@ function NewPurchaseContent() {
           reference: "",
           transactionId: "",
           receivedBy: "",
-          amount: grandTotal,
+          amount: Math.min(totalPaid || grandTotal, grandTotal),
           date: new Date(),
         },
       ]);
@@ -605,7 +588,7 @@ function NewPurchaseContent() {
           reference: "",
           transactionId: "",
           receivedBy: "",
-          amount: grandTotal,
+          amount: Math.min(totalPaid || grandTotal, grandTotal),
           date: new Date(),
         },
         {
@@ -634,12 +617,50 @@ function NewPurchaseContent() {
   };
 
   const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
+    let finalValue = value;
+
+    if (field === "amount") {
+      if (value === "" || value === null || value === undefined) {
+        finalValue = 0;
+        setPaymentWarning(null);
+      } else {
+        const numValue = typeof value === "number" ? value : parseFloat(value);
+
+        if (isNaN(numValue) || numValue < 0) {
+          setPaymentWarning(
+            isBangla
+              ? "পরিশোধের পরিমাণ ঋণাত্মক হতে পারে না"
+              : "Paid amount cannot be negative"
+          );
+          finalValue = 0;
+        } else {
+          // In split mode, calculate other payments total
+          const otherPaymentsTotal = payments
+            .filter((p) => p.id !== id)
+            .reduce((sum, p) => sum + (p.amount || 0), 0);
+          const maxAllowed = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
+
+          if (numValue > maxAllowed) {
+            setPaymentWarning(
+              isBangla
+                ? `পরিশোধিত পরিমাণ মোট বিলের চেয়ে বেশি হতে পারে না (সর্বোচ্চ: ${formatCurrency(maxAllowed)})`
+                : `Paid amount cannot exceed grand total (Max: ${formatCurrency(maxAllowed)})`
+            );
+            finalValue = maxAllowed;
+          } else {
+            setPaymentWarning(null);
+            finalValue = numValue;
+          }
+        }
+      }
+    }
+
     setPayments((prev) =>
       prev.map((p) => {
         if (p.id === id) {
           return {
             ...p,
-            [field]: value,
+            [field]: finalValue,
           };
         }
         return p;
@@ -728,10 +749,10 @@ function NewPurchaseContent() {
         </div>
 
         {/* Single Row on Desktop, 2 Cols on Tablet, Stacked on Mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-3 items-start">
           {/* 1. Purchase Item (40% width on desktop) */}
-          <div className="space-y-2 col-span-1 sm:col-span-2 lg:col-span-4 relative">
-            <div className="flex items-center justify-between">
+          <div className="space-y-1.5 col-span-1 sm:col-span-2 lg:col-span-4 relative">
+            <div className="flex items-center justify-between h-5">
               <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
                 <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
               </Label>
@@ -752,7 +773,7 @@ function NewPurchaseContent() {
                 }}
                 // onFocus={() => setShowTopProductSuggestions(true)}
                 onBlur={() => {
-                setShowTopProductSuggestions(false)
+                  setTimeout(() => setShowTopProductSuggestions(false), 200);
                 }}
                 placeholder={
                   isBangla
@@ -764,7 +785,7 @@ function NewPurchaseContent() {
               <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
               {showTopProductSuggestions && (
-                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full min-w-[280px]  bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full min-w-[280px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
                   {searchItems.length === 0 ? (
                     <div className="p-3 text-center text-xs text-muted-foreground">
                       {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
@@ -818,8 +839,8 @@ function NewPurchaseContent() {
           </div>
 
           {/* 2. Party Name / Phone (30% width on desktop) */}
-          <div className="relative space-y-2 col-span-1 sm:col-span-2 lg:col-span-3">
-            <div className="flex items-center justify-between">
+          <div className="relative space-y-1.5 col-span-1 sm:col-span-2 lg:col-span-3">
+            <div className="flex items-center justify-between h-5">
               <Label className="text-xs font-semibold text-foreground truncate">
                 {isBangla ? "সরবরাহকারী *" : "Supplier Name *"}
               </Label>
@@ -836,15 +857,27 @@ function NewPurchaseContent() {
                 value={selectedSupplierName}
                 onChange={(e) => {
                   setSupplierSearchQuery(e.target.value);
+                  setSelectedSupplierName(e.target.value);
                   if (selectedSupplierId) setSelectedSupplierId("");
                   setShowSupplierSuggestions(true);
+                  if (errors.supplier) {
+                    setErrors((prev) => {
+                      const { supplier, ...rest } = prev;
+                      return rest;
+                    });
+                  }
                 }}
-                // onFocus={() => setShowSupplierSuggestions(true)}
+                onFocus={() => {
+                  if (suppliers && suppliers.length > 0) setShowSupplierSuggestions(true);
+                }}
                 onBlur={() => {
-                  setTimeout(() =>  setShowSupplierSuggestions(false));
+                  setTimeout(() => setShowSupplierSuggestions(false), 200);
                 }}
                 placeholder={isBangla ? "নাম / ফোন দিয়ে খুঁজুন..." : "Search supplier / phone"}
-                className={cn("pr-8 h-10 bg-background/50 border-input text-xs w-full", errors.supplier && "border-destructive")}
+                className={cn(
+                  "pr-8 h-10 bg-background/50 border-input text-xs w-full",
+                  errors.supplier && "border-destructive focus-visible:ring-destructive"
+                )}
               />
               <Users className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
 
@@ -859,13 +892,19 @@ function NewPurchaseContent() {
                       <button
                         key={supplier.id}
                         type="button"
-                        className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between"
+                        className="w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex justify-between cursor-pointer"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setSelectedSupplierId(supplier.id);
-                          setSelectedSupplierName(supplier.name)
+                          setSelectedSupplierName(supplier.name);
                           setSupplierSearchQuery("");
                           setShowSupplierSuggestions(false);
+                          if (errors.supplier) {
+                            setErrors((prev) => {
+                              const { supplier, ...rest } = prev;
+                              return rest;
+                            });
+                          }
                         }}
                       >
                         <span className="font-semibold text-foreground truncate max-w-[180px]">
@@ -882,21 +921,32 @@ function NewPurchaseContent() {
                 </div>
               )}
             </div>
-            {errors.supplier && <p className="text-[10px] text-destructive font-medium">{errors.supplier}</p>}
+            {errors.supplier && (
+              <p className="text-[10px] text-destructive font-medium flex items-center gap-1 mt-1">
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                <span>{errors.supplier}</span>
+              </p>
+            )}
           </div>
 
           {/* 3. Purchase Type (10% width on desktop) */}
-          <div className="space-y-2 col-span-1 sm:col-span-1 lg:col-span-1">
-            <Label className="text-xs font-semibold text-foreground truncate">
-              {isBangla ? "প্রকার" : "Type"}
-            </Label>
+          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-1">
+            <div className="flex items-center h-5">
+              <Label className="text-xs font-semibold text-foreground truncate">
+                {isBangla ? "প্রকার" : "Type"}
+              </Label>
+            </div>
             <Select
               value={purchaseType}
               onValueChange={(val) => {
                 setPurchaseType(val);
+                setErrors((prev) => {
+                  const { branch, warehouse, ...rest } = prev;
+                  return rest;
+                });
                 if (val === "warehouse" && !warehouseId && warehousesList.length > 0) {
                   setWarehouseId(String(warehousesList[0].id));
-                } else if (val === "in_store" && !branch.id && brnaches.length > 0) {
+                } else if (val === "in_store" && !branch.id && brnaches && brnaches.length > 0) {
                   const mainB = brnaches.find((b: any) => b.isMain || b.type === "main" || b.name?.toLowerCase().includes("main")) || brnaches[0];
                   if (mainB) setBranch({ id: String(mainB.id), name: mainB.name });
                 }
@@ -913,41 +963,68 @@ function NewPurchaseContent() {
           </div>
 
           {/* 4. Branch / Warehouse (20% width on desktop) */}
-          <div className="space-y-2 col-span-1 sm:col-span-1 lg:col-span-2">
+          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-2">
             {purchaseType === "warehouse" ? (
               <>
-                <Label className="text-xs font-semibold text-foreground truncate">
-                  {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
-                </Label>
-                <Select value={warehouseId} onValueChange={setWarehouseId}>
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                    <SelectValue placeholder={isBangla ? "ওয়্যারহাউস" : "Select Warehouse"} />
+                <div className="flex items-center h-5">
+                  <Label className="text-xs font-semibold text-foreground truncate">
+                    {isBangla ? "ওয়্যারহাউস *" : "Warehouse *"}
+                  </Label>
+                </div>
+                <Select
+                  value={warehouseId}
+                  onValueChange={(val) => {
+                    setWarehouseId(val);
+                    if (errors.warehouse) {
+                      setErrors((prev) => {
+                        const { warehouse, ...rest } = prev;
+                        return rest;
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger className={cn("h-10 bg-background/50 border-input text-xs w-full", errors.warehouse && "border-destructive focus:ring-destructive")}>
+                    <SelectValue placeholder={isBangla ? "ওয়্যারহাউস নির্বাচন করুন" : "Select Warehouse"} />
                   </SelectTrigger>
                   <SelectContent>
                     {warehousesList.map((w: any) => (
-                      <SelectItem key={w.id} value={w.id}>
+                      <SelectItem key={w.id} value={String(w.id)}>
                         {w.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.warehouse && (
+                  <p className="text-[10px] text-destructive font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    <span>{errors.warehouse}</span>
+                  </p>
+                )}
               </>
             ) : (
               <>
-                <Label className="text-xs font-semibold text-foreground truncate">
-                  {isBangla ? "শাখা *" : "Branch *"}
-                </Label>
+                <div className="flex items-center h-5">
+                  <Label className="text-xs font-semibold text-foreground truncate">
+                    {isBangla ? "শাখা *" : "Branch *"}
+                  </Label>
+                </div>
                 <Select
                   value={branch.id ? String(branch.id) : undefined}
                   onValueChange={(selectedId) => {
-                    const selectedObj = brnaches.find((b: any) => String(b.id) === String(selectedId));
+                    const selectedObj = brnaches?.find((b: any) => String(b.id) === String(selectedId));
                     if (selectedObj) {
                       setBranch({ id: String(selectedObj.id), name: selectedObj.name });
                     }
+                    if (errors.branch) {
+                      setErrors((prev) => {
+                        const { branch, ...rest } = prev;
+                        return rest;
+                      });
+                    }
                   }}
                 >
-                  <SelectTrigger className="h-10 bg-background/50 border-input text-xs w-full">
-                    <SelectValue placeholder={isBangla ? "শাখা" : "Select Branch"} />
+                  <SelectTrigger className={cn("h-10 bg-background/50 border-input text-xs w-full", errors.branch && "border-destructive focus:ring-destructive")}>
+                    <SelectValue placeholder={isBangla ? "শাখা নির্বাচন করুন" : "Select Branch"} />
                   </SelectTrigger>
                   <SelectContent>
                     {brnaches?.map((b: any) => (
@@ -957,6 +1034,12 @@ function NewPurchaseContent() {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.branch && (
+                  <p className="text-[10px] text-destructive font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    <span>{errors.branch}</span>
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -991,16 +1074,26 @@ function NewPurchaseContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {selectedItems.length === 0 ? (
+                  {selectedItems.filter((i) => i.itemId).length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground text-xs">
-                        {isBangla
-                          ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে যোগ করুন।"
-                          : "Use the search box above to search or scan products into this purchase."}
+                      <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-xs">
+                        <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <p className="font-semibold text-foreground text-xs mb-1">
+                          {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mx-auto">
+                          {isBangla
+                            ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই ক্রয়ে যুক্ত করুন।"
+                            : "Search or scan products from the search box above to add them to this purchase."}
+                        </p>
                       </td>
                     </tr>
                   ) : (
-                    selectedItems.map((item, idx) => (
+                    selectedItems
+                      .filter((i) => i.itemId)
+                      .map((item, idx) => (
                       <Fragment key={item.itemId}>
                         <tr className="hover:bg-muted/10 transition-colors">
                           <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle text-center">
@@ -1427,6 +1520,10 @@ function NewPurchaseContent() {
                 
                 if (!activePayment) return null;
                 const p = activePayment;
+                const otherPaymentsTotal = payments
+                  .filter((pay) => pay.id !== p.id)
+                  .reduce((sum, pay) => sum + (pay.amount || 0), 0);
+                const maxAllowedForActive = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
 
                 return (
                   <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
@@ -1440,6 +1537,7 @@ function NewPurchaseContent() {
                             key={m.id}
                             type="button"
                             onClick={() => {
+                              setPaymentWarning(null);
                               if (splitMode) {
                                 setActiveSplitMethod(m.id);
                               } else {
@@ -1447,7 +1545,7 @@ function NewPurchaseContent() {
                               }
                             }}
                             className={cn(
-                              "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
+                              "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all cursor-pointer",
                               active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
                             )}
                           >
@@ -1482,6 +1580,9 @@ function NewPurchaseContent() {
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
                             type="number"
+                            min={0}
+                            max={maxAllowedForActive}
+                            step="any"
                             value={p.amount || ""}
                             onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                             className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1498,6 +1599,9 @@ function NewPurchaseContent() {
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
                             type="number"
+                            min={0}
+                            max={maxAllowedForActive}
+                            step="any"
                             value={p.amount || ""}
                             onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                             className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1521,6 +1625,9 @@ function NewPurchaseContent() {
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
                             type="number"
+                            min={0}
+                            max={maxAllowedForActive}
+                            step="any"
                             value={p.amount || ""}
                             onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                             className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1542,13 +1649,6 @@ function NewPurchaseContent() {
                             ))}
                           </SelectContent>
                         </Select>
-                        {/* <input
-                          type="text"
-                          value={p.transactionId}
-                          onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
-                          placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
-                          className="w-full bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                        /> */}
                       </div>
                     )}
 
@@ -1574,6 +1674,9 @@ function NewPurchaseContent() {
                           <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                           <input
                             type="number"
+                            min={0}
+                            max={maxAllowedForActive}
+                            step="any"
                             value={p.amount || ""}
                             onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
                             className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
@@ -1594,6 +1697,14 @@ function NewPurchaseContent() {
                           placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
                           className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
                         />
+                      </div>
+                    )}
+
+                    {/* Warning below payment method */}
+                    {currentWarning && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg mt-1 animate-in fade-in duration-150">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{currentWarning}</span>
                       </div>
                     )}
                   </div>

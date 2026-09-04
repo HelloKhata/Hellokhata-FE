@@ -33,18 +33,22 @@ import {
   ArrowUpDown,
   Clock,
   Building2,
+  CheckCircle,
 } from 'lucide-react';
-import { useGetBatches } from '@/hooks/api/useBatches';
+import { useGetBatchById } from '@/hooks/api/useBatches';
 import { useCurrency } from '@/hooks/useAppTranslation';
 import type { Item } from '@/types';
 import { format, differenceInDays } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useGetItemBatches } from '@/hooks/api/useItems';
 
 interface BatchesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  item: Item | null;
+  itemId?: string | null;
+  batchId?: string | null;
+  item?: Item | null;
   isBangla?: boolean;
   categories?: any[];
 }
@@ -52,6 +56,8 @@ interface BatchesModalProps {
 export function BatchesModal({
   isOpen,
   onClose,
+  itemId,
+  batchId,
   item,
   isBangla = false,
   categories = [],
@@ -62,14 +68,27 @@ export function BatchesModal({
   const [sortBy, setSortBy] = useState<'date' | 'expiry' | 'quantity' | 'batchNumber'>('date');
   const [selectedBatch, setSelectedBatch] = useState<any | null>(null);
 
-  console.log('item',item)
-  // Query batches for the specific item
-  const { data: batchesData, isLoading } = useGetBatches({
-    itemId: item?.id,
-    search: searchQuery,
-  });
+  // Fetch batch info using useGetBatchById
+  const targetId = batchId || itemId || item?.id || "";
+  const { data: batchRes, isLoading } = useGetItemBatches(targetId);
 
-  const rawBatches: any[] = batchesData?.data || [];
+  // Extract raw batches from API response
+  const rawBatches = useMemo(() => {
+    if (!batchRes) return [];
+    const payload = (batchRes as any)?.data !== undefined ? (batchRes as any).data : batchRes;
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+    if (payload && typeof payload === 'object') {
+      if (Array.isArray(payload.batches)) {
+        return payload.batches;
+      }
+      if (payload.id || payload.batchNumber || payload.batchId) {
+        return [payload];
+      }
+    }
+    return [];
+  }, [batchRes]);
 
   // Metadata Resolution
   const categoryName = item?.categoryId
@@ -78,52 +97,35 @@ export function BatchesModal({
   const brandName = (item as any)?.brand;
   const unit = item?.unit || 'pcs';
 
-  // Mock / Default fallback batch generation if backend returns empty for demonstration
   const batches = useMemo(() => {
-    if (!item) return [];
-    if (rawBatches.length > 0) {
-      return rawBatches.map((b) => ({
-        ...b,
-        totalQty: b.initialQuantity ?? b.quantity ?? item.currentStock ?? 100,
-        currentQty: b.quantity ?? item.currentStock ?? 75,
-        reservedQty: b.reservedQuantity ?? 0,
-        availableQty: Math.max((b.quantity ?? item.currentStock ?? 75) - (b.reservedQuantity ?? 0), 0),
-        branchName: b.branch?.name || (isBangla ? 'প্রধান শাখা' : 'Main Branch'),
-      }));
-    }
+    return rawBatches.map((b: any) => {
+      const initialQty = b.initialQty ?? b.initialQuantity ?? b.quantity ?? item?.currentStock ?? 0;
+      const remainingQty = b.remainingQty ?? b.quantity ?? item?.currentStock ?? 0;
+      const reservedQty = b.reservedQuantity ?? b.reservedQty ?? 0;
+      const availableQty = Math.max(remainingQty - reservedQty, 0);
+      const branchName = b.branch?.name || b.branchName || b.branchId || (isBangla ? 'প্রধান শাখা' : 'Main Branch');
 
-    // Default sample batches if no batches exist in DB for rich UI experience
-    return [
-      {
-        id: 'b-1',
-        batchNumber: 'B-2201',
-        branchName: isBangla ? 'প্রধান শাখা' : 'Main Branch',
-        totalQty: Math.round((item.currentStock || 100) * 0.6),
-        currentQty: Math.round((item.currentStock || 75) * 0.6),
-        reservedQty: 5,
-        availableQty: Math.round((item.currentStock || 75) * 0.6) - 5,
-        costPrice: item.costPrice || 280,
-        createdAt: '2026-01-12T00:00:00.000Z',
-        expiryDate: '2026-08-15T00:00:00.000Z',
-        supplierName: (item as any)?.supplierName || (isBangla ? 'মূল সরবরাহকারী' : 'Primary Supplier'),
-        invoiceNo: 'INV-8821',
-      },
-      {
-        id: 'b-2',
-        batchNumber: 'B-2202',
-        branchName: isBangla ? 'ধানমন্ডি শাখা' : 'Dhanmondi Branch',
-        totalQty: Math.round((item.currentStock || 100) * 0.4),
-        currentQty: Math.round((item.currentStock || 75) * 0.4),
-        reservedQty: 0,
-        availableQty: Math.round((item.currentStock || 75) * 0.4),
-        costPrice: item.costPrice || 280,
-        createdAt: '2026-02-01T00:00:00.000Z',
-        expiryDate: '2026-02-10T00:00:00.000Z', // Expired or expiring soon
-        supplierName: (item as any)?.supplierName || (isBangla ? 'মূল সরবরাহকারী' : 'Primary Supplier'),
-        invoiceNo: 'INV-8890',
-      },
-    ];
-  }, [item, rawBatches, isBangla]);
+      return {
+        ...b,
+        id: b.id || b.batchId,
+        batchNumber: b.batchNumber || b.batchId || '—',
+        branchId: b.branchId || '—',
+        branchName,
+        initialQty,
+        remainingQty,
+        totalQty: initialQty,
+        currentQty: remainingQty,
+        reservedQty,
+        availableQty,
+        costPrice: b.costPrice ?? item?.costPrice ?? 0,
+        mrp: b.mrp ?? item?.sellingPrice ?? 0,
+        manufactureDate: b.manufactureDate,
+        expiryDate: b.expiryDate,
+        createdAt: b.createdAt,
+        isActive: b.isActive !== undefined ? b.isActive : true,
+      };
+    });
+  }, [rawBatches, item, isBangla]);
 
   // Filtered and Sorted Batches
   const processedBatches = useMemo(() => {
@@ -133,12 +135,13 @@ export function BatchesModal({
       result = result.filter(
         (b) =>
           b.batchNumber?.toLowerCase().includes(q) ||
-          b.branchName?.toLowerCase().includes(q)
+          b.branchName?.toLowerCase().includes(q) ||
+          b.branchId?.toLowerCase().includes(q)
       );
     }
 
     result.sort((a, b) => {
-      if (sortBy === 'quantity') return (b.currentQty || 0) - (a.currentQty || 0);
+      if (sortBy === 'quantity') return (b.remainingQty || 0) - (a.remainingQty || 0);
       if (sortBy === 'batchNumber') return (a.batchNumber || '').localeCompare(b.batchNumber || '');
       if (sortBy === 'expiry') {
         if (!a.expiryDate) return 1;
@@ -161,7 +164,7 @@ export function BatchesModal({
     let lowStockCount = 0;
 
     processedBatches.forEach((b) => {
-      const qty = b.currentQty || 0;
+      const qty = b.remainingQty || 0;
       const cost = b.costPrice || item?.costPrice || 0;
       totalCurrentStock += qty;
       totalPurchaseVal += qty * cost;
@@ -187,21 +190,21 @@ export function BatchesModal({
       expiringCount,
       expiredCount,
       lowStockCount,
-      branchesCount: new Set(processedBatches.map((b) => b.branchName)).size || 1,
+      branchesCount: new Set(processedBatches.map((b) => b.branchId || b.branchName)).size || 1,
     };
   }, [processedBatches, item]);
 
-  if (!item) return null;
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl w-[95vw] p-0 overflow-hidden bg-background border-border border max-h-[90vh] flex flex-col shadow-2xl">
+      <DialogContent className="max-w-5xl w-[95vw] p-0 overflow-hidden bg-background border-border border max-h-[90vh] flex flex-col shadow-2xl">
         <TooltipProvider>
           {/* Fixed Modal Header */}
           <div className="p-4 sm:p-5 border-b border-border/80 bg-card flex items-start justify-between gap-4 shrink-0">
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden border border-border/80 shadow-sm">
-                {item.imageUrl ? (
+                {item?.imageUrl ? (
                   <img
                     src={item.imageUrl}
                     alt={item.name}
@@ -213,16 +216,15 @@ export function BatchesModal({
               </div>
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center justify-start gap-4">
-           
-                    <DialogTitle className="text-lg font-bold text-foreground">
-                    {item.name}
+                  <DialogTitle className="text-lg font-bold text-foreground">
+                    {item?.name || (isBangla ? 'ব্যাচ বিবরণী' : 'Batch Details')}
                   </DialogTitle>
-                 
-        
-                 <Badge variant="outline" className="text-xs font-mono">
-                     # SKU: {item.sku || '—'}
-                  </Badge>
-         
+
+                  {item?.sku && (
+                    <Badge variant="outline" className="text-xs font-mono">
+                      # SKU: {item.sku}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   {categoryName && <span>{categoryName}</span>}
@@ -232,10 +234,14 @@ export function BatchesModal({
                       <span>{brandName}</span>
                     </>
                   )}
-                  <span>•</span>
-                  <span className="font-medium text-foreground">
-                    {isBangla ? 'স্টক:' : 'Current Stock:'} {item.currentStock ?? 0} {unit}
-                  </span>
+                  {item && (
+                    <>
+                      <span>•</span>
+                      <span className="font-medium text-foreground">
+                        {isBangla ? 'স্টক:' : 'Current Stock:'} {item.currentStock ?? 0} {unit}
+                      </span>
+                    </>
+                  )}
                   <span>•</span>
                   <span>
                     {summary.totalBatches} {isBangla ? 'টি ব্যাচ' : 'Batches'}
@@ -283,7 +289,7 @@ export function BatchesModal({
                   size="sm"
                   onClick={() => {
                     onClose();
-                    router.push(`/inventory/batches?itemId=${item.id}`);
+                    router.push(`/inventory/batches?itemId=${targetId}`);
                   }}
                   className="h-9 text-xs whitespace-nowrap shrink-0"
                 >
@@ -309,7 +315,7 @@ export function BatchesModal({
                   <p className="text-sm font-semibold text-foreground">
                     {isBangla ? 'কোনো ব্যাচ পাওয়া যায়নি' : 'No inventory batches found'}
                   </p>
-                  <p className="text-xs text-muted-foreground max-w-sm">
+                  <p className="text-xs text-muted-foreground">
                     {isBangla
                       ? 'এই পণ্যটির জন্য এখনো কোনো ব্যাচ যোগ করা হয়নি।'
                       : 'This product has not been stocked yet.'}
@@ -319,7 +325,7 @@ export function BatchesModal({
                   size="sm"
                   onClick={() => {
                     onClose();
-                    router.push(`/inventory/batches?itemId=${item.id}`);
+                    router.push(`/inventory/batches?itemId=${targetId}`);
                   }}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
@@ -332,15 +338,16 @@ export function BatchesModal({
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-muted/60 text-muted-foreground font-semibold border-b border-border/80 sticky top-0 backdrop-blur z-10">
                       <tr>
-                        <th className="py-2.5 px-3 font-semibold">Batch No.</th>
-                        <th className="py-2.5 px-3 font-semibold">Branch</th>
-                        <th className="py-2.5 px-3 font-semibold">Initial Qty</th>
-                        <th className="py-2.5 px-3 font-semibold">Current Qty</th>
-                        <th className="py-2.5 px-3 font-semibold">Purchase Price</th>
-                        <th className="py-2.5 px-3 font-semibold">Purchase Date</th>
-                        <th className="py-2.5 px-3 font-semibold">Expiry Date</th>
-                        <th className="py-2.5 px-3 font-semibold">Status</th>
-                        <th className="py-2.5 px-3 font-semibold text-right">Actions</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'ব্যাচ নম্বর' : 'Batch No.'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'শাখা' : 'Branch'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'প্রাথমিক পরিমাণ' : 'Initial Qty'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'অবশিষ্ট পরিমাণ' : 'Remaining Qty'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'ক্রয়মূল্য' : 'Cost Price'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'এমআরপি' : 'MRP'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'উৎপাদন তারিখ' : 'Mfg. Date'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'মেয়াদ তারিখ' : 'Expiry Date'}</th>
+                        <th className="py-2.5 px-3 font-semibold">{isBangla ? 'স্ট্যাটাস' : 'Status'}</th>
+                        <th className="py-2.5 px-3 font-semibold text-right">{isBangla ? 'অ্যাকশন' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/60 bg-card">
@@ -353,95 +360,105 @@ export function BatchesModal({
 
                         const isExpired = daysLeft !== null && daysLeft <= 0;
                         const isExpiringSoon = daysLeft !== null && daysLeft > 0 && daysLeft <= 30;
-                        const isLowStock = batch.currentQty <= (item.minStock || 10);
-                        const isOut = batch.currentQty === 0;
+                        const isLowStock = (batch.remainingQty || 0) <= (item?.minStock || 10);
+                        const isOut = (batch.remainingQty || 0) === 0;
 
                         // Batch Status Calculation
                         const getBatchBadge = () => {
-                          if (isExpired) {
+                          if (batch.isActive === false) {
+                            return (
+                              <Badge variant="outline" size="sm" className="whitespace-nowrap text-slate-400 border-slate-600">
+                                {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
+                              </Badge>
+                            );
+                          }
+                          if (batch.status ==='expired') {
                             return (
                               <Badge variant="destructive" size="sm" className="whitespace-nowrap">
-                                Expired
+                                {isBangla ? 'মেয়াদউত্তীর্ণ' : 'Expired'}
                               </Badge>
                             );
                           }
                           if (isExpiringSoon) {
                             return (
                               <Badge variant="warning" size="sm" className="whitespace-nowrap">
-                                Expiring Soon
+                                {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'Expiring Soon'}
                               </Badge>
                             );
                           }
                           if (isOut) {
                             return (
                               <Badge variant="destructive" size="sm" className="whitespace-nowrap">
-                                Out of Stock
+                                {isBangla ? 'স্টক শেষ' : 'Out of Stock'}
                               </Badge>
                             );
                           }
                           if (isLowStock) {
                             return (
                               <Badge variant="warning" size="sm" className="whitespace-nowrap">
-                                Low Stock
+                                {isBangla ? 'স্টক কম' : 'Low Stock'}
                               </Badge>
                             );
                           }
-                          return (
-                            <Badge variant="success" size="sm" className="whitespace-nowrap">
-                              In Stock
-                            </Badge>
-                          );
+                         
                         };
 
                         return (
                           <tr
-                            key={batch.id}
+                            key={batch.id || batch.batchNumber}
                             className="hover:bg-muted/40 transition-colors group"
                           >
                             {/* 1. Batch No */}
                             <td className="py-3 px-3 font-mono font-medium text-foreground whitespace-nowrap">
                               <span className="px-1.5 py-0.5 rounded bg-muted text-foreground border border-border/60">
-                                {batch.batchNumber || 'B-0000'}
+                                {batch.batchNumber || '—'}
                               </span>
                             </td>
 
                             {/* 2. Branch */}
-                            <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
-                              {batch.branchName}
+                            <td className="py-3 px-3 text-muted-foreground whitespace-nowrap font-mono text-[11px]" title={batch.branchId}>
+                              {batch.branchName !== '—' ? batch.branchName : batch.branchId}
                             </td>
 
                             {/* 3. Initial Qty */}
                             <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
-                              {batch.totalQty} {unit}
+                              {batch.initialQty} {unit}
                             </td>
 
-                            {/* 4. Current Qty */}
+                            {/* 4. Remaining Qty */}
                             <td className="py-3 px-3 font-bold text-foreground whitespace-nowrap">
-                              {batch.currentQty} {unit}
+                              {batch.remainingQty} {unit}
                             </td>
 
-                            {/* 5. Purchase Price */}
+                            {/* 5. Cost Price */}
                             <td className="py-3 px-3 font-medium text-foreground whitespace-nowrap">
-                              {formatCurrency(batch.costPrice || item.costPrice)}
+                              {formatCurrency(batch.costPrice)}
                             </td>
 
-                            {/* 6. Purchase Date */}
+                            {/* 6. MRP */}
+                            <td className="py-3 px-3 font-medium text-foreground whitespace-nowrap">
+                              {formatCurrency(batch.mrp)}
+                            </td>
+
+                            {/* 7. Manufacture Date */}
                             <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
-                              {batch.createdAt ? format(new Date(batch.createdAt), 'dd MMM yyyy') : '02 Mar 2026'}
+                              {batch.manufactureDate
+                                ? format(new Date(batch.manufactureDate), 'dd MMM yyyy')
+                                : '—'}
                             </td>
 
-                            {/* 7. Expiry Date & Warning Badge */}
+                            {/* 8. Expiry Date & Warning Badge */}
                             <td className="py-3 px-3 whitespace-nowrap">
                               {batch.expiryDate ? (
                                 isExpired ? (
                                   <span className="text-red-500 font-semibold flex items-center gap-1">
                                     <XCircle className="h-3.5 w-3.5" />
-                                    Expired
+                                    {isBangla ? 'মেয়াদউত্তীর্ণ' : 'Expired'}
                                   </span>
                                 ) : isExpiringSoon ? (
                                   <span className="text-amber-500 font-semibold flex items-center gap-1">
                                     <Clock className="h-3.5 w-3.5" />
-                                    Expires in {daysLeft}d
+                                    {isBangla ? `${daysLeft} দিন বাকি` : `Expires in ${daysLeft}d`}
                                   </span>
                                 ) : (
                                   <span className="text-muted-foreground">
@@ -453,10 +470,10 @@ export function BatchesModal({
                               )}
                             </td>
 
-                            {/* 8. Status */}
+                            {/* 9. Status */}
                             <td className="py-3 px-3">{getBatchBadge()}</td>
 
-                            {/* 9. Actions */}
+                            {/* 10. Actions */}
                             <td className="py-3 px-3 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-1">
                                 <Tooltip>
@@ -471,7 +488,7 @@ export function BatchesModal({
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent side="top">
-                                    <p>View</p>
+                                    <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
                                   </TooltipContent>
                                 </Tooltip>
 
@@ -490,7 +507,7 @@ export function BatchesModal({
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent side="top">
-                                    <p>Edit</p>
+                                    <p>{isBangla ? 'সম্পাদনা' : 'Edit'}</p>
                                   </TooltipContent>
                                 </Tooltip>
 
@@ -503,26 +520,26 @@ export function BatchesModal({
                                   <DropdownMenuContent align="end" className="w-44">
                                     <DropdownMenuItem className="cursor-pointer" onClick={() => setSelectedBatch(batch)}>
                                       <Eye className="h-4 w-4 mr-2" />
-                                      View Batch Details
+                                      {isBangla ? 'ব্যাচ বিস্তারিত' : 'View Batch Details'}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem className="cursor-pointer" onClick={() => {
                                       onClose();
                                       router.push(`/inventory/stock-adjustment?batchId=${batch.id}`);
                                     }}>
                                       <ArrowRightLeft className="h-4 w-4 mr-2 text-emerald-500" />
-                                      Adjust Stock
+                                      {isBangla ? 'স্টক সমন্বয়' : 'Adjust Stock'}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem className="cursor-pointer" onClick={() => {
                                       onClose();
                                       router.push(`/inventory/transfer?batchId=${batch.id}`);
                                     }}>
                                       <Building2 className="h-4 w-4 mr-2" />
-                                      Transfer Stock
+                                      {isBangla ? 'স্টক স্থানান্তর' : 'Transfer Stock'}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info('Printing Batch Label...')}>
+                                    <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info(isBangla ? 'ব্যাচ লেবেল প্রিন্ট হচ্ছে...' : 'Printing Batch Label...')}>
                                       <Printer className="h-4 w-4 mr-2" />
-                                      Print Batch Label
+                                      {isBangla ? 'লেবেল প্রিন্ট' : 'Print Batch Label'}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -546,72 +563,92 @@ export function BatchesModal({
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-base font-bold">
                   <Layers className="h-5 w-5 text-primary" />
-                  Batch Details — {selectedBatch.batchNumber}
+                  {isBangla ? 'ব্যাচ বিবরণী' : 'Batch Details'} — {selectedBatch.batchNumber}
                 </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-3 pt-2 text-xs">
                 <div className="grid grid-cols-2 gap-2 p-3 rounded-lg bg-muted/40 border border-border/60">
                   <div>
-                    <span className="text-muted-foreground block text-[11px]">Product</span>
-                    <span className="font-semibold text-foreground truncate block">{item.name}</span>
+                    <span className="text-muted-foreground block text-[11px]">{isBangla ? 'পণ্য' : 'Product'}</span>
+                    <span className="font-semibold text-foreground truncate block">{item?.name || selectedBatch.batchNumber}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-[11px]">Branch</span>
-                    <span className="font-semibold text-foreground block">{selectedBatch.branchName}</span>
+                    <span className="text-muted-foreground block text-[11px]">{isBangla ? 'শাখা / Branch ID' : 'Branch / Branch ID'}</span>
+                    <span className="font-semibold text-foreground truncate block">{selectedBatch.branchName || selectedBatch.branchId}</span>
                   </div>
                 </div>
 
                 <div className="space-y-1.5 border-t border-border/60 pt-2">
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Total Quantity (Initial):</span>
-                    <span className="font-medium">{selectedBatch.totalQty} {unit}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'ব্যাচ আইডি:' : 'Batch ID:'}</span>
+                    <span className="font-mono">{selectedBatch.id || selectedBatch.batchId}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Current Stock:</span>
-                    <span className="font-bold text-foreground">{selectedBatch.currentQty} {unit}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'ব্রাঞ্চ আইডি:' : 'Branch ID:'}</span>
+                    <span className="font-mono">{selectedBatch.branchId}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Reserved Stock:</span>
-                    <span className="font-medium">{selectedBatch.reservedQty} {unit}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'প্রাথমিক পরিমাণ:' : 'Initial Quantity:'}</span>
+                    <span className="font-medium">{selectedBatch.initialQty} {unit}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Available Stock:</span>
-                    <span className="font-semibold text-emerald-500">{selectedBatch.availableQty} {unit}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'অবশিষ্ট পরিমাণ:' : 'Remaining Quantity:'}</span>
+                    <span className="font-bold text-foreground">{selectedBatch.remainingQty} {unit}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Purchase Price (Per Unit):</span>
-                    <span className="font-medium">{formatCurrency(selectedBatch.costPrice || item.costPrice)}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'ক্রয়মূল্য (একক):' : 'Cost Price (Per Unit):'}</span>
+                    <span className="font-medium">{formatCurrency(selectedBatch.costPrice)}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Total Batch Value:</span>
+                    <span className="text-muted-foreground">{isBangla ? 'এমআরপি:' : 'MRP:'}</span>
+                    <span className="font-semibold text-foreground">{formatCurrency(selectedBatch.mrp)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/40">
+                    <span className="text-muted-foreground">{isBangla ? 'মোট ব্যাচ মূল্য:' : 'Total Batch Value:'}</span>
                     <span className="font-bold text-emerald-500">
-                      {formatCurrency((selectedBatch.currentQty || 0) * (selectedBatch.costPrice || item.costPrice))}
+                      {formatCurrency((selectedBatch.remainingQty || 0) * selectedBatch.costPrice)}
                     </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Supplier:</span>
-                    <span className="font-medium">{selectedBatch.supplierName || '—'}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'উৎপাদন তারিখ:' : 'Manufacture Date:'}</span>
+                    <span>
+                      {selectedBatch.manufactureDate
+                        ? format(new Date(selectedBatch.manufactureDate), 'dd MMM yyyy')
+                        : '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Invoice No:</span>
-                    <span className="font-mono">{selectedBatch.invoiceNo || '—'}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'মেয়াদ উত্তীর্ণের তারিখ:' : 'Expiry Date:'}</span>
+                    <span className="font-medium">
+                      {selectedBatch.expiryDate
+                        ? format(new Date(selectedBatch.expiryDate), 'dd MMM yyyy')
+                        : (isBangla ? 'মেয়াদ নেই' : 'No Expiry')}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">Purchase Date:</span>
-                    <span>{selectedBatch.createdAt ? format(new Date(selectedBatch.createdAt), 'dd MMM yyyy') : '—'}</span>
+                    <span className="text-muted-foreground">{isBangla ? 'তৈরির তারিখ:' : 'Created At:'}</span>
+                    <span>
+                      {selectedBatch.createdAt
+                        ? format(new Date(selectedBatch.createdAt), 'dd MMM yyyy, hh:mm a')
+                        : '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Expiry Date:</span>
+                    <span className="text-muted-foreground">{isBangla ? 'স্ট্যাটাস:' : 'Status:'}</span>
                     <span className="font-medium">
-                      {selectedBatch.expiryDate ? format(new Date(selectedBatch.expiryDate), 'dd MMM yyyy') : 'No Expiry'}
+                      {selectedBatch.isActive ? (
+                        <span className="text-emerald-500 font-semibold">{isBangla ? 'সক্রিয়' : 'Active'}</span>
+                      ) : (
+                        <span className="text-muted-foreground">{isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}</span>
+                      )}
                     </span>
                   </div>
                 </div>
 
                 <div className="pt-2 flex justify-end">
                   <Button variant="outline" size="sm" onClick={() => setSelectedBatch(null)}>
-                    Close
+                    {isBangla ? 'বন্ধ করুন' : 'Close'}
                   </Button>
                 </div>
               </div>
@@ -622,3 +659,4 @@ export function BatchesModal({
     </Dialog>
   );
 }
+
