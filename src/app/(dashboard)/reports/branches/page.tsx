@@ -71,11 +71,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import {
-  useBranches,
-  useSales,
-  useItems,
-} from '@/hooks/queries';
 import { useCurrency, useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -164,13 +159,17 @@ export default function BranchesReportsDashboard() {
   const { toast } = useToast();
   const { business, user } = useSessionStore();
 
-  // Queries
-  const { data: branches = [], isLoading: branchesLoading, refetch: refetchBranches } = useBranches();
-  const { data: sales = [], isLoading: salesLoading } = useSales();
-  const { data: items = [], isLoading: itemsLoading } = useItems();
+  // Static Data
+  const branches: any[] = [];
+  const branchesLoading = false;
+  const refetchBranches = () => {};
+  const sales: any[] = [];
+  const salesLoading = false;
+  const items: any[] = [];
+  const itemsLoading = false;
 
   // Loading state helper
-  const isPageLoading = branchesLoading || salesLoading || itemsLoading;
+  const isPageLoading = false;
 
   // Active Tab state
   const [activeTab, setActiveTab] = useState<string>('performance');

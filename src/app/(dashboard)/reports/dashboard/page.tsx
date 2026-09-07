@@ -62,9 +62,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { useBranchStore } from '@/stores/branchStore';
-import { useBranches } from '@/hooks/queries';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+
+const STATIC_BRANCHES = [
+  { id: 'main', name: 'Main Branch', code: 'MAIN', isDefault: true, isActive: true },
+  { id: 'branch-2', name: 'Dhanmondi Branch', code: 'DHN', isDefault: false, isActive: true },
+  { id: 'branch-3', name: 'Uttara Outlet', code: 'UTT', isDefault: false, isActive: true },
+];
 
 // ==========================================
 // MOCK DATA & CONSTANTS
@@ -322,7 +327,7 @@ export default function ReportsDashboardPage() {
   const router = useRouter();
   const { t, isBangla } = useAppTranslation();
   const { currentBranchId, setCurrentBranch, viewAllBranches, setViewAllBranches } = useBranchStore();
-  const { data: branches } = useBranches();
+  const branches = STATIC_BRANCHES;
 
   // State
   const [dateRange, setDateRange] = useState<DateRangeOption>('7d');

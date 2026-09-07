@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useBranchStore } from '@/stores/branchStore';
 import { useFeatureAccess } from '@/stores/featureGateStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useBranches } from '@/hooks/queries';
 import {
   Select,
   SelectContent,
@@ -43,11 +42,16 @@ interface BranchSwitcherProps {
   compact?: boolean;
 }
 
+const STATIC_BRANCHES = [
+  { id: 'main', name: 'Main Branch', code: 'MAIN', isDefault: true, isActive: true },
+];
+
 export function BranchSwitcher({ compact = false }: BranchSwitcherProps) {
   const router = useRouter();
   const { t, isBangla } = useAppTranslation();
   const { currentBranchId, setCurrentBranch, viewAllBranches, setViewAllBranches } = useBranchStore();
-  const { data: branches, isLoading } = useBranches();
+  const branches = STATIC_BRANCHES;
+  const isLoading = false;
   const featureAccess = useFeatureAccess('multiBranch');
 
   // If multi-branch is not unlocked, show clickable upgrade prompt

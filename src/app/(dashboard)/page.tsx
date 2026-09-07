@@ -10,7 +10,6 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { useAccounts } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import {
@@ -266,7 +265,6 @@ function InsightRow({item,isBangla}:{item:typeof AI_INSIGHTS[0];isBangla:boolean
 export default function DashboardPage() {
   const router = useRouter();
   const { isBangla } = useAppTranslation();
-  const { data: accountsData } = useAccounts();
 
   const [aiPrompt,   setAiPrompt]   = useState('');
   const [promptIdx,  setPromptIdx]  = useState(0);
@@ -302,9 +300,6 @@ export default function DashboardPage() {
   };
 
   const fmt = useCallback((v:number) => new Intl.NumberFormat(isBangla?'bn-BD':'en-US').format(v), [isBangla]);
-
-  const cashBal = accountsData?.filter((a:any)=>a.type==='cash').reduce((s:number,a:any)=>s+a.currentBalance,0) || MOCK_STATS.cashBalance;
-  const bankBal = accountsData?.filter((a:any)=>a.type!=='cash').reduce((s:number,a:any)=>s+a.currentBalance,0) || MOCK_STATS.bankBalance;
 
   const chartData = CHART_DATA.slice(range==='week'?-7:-14).map(d=>({...d,date:isBangla?d.dateBn:d.date}));
   const chartColor = metric==='sales'?'#4F5BFF':metric==='profit'?'#10b981':'#ef4444';
@@ -430,8 +425,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
           <KPICard label="Today's Sales"   labelBn="আজকের বিক্রি"    value={MOCK_STATS.todaySales}     change={MOCK_STATS.todaySalesChange}   prefix="৳" color="emerald" icon={<ShoppingCart/>} href="/sales"                isBangla={isBangla} hide={hide}/>
           <KPICard label="Today's Profit"  labelBn="আজকের লাভ"       value={MOCK_STATS.todayProfit}    change={MOCK_STATS.todayProfitChange}  prefix="৳" color="blue"    icon={<TrendingUp/>}    href="/reports/dashboard"    isBangla={isBangla} hide={hide}/>
-          <KPICard label="Cash Balance"    labelBn="নগদ ব্যালেন্স"    value={cashBal}                   change={MOCK_STATS.cashChange}         prefix="৳" color="violet"  icon={<Wallet/>}        href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
-          <KPICard label="Bank Balance"    labelBn="ব্যাংক ব্যালেন্স" value={bankBal}                   change={MOCK_STATS.bankChange}         prefix="৳" color="cyan"    icon={<Landmark/>}      href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
+          <KPICard label="Cash Balance"    labelBn="নগদ ব্যালেন্স"    value={23}                   change={MOCK_STATS.cashChange}         prefix="৳" color="violet"  icon={<Wallet/>}        href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
+          <KPICard label="Bank Balance"    labelBn="ব্যাংক ব্যালেন্স" value={234}                   change={MOCK_STATS.bankChange}         prefix="৳" color="cyan"    icon={<Landmark/>}      href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
           <KPICard label="Receivables"     labelBn="পাওনা"             value={MOCK_STATS.receivables}    change={MOCK_STATS.receivablesChange}  prefix="৳" color="amber"   icon={<ArrowDownLeft/>} href="/finance/receivables"  isBangla={isBangla} hide={hide}/>
           <KPICard label="Payables"        labelBn="দেনা"              value={MOCK_STATS.payables}       change={MOCK_STATS.payablesChange}     prefix="৳" color="rose"    icon={<ArrowUpRight/>}  href="/finance/payables"     isBangla={isBangla} hide={hide}/>
           <KPICard label="Inventory Value" labelBn="স্টক মূল্য"        value={MOCK_STATS.inventoryValue} change={MOCK_STATS.inventoryChange}    prefix="৳" color="slate"   icon={<Package/>}       href="/inventory"            isBangla={isBangla} hide={hide}/>
@@ -632,8 +627,8 @@ export default function DashboardPage() {
             {[
               {l:isBangla?'আয়':'Cash In',       v:195400,Icon:ArrowDownLeft,c:'#10b981'},
               {l:isBangla?'ব্যয়':'Cash Out',     v:122000,Icon:ArrowUpRight, c:'#ef4444'},
-              {l:isBangla?'নগদে':'Cash in Hand', v:cashBal,Icon:Wallet,      c:'#3b82f6'},
-              {l:isBangla?'ব্যাংকে':'Bank',      v:bankBal,Icon:Landmark,    c:'#8b5cf6'},
+              {l:isBangla?'নগদে':'Cash in Hand', v:324,Icon:Wallet,      c:'#3b82f6'},
+              {l:isBangla?'ব্যাংকে':'Bank',      v:546,Icon:Landmark,    c:'#8b5cf6'},
             ].map(r=>(
               <div key={r.l} className="flex items-center justify-between py-2 border-b border-border/25 last:border-0">
                 <div className="flex items-center gap-2">

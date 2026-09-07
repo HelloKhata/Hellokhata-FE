@@ -17,7 +17,6 @@ import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useRouter } from 'next/navigation';
 import { useGetBatches, useGetBatchesStatus } from '@/hooks/api/useBatches';
 import { useGetOffers } from '@/hooks/api/useOffers';
-import { useBranches } from '@/hooks/queries';
 import {
   BatchHeader,
   BatchToolbar,
@@ -58,7 +57,7 @@ export default function BatchesPage() {
   const [adjustingBatch, setAdjustingBatch] = useState<BatchRowData | null>(null);
 
   // Data fetching
-  const { data: branches = [] } = useBranches();
+  const branches = [{ id: 'main', name: 'Main Branch' }];
   const isMultiBranch = branches.length > 1;
 
   const { data: batchesStatusData } = useGetBatchesStatus();

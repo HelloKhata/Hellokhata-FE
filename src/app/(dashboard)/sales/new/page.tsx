@@ -62,7 +62,7 @@ import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useGetItemBatches, useGetItems } from "@/hooks/api/useItems";
+import { useGetItems } from "@/hooks/api/useItems";
 import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
@@ -144,7 +144,6 @@ function NewSaleContent() {
 
   // Batch selection in search suggestion dropdown
   const [selectedProductForBatch, setSelectedProductForBatch] = useState<any>(null);
-  const [loadingBatchProductId, setLoadingBatchProductId] = useState<string | null>(null);
 
 
   const [splitMode, setSplitMode] = useState(false);
@@ -175,38 +174,14 @@ function NewSaleContent() {
   const [tempVatValue, setTempVatValue] = useState<string>("0");
 
   // Billing Items Table Rows
-  const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([
-    {
-      id: "initial-row",
-      itemId: "",
-      itemName: "",
-      batchNo: "",
-      quantity: 1,
-      unitPrice: 0,
-      costPrice: 0,
-      discountPercent: 0,
-      discountFlat: 0,
-      total: 0,
-      searchQuery: "",
-      showSuggestions: false,
-      imageUrl: "",
-      appliedOffer: null,
-      chargedQuantity: 0,
-      freeQuantity: 0,
-      offerSavings: 0,
-    },
-  ]);
+  const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([]);
 
 
 
     const { data: items } = useGetItems({search: productSearchQuery, page: 1, limit: 100 });
   const { data: partiesData = [] } = useParties({search:debouncedPartySearchQuery, page: 1, limit: 100});
-  const {data:batchesData, isLoading:isLoadingBatches} = useGetItemBatches(selectedProductForBatch?.id?? '');
-  const batches = batchesData?.batches;
  const { data: paymentMethods = [] } = useGetPaymentMethods();
 
- console.log('batches',batches)
- console.log('items',items?.items)
   // Fetch active offers for auto-detection
   const { data: offersData } = useGetOffers({ status: "active" });
   const activeOffers: Offer[] = offersData?.data || [];
@@ -643,32 +618,25 @@ function NewSaleContent() {
     setSelectedProductForBatch(null);
   };
 
+  // Handle selecting a product from search suggestions
+  const handleSelectProduct = (product: any) => {
+    if (!product) return;
+    const productBatches: any[] = product.batches || [];
+
+    if (productBatches.length === 0) {
+      // No batches -> add directly without batch
+      handleSelectBatchAndAdd(product, null);
+    } else if (productBatches.length === 1) {
+      // Only 1 batch -> add directly with that single batch
+      handleSelectBatchAndAdd(product, productBatches[0]);
+    } else {
+      // Multiple batches -> open batch selection view
+      setSelectedProductForBatch(product);
+    }
+  };
+
   // Remove Item Row
   const removeItemRow = (id: string) => {
-    if (selectedItems.length === 1) {
-      setSelectedItems([
-        {
-          id: "initial-row",
-          itemId: "",
-          itemName: "",
-          batchNo: "",
-          quantity: 1,
-          unitPrice: 0,
-          costPrice: 0,
-          discountPercent: 0,
-          discountFlat: 0,
-          total: 0,
-          searchQuery: "",
-          showSuggestions: false,
-          imageUrl: "",
-          appliedOffer: null,
-          chargedQuantity: 0,
-          freeQuantity: 0,
-          offerSavings: 0,
-        },
-      ]);
-      return;
-    }
     setSelectedItems((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -932,7 +900,7 @@ function NewSaleContent() {
                             className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
-                              setSelectedProductForBatch(product);
+                              handleSelectProduct(product);
                             }}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -966,15 +934,11 @@ function NewSaleContent() {
                             </div>
 
                             <div className="text-right shrink-0 flex items-center gap-2">
-                              {loadingBatchProductId === product.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                              ) : (
-                                <div>
-                                  <p className="font-bold text-primary text-xs">
-                                    {formatCurrency(product.sellingPrice || 0)}
-                                  </p>
-                                </div>
-                              )}
+                              <div>
+                                <p className="font-bold text-primary text-xs">
+                                  {formatCurrency(product.sellingPrice || 0)}
+                                </p>
+                              </div>
                             </div>
                           </button>
                         ))
@@ -1005,13 +969,8 @@ function NewSaleContent() {
 
                         {/* Batches list */}
                         <div className="divide-y divide-border/60 max-h-56 overflow-y-auto">
-                          {isLoadingBatches ? (
-                            <div className="p-4 flex items-center justify-center text-muted-foreground gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                              <span className="text-xs">{isBangla ? "ব্যাচ লোড হচ্ছে..." : "Loading batches..."}</span>
-                            </div>
-                          ) : (batches && batches.length > 0) ? (
-                            batches.map((batch: any) => {
+                          {(selectedProductForBatch?.batches && selectedProductForBatch.batches.length > 0) ? (
+                            selectedProductForBatch.batches.map((batch: any) => {
                               const bNo = batch?.batchNumber;
                               const stock = batch.quantity;
                               const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
@@ -1286,119 +1245,142 @@ function NewSaleContent() {
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-border">
-                {selectedItems.map((item, idx) => (
-                  <TableRow
-                    key={item.id}
-                    className="hover:bg-muted/10 transition-colors"
-                  >
-                    {/* SN */}
-                    <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
-                      {idx + 1}
-                    </TableCell>
-
-                    {/* Product Thumbnail */}
-                    <TableCell className="px-3 py-3 align-middle">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.itemName}
-                          className="h-8 w-8 rounded object-cover border border-border/80"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
-                          <Image src="/images/image.png" width={50} height={50} alt="Image" className="h-8 w-8 text-muted-foreground/60" />
-                        </div>
-                      )}
-                    </TableCell>
-
-                    {/* Product Name */}
-                    <TableCell className="px-4 py-3 align-middle font-medium">
-                      {item.itemName ? (
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">
-                            {item.itemName}
-                          </p>
-                          {item.batchNo && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
-                              Batch: {item.batchNo}
-                            </span>
-                          )}
-                          {item.appliedOffer && (
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
-                                <Sparkles className="h-2.5 w-2.5" />
-                                {item.appliedOffer.title}
-                              </span>
-                              {item.freeQuantity > 0 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                                  <Gift className="h-2.5 w-2.5" />
-                                  {item.freeQuantity} Free
-                                </span>
-                              )}
-                              <span className="text-[10px] text-emerald-400 font-semibold">
-                                Saved: ৳{(item.offerSavings || 0).toFixed(2)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">
-                          {isBangla ? "উপরে পণ্য সার্চ করুন" : "Select product above"}
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* Rate */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <div className="relative flex items-center">
-                        <span className="absolute left-3 text-xs text-muted-foreground font-medium">
-                          Tk.
-                        </span>
-                        <Input
-                          type="number"
-                          value={item.unitPrice || ""}
-                          onChange={(e) =>
-                            handleRateChange(item.id, e.target.value)
-                          }
-                          className="pl-9 bg-background/30 h-9 border-input focus:ring-1 focus-visible:ring-1"
-                          min="0"
-                        />
+                {selectedItems.filter((i) => i.itemId).length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="px-4 py-12 text-center text-muted-foreground text-xs"
+                    >
+                      <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
+                        <Package className="h-5 w-5" />
                       </div>
-                    </TableCell>
-
-                    {/* Quantity */}
-                    <TableCell className="px-4 py-3 align-middle">
-                      <Input
-                        type="number"
-                        value={item.quantity || ""}
-                        onChange={(e) =>
-                          handleQuantityChange(item.id, e.target.value)
-                        }
-                        className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
-                        min="1"
-                      />
-                    </TableCell>
-
-                    {/* Amount & Action */}
-                    <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
-                      <div className="flex items-center justify-end gap-3">
-                        <span className="font-semibold text-foreground text-sm">
-                          Tk. {item.total.toFixed(2)}
-                        </span>
-                        
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 align-middle">
-                      <button
-                        type="button"
-                        onClick={() => removeItemRow(item.id)}
-                        className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <p className="font-semibold text-foreground text-xs mb-1">
+                        {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mx-auto">
+                        {isBangla
+                          ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই বিক্রয়ে যুক্ত করুন।"
+                          : "Search or scan products from the search box above to add them to this sale."}
+                      </p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  selectedItems
+                    .filter((i) => i.itemId)
+                    .map((item, idx) => (
+                      <TableRow
+                        key={item.id}
+                        className="hover:bg-muted/10 transition-colors"
+                      >
+                        {/* SN */}
+                        <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
+                          {idx + 1}
+                        </TableCell>
+
+                        {/* Product Thumbnail */}
+                        <TableCell className="px-3 py-3 align-middle">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.itemName}
+                              className="h-8 w-8 rounded object-cover border border-border/80"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60">
+                              <Image src="/images/image.png" width={50} height={50} alt="Image" className="h-8 w-8 text-muted-foreground/60" />
+                            </div>
+                          )}
+                        </TableCell>
+
+                        {/* Product Name */}
+                        <TableCell className="px-4 py-3 align-middle font-medium">
+                          {item.itemName ? (
+                            <div>
+                              <p className="font-semibold text-foreground text-sm">
+                                {item.itemName}
+                              </p>
+                              {item.batchNo && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
+                                  Batch: {item.batchNo}
+                                </span>
+                              )}
+                              {item.appliedOffer && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                                    <Sparkles className="h-2.5 w-2.5" />
+                                    {item.appliedOffer.title}
+                                  </span>
+                                  {item.freeQuantity > 0 && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                      <Gift className="h-2.5 w-2.5" />
+                                      {item.freeQuantity} Free
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] text-emerald-400 font-semibold">
+                                    Saved: ৳{(item.offerSavings || 0).toFixed(2)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">
+                              {isBangla ? "উপরে পণ্য সার্চ করুন" : "Select product above"}
+                            </span>
+                          )}
+                        </TableCell>
+
+                        {/* Rate */}
+                        <TableCell className="px-4 py-3 align-middle">
+                          <div className="relative flex items-center">
+                            <span className="absolute left-3 text-xs text-muted-foreground font-medium">
+                              Tk.
+                            </span>
+                            <Input
+                              type="number"
+                              value={item.unitPrice || ""}
+                              onChange={(e) =>
+                                handleRateChange(item.id, e.target.value)
+                              }
+                              className="pl-9 bg-background/30 h-9 border-input focus:ring-1 focus-visible:ring-1"
+                              min="0"
+                            />
+                          </div>
+                        </TableCell>
+
+                        {/* Quantity */}
+                        <TableCell className="px-4 py-3 align-middle">
+                          <Input
+                            type="number"
+                            value={item.quantity || ""}
+                            onChange={(e) =>
+                              handleQuantityChange(item.id, e.target.value)
+                            }
+                            className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
+                            min="1"
+                          />
+                        </TableCell>
+
+                        {/* Amount & Action */}
+                        <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
+                          <div className="flex items-center justify-end gap-3">
+                            <span className="font-semibold text-foreground text-sm">
+                              Tk. {item.total.toFixed(2)}
+                            </span>
+                            
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-middle">
+                          <button
+                            type="button"
+                            onClick={() => removeItemRow(item.id)}
+                            className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
               </TableBody>
             </Table>
 
