@@ -56,6 +56,7 @@ import {
   Phone,
   Package,
   AlertCircle,
+  Lock,
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -304,7 +305,6 @@ function NewSaleContent() {
     if (selectedParty) {
       setSelectedParty(null);
       setSelectedPartyId("");
-      setPhoneSearchQuery("");
     }
   };
 
@@ -1144,28 +1144,48 @@ function NewSaleContent() {
               </div>
             </div>
 
-            {/* 3. Customer Name (Auto filled or default Walking Customer) */}
+            {/* 3. Customer Name (Auto filled and locked for registered party, or editable for Walking Customer) */}
             <div className="relative space-y-2">
-              <Label className="text-sm font-medium text-foreground">
-                {isBangla ? "গ্রাহক" : "Customer"}
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium text-foreground">
+                  {isBangla ? "গ্রাহক" : "Customer"}
+                </Label>
+                {selectedParty && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                    {isBangla ? "নিবন্ধিত গ্রাহক" : "Registered Customer"}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Input
-                  value={selectedParty ? selectedParty.name : (partySearchQuery || defaultCustomerName)}
+                  value={selectedParty ? selectedParty.name : partySearchQuery}
                   onChange={(e) => {
-                    handlePartyNameChange(e.target.value);
-                    setShowPartyNameSuggestions(true);
+                    if (!selectedParty) {
+                      handlePartyNameChange(e.target.value);
+                      setShowPartyNameSuggestions(true);
+                    }
                   }}
-                  onFocus={() => setShowPartyNameSuggestions(true)}
+                  readOnly={!!selectedParty}
+                  onFocus={() => {
+                    if (!selectedParty) setShowPartyNameSuggestions(true);
+                  }}
                   onBlur={() => {
                     setTimeout(() => setShowPartyNameSuggestions(false), 200);
                   }}
                   placeholder={defaultCustomerName}
-                  className="pr-9 h-11 bg-background/50 border-input text-xs focus-visible:ring-1"
+                  className={`pr-9 h-11 border-input text-xs focus-visible:ring-1 ${
+                    selectedParty
+                      ? "bg-muted/60 cursor-not-allowed text-foreground font-medium select-none"
+                      : "bg-background/50"
+                  }`}
                 />
-                <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {selectedParty ? (
+                  <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Users className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                )}
 
-                {showPartyNameSuggestions && (
+                {!selectedParty && showPartyNameSuggestions && (
                   <div className="absolute z-50 left-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
                     {parties.length === 0 ? (
                       <div className="p-3 text-center text-xs text-muted-foreground">
