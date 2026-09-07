@@ -28,9 +28,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { useItems, useBranches } from '@/hooks/queries';
-import { useCurrency } from '@/hooks/useAppTranslation';
-import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { useCurrency, useAppTranslation } from '@/hooks/useAppTranslation';
 import { useNavigation } from '@/stores/uiStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
@@ -38,6 +36,18 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 type AdjustmentType = 'increase' | 'decrease';
+
+const STATIC_PRODUCTS = [
+  { id: 'item-1', name: 'PRAN Frooto 250ml', code: 'ITM001', currentStock: 120, unit: 'pcs', purchasePrice: 25 },
+  { id: 'item-2', name: 'Miniket Rice 50kg', code: 'ITM002', currentStock: 45, unit: 'bag', purchasePrice: 3200 },
+  { id: 'item-3', name: 'Rupchanda Soyabean Oil 5L', code: 'ITM003', currentStock: 80, unit: 'can', purchasePrice: 850 },
+];
+
+const STATIC_BRANCHES = [
+  { id: 'main', name: 'Main Branch', code: 'MAIN', isMain: true },
+  { id: 'branch-2', name: 'Dhanmondi Branch', code: 'DHN', isMain: false },
+  { id: 'branch-3', name: 'Uttara Outlet', code: 'UTT', isMain: false },
+];
 
 export default function StockAdjustmentPage() {
   const { t, isBangla } = useAppTranslation();
@@ -55,10 +65,11 @@ export default function StockAdjustmentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // hoooks
-  const router = useRouter()
-  // Fetch data
-  const { data: products = [], isLoading: productsLoading } = useItems();
-  const { data: branches = [] } = useBranches();
+  const router = useRouter();
+  // Static data
+  const products = STATIC_PRODUCTS;
+  const productsLoading = false;
+  const branches = STATIC_BRANCHES;
 
   // Selected product info
   const selectedProduct = products.find(p => p.id === itemId);

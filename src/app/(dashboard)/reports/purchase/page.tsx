@@ -75,12 +75,6 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {
-  usePurchases,
-  useItems,
-  useBranches,
-  useCategories,
-} from '@/hooks/queries';
 import { useCurrency, useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import type { Purchase, PurchaseItem, StaffPerformance } from '@/types';
@@ -203,13 +197,18 @@ export default function PurchasesReportsDashboard() {
   const { business, user } = useSessionStore();
 
   // Queries
-  const { data: purchases = [], isLoading: purchasesLoading, error: purchasesError, refetch: refetchPurchases } = usePurchases();
-  const { data: items = [], isLoading: itemsLoading } = useItems();
+  const purchases: any[] = [];
+  const purchasesLoading = false;
+  const purchasesError = null;
+  const refetchPurchases = () => {};
+  const items: any[] = [];
+  const itemsLoading = false;
   const { data: suppliersData, isLoading: suppliersLoading } = useParties({ type: 'supplier' });
   const supplierList = (suppliersData as any)?.data || [];
-  const { data: branches = [], isLoading: branchesLoading } = useBranches();
+  const branches: any[] = [];
+  const branchesLoading = false;
   const staffPerf = STATIC_STAFF_PERFORMANCE;
-  const { data: categories = [] } = useCategories();
+  const categories: any[] = [];
 
   // Brand mock options
   const brandList = useMemo(() => ['PRAN', 'Coca-Cola', 'Square', 'Aarong', 'ACI', 'Unilever', 'Radhuni', 'Bambi'], []);

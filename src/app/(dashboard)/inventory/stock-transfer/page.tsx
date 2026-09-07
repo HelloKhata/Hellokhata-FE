@@ -25,13 +25,24 @@ import {
   Building2,
   Truck,
 } from 'lucide-react';
-import { useItems, useBranches } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useNavigation } from '@/stores/uiStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+
+const STATIC_PRODUCTS = [
+  { id: 'item-1', name: 'PRAN Frooto 250ml', code: 'ITM001', currentStock: 120, unit: 'pcs' },
+  { id: 'item-2', name: 'Miniket Rice 50kg', code: 'ITM002', currentStock: 45, unit: 'bag' },
+  { id: 'item-3', name: 'Rupchanda Soyabean Oil 5L', code: 'ITM003', currentStock: 80, unit: 'can' },
+];
+
+const STATIC_BRANCHES = [
+  { id: 'main', name: 'Main Branch', code: 'MAIN', isMain: true },
+  { id: 'branch-2', name: 'Dhanmondi Branch', code: 'DHN', isMain: false },
+  { id: 'branch-3', name: 'Uttara Outlet', code: 'UTT', isMain: false },
+];
 
 export default function StockTransferPage() {
   const { t, isBangla } = useAppTranslation();
@@ -46,9 +57,10 @@ export default function StockTransferPage() {
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch data
-  const { data: products = [], isLoading: productsLoading } = useItems();
-  const { data: branches = [] } = useBranches();
+  // Static data
+  const products = STATIC_PRODUCTS;
+  const productsLoading = false;
+  const branches = STATIC_BRANCHES;
 
     // hoooks
     const router = useRouter();

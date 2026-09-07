@@ -19,7 +19,6 @@ import { Badge } from '@/components/ui/premium';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { useHealthScore } from '@/hooks/queries';
 import { useMarkAsReadNotification, useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
 import { cn } from '@/lib/utils';
 import { BranchSwitcher } from '@/components/common';
@@ -33,7 +32,6 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const { user, logout, plan } = useSessionStore();
   const { setMobileMenuOpen, unreadNotifications } = useUiStore();
   const { t, isBangla, changeLanguage } = useAppTranslation();
-  const { data: healthScoreData } = useHealthScore();
   const { data: notificationsData } = useNotifications();
   
   const notifications = Array.isArray(notificationsData)
@@ -118,7 +116,6 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
     ai: 'bg-gradient-to-r from-primary-subtle to-emerald-100 text-primary dark:from-primary/20 dark:to-emerald-900/30',
   };
 
-  const healthScore = healthScoreData?.overallScore || 0;
 
   return (
     <header 

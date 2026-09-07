@@ -25,7 +25,6 @@ import {
   Check,
   X,
 } from 'lucide-react';
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useSessionStore } from '@/stores/sessionStore';
 import { toast } from 'sonner';
@@ -36,14 +35,19 @@ interface CategoriesModalProps {
   onClose: () => void;
 }
 
+const INITIAL_CATEGORIES = [
+  { id: '1', name: 'Electronics', nameBn: 'ইলেকট্রনিক্স', itemCount: 12 },
+  { id: '2', name: 'Groceries', nameBn: 'মুদি পণ্য', itemCount: 24 },
+  { id: '3', name: 'Clothing', nameBn: 'পোশাক', itemCount: 8 },
+  { id: '4', name: 'Stationery', nameBn: 'স্টেশনারি', itemCount: 15 },
+];
+
 export function CategoriesModal({ isOpen, onClose }: CategoriesModalProps) {
   const { isBangla } = useAppTranslation();
   const { business } = useSessionStore();
   
-  const { data: categories = [], isLoading } = useCategories();
-  const createCategory = useCreateCategory();
-  const updateCategory = useUpdateCategory();
-  const deleteCategory = useDeleteCategory();
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const isLoading = false;
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -58,19 +62,18 @@ export function CategoriesModal({ isOpen, onClose }: CategoriesModalProps) {
       return;
     }
 
-    try {
-      await createCategory.mutateAsync({
-        name: newName,
-        nameBn: newNameBn || undefined,
-      });
-      
-      toast.success(isBangla ? 'ক্যাটাগরি তৈরি হয়েছে' : 'Category created');
-      setNewName('');
-      setNewNameBn('');
-      setShowAddForm(false);
-    } catch (error) {
-      toast.error(isBangla ? 'ক্যাটাগরি তৈরি ব্যর্থ' : 'Failed to create category');
-    }
+    const newCategory = {
+      id: Date.now().toString(),
+      name: newName,
+      nameBn: newNameBn || undefined,
+      itemCount: 0,
+    };
+    setCategories((prev) => [...prev, newCategory]);
+    
+    toast.success(isBangla ? 'ক্যাটাগরি তৈরি হয়েছে' : 'Category created');
+    setNewName('');
+    setNewNameBn('');
+    setShowAddForm(false);
   };
 
   const handleEdit = (category: any) => {
@@ -82,29 +85,23 @@ export function CategoriesModal({ isOpen, onClose }: CategoriesModalProps) {
   const handleSaveEdit = async () => {
     if (!editingId || !editName.trim()) return;
 
-    try {
-      await updateCategory.mutateAsync({
-        id: editingId,
-        name: editName,
-        nameBn: editNameBn || undefined,
-      });
-      
-      toast.success(isBangla ? 'ক্যাটাগরি আপডেট হয়েছে' : 'Category updated');
-      setEditingId(null);
-    } catch (error) {
-      toast.error(isBangla ? 'আপডেট ব্যর্থ' : 'Failed to update');
-    }
+    setCategories((prev) =>
+      prev.map((c) =>
+        c.id === editingId
+          ? { ...c, name: editName, nameBn: editNameBn || undefined }
+          : c
+      )
+    );
+    
+    toast.success(isBangla ? 'ক্যাটাগরি আপডেট হয়েছে' : 'Category updated');
+    setEditingId(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm(isBangla ? 'এই ক্যাটাগরি মুছে ফেলতে চান?' : 'Delete this category?')) return;
 
-    try {
-      await deleteCategory.mutateAsync(id);
-      toast.success(isBangla ? 'ক্যাটাগরি মুছে ফেলা হয়েছে' : 'Category deleted');
-    } catch (error) {
-      toast.error(isBangla ? 'মুছে ফেলা ব্যর্থ' : 'Failed to delete');
-    }
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    toast.success(isBangla ? 'ক্যাটাগরি মুছে ফেলা হয়েছে' : 'Category deleted');
   };
 
   return (

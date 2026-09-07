@@ -9,19 +9,6 @@ import type { ApiResponse, ApiError } from '@/types';
 // Base URL from environment
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-// Custom error class
-export class ApiClientError extends Error {
-  code: string;
-  status: number;
-  details?: Record<string, string[]>;
-
-  constructor(error: ApiError, status: number) {
-    super(error.message);
-    this.code = error.code;
-    this.status = status;
-    this.details = error.details;
-  }
-}
 
 // Request options type
 interface RequestOptions extends RequestInit {
@@ -149,24 +136,4 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
       branchId,
     }),
-
-  put: <T>(endpoint: string, body?: unknown, branchId?: string | null) =>
-    apiRequest<T>(endpoint, {
-      method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
-      branchId,
-    }),
-
-  patch: <T>(endpoint: string, body?: unknown, branchId?: string | null) =>
-    apiRequest<T>(endpoint, {
-      method: 'PATCH',
-      body: body ? JSON.stringify(body) : undefined,
-      branchId,
-    }),
-
-  delete: <T>(endpoint: string, branchId?: string | null) =>
-    apiRequest<T>(endpoint, { method: 'DELETE', branchId }),
 };
-
-// Export mock mode check - always false now (using real API)
-export const isMockMode = () => false;

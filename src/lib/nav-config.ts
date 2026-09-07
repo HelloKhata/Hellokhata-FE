@@ -385,25 +385,5 @@ export const bottomNavItems = [
     icon: Settings,
     labelKey: "Settings",
     labelBn: "সেটিংস",
-    submenu: [
-      {
-        page: "/settings/profile",
-        icon: Settings,
-        labelKey: "Profile",
-        labelBn: "প্রোফাইল",
-      },
-      {
-        page: "/settings/branches",
-        icon: Settings,
-        labelKey: "Branches",
-        labelBn: "শাখা",
-      },
-      {
-        page: "/settings/users",
-        icon: Users,
-        labelKey: "Users",
-        labelBn: "ব্যবহারকারী",
-      },
-    ],
   },
 ];

@@ -25,8 +25,6 @@ import {
   User,
   Copy,
   Check,
-  RefreshCw,
-  Volume2,
 } from 'lucide-react';
 import { useAiInsights, useDashboardStats } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
@@ -38,6 +36,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  
   tables?: Array<{
     headers: string[];
     rows: string[][];
