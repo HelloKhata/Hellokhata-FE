@@ -3,7 +3,6 @@
 import React, { memo } from "react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Building2,
   Sparkles,
   Tag,
   DollarSign,
@@ -54,6 +52,7 @@ export interface BatchRowData {
   isExpired?: boolean;
   isExpiringSoon?: boolean;
   isActive?: boolean;
+  status?: string;
   daysUntilExpiry?: number | null;
   createdAt?: string;
 }
@@ -62,10 +61,7 @@ interface BatchRowProps {
   batch: BatchRowData;
   index?: number;
   showBranch?: boolean;
-  isSelectable?: boolean;
-  isSelected?: boolean;
   offer?: any;
-  onSelect?: (id: string, checked: boolean) => void;
   onTap?: (batch: BatchRowData) => void;
   onViewDetails?: (batch: BatchRowData) => void;
   onEdit?: (batch: BatchRowData) => void;
@@ -75,7 +71,7 @@ interface BatchRowProps {
 }
 
 export function OfferBadge({ offer, isBangla }: { offer: any; isBangla?: boolean }) {
-  if (!offer) return <span className="text-xs text-muted-foreground/50">—</span>;
+  if (!offer) return null;
 
   if (offer.type === 'bogo') {
     return (
@@ -126,10 +122,7 @@ export const BatchRow = memo(function BatchRow({
   batch,
   index = 0,
   showBranch = false,
-  isSelectable = false,
-  isSelected = false,
   offer,
-  onSelect,
   onTap,
   onViewDetails,
   onEdit,
@@ -160,59 +153,47 @@ export const BatchRow = memo(function BatchRow({
       }}
       onClick={handleRowClick}
       className={cn(
-        "flex items-center justify-between px-6 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer group gap-4 border-b border-border/30 outline-none focus-visible:bg-muted/30",
+        "flex items-center justify-between w-full px-6 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer group gap-4 border-b border-border/30 outline-none focus-visible:bg-muted/30",
         batch.isExpired && "bg-rose-950/10 hover:bg-rose-950/20",
-        batch.isExpiringSoon && !batch.isExpired && "bg-amber-950/10 hover:bg-amber-950/20",
-        isSelected && "bg-primary/10 border-primary/40"
+        batch.isExpiringSoon && !batch.isExpired && "bg-amber-950/10 hover:bg-amber-950/20"
       )}
     >
-      {/* 1. SL. / Checkbox (w-10) */}
-      <div
-        className="w-10 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground/80"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isSelectable ? (
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelect?.(batch.id, !!checked)}
-            className="cursor-pointer"
-            aria-label={`Select batch ${batch.batchNumber}`}
-          />
-        ) : (
-          String(index + 1).padStart(2, "0")
-        )}
+      {/* 1. SL. (w-8) */}
+      <div className="w-8 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground/80">
+        {String(index + 1).padStart(2, "0")}
       </div>
 
-      {/* 2. Batch (w-28 sm:w-36) */}
-      <div className="w-28 sm:w-36 shrink-0 min-w-0 text-left space-y-0.5">
+      {/* 2. Batch (w-36) */}
+      <div className="w-36 shrink-0 min-w-0 text-left space-y-0.5">
         <div className="flex items-center gap-1.5">
           <span className="font-mono text-xs sm:text-sm font-bold text-foreground group-hover:text-primary transition-colors">
             #{batch.batchNumber}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-          {batch.barcode && (
-            <span className="font-mono text-[11px] text-slate-300 truncate block">
-              BARCODE: {batch.barcode}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* 3. Product (flex-1) */}
-      <div className="flex-1 min-w-0 text-left">
-        <p className="font-bold text-foreground text-xs sm:text-sm leading-snug truncate group-hover:text-primary transition-colors">
-          {batch.itemName || batch.batchNumber}
-        </p>
-        {batch.category && (
-          <p className="text-[11px] text-muted-foreground/80 truncate">
-            {batch.category}
-          </p>
+        {batch.barcode && (
+          <div className="text-[11px] font-mono text-slate-400 truncate">
+            {batch.barcode}
+          </div>
         )}
       </div>
 
-      {/* 4. Available (w-24 sm:w-28) */}
-      <div className="w-24 sm:w-28 shrink-0 min-w-0 text-left">
+      {/* 3. Product (w-52) */}
+      <div className="w-52 shrink-0 min-w-0 text-left space-y-1">
+        <p className="font-bold text-foreground text-xs sm:text-sm leading-snug truncate group-hover:text-primary transition-colors">
+          {batch.itemName || batch.batchNumber}
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          {batch.category && (
+            <span className="text-[11px] text-muted-foreground/70 truncate">
+              {batch.category}
+            </span>
+          )}
+          {activeOffer && <OfferBadge offer={activeOffer} isBangla={isBangla} />}
+        </div>
+      </div>
+
+      {/* 4. Available (w-24) */}
+      <div className="w-24 shrink-0 min-w-0 text-left">
         <p className="text-xs sm:text-sm font-extrabold text-foreground whitespace-nowrap">
           {batch.quantity}{" "}
           <span className="text-xs font-normal text-muted-foreground">
@@ -221,17 +202,17 @@ export const BatchRow = memo(function BatchRow({
         </p>
       </div>
 
-      {/* 5. Cost (w-20 sm:w-24) */}
-      <div className="w-20 sm:w-24 shrink-0 text-right">
-        <p className="text-xs sm:text-sm font-mono font-bold text-foreground whitespace-nowrap">
+      {/* 5. Cost (w-20) */}
+      <div className="w-20 shrink-0 text-right">
+        <p className="text-xs sm:text-sm font-mono font-semibold text-slate-200 whitespace-nowrap">
           {formatCurrency(batch.costPrice)}
         </p>
       </div>
 
-      {/* 6. Selling (w-20 sm:w-24) */}
-      <div className="w-20 sm:w-24 shrink-0 text-right">
+      {/* 6. Selling (w-20) */}
+      <div className="w-20 shrink-0 text-right">
         {batch.sellingPrice != null ? (
-          <p className="text-xs sm:text-sm font-mono font-bold text-emerald-400 whitespace-nowrap">
+          <p className="text-xs sm:text-sm font-mono font-semibold text-emerald-400 whitespace-nowrap">
             {formatCurrency(batch.sellingPrice)}
           </p>
         ) : (
@@ -239,13 +220,8 @@ export const BatchRow = memo(function BatchRow({
         )}
       </div>
 
-      {/* 7. Offer (w-24 sm:w-28) */}
-      <div className="w-24 sm:w-28 shrink-0 text-center flex items-center justify-center">
-        <OfferBadge offer={activeOffer} isBangla={isBangla} />
-      </div>
-
-      {/* 8. Expiry (w-28 sm:w-32) */}
-      <div className="w-28 sm:w-32 shrink-0 text-left space-y-0.5">
+      {/* 7. Expiry (w-28) */}
+      <div className="w-28 shrink-0 text-left space-y-0.5">
         {batch.expiryDate ? (
           <>
             <p className="text-xs font-semibold text-foreground whitespace-nowrap">
@@ -279,9 +255,10 @@ export const BatchRow = memo(function BatchRow({
         )}
       </div>
 
-      {/* 9. Status (w-24 sm:w-28) */}
-      <div className="w-24 sm:w-28 shrink-0 text-center flex items-center justify-center">
+      {/* 8. Status (w-24) */}
+      <div className="w-24 shrink-0 text-center flex items-center justify-center">
         <BatchStatusBadge
+          status={batch.status}
           hasExpiry={batch.hasExpiry}
           isExpired={batch.isExpired}
           isExpiringSoon={batch.isExpiringSoon}
@@ -289,9 +266,9 @@ export const BatchRow = memo(function BatchRow({
         />
       </div>
 
-      {/* 10. Actions (3-Dot Dropdown Menu) (w-20 sm:w-24) */}
+      {/* 9. Actions (w-12) */}
       <div
-        className="w-20 sm:w-24 shrink-0 text-right flex items-center justify-end"
+        className="w-12 shrink-0 text-right flex items-center justify-end"
         onClick={(e) => e.stopPropagation()}
       >
         <DropdownMenu>

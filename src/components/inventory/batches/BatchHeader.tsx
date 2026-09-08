@@ -3,23 +3,17 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Plus, RefreshCw, ListChecks } from "lucide-react";
+import { ArrowLeft, Package, Plus } from "lucide-react";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { useRouter } from "next/navigation";
 
 interface BatchHeaderProps {
   totalBatches?: number;
-  selectMode: boolean;
-  onToggleSelectMode: () => void;
-  onRefresh: () => void;
   onAddBatch?: () => void;
 }
 
 export function BatchHeader({
   totalBatches = 0,
-  selectMode,
-  onToggleSelectMode,
-  onRefresh,
   onAddBatch,
 }: BatchHeaderProps) {
   const { isBangla } = useAppTranslation();
@@ -27,7 +21,7 @@ export function BatchHeader({
 
   return (
     <div className="sticky top-0 z-20  border-b border-border/80">
-      <div className="mx-auto px-4 sm:px-6 py-3.5">
+      <div className="mx-auto py-3.5">
         <div className="flex items-center justify-between gap-4">
           {/* Title & Description */}
           <div className="flex items-center gap-3">
@@ -65,31 +59,9 @@ export function BatchHeader({
           {/* Primary Actions (Right) */}
           <div className="flex items-center gap-2">
             <Button
-              variant={selectMode ? "default" : "outline"}
-              size="sm"
-              onClick={onToggleSelectMode}
-              className="h-9 text-xs font-semibold gap-1.5 cursor-pointer shadow-xs"
-            >
-              <ListChecks className="h-3.5 w-3.5" />
-              {selectMode
-                ? isBangla ? "বাতিল" : "Done"
-                : isBangla ? "সিলেক্ট" : "Select"}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onRefresh}
-              className="h-9 w-9 cursor-pointer"
-              title={isBangla ? "রিফ্রেশ" : "Refresh"}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </Button>
-
-            <Button
               size="sm"
               onClick={onAddBatch || (() => router.push("/inventory/new"))}
-              className="h-9 text-xs font-bold gap-1.5 cursor-pointer shadow-xs hidden sm:flex"
+              className="h-9 text-xs font-bold gap-1.5 cursor-pointer shadow-xs flex"
             >
               <Plus className="h-4 w-4" />
               {isBangla ? "নতুন ব্যাচ" : "Add Batch"}

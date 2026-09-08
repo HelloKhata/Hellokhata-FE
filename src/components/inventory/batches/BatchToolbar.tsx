@@ -72,7 +72,7 @@ export const BatchToolbar = memo(function BatchToolbar({
 
   return (
     <div className={cn("space-y-3", className)}>
-      {/* Top Controls Row: Search + Branch Selector + Sort Dropdown */}
+      {/* Top Controls Row: Search + Status Filter Dropdown + Branch Selector + Sort Dropdown */}
       <div className="flex flex-col sm:flex-row gap-2.5">
         {/* Search Bar */}
         <div className="relative flex-1">
@@ -89,7 +89,24 @@ export const BatchToolbar = memo(function BatchToolbar({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Status Filter Dropdown */}
+          <Select value={statusFilter} onValueChange={(v) => onStatusFilterChange(v as StatusTab)}>
+            <SelectTrigger className="w-full sm:w-[160px] h-9 text-xs bg-card border-border/80">
+              <SelectValue placeholder={isBangla ? "স্ট্যাটাস" : "Status"} />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_TABS.map((tab) => (
+                <SelectItem key={tab.value} value={tab.value} className="text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("h-2 w-2 rounded-full shrink-0", tab.dotColor)} />
+                    <span>{isBangla ? tab.bn : tab.en}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Branch Selector */}
           {isMultiBranch && (
             <Select value={branchFilter} onValueChange={onBranchFilterChange}>
@@ -132,29 +149,6 @@ export const BatchToolbar = memo(function BatchToolbar({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      {/* Segmented Filter Chips */}
-      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/60 overflow-x-auto no-scrollbar">
-        {STATUS_TABS.map((tab) => {
-          const isActive = statusFilter === tab.value;
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => onStatusFilterChange(tab.value)}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer select-none whitespace-nowrap",
-                isActive
-                  ? "bg-card text-foreground shadow-xs border border-border/60 font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-card/40"
-              )}
-            >
-              <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", tab.dotColor)} />
-              {isBangla ? tab.bn : tab.en}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

@@ -144,6 +144,7 @@ export function BatchDetailSheet({
                 {/* Expiry Status Badge */}
                 <div className="shrink-0">
                   <BatchStatusBadge
+                    status={batch.status}
                     hasExpiry={batch.hasExpiry}
                     isExpired={batch.isExpired}
                     isExpiringSoon={batch.isExpiringSoon}

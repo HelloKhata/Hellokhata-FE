@@ -3,18 +3,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Package,
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useRouter } from 'next/navigation';
+import { PaginationHelper } from '@/components/shared/PaginationHelper';
 import { useGetBatches, useGetBatchesStatus } from '@/hooks/api/useBatches';
 import { useGetOffers } from '@/hooks/api/useOffers';
 import {
@@ -22,7 +19,6 @@ import {
   BatchToolbar,
   BatchRow,
   BatchDetailSheet,
-  BulkActionBar,
   BatchEmptyState,
   BatchLoadingSkeleton,
   type BatchRowData,
@@ -44,11 +40,7 @@ export default function BatchesPage() {
   const [branchFilter, setBranchFilter] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<BatchSort>('received_desc');
   const [page, setPage] = useState(1);
-  const LIMIT = 30;
-
-  // Multi-select state
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const LIMIT = 10;
 
   // Batch Detail Sheet & Modal States
   const [inspectingBatchId, setInspectingBatchId] = useState<string | null>(null);
@@ -107,6 +99,7 @@ export default function BatchesPage() {
       isActive: b.isActive,
       daysUntilExpiry: b.daysUntilExpiry,
       createdAt: b.createdAt,
+      status: b.status,
     }));
   }, [batchesData]);
 
@@ -122,40 +115,12 @@ export default function BatchesPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [statusFilter, branchFilter, sortOrder]);
-
-  // Select handlers
-  const handleSelectToggle = useCallback((id: string, checked: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }, []);
-
-  const handleClearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    setSelectMode(false);
-  }, []);
-
-  const selectedBatches = useMemo(
-    () => batches.filter((b) => selectedIds.has(b.id)),
-    [batches, selectedIds]
-  );
 
   // Batch item click handler
   const handleBatchTap = useCallback((batch: BatchRowData) => {
-    if (selectMode) {
-      handleSelectToggle(batch.id, !selectedIds.has(batch.id));
-      return;
-    }
     setInspectingFallback(batch);
     setInspectingBatchId(batch.id);
-  }, [selectMode, selectedIds, handleSelectToggle]);
+  }, []);
 
   // Reset all filters
   const handleResetFilters = () => {
@@ -174,16 +139,10 @@ export default function BatchesPage() {
       {/* Page Header */}
       <BatchHeader
         totalBatches={batchesStatus?.totalBatches || totalBatchesCount}
-        selectMode={selectMode}
-        onToggleSelectMode={() => {
-          setSelectMode(!selectMode);
-          if (selectMode) handleClearSelection();
-        }}
-        onRefresh={() => refetch()}
         onAddBatch={() => router.push('/inventory/new')}
       />
 
-      <div className="mx-auto px-4 sm:px-6 space-y-4">
+      <div className="mx-aut space-y-4">
         {/* Metric Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border border-border/60 shadow-xs">
@@ -296,115 +255,67 @@ export default function BatchesPage() {
             )
           ) : (
             <div className="overflow-x-auto">
-              <div className="min-w-[1100px]">
+              <div className="min-w-[1050px] w-full">
                 {/* Column Header Bar - Matches Inventory Items Table Column Headers */}
-                <div className="flex items-center justify-between px-6 py-3 bg-[#161a23]/60 text-xs font-semibold text-muted-foreground/80 border-b border-border/40 gap-4">
-                  <div className="w-10 text-left shrink-0">
-                    {selectMode ? (
-                      <Checkbox
-                        checked={batches.length > 0 && selectedIds.size === batches.length}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedIds(new Set(batches.map((b) => b.id)));
-                          } else {
-                            setSelectedIds(new Set());
-                          }
-                        }}
-                        className="cursor-pointer"
-                        aria-label="Select all batches"
-                      />
-                    ) : (
-                      'SL.'
-                    )}
-                  </div>
-                  <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batch'}</div>
-                  <div className="flex-1 min-w-0 text-left">{isBangla ? 'পণ্য' : 'Product'}</div>
-                  <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'অবশিষ্ট' : 'Available'}</div>
-                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'ক্রয় মূল্য' : 'Cost'}</div>
-                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'বিক্রয় মূল্য' : 'Selling'}</div>
-                  <div className="w-24 sm:w-28 text-center shrink-0">{isBangla ? 'অফার' : 'Offer'}</div>
-                  <div className="w-28 sm:w-32 text-left shrink-0">{isBangla ? 'মেয়াদ' : 'Expiry'}</div>
-                  <div className="w-24 sm:w-28 text-center shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
-                  <div className="w-20 sm:w-24 text-right shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
+                <div className="flex items-center justify-between w-full px-6 py-3 bg-[#161a23]/60 text-xs font-semibold text-muted-foreground/80 border-b border-border/40 gap-4">
+                  <div className="w-8 text-left shrink-0">SL.</div>
+                  <div className="w-36 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batch'}</div>
+                  <div className="w-52 text-left shrink-0">{isBangla ? 'পণ্য' : 'Product'}</div>
+                  <div className="w-24 text-left shrink-0">{isBangla ? 'অবশিষ্ট' : 'Available'}</div>
+                  <div className="w-20 text-right shrink-0">{isBangla ? 'ক্রয় মূল্য' : 'Cost'}</div>
+                  <div className="w-20 text-right shrink-0">{isBangla ? 'বিক্রয় মূল্য' : 'Selling'}</div>
+                  <div className="w-28 text-left shrink-0">{isBangla ? 'মেয়াদ' : 'Expiry'}</div>
+                  <div className="w-24 text-center shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
+                  <div className="w-12 text-right shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
                 </div>
 
                 {/* Table Body */}
-                <ScrollArea className="h-[560px]">
-                  <div className="divide-y divide-border/30">
-                    {batches.map((batch, index) => {
-                      const activeOffer = offers.find(
-                        (o: any) =>
-                          o.status === 'active' &&
-                          (o.batchId === batch.id || (!o.batchId && o.productId === batch.itemId))
-                      );
-                      return (
-                        <BatchRow
-                          key={batch.id}
-                          batch={batch}
-                          index={index}
-                          showBranch={isMultiBranch}
-                          isSelectable={selectMode}
-                          isSelected={selectedIds.has(batch.id)}
-                          offer={activeOffer}
-                          onSelect={handleSelectToggle}
-                          onTap={handleBatchTap}
-                          onViewDetails={handleBatchTap}
-                          onEdit={(b) => setEditingBatch(b)}
-                          onAdjust={(b) => setAdjustingBatch(b)}
-                          onCreateOffer={(b) => router.push(`/inventory/promotions/new?batchId=${b.id}&productId=${b.itemId || ''}`)}
-                          onPrintLabel={(b) => {
-                            toast.info(
-                              isBangla
-                                ? `ব্যাচ #${b.batchNumber} লেবেল প্রিন্টারে পাঠানো হচ্ছে...`
-                                : `Sending label for Batch #${b.batchNumber} to printer...`
-                            );
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
+                <div className="divide-y divide-border/30">
+                  {batches.map((batch, index) => {
+                    const activeOffer = offers.find(
+                      (o: any) =>
+                        o.status === 'active' &&
+                        (o.batchId === batch.id || (!o.batchId && o.productId === batch.itemId))
+                    );
+                    return (
+                      <BatchRow
+                        key={batch.id}
+                        batch={batch}
+                        index={index}
+                        showBranch={isMultiBranch}
+                        offer={activeOffer}
+                        onTap={handleBatchTap}
+                        onViewDetails={handleBatchTap}
+                        onEdit={(b) => setEditingBatch(b)}
+                        onAdjust={(b) => setAdjustingBatch(b)}
+                        onCreateOffer={(b) => router.push(`/inventory/promotions/new?batchId=${b.id}&productId=${b.itemId || ''}`)}
+                        onPrintLabel={(b) => {
+                          toast.info(
+                            isBangla
+                              ? `ব্যাচ #${b.batchNumber} লেবেল প্রিন্টারে পাঠানো হচ্ছে...`
+                              : `Sending label for Batch #${b.batchNumber} to printer...`
+                          );
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 text-xs">
-            <span className="text-muted-foreground font-mono">
-              Showing {(page - 1) * LIMIT + 1} - {Math.min(page * LIMIT, totalBatchesCount)} of {totalBatchesCount}
-            </span>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="h-8 text-xs gap-1 cursor-pointer"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                {isBangla ? 'আগের' : 'Previous'}
-              </Button>
-
-              <span className="font-mono font-semibold px-2">
-                {page} / {totalPages}
-              </span>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="h-8 text-xs gap-1 cursor-pointer"
-              >
-                {isBangla ? 'পরের' : 'Next'}
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+          {/* Pagination Bar */}
+          {totalPages > 1 && (
+            <div className="px-6 pb-4 bg-muted/5">
+              <PaginationHelper
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                isBangla={isBangla}
+              />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Batch Detail Panel */}
@@ -441,12 +352,6 @@ export default function BatchesPage() {
           unit={adjustingBatch.unit || 'pcs'}
         />
       )}
-
-      {/* Sticky Bulk Action Bar */}
-      <BulkActionBar
-        selectedBatches={selectedBatches}
-        onClearSelection={handleClearSelection}
-      />
     </div>
   );
 }

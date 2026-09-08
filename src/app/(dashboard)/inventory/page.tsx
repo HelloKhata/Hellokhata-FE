@@ -314,33 +314,31 @@ export default function InventoryPage() {
           ) : (
             <div>
               {/* Column Header Bar - Left Aligned Except Actions */}
-              <div className="flex items-center justify-between px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
-                <div className="w-10 text-left shrink-0">SL.</div>
-                <div className="w-28 sm:w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
+              <div className="flex items-center justify-between w-full px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
+                <div className="w-8 text-left shrink-0">SL.</div>
+                <div className="w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
                 <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
-                <div className="flex-1 text-left min-w-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
-                <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'ক্রয়মূল্য' : 'Cost Price'}</div>
-                <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'বিক্রয়মূল্য' : 'Selling Price'}</div>
-                <div className="hidden md:block w-44 sm:w-52 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
-                <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
-                <div className="text-right w-36 sm:w-44 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
+                <div className="w-52 text-left shrink-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
+                <div className="w-20 text-left shrink-0">{isBangla ? 'ক্রয়মূল্য' : 'Cost Price'}</div>
+                <div className="w-20 text-left shrink-0">{isBangla ? 'বিক্রয়মূল্য' : 'Selling Price'}</div>
+                <div className="hidden md:block w-24 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
+                <div className="w-20 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
+                <div className="text-right w-28 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
               </div>
-              {/* <ScrollArea className="h-[520px]"> */}
-                <div className="divide-y divide-border/30">
-                  {products?.map((item, index) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      isBangla={isBangla}
-                      index={(currentPage - 1) * pageSize + index}
-                      categories={categories || []}
-                      onView={() => router.push(`/inventory/${item.id}`)}
-                      onViewBatches={(itemId) => setSelectedBatchItemId(itemId)}
-                      refetchItems={refetch}
-                    />
-                  ))}
-                </div>
-              {/* </ScrollArea> */}
+              <div className="divide-y divide-border/30">
+                {products?.map((item, index) => (
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    isBangla={isBangla}
+                    index={(currentPage - 1) * pageSize + index}
+                    categories={categories || []}
+                    onView={() => router.push(`/inventory/${item.id}`)}
+                    onViewBatches={(itemId) => setSelectedBatchItemId(itemId)}
+                    refetchItems={refetch}
+                  />
+                ))}
+              </div>
 
               {/* Pagination Bar */}
               <div className="px-6 pb-4 bg-muted/5">
@@ -530,17 +528,17 @@ const ItemRow = memo(function ItemRow({
       </Dialog>
 
       <div
-        className="flex items-center justify-between px-6 py-4 hover:bg-muted/30 transition-colors cursor-default group gap-4 border-b border-border/30"
+        className="flex items-center justify-between w-full px-6 py-4 hover:bg-muted/30 transition-colors cursor-default group gap-4 border-b border-border/30"
         style={{ animationDelay: `${index * 30}ms` }}
         onClick={handleRowClick}
       >
         {/* 1. SL. (Left aligned) */}
-        <div className="w-10 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground/80">
+        <div className="w-8 shrink-0 text-left text-xs font-mono font-medium text-muted-foreground/80">
           {String(index + 1).padStart(2, '0')}
         </div>
 
         {/* 2. Product Barcode / SKU (Left aligned) */}
-        <div className="w-28 sm:w-32 shrink-0 min-w-0 text-left">
+        <div className="w-32 shrink-0 min-w-0 text-left">
             <span className="text-xs font-mono text-slate-200 truncate block" title={item.barcode}>
             {item.barcode}
             </span>
@@ -563,9 +561,9 @@ const ItemRow = memo(function ItemRow({
         </div>
 
         {/* 4. Product Name & Status (Left aligned, expanded) */}
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex items-center gap-3 flex-wrap">
-            <p className="font-bold text-foreground text-sm leading-snug">{item.name}</p>
+        <div className="w-52 shrink-0 min-w-0 text-left">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-foreground text-sm leading-snug truncate" title={item.name}>{item.name}</p>
 
             <span
               className={cn(
@@ -595,24 +593,24 @@ const ItemRow = memo(function ItemRow({
         </div>
 
         {/* Cost Price */}
-        <div className="w-24 sm:w-28 shrink-0 text-left">
+        <div className="w-20 shrink-0 text-left">
           <p className="text-xs sm:text-sm font-semibold text-slate-200 whitespace-nowrap">
             {formatCurrency(item.costPrice ?? 0)}
           </p>
         </div>
 
         {/* Selling Price */}
-        <div className="w-24 sm:w-28 shrink-0 text-left">
+        <div className="w-20 shrink-0 text-left">
           <p className="text-xs sm:text-sm font-semibold text-emerald-400 whitespace-nowrap">
             {formatCurrency(item.sellingPrice ?? 0)}
           </p>
         </div>
 
         {/* 5. Inventory (Batches, Left aligned) */}
-        <div className="hidden md:flex flex-col w-44 sm:w-52 shrink-0 text-left">
+        <div className="hidden md:flex flex-col w-24 shrink-0 text-left">
           <button
             type="button"
-            className="h-auto py-1 px-3.5 text-foreground whitespace-nowrap text-xs font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded-full transition-colors w-fit cursor-pointer flex items-center"
+            className="h-auto py-1 px-3 text-foreground whitespace-nowrap text-xs font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded-full transition-colors w-fit cursor-pointer flex items-center"
             onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
           >
             <span className="text-xs font-medium text-slate-200">
@@ -622,14 +620,14 @@ const ItemRow = memo(function ItemRow({
         </div>
 
         {/* 6. Quantity (Left aligned) */}
-        <div className="w-28 sm:w-36 shrink-0 min-w-0 text-left space-y-0.5">
+        <div className="w-20 shrink-0 min-w-0 text-left space-y-0.5">
           <p className="text-sm font-extrabold text-foreground whitespace-nowrap">
             {item.currentStock ?? 0} <span className="text-xs font-normal text-muted-foreground">{unit}</span>
           </p>
         </div>
 
         {/* 7. Action Buttons (Right aligned) */}
-        <div className="flex items-center justify-end gap-1 w-36 sm:w-44 shrink-0 text-right">
+        <div className="flex items-center justify-end gap-1 w-28 shrink-0 text-right">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
