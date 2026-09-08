@@ -63,69 +63,30 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
-  const [priceFilter, setPriceFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
   const [selectedBatchItemId, setSelectedBatchItemId] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
   const { data: products, isLoading: itemsLoading, refetch } = useGetItems({
     search: searchTerm || undefined,
     categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
-    lowStock: stockFilter === 'low' ? true : undefined,
-    // optional future:
-    // outOfStock: stockFilter === 'out' ? true : undefined,
+    lowStock: stockFilter === 'low' ? true : false,
+    outOfStock: stockFilter === 'out' ? true : false,
+    inStock: stockFilter === 'in' ? true : false,
+    sortBy: sortBy,
     page: 1,
-    limit: 50,
+    limit: 10,
   });
-  const { data: categoriesData } = useGetItemsCategories();
+  const { data: categories } = useGetItemsCategories();
   const { data: statusData, isLoading: statusLoading } = useGetItemsStatus();
   const router = useRouter();
-
-  const categories = categoriesData?.data;
 
   // Status KPIs from API
   const totalItems = statusData?.data?.totalItems ?? 0;
   const totalStock = statusData?.data?.totalStock ?? 0;
   const stockValue = statusData?.data?.stockValue ?? 0;
   const lowStockCount = statusData?.data?.lowStock ?? 0;
-
-  // Client-side price filtering
-  const priceFilteredItems = (products || []).filter((item) => {
-    switch (priceFilter) {
-      case 'wholesale':
-        return item.wholesalePrice && item.wholesalePrice > 0;
-      case 'vip':
-        return item.vipPrice && item.vipPrice > 0;
-      case 'multi':
-        return (item.wholesalePrice && item.wholesalePrice > 0)
-          || (item.vipPrice && item.vipPrice > 0)
-          || (item.minimumPrice && item.minimumPrice > 0);
-      default:
-        return true;
-    }
-  });
-
-  // Client-side sorting (applied on top of price filter)
-  const sortedItems = [...priceFilteredItems].sort((a, b) => {
-    switch (sortBy) {
-      case 'low-stock':
-        return (a.currentStock ?? 0) - (b.currentStock ?? 0);
-      case 'high-stock':
-        return (b.currentStock ?? 0) - (a.currentStock ?? 0);
-      case 'price-asc':
-        return a.sellingPrice - b.sellingPrice;
-      case 'price-desc':
-        return b.sellingPrice - a.sellingPrice;
-      case 'cost-asc':
-        return a.costPrice - b.costPrice;
-      case 'cost-desc':
-        return b.costPrice - a.costPrice;
-      default:
-        return 0;
-    }
-  });
 
   return (
     <>
@@ -228,7 +189,7 @@ export default function InventoryPage() {
                 <SelectItem value="all">{isBangla ? 'সব ক্যাটাগরি' : 'All Categories'}</SelectItem>
                 {categories?.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
-                    {cat.nameBn || cat.name}
+                    {isBangla? cat.nameBn : cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -241,34 +202,10 @@ export default function InventoryPage() {
                 <SelectItem value="all">{isBangla ? 'সব' : 'All'}</SelectItem>
                 <SelectItem value="low">{isBangla ? 'স্টক কম' : 'Low Stock'}</SelectItem>
                 <SelectItem value="out">{isBangla ? 'স্টক শেষ' : 'Out of Stock'}</SelectItem>
+                <SelectItem value="in">{isBangla ? 'ইন স্টক' : 'In Stock'}</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={priceFilter} onValueChange={setPriceFilter}>
-              <SelectTrigger className="w-full md:w-[170px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
-                <SelectValue placeholder={isBangla ? 'মূল্য' : 'Price'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{isBangla ? 'সব মূল্য' : 'All Prices'}</SelectItem>
-                <SelectItem value="wholesale">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Package className="h-3.5 w-3.5 text-indigo shrink-0" />
-                    {isBangla ? 'পাইকারি' : 'Wholesale'}
-                  </div>
-                </SelectItem>
-                <SelectItem value="vip">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Crown className="h-3.5 w-3.5 text-warning shrink-0" />
-                    VIP
-                  </div>
-                </SelectItem>
-                <SelectItem value="multi">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {isBangla ? 'মাল্টি-প্রাইস' : 'Multi-Price'}
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+           
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-full md:w-[170px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
@@ -277,37 +214,37 @@ export default function InventoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">{isBangla ? 'ডিফল্ট' : 'Default'}</SelectItem>
-                <SelectItem value="low-stock">
+                <SelectItem value="stock_asc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
                     {isBangla ? 'স্টক কম (প্রথমে)' : 'Low Stock First'}
                   </div>
                 </SelectItem>
-                <SelectItem value="high-stock">
+                <SelectItem value="stock_desc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <Box className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     {isBangla ? 'স্টক বেশি (প্রথমে)' : 'High Stock First'}
                   </div>
                 </SelectItem>
-                <SelectItem value="price-asc">
+                <SelectItem value="price_asc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <TrendingUp className="h-3.5 w-3.5 text-primary shrink-0" />
                     {isBangla ? 'মূল্য: কম → বেশি' : 'Price: Low → High'}
                   </div>
                 </SelectItem>
-                <SelectItem value="price-desc">
+                <SelectItem value="price_desc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <TrendingDown className="h-3.5 w-3.5 text-destructive shrink-0" />
                     {isBangla ? 'মূল্য: বেশি → কম' : 'Price: High → Low'}
                   </div>
                 </SelectItem>
-                <SelectItem value="cost-asc">
+                <SelectItem value="cost_asc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
                     {isBangla ? 'ক্রয়মূল্য: কম → বেশি' : 'Cost: Low → High'}
-                  </div>
+                  </div> 
                 </SelectItem>
-                <SelectItem value="cost-desc">
+                <SelectItem value="cost_desc">
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <Tag className="h-3.5 w-3.5 text-destructive shrink-0" />
                     {isBangla ? 'ক্রয়মূল্য: বেশি → কম' : 'Cost: High → Low'}
@@ -356,7 +293,7 @@ export default function InventoryPage() {
                 </div>
               ))}
             </div>
-          ) : sortedItems.length === 0 ? (
+          ) : products.length === 0 ? (
             <EmptyState
               icon={<Package className="h-8 w-8" />}
               title={isBangla ? 'কোনো পণ্য নেই' : 'No items found'}
@@ -383,7 +320,7 @@ export default function InventoryPage() {
               </div>
               <ScrollArea className="h-[520px]">
                 <div className="divide-y divide-border/30">
-                  {sortedItems.map((item, index) => (
+                  {products?.map((item, index) => (
                     <ItemRow
                       key={item.id}
                       item={item}
@@ -505,10 +442,10 @@ const ItemRow = memo(function ItemRow({
   };
 
   const stockStatus = getStockStatus();
-
-  const hasWholesale = item.wholesalePrice && item.wholesalePrice > 0;
-  const hasVip = item.vipPrice && item.vipPrice > 0;
-  const hasMinimum = item.minimumPrice && item.minimumPrice > 0;
+  console.log(stockStatus)
+  const hasWholesale = Boolean(item.wholesalePrice && item.wholesalePrice > 0);
+  const hasVip = Boolean(item.vipPrice && item.vipPrice > 0);
+  const hasMinimum = Boolean(item.minimumPrice && item.minimumPrice > 0);
   const hasMultiPrice = hasWholesale || hasVip || hasMinimum;
 
   const handleConfirmDelete = () => {
@@ -665,38 +602,6 @@ const ItemRow = memo(function ItemRow({
 
         {/* 7. Action Buttons (Right aligned) */}
         <div className="flex items-center justify-end gap-1 w-36 sm:w-44 shrink-0 text-right">
-          {/* <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                onClick={(e) => handleAction(e, onView)}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
-            </TooltipContent>
-          </Tooltip> */}
-
-          {/* <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-                onClick={(e) => handleAction(e, onViewBatches)}
-              >
-                <Layers className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isBangla ? 'ব্যাচসমূহ দেখুন' : 'View Batches'}</p>
-            </TooltipContent>
-          </Tooltip> */}
-   
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -727,21 +632,6 @@ const ItemRow = memo(function ItemRow({
               <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
             </TooltipContent>
           </Tooltip>
-          {/* <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg text-red-500 hover:text-red-400 hover:bg-muted/60 transition-colors cursor-pointer"
-                onClick={(e) => handleAction(e, () => toast.info(isBangla ? 'পণ্যটি ডিলিট করা হয়েছে' : 'Product deleted'))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isBangla ? 'ডিলিট' : 'Delete'}</p>
-            </TooltipContent>
-          </Tooltip> */}
         </div>
       </div>
     </TooltipProvider>
