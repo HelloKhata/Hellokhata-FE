@@ -7,7 +7,30 @@ import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { offerSchema, OfferFormValues } from '@/schemas/offer.schema';
+import { z } from 'zod';
+
+const offerSchema = z.object({
+  id: z.string().optional(),
+  productId: z.string().min(1, 'Product is required'),
+  productName: z.string().min(1, 'Product name is required'),
+  batchId: z.string().optional(),
+  batchNumber: z.string().optional(),
+  scope: z.enum(['product', 'batch']).default('product'),
+  type: z.enum(['bogo', 'percentage', 'flat', 'bundle']).default('bogo'),
+  buyQuantity: z.coerce.number().min(1).default(1),
+  freeQuantity: z.coerce.number().min(1).default(1),
+  percentage: z.coerce.number().min(1).max(100).default(20),
+  flatAmount: z.coerce.number().min(1).default(50),
+  flatScope: z.enum(['per_unit', 'per_transaction']).default('per_unit'),
+  bundleQuantity: z.coerce.number().min(2).default(2),
+  bundlePrice: z.coerce.number().min(1).default(500),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
+  untilSoldOut: z.boolean().default(false),
+  branchId: z.string().default('all'),
+});
+
+type OfferFormValues = z.infer<typeof offerSchema>;
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
