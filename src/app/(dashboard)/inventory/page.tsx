@@ -46,7 +46,6 @@ import type { Item } from '@/types';
 import { toast } from 'sonner';
 import { ImportItemsModal } from '@/components/inventory/ImportItemsModal';
 import { ExportItemsModal } from '@/components/inventory/ExportItemsModal';
-import { CategoriesModal } from '@/components/inventory/CategoriesModal';
 import { BatchesModal } from '@/components/inventory/BatchesModal';
 import { useRouter } from 'next/navigation';
 import { useDeleteItem, useGetItems, useGetItemsStatus } from '@/hooks/api/useItems';
@@ -54,13 +53,11 @@ import { useDeleteItem, useGetItems, useGetItemsStatus } from '@/hooks/api/useIt
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
-
+ 
 export default function InventoryPage() {
   const { t, isBangla } = useAppTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -434,10 +431,10 @@ export default function InventoryPage() {
       />
 
       {/* Categories Management Modal */}
-      <CategoriesModal
+      {/* <CategoriesModal
         isOpen={showCategoriesModal}
         onClose={() => setShowCategoriesModal(false)}
-      />
+      /> */}
     </>
   );
 }

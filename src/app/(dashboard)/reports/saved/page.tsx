@@ -18,17 +18,13 @@ import {
 import {
   FileSpreadsheet,
   Star,
-  Clock,
   Plus,
   Search,
   Trash2,
   Play,
   Mail,
   Share2,
-  Calendar,
-  Layers,
   Settings,
-  BellRing,
   Sparkles,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
