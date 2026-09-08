@@ -4,10 +4,11 @@
 
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PaginationHelper } from '@/components/shared/PaginationHelper';
 
 import {
   Select,
@@ -68,6 +69,9 @@ export default function InventoryPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   const { data: products, isLoading: itemsLoading, refetch } = useGetItems({
     search: searchTerm || undefined,
     categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
@@ -75,8 +79,8 @@ export default function InventoryPage() {
     outOfStock: stockFilter === 'out' ? true : false,
     inStock: stockFilter === 'in' ? true : false,
     sortBy: sortBy,
-    page: 1,
-    limit: 10,
+    page: currentPage,
+    limit: pageSize,
   });
   const { data: categories } = useGetItemsCategories();
   const { data: statusData, isLoading: statusLoading } = useGetItemsStatus();
@@ -87,6 +91,7 @@ export default function InventoryPage() {
   const totalStock = statusData?.data?.totalStock ?? 0;
   const stockValue = statusData?.data?.stockValue ?? 0;
   const lowStockCount = statusData?.data?.lowStock ?? 0;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
   return (
     <>
@@ -314,18 +319,20 @@ export default function InventoryPage() {
                 <div className="w-28 sm:w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
                 <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
                 <div className="flex-1 text-left min-w-0">{isBangla ? 'পণ্যের নাম' : 'Product Name'}</div>
+                <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'ক্রয়মূল্য' : 'Cost Price'}</div>
+                <div className="w-24 sm:w-28 text-left shrink-0">{isBangla ? 'বিক্রয়মূল্য' : 'Selling Price'}</div>
                 <div className="hidden md:block w-44 sm:w-52 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
                 <div className="w-28 sm:w-36 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
                 <div className="text-right w-36 sm:w-44 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
               </div>
-              <ScrollArea className="h-[520px]">
+              {/* <ScrollArea className="h-[520px]"> */}
                 <div className="divide-y divide-border/30">
                   {products?.map((item, index) => (
                     <ItemRow
                       key={item.id}
                       item={item}
                       isBangla={isBangla}
-                      index={index}
+                      index={(currentPage - 1) * pageSize + index}
                       categories={categories || []}
                       onView={() => router.push(`/inventory/${item.id}`)}
                       onViewBatches={(itemId) => setSelectedBatchItemId(itemId)}
@@ -333,7 +340,17 @@ export default function InventoryPage() {
                     />
                   ))}
                 </div>
-              </ScrollArea>
+              {/* </ScrollArea> */}
+
+              {/* Pagination Bar */}
+              <div className="px-6 pb-4 bg-muted/5">
+                <PaginationHelper
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  isBangla={isBangla}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -577,6 +594,20 @@ const ItemRow = memo(function ItemRow({
           </div>
         </div>
 
+        {/* Cost Price */}
+        <div className="w-24 sm:w-28 shrink-0 text-left">
+          <p className="text-xs sm:text-sm font-semibold text-slate-200 whitespace-nowrap">
+            {formatCurrency(item.costPrice ?? 0)}
+          </p>
+        </div>
+
+        {/* Selling Price */}
+        <div className="w-24 sm:w-28 shrink-0 text-left">
+          <p className="text-xs sm:text-sm font-semibold text-emerald-400 whitespace-nowrap">
+            {formatCurrency(item.sellingPrice ?? 0)}
+          </p>
+        </div>
+
         {/* 5. Inventory (Batches, Left aligned) */}
         <div className="hidden md:flex flex-col w-44 sm:w-52 shrink-0 text-left">
           <button
@@ -594,9 +625,6 @@ const ItemRow = memo(function ItemRow({
         <div className="w-28 sm:w-36 shrink-0 min-w-0 text-left space-y-0.5">
           <p className="text-sm font-extrabold text-foreground whitespace-nowrap">
             {item.currentStock ?? 0} <span className="text-xs font-normal text-muted-foreground">{unit}</span>
-          </p>
-          <p className="text-xs text-muted-foreground/70 whitespace-nowrap">
-            Purchase {formatCurrency(item.costPrice)}
           </p>
         </div>
 
