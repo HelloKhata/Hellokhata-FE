@@ -10,6 +10,9 @@ export const getItems = async (params?: {
   categoryId?: string;
   branchId?: string;
   lowStock?: boolean;
+  outOfStock?: boolean;
+  inStock?:boolean;
+  sortBy?:string;
   page?: number;
   limit?: number;
 }) => {

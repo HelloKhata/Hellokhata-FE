@@ -27,6 +27,9 @@ export const useGetItems = (filters?: {
   categoryId?: string;
   branchId?: string;
   lowStock?: boolean;
+  outOfStock?: boolean;
+  inStock?: boolean;
+  sortBy?: string;
   page?: number;
   limit?: number;
 }) => {
