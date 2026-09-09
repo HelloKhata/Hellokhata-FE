@@ -146,18 +146,19 @@ export const BatchRow = memo(function BatchRow({
 
   return (
     <div
-      tabIndex={0}
-      role="button"
+      tabIndex={onTap ? 0 : undefined}
+      role={onTap ? "button" : undefined}
       aria-label={`Batch ${batch.batchNumber} - ${batch.itemName}`}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (onTap && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();
           handleRowClick();
         }
       }}
       onClick={handleRowClick}
       className={cn(
-        "flex items-center justify-between w-full px-6 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer group gap-4 border-b border-border/30 outline-none focus-visible:bg-muted/30",
+        "flex items-center justify-between w-full px-6 py-3.5 hover:bg-muted/30 transition-colors group gap-4 border-b border-border/30 outline-none focus-visible:bg-muted/30",
+        onTap && "cursor-pointer",
         batch.isExpired && "bg-rose-950/10 hover:bg-rose-950/20",
         batch.isExpiringSoon && !batch.isExpired && "bg-amber-950/10 hover:bg-amber-950/20"
       )}
@@ -270,12 +271,13 @@ export const BatchRow = memo(function BatchRow({
         />
       </div>
           
-      {/* 9. Actions (w-20) */}
+      {/* 9. Actions (w-12) */}
       <div
-        className="w-20 shrink-0 text-right flex items-center justify-end gap-1"
+        className="w-12 shrink-0 text-right flex items-center justify-end"
         onClick={(e) => e.stopPropagation()}
       >
-        <Tooltip>
+        {/* View Batch Button (Commented off) */}
+        {/* <Tooltip>
           <TooltipTrigger asChild>
             <Button
               onClick={(e) => {
@@ -299,7 +301,7 @@ export const BatchRow = memo(function BatchRow({
           <TooltipContent side="left">
             {isBangla ? "বিস্তারিত দেখুন" : "View Details"}
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         <Tooltip>
           <TooltipTrigger asChild>
