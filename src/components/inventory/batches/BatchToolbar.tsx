@@ -37,8 +37,7 @@ const STATUS_TABS: {
   { value: "active", en: "Active", bn: "সক্রিয়", icon: CheckCircle2, dotColor: "bg-emerald-500" },
   { value: "expiring", en: "Expiring Soon", bn: "শীঘ্রই মেয়াদ শেষ", icon: AlertTriangle, dotColor: "bg-amber-500" },
   { value: "expired", en: "Expired", bn: "মেয়াদোত্তীর্ণ", icon: AlertCircle, dotColor: "bg-rose-500" },
-  { value: "depleted", en: "Depleted", bn: "স্টক শেষ", icon: Archive, dotColor: "bg-gray-400" },
-  { value: "written_off", en: "Written Off", bn: "বাতিল", icon: Trash2, dotColor: "bg-gray-400" },
+  { value: "inactive", en: "Inactive", bn: "নিষ্ক্রিয়", icon: Archive, dotColor: "bg-gray-400" },
 ];
 
 interface BatchToolbarProps {
@@ -50,8 +49,8 @@ interface BatchToolbarProps {
   onBranchFilterChange: (branchId: string) => void;
   branches?: any[];
   isMultiBranch?: boolean;
-  sortOrder: BatchSort;
-  onSortOrderChange: (sort: BatchSort) => void;
+  sortOrder?: BatchSort;
+  onSortOrderChange?: (sort: BatchSort) => void;
   className?: string;
 }
 
@@ -128,7 +127,7 @@ export const BatchToolbar = memo(function BatchToolbar({
           )}
 
           {/* Sort Dropdown */}
-          <Select value={sortOrder} onValueChange={(v) => onSortOrderChange(v as BatchSort)}>
+          {/* <Select value={sortOrder} onValueChange={(v) => onSortOrderChange?.(v as BatchSort)}>
             <SelectTrigger className="w-full sm:w-[170px] h-9 text-xs bg-card border-border/80">
               <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
               <SelectValue />
@@ -147,7 +146,7 @@ export const BatchToolbar = memo(function BatchToolbar({
                 {isBangla ? "পণ্যের নাম (A-Z)" : "Product name A-Z"}
               </SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
       </div>
     </div>

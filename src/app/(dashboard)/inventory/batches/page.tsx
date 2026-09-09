@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Package,
@@ -18,7 +17,6 @@ import {
   BatchHeader,
   BatchToolbar,
   BatchRow,
-  BatchDetailSheet,
   BatchEmptyState,
   BatchLoadingSkeleton,
   type BatchRowData,
@@ -266,7 +264,7 @@ export default function BatchesPage() {
                   <div className="w-20 text-right shrink-0">{isBangla ? 'বিক্রয় মূল্য' : 'Selling'}</div>
                   <div className="w-28 text-left shrink-0">{isBangla ? 'মেয়াদ' : 'Expiry'}</div>
                   <div className="w-24 text-center shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
-                  <div className="w-20 text-right shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
+                  <div className="w-12 text-right shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
                 </div>
 
                 {/* Table Body */}
@@ -284,8 +282,8 @@ export default function BatchesPage() {
                         index={index}
                         showBranch={isMultiBranch}
                         offer={activeOffer}
-                        onTap={handleBatchTap}
-                        onViewDetails={handleBatchTap}
+                        // onTap={handleBatchTap}
+                        // onViewDetails={handleBatchTap}
                         onEdit={(b) => setEditingBatch(b)}
                         onAdjust={(b) => setAdjustingBatch(b)}
                         onCreateOffer={(b) => router.push(`/inventory/promotions/new?batchId=${b.id}&productId=${b.itemId || ''}`)}
@@ -318,8 +316,8 @@ export default function BatchesPage() {
         </div>
       </div>
 
-      {/* Batch Detail Panel */}
-      <BatchDetailSheet
+      {/* Batch Detail Panel (Commented off) */}
+      {/* <BatchDetailSheet
         batchId={inspectingBatchId}
         isOpen={!!inspectingBatchId}
         onClose={() => {
@@ -327,7 +325,7 @@ export default function BatchesPage() {
           setInspectingFallback(null);
         }}
         fallbackBatch={inspectingFallback}
-      />
+      /> */}
 
       {/* Edit Batch Details Modal */}
       {editingBatch && (
