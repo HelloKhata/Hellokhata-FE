@@ -5,6 +5,11 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -121,7 +126,6 @@ export function OfferBadge({ offer, isBangla }: { offer: any; isBangla?: boolean
 export const BatchRow = memo(function BatchRow({
   batch,
   index = 0,
-  showBranch = false,
   offer,
   onTap,
   onViewDetails,
@@ -265,9 +269,61 @@ export const BatchRow = memo(function BatchRow({
           daysUntilExpiry={batch.daysUntilExpiry}
         />
       </div>
-
-      {/* 9. Actions (w-12) */}
+          
+      {/* 9. Actions (w-20) */}
       <div
+        className="w-20 shrink-0 text-right flex items-center justify-end gap-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onViewDetails) {
+                  onViewDetails(batch);
+                } else {
+                  onTap?.(batch);
+                }
+              }}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">
+                {isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+              </span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            {isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrintLabel?.(batch);
+              }}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Printer className="h-4 w-4" />
+              <span className="sr-only">
+                {isBangla ? "বারকোড প্রিন্ট" : "Print Barcode"}
+              </span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            {isBangla ? "বারকোড প্রিন্ট" : "Print Barcode"}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      {/* <div
         className="w-12 shrink-0 text-right flex items-center justify-end"
         onClick={(e) => e.stopPropagation()}
       >
@@ -321,7 +377,7 @@ export const BatchRow = memo(function BatchRow({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </div> */}
     </div>
   );
 });
