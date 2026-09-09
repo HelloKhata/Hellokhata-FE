@@ -396,12 +396,11 @@ const ItemRow = memo(function ItemRow({
   item,
   isBangla,
   index,
-  categories,
   onView,
   onViewBatches,
   refetchItems
 }: {
-  item: Item;
+  item: any;
   isBangla: boolean;
   index: number;
   categories?: any[];
@@ -415,7 +414,6 @@ const ItemRow = memo(function ItemRow({
   const router = useRouter();
 
   // Metadata Resolution
-  const batchesCount = (item as any).batchesCount ?? ((item as any).batches?.length ?? 1);
   const minStock = item.minStock ?? 10;
   const unit = item.unit || 'pcs';
 
@@ -457,7 +455,6 @@ const ItemRow = memo(function ItemRow({
   };
 
   const stockStatus = getStockStatus();
-  console.log(stockStatus)
   const hasWholesale = Boolean(item.wholesalePrice && item.wholesalePrice > 0);
   const hasVip = Boolean(item.vipPrice && item.vipPrice > 0);
   const hasMinimum = Boolean(item.minimumPrice && item.minimumPrice > 0);
@@ -614,7 +611,7 @@ const ItemRow = memo(function ItemRow({
             onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
           >
             <span className="text-xs font-medium text-slate-200">
-              {batchesCount} {batchesCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 
+              {item.batchCount} {item.batchCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 
             </span>
           </button>
         </div>
