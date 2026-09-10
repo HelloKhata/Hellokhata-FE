@@ -7,4 +7,5 @@ export { EmptyState } from './EmptyState';
 export { QuickActionButton } from './QuickActionButton';
 export { FeatureGate, ProBadge, FeatureStatus } from './FeatureGate';
 export { BranchSwitcher, BranchBadge } from './BranchSwitcher';
+export { BackButton } from './BackButton';
 export { PageContainer, FormCard, FormSection, FormActions } from './PageContainer';

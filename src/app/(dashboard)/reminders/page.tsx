@@ -15,6 +15,7 @@ import {
   Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -118,15 +119,10 @@ export default function RemindersPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header section matching mockup layout */}
-      <div className="flex items-center justify-between">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/")}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </button>
+          <BackButton fallbackHref="/" />
           <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
             {isBangla ? "রিমাইন্ডারসমূহ" : "Reminders"}
           </h1>

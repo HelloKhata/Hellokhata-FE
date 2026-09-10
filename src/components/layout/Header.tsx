@@ -21,7 +21,8 @@ import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useMarkAsReadNotification, useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
 import { cn } from '@/lib/utils';
-import { BranchSwitcher } from '@/components/common';
+import { BranchSwitcher, BackButton } from '@/components/common';
+import { useGetMyFeatures } from '@/hooks/api/useFeaturesPlan';
 
 interface HeaderProps {
   onOpenCommandPalette?: () => void;
@@ -34,6 +35,8 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: notificationsData } = useNotifications();
   
+  const {data: featuresData} = useGetMyFeatures();
+  console.log('featuresData',featuresData)
   const notifications = Array.isArray(notificationsData)
     ? notificationsData
     : (Array.isArray((notificationsData as any)?.data) ? (notificationsData as any).data : []);
@@ -137,6 +140,13 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
       >
         <Menu className="h-5 w-5" />
       </Button>
+
+      {/* Global Back Navigation Button */}
+      <BackButton
+        variant="subtle"
+        size="sm"
+        className="shrink-0"
+      />
 
       {/* Branch Switcher - Show on desktop */}
       <div className="hidden md:block">

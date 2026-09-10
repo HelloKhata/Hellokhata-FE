@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -157,20 +158,14 @@ export function CreateTransferPage() {
             <span className="text-foreground font-semibold">{isBangla ? "নতুন ট্রান্সফার" : "Create Transfer"}</span>
           </nav>
 
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ArrowRightLeft className="h-6 w-6 text-primary" />
-            <span>{isBangla ? "নতুন স্টক ট্রান্সফার তৈরি করুন" : "Create Stock Transfer"}</span>
-          </h1>
+          <div className="flex items-center gap-3 pt-1">
+            <BackButton />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <ArrowRightLeft className="h-6 w-6 text-primary" />
+              <span>{isBangla ? "নতুন স্টক ট্রান্সফার তৈরি করুন" : "Create Stock Transfer"}</span>
+            </h1>
+          </div>
         </div>
-
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="h-9 text-xs font-semibold gap-1.5 cursor-pointer shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
       </div>
 
       {/* 1. Transfer Information Section */}

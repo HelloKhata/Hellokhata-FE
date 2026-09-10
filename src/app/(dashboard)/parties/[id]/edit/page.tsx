@@ -5,6 +5,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -143,13 +144,9 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
         <div className="w-full" style={{ maxWidth: '700px' }}>
 
           {/* Back Button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1 mb-4 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm">{isBangla ? 'পেছনে' : 'Back'}</span>
-          </button>
+          <div className="mb-4">
+            <BackButton />
+          </div>
 
           {/* Page Title */}
           <div className="mb-6">

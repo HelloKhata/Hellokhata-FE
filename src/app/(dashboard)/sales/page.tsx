@@ -6,15 +6,11 @@
 import { useState, useMemo } from "react";
 import {
   Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Badge,
   Button,
   KPICard,
-  Divider,
   EmptyState,
 } from "@/components/ui/premium";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,28 +24,11 @@ import {
   Plus,
   Search,
   Calendar,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  User,
   Eye,
-  Printer,
-  Share2,
   TrendingUp,
   FileText,
   BarChart3,
-  ArrowUpRight,
-  ChevronRight,
-  Package,
-  DollarSign,
-  Receipt,
-  Clock,
   RotateCcw,
-  Check,
-  Edit2,
-  Edit,
-  MoreVertical,
-  Layers,
 } from "lucide-react";
 import { useCurrency, useDateFormat } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
@@ -58,7 +37,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGetSales, useGetSalesSummary } from "@/hooks/api/useSales";
 import { toast } from "sonner";
-import { handleBuildComplete } from "next/dist/build/adapter/build-complete";
 
 interface ReturnForm {
   reason: string;
@@ -69,13 +47,8 @@ export default function SalesPage() {
   const { t, isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  const [isOpenDetail, setIsOpenDetail] = useState(false);
-  const [isOpenRetrun, setIsOpenReturn] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [returnForm, setReturnForm] = useState<ReturnForm>({
     reason: "",
     notes: "",
@@ -85,7 +58,6 @@ export default function SalesPage() {
   const { data: salesData, isLoading } = useGetSales({ search: searchTerm });
   const { data: salesSummary } = useGetSalesSummary();
   const sales = salesData?.data || [];
-  const summary = salesSummary?.data;
 
   const { formatDateTime } = useDateFormat();
 
@@ -101,34 +73,22 @@ export default function SalesPage() {
   const invoiceCount = sales.length;
   const avgSale = invoiceCount > 0 ? todaySales / invoiceCount : 0;
 
-  const handleChange = (field: string, value: string) => {
-    setReturnForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-  const handleSubmitReturn = () => {
-    if (!returnForm.reason || !returnForm.refundMethod) {
-      console.log(returnForm);
-      toast.error(isBangla ? "সব তথ্য দিন" : "Please fill required fields");
-      return;
-    }
-
-    toast.success(isBangla ? "রিটার্ন সফল" : "Return processed successfully");
-  };
   return (
     <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <ShoppingCart className="h-6 w-6 text-primary" />
-              {t("sales.title")}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-              {isBangla ? "সকল বিক্রির রেকর্ড" : "All sales records"}
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <ShoppingCart className="h-6 w-6 text-primary" />
+                {t("sales.title")}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
+                {isBangla ? "সকল বিক্রির রেকর্ড" : "All sales records"}
+              </p>
+            </div>
           </div>
           <Link href="/sales/new">
             <Button className="shrink-0">
@@ -295,6 +255,7 @@ export default function SalesPage() {
                       </th>
                     </tr>
                   </thead>
+
                   <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
                     {filteredSales.map((sale, index) => {
                       const statusConfig = {
@@ -336,8 +297,8 @@ export default function SalesPage() {
                             {sale.invoiceNo}
                           </td>
                           <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
-                            {sale.party?.name ||
-                              (isBangla ? "খুচরা কাস্টমার" : "Retail Customer")}
+                            {sale.partyName ||
+                              (isBangla ? "ওয়াকিং কাস্টমার" : "Walking Customer")}
                           </td>
                           <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
                             {formatDateTime(sale.createdAt)}

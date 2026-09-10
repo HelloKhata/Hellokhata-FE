@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -388,18 +389,13 @@ function SalesReturnContent() {
     <div className="space-y-6">
       {/* Header Bar */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-          <RotateCcw className="h-6 w-6 text-red-500" />
-          {isBangla ? "বিক্রয় ফেরত" : "Sales Return"}
-        </h1>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <RotateCcw className="h-6 w-6 text-red-500" />
+            {isBangla ? "বিক্রয় ফেরত" : "Sales Return"}
+          </h1>
+        </div>
       </div>
       {/* Main Sales Invoice Card */}
       <div className="bg-card border border-border/50 rounded-xl p-5 shadow-sm space-y-4">

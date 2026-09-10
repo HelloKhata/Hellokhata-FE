@@ -4,7 +4,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { ArrowLeft } from 'lucide-react';
+import { BackButton } from './BackButton';
 import { useRouter } from 'next/navigation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 
@@ -27,17 +27,6 @@ export function PageContainer({
   onBack,
   className 
 }: PageContainerProps) {
-  const router = useRouter();
-  const { isBangla } = useAppTranslation();
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      router.back();
-    }
-  };
-
   return (
     <div className={cn('flex justify-center', className)}>
       <div 
@@ -45,15 +34,9 @@ export function PageContainer({
         style={{ maxWidth: `${maxWidth}px` }}
       >
         {showBack && (
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-1.5 mb-4 text-muted-foreground hover:text-foreground transition-colors group"
-          >
-            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-sm font-medium">
-              {isBangla ? 'পেছনে যান' : 'Go Back'}
-            </span>
-          </button>
+          <div className="mb-4">
+            <BackButton onClick={onBack} />
+          </div>
         )}
         {children}
       </div>

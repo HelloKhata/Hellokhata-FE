@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -86,7 +87,8 @@ export function TransferDetailPage() {
             <span className="text-foreground font-semibold">{isBangla ? "ট্রান্সফার বিবরণ" : "Transfer Detail"}</span>
           </nav>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap pt-1">
+            <BackButton />
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
               #{transfer.transferNo}
             </h1>
@@ -102,15 +104,6 @@ export function TransferDetailPage() {
             </span>
           </div>
         </div>
-
-        <Button
-          variant="outline"
-          onClick={() => router.back()}
-          className="h-9 text-xs font-semibold gap-1.5 cursor-pointer shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
       </div>
 
       {/* 2. Information Card — Source Branch, Destination Branch, Notes */}

@@ -6,9 +6,11 @@
 
 import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
+import { BackButton } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaginationHelper } from '@/components/shared/PaginationHelper';
+import { Badge } from '@/components/ui/badge';
 
 import {
   Select,
@@ -98,14 +100,17 @@ export default function InventoryPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
-              <Package className="h-7 w-7 text-primary shrink-0" />
-              {t('inventory.title')}
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground/80 mt-1 whitespace-nowrap">
-              {isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+                <Package className="h-7 w-7 text-primary shrink-0" />
+                {t('inventory.title')}
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground/80 mt-1 whitespace-nowrap">
+                {isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2.5">
             <Button
@@ -323,6 +328,7 @@ export default function InventoryPage() {
                 <div className="w-20 text-left shrink-0">{isBangla ? 'বিক্রয়মূল্য' : 'Selling Price'}</div>
                 <div className="hidden md:block w-24 text-left shrink-0">{isBangla ? 'ব্যাচ' : 'Batches'}</div>
                 <div className="w-20 text-left shrink-0">{isBangla ? 'পরিমাণ' : 'Quantity'}</div>
+                <div className="w-24 text-left shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
                 <div className="text-right w-28 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
               </div>
               <div className="divide-y divide-border/30">
@@ -455,6 +461,11 @@ const ItemRow = memo(function ItemRow({
   };
 
   const stockStatus = getStockStatus();
+  const itemStatus = item.status
+    ? String(item.status).toUpperCase()
+    : item.isActive === false
+    ? 'INACTIVE'
+    : 'ACTIVE';
   const hasWholesale = Boolean(item.wholesalePrice && item.wholesalePrice > 0);
   const hasVip = Boolean(item.vipPrice && item.vipPrice > 0);
   const hasMinimum = Boolean(item.minimumPrice && item.minimumPrice > 0);
@@ -623,7 +634,28 @@ const ItemRow = memo(function ItemRow({
           </p>
         </div>
 
-        {/* 7. Action Buttons (Right aligned) */}
+        {/* 7. Status (Active / Inactive Badge) */}
+        <div className="w-24 shrink-0 text-left">
+          {itemStatus === 'ACTIVE' ? (
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25 text-[11px] font-semibold py-0.5 px-2 flex items-center gap-1.5 w-max"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span>{isBangla ? 'সক্রিয়' : 'Active'}</span>
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25 text-[11px] font-semibold py-0.5 px-2 flex items-center gap-1.5 w-max"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+              <span>{isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}</span>
+            </Badge>
+          )}
+        </div>
+
+        {/* 8. Action Buttons (Right aligned) */}
         <div className="flex items-center justify-end gap-1 w-28 shrink-0 text-right">
           <Tooltip>
             <TooltipTrigger asChild>

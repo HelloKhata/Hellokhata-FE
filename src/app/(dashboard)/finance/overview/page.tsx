@@ -38,6 +38,8 @@ import {
   Cell,
 } from 'recharts';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { BackButton } from '@/components/common';
+import { useCurrency } from '@/hooks/useAppTranslation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -172,15 +174,18 @@ export default function FinanceOverviewPage() {
             1. HEADER SECTION
            ========================================================================= */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <span>{isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান ওভারভিউ' : 'Finance & Accounting Overview'}</span>
-            </h1>
-            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              {isBangla
-                ? 'আপনার ব্যবসায়ের আর্থিক অবস্থার রিয়েল-টাইম সামগ্রিক সারসংক্ষেপ'
-                : 'Real-time summary of your business financial health'}
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+                <span>{isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান ওভারভিউ' : 'Finance & Accounting Overview'}</span>
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+                {isBangla
+                  ? 'আপনার ব্যবসায়ের আর্থিক অবস্থার রিয়েল-টাইম সামগ্রিক সারসংক্ষেপ'
+                  : 'Real-time summary of your business financial health'}
+              </p>
+            </div>
           </div>
 
           {/* Header Controls: Date Filter & Export Button */}

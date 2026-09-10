@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
+import { BackButton } from '@/components/common';
 import { useCreatePaymentMethod } from '@/hooks/api/usePaymentMethod';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -526,20 +527,23 @@ export default function FinanceBankWalletsPage() {
 
       {/* ══ HEADER ══ */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Building2 className="h-4.5 w-4.5 text-primary" />
+        <div className="flex items-start gap-3">
+          <BackButton className="mt-0.5" />
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Building2 className="h-4.5 w-4.5 text-primary" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">
+                {isBangla ? 'ব্যাংক ও ওয়ালেট' : 'Bank & Wallets'}
+              </h1>
             </div>
-            <h1 className="text-xl font-bold text-foreground">
-              {isBangla ? 'ব্যাংক ও ওয়ালেট' : 'Bank & Wallets'}
-            </h1>
+            <p className="text-xs text-muted-foreground ml-10">
+              {isBangla
+                ? 'ব্যাংক অ্যাকাউন্ট ও মোবাইল ওয়ালেট পরিচালনা এবং ব্যালেন্স সমন্বয় করুন'
+                : 'Manage your bank accounts and mobile wallets — reconcile balances in real time'}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground ml-10">
-            {isBangla
-              ? 'ব্যাংক অ্যাকাউন্ট ও মোবাইল ওয়ালেট পরিচালনা এবং ব্যালেন্স সমন্বয় করুন'
-              : 'Manage your bank accounts and mobile wallets — reconcile balances in real time'}
-          </p>
         </div>
         <button
           onClick={() => setHideBalances(v => !v)}

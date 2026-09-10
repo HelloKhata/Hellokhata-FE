@@ -19,6 +19,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,38 +172,31 @@ export default function WarehouseDetailPage() {
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground font-semibold">{warehouse.name}</span>
         </nav>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/inventory/warehouse")}
-          className="h-7 text-xs gap-1.5 font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>{isBangla ? "তালিকায় ফিরে যান" : "Back to Warehouses"}</span>
-        </Button>
       </div>
 
       {/* 2. Header: Title is Warehouse Name, right side edit & transfer buttons */}
       <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {warehouse.name}
-            </h1>
-            <Badge variant="outline" className="font-mono text-xs font-bold bg-muted">
-              {warehouse.code}
-            </Badge>
-            {getStatusBadge(warehouse.status)}
+        <div className="flex items-center gap-3">
+          <BackButton fallbackHref="/inventory/warehouse" />
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                {warehouse.name}
+              </h1>
+              <Badge variant="outline" className="font-mono text-xs font-bold bg-muted">
+                {warehouse.code}
+              </Badge>
+              {getStatusBadge(warehouse.status)}
+            </div>
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+              <span>📍 {warehouse.city}, {warehouse.branchName}</span>
+              <span>•</span>
+              <span>👤 Manager: {warehouse.managerName}</span>
+              {warehouse.managerPhone && (
+                <span className="font-mono">({warehouse.managerPhone})</span>
+              )}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-            <span>📍 {warehouse.city}, {warehouse.branchName}</span>
-            <span>•</span>
-            <span>👤 Manager: {warehouse.managerName}</span>
-            {warehouse.managerPhone && (
-              <span className="font-mono">({warehouse.managerPhone})</span>
-            )}
-          </p>
         </div>
 
         {/* Right side header actions: Edit and Transfer */}

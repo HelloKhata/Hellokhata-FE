@@ -1,7 +1,6 @@
 
-import client from "@/lib/axios";
-import { activatePlan, getFeaturesPlan } from "@/services/featuresPlan";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { activatePlan, getFeaturesPlan, getMyFeatures } from "@/services/featuresPlan.services.";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useGetFeaturesPlans = () => {
     return useQuery({
@@ -13,8 +12,12 @@ export const useGetFeaturesPlans = () => {
 
 
 export const useActivatePlan = () =>{
+    const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: activatePlan
+        mutationFn: activatePlan,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["myFeatures"] });
+        }
     })
 };
 

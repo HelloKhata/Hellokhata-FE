@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useAppTranslation, useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
+import { BackButton } from '@/components/common';
 import { HrmAvatar } from '@/components/hrm/shared/HrmAvatar';
 import { HrmStatCard } from '@/components/hrm/shared/HrmStatCard';
 import { HrmBreadcrumb } from '@/components/hrm/shared/HrmBreadcrumb';
@@ -117,9 +118,7 @@ export default function EmployeeProfilePage() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
       >
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon-sm" onClick={() => router.push('/hrm/employees')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <BackButton fallbackHref="/hrm/employees" />
           <HrmAvatar name={employee.name} size="xl" />
           <div>
             <div className="flex items-center gap-2.5">

@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/uiStore";
+import { BackButton } from "@/components/common";
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -74,21 +75,15 @@ export default function AddProductPage() {
 
     if (item.name) setName(item.name);
     // if (item.sku) setSku(item.sku);
-    // if (item.barcode) setBarcode(item.barcode);
+    if (item.barcode) setBarcode(item.barcode);
     if (item.brand) setBrand(item.brand);
     if (item.description) setDescription(item.description);
 
-    if (item.costPrice !== undefined && item.costPrice !== null) {
-      setCostPrice(Number(item.costPrice));
-    }
-    if (item.sellingPrice !== undefined && item.sellingPrice !== null) {
-      setSellingPrice(Number(item.sellingPrice));
-    }
     if (item.productType) {
       setProductType(item.productType);
     }
-    if (item.image) {
-      setImageUrl(item.image);
+    if (item.image || item.imageUrl) {
+      setImageUrl(item.image || item.imageUrl);
     }
 
     // Match Category
@@ -126,8 +121,7 @@ export default function AddProductPage() {
       const updated = { ...prev };
       delete updated.name;
       delete updated.unitId;
-      delete updated.costPrice;
-      delete updated.sellingPrice;
+      delete updated.barcode;
       return updated;
     });
 
@@ -251,17 +245,17 @@ export default function AddProductPage() {
       <main className="mx-auto space-y-4 sm:space-y-5 pb-24">
         {/* Header Action Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 mb-1 transition-opacity">
-              <ArrowLeft className="w-3.5 h-3.5" /> BACK TO INVENTORY
-            </button>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Add New Product
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Initialize a new stock item, pricing, stock levels, and accounting
-              settings.
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton fallbackHref="/inventory" />
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                Add New Product
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Initialize a new stock item, pricing, stock levels, and accounting
+                settings.
+              </p>
+            </div>
           </div>
         </div>
 

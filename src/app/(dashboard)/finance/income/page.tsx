@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { BackButton } from "@/components/common";
 import { useToast } from "@/hooks/use-toast";
 import { useBranchStore } from "@/stores/branchStore";
 import {
@@ -554,17 +555,20 @@ export default function IncomePageContent() {
             1. HEADER SECTION
            ========================================================================= */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {isBangla ? "আয়ের হিসাব" : "Income"}
-              </h1>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {isBangla ? "আয়ের হিসাব" : "Income"}
+                </h1>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isBangla
+                  ? "আপনার ব্যবসায়িক সকল আয় ও রাজস্ব ট্র্যাক, পরিচালনা এবং বিশদ বিশ্লেষণ করুন"
+                  : "Track, manage and analyze your business revenues & income"}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {isBangla
-                ? "আপনার ব্যবসায়িক সকল আয় ও রাজস্ব ট্র্যাক, পরিচালনা এবং বিশদ বিশ্লেষণ করুন"
-                : "Track, manage and analyze your business revenues & income"}
-            </p>
           </div>
 
           <div className="flex items-center flex-wrap gap-2.5">
