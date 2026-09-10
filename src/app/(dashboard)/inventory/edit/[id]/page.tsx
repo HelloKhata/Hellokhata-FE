@@ -19,6 +19,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/uiStore";
+import { BackButton } from "@/components/common";
 
 function EditProductForm({ id, item }: { id: string; item: any }) {
   const router = useRouter();
@@ -249,20 +250,16 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
       <main className="mx-auto space-y-4 sm:space-y-5 pb-24">
         {/* Header Action Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:opacity-80 mb-1 transition-opacity cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> BACK TO INVENTORY
-            </button>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              Edit Product
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Update stock item details, pricing, stock levels, and accounting settings.
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton fallbackHref="/inventory" />
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                Edit Product
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Update stock item details, pricing, stock levels, and accounting settings.
+              </p>
+            </div>
           </div>
         </div>
 

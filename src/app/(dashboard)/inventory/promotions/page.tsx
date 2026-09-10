@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -167,16 +168,19 @@ export default function PromotionsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <Sparkles className="h-6 w-6 text-primary" />
-            {isBangla ? 'প্রমোশন ও অফারসমূহ' : 'Promotions & Offers'}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isBangla
-              ? 'পণ্য ও ব্যাচের জন্য বিশেষ ছাড়, BOGO ও বান্ডেল অফার পরিচালনা করুন'
-              : 'Manage special discounts, BOGO, and bundle offers across products & batches'}
-          </p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <Sparkles className="h-6 w-6 text-primary" />
+              {isBangla ? 'প্রমোশন ও অফারসমূহ' : 'Promotions & Offers'}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isBangla
+                ? 'পণ্য ও ব্যাচের জন্য বিশেষ ছাড়, BOGO ও বান্ডেল অফার পরিচালনা করুন'
+                : 'Manage special discounts, BOGO, and bundle offers across products & batches'}
+            </p>
+          </div>
         </div>
 
         <Button

@@ -6,6 +6,7 @@ import {
   Button,
   EmptyState,
 } from "@/components/ui/premium";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -92,14 +93,17 @@ export default function PaymentInPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <CreditCard className="h-6 w-6 text-primary" />
-              {isBangla ? "পেমেন্ট ইন" : "Payment In"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-              {isBangla ? "গ্রাহকদের থেকে পেমেন্ট গ্রহণের তালিকা" : "All payments received from customers"}
-            </p>
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <CreditCard className="h-6 w-6 text-primary" />
+                {isBangla ? "পেমেন্ট ইন" : "Payment In"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
+                {isBangla ? "গ্রাহকদের থেকে পেমেন্ট গ্রহণের তালিকা" : "All payments received from customers"}
+              </p>
+            </div>
           </div>
           <Button
             onClick={() => setIsAddModalOpen(true)}

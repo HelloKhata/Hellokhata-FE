@@ -4,6 +4,7 @@ import { useState, Suspense, Fragment } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Label } from "@/components/ui/label";
 
 import {
@@ -40,18 +41,11 @@ function PurchaseDetailsContent() {
       {/* Top Header Section */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80 pointer-events-auto">
         <div className="flex items-center gap-3">
+          <BackButton />
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             {isBangla ? `ক্রয় বিবরণ #${purchaseData?.data?.invoiceNo}` : `Purchase Details #${purchaseData?.data?.invoiceNo || purchaseData?.grnNo}`}
           </h1>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs sm:text-sm ml-auto sm:ml-0"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
       </div>
 
       {/* 1. Purchase Information & Metadata Card (As per user request) */}

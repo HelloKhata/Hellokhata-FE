@@ -284,6 +284,7 @@ export interface Item {
   imageUrl?: string;
   margin: number;
   isActive: boolean;
+  status?: string;
   // Analytics (NEW)
   totalSold?: number;
   totalPurchased?: number;

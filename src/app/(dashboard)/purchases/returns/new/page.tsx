@@ -7,6 +7,7 @@ import  { useState, useMemo, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -443,20 +444,12 @@ function NewPurchaseReturnContent() {
       {/* Header section - Exactly matching New Purchase UI */}
       <div className="flex items-center justify-between pb-3 border-b border-border/80">
         <div className="flex items-center gap-3">
+          <BackButton />
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <RotateCcw className="h-6 w-6 text-primary" />
             {isBangla ? "ক্রয় ফেরত" : "Purchase Return"}
           </h1>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground h-9 px-3"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
       </div>
 
       {/* Main Purchase Invoice Card */}

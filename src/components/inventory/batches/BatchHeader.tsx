@@ -2,8 +2,9 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Plus } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { useRouter } from "next/navigation";
 
@@ -25,15 +26,7 @@ export function BatchHeader({
         <div className="flex items-center justify-between gap-4">
           {/* Title & Description */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push("/inventory")}
-              className="h-9 w-9 cursor-pointer text-muted-foreground hover:text-foreground"
-              aria-label="Back to inventory"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            <BackButton fallbackHref="/inventory" />
 
             <div>
               <div className="flex items-center gap-2">

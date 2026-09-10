@@ -4,6 +4,7 @@ import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -688,6 +689,7 @@ function NewPurchaseContent() {
       {/* Top Header Section */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
         <div className="flex items-center gap-3">
+          <BackButton />
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             {isBangla ? "নতুন ক্রয়" : "New Purchase"}
           </h1>
@@ -706,14 +708,6 @@ function NewPurchaseContent() {
             <span>{isBangla ? "এআই সহকারী" : "AI Assistant"}</span>
           </Button>
         </div>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground h-9 px-3 text-xs sm:text-sm ml-auto sm:ml-0"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
       </div>
 
       {/* Merged Purchase Information Card */}

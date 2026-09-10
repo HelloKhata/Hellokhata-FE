@@ -5,6 +5,7 @@
 
 import { useState, useMemo } from "react";
 import { KPICard, EmptyState } from "@/components/ui/premium";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -80,16 +81,19 @@ export default function PurchasesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Truck className="h-6 w-6 text-primary" />
-            {isBangla ? "ক্রয় ব্যবস্থাপনা" : "Purchases"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-            {isBangla
-              ? "সরবরাহকারী থেকে পণ্য ক্রয় এবং ক্রয়ের ইতিহাস পরিচালনা করুন"
-              : "Manage supplier purchases and purchase history."}
-          </p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Truck className="h-6 w-6 text-primary" />
+              {isBangla ? "ক্রয় ব্যবস্থাপনা" : "Purchases"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
+              {isBangla
+                ? "সরবরাহকারী থেকে পণ্য ক্রয় এবং ক্রয়ের ইতিহাস পরিচালনা করুন"
+                : "Manage supplier purchases and purchase history."}
+            </p>
+          </div>
         </div>
         <Link
           href="/purchases/new"

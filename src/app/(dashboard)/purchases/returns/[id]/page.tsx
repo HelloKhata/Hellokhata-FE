@@ -7,6 +7,7 @@ import React, { useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,6 +130,7 @@ function PurchaseReturnDetailsContent() {
       {/* Top Header Section */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
         <div className="flex items-center gap-3">
+          <BackButton />
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <RotateCcw className="h-6 w-6 text-primary" />
             {isBangla ? "ক্রয় ফেরত বিবরণ" : "Purchase Return Details"}

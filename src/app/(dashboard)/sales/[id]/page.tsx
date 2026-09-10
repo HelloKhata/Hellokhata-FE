@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -293,16 +294,19 @@ function SaleDetailsContent() {
     <div className="space-y-6">
       {/* Top Header Section (matching new sale page) */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Receipt className="h-6 w-6 text-primary" />
-            {isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isBangla
-              ? "সম্পন্ন বিক্রয়ের বিস্তারিত তথ্য ও অর্ডার সারাংশ"
-              : "Completed sale details and order summary"}
-          </p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Receipt className="h-6 w-6 text-primary" />
+              {isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {isBangla
+                ? "সম্পন্ন বিক্রয়ের বিস্তারিত তথ্য ও অর্ডার সারাংশ"
+                : "Completed sale details and order summary"}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Download Invoice Button */}

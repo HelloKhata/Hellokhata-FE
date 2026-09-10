@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,11 +59,10 @@ import {
   AlertCircle,
   Lock,
 } from "lucide-react";
-import { useCurrency } from "@/hooks/useAppTranslation";
-import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useGetItems } from "@/hooks/api/useItems";
+import { useGetItems, useGetItemBatches } from "@/hooks/api/useItems";
 import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
@@ -95,6 +95,8 @@ interface BillingItemRow {
   quantity: number;
   unitPrice: number;
   costPrice: number;
+  taxRate: number;
+  taxAmount: number;
   discountPercent: number;
   discountFlat: number;
   total: number;
@@ -178,9 +180,15 @@ function NewSaleContent() {
 
 
 
-    const { data: items } = useGetItems({search: productSearchQuery, page: 1, limit: 100 });
+  const { data: items } = useGetItems({search: productSearchQuery, page: 1, limit: 100 });
+
+  const { data: batchesData, isLoading: loadingBatches } = useGetItemBatches(
+    selectedProductForBatch?.id || "",
+    { enabled: !!selectedProductForBatch?.id }
+  );
+const itemsBatches = batchesData?.batches;
   const { data: partiesData = [] } = useParties({search:debouncedPartySearchQuery, page: 1, limit: 100});
- const { data: paymentMethods = [] } = useGetPaymentMethods();
+  const { data: paymentMethods = [] } = useGetPaymentMethods();
 
   // Fetch active offers for auto-detection
   const { data: offersData } = useGetOffers({ status: "active" });
@@ -201,8 +209,6 @@ function NewSaleContent() {
     );
     return match || null;
   };
-
-
 
  
   const accounts = useMemo(() => {
@@ -230,6 +236,8 @@ function NewSaleContent() {
     },
   ]);
   
+  // Default customer name fallback
+  const defaultCustomerName = isBangla ? "ওয়াকিং কাস্টমার" : "Walking Customer";
 
   // Handle selecting party
   const handleSelectParty = (party: any) => {
@@ -250,8 +258,8 @@ function NewSaleContent() {
       if (selectedParty) {
         setSelectedParty(null);
         setSelectedPartyId("");
-        setPartySearchQuery("");
       }
+      setPartySearchQuery("");
       return;
     }
 
@@ -271,6 +279,7 @@ function NewSaleContent() {
         setSelectedParty(null);
         setSelectedPartyId("");
       }
+      setPartySearchQuery(defaultCustomerName);
     }
   };
 
@@ -283,8 +292,6 @@ function NewSaleContent() {
     }
   };
 
-  // Default customer name fallback
-  const defaultCustomerName = isBangla ? "সাধারণ গ্রাহক" : "Walking Customer";
   // Calculations 
   const rawSubtotal = useMemo(() => {
     return selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -302,13 +309,21 @@ function NewSaleContent() {
     return Math.max(0, rawSubtotal - totalDiscount);
   }, [rawSubtotal, totalDiscount]);
 
-  const taxVal = useMemo(() => {
+  const totalItemTax = useMemo(() => {
+    return selectedItems.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
+  }, [selectedItems]);
+
+  const customTaxVal = useMemo(() => {
     if (taxConfig.type === "flat") {
       return taxConfig.value;
     } else {
       return parseFloat((subtotalAfterDiscount * (taxConfig.value / 100)).toFixed(2)) || 0;
     }
   }, [taxConfig, subtotalAfterDiscount]);
+
+  const totalTax = useMemo(() => {
+    return totalItemTax + customTaxVal;
+  }, [totalItemTax, customTaxVal]);
 
   const vatVal = useMemo(() => {
     if (vatConfig.type === "flat") {
@@ -323,8 +338,8 @@ function NewSaleContent() {
   }, [additionalCharge]);
 
   const grandTotal = useMemo(() => {
-    return Math.max(0, subtotalAfterDiscount + taxVal + vatVal + additionalChargeVal);
-  }, [subtotalAfterDiscount, taxVal, vatVal, additionalChargeVal]);
+    return Math.max(0, subtotalAfterDiscount + totalTax + vatVal + additionalChargeVal);
+  }, [subtotalAfterDiscount, totalTax, vatVal, additionalChargeVal]);
 
   const totalPaid = useMemo(() => {
     return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -455,12 +470,32 @@ function NewSaleContent() {
     );
   };
 
+  // Calculate Item Tax Amount helper
+  const calculateItemTaxAmount = (
+    qty: number,
+    price: number,
+    flatDiscount: number,
+    taxRate: number,
+  ) => {
+    const taxableAmount = Math.max(0, qty * price - flatDiscount);
+    return parseFloat((taxableAmount * (taxRate / 100)).toFixed(2)) || 0;
+  };
+
   // Add Product to Table with chosen batch
   const handleSelectBatchAndAdd = (product: any, batch?: any) => {
     if (!product) return;
     const batchNo = batch?.batchNumber || batch?.batchNo || batch?.name || "";
     const price = batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
     const costPrice = batch?.costPrice || product.costPrice || 0;
+    const taxRate = Number(
+      batch?.taxRate ??
+      batch?.taxPercent ??
+      product?.taxRate ??
+      product?.taxPercent ??
+      product?.taxCategory?.rate ??
+      product?.tax ??
+      0
+    );
 
     setSelectedItems((prev) => {
       const existingIndex = prev.findIndex(
@@ -473,6 +508,8 @@ function NewSaleContent() {
             const newQty = item.quantity + 1;
             const flatDiscount = item.discountFlat || 0;
             const total = calculateRowTotal(newQty, price, flatDiscount);
+            const rowTaxRate = item.taxRate ?? taxRate;
+            const taxAmount = calculateItemTaxAmount(newQty, price, flatDiscount, rowTaxRate);
 
             const offer = findActiveOffer(product.id, batchNo);
             let appliedOffer: POSAppliedOffer | null = null;
@@ -526,6 +563,8 @@ function NewSaleContent() {
               ...item,
               quantity: newQty,
               unitPrice: price,
+              taxRate: rowTaxRate,
+              taxAmount,
               total,
               appliedOffer,
               chargedQuantity: chargedQty,
@@ -585,6 +624,8 @@ function NewSaleContent() {
         }
       }
 
+      const initialTaxAmount = calculateItemTaxAmount(1, price, 0, taxRate);
+
       const newItemRow: BillingItemRow = {
         id: Math.random().toString(),
         itemId: product.id,
@@ -593,6 +634,8 @@ function NewSaleContent() {
         quantity: 1,
         unitPrice: price,
         costPrice: costPrice,
+        taxRate: taxRate,
+        taxAmount: initialTaxAmount,
         discountPercent: 0,
         discountFlat: 0,
         total: price,
@@ -621,19 +664,17 @@ function NewSaleContent() {
   // Handle selecting a product from search suggestions
   const handleSelectProduct = (product: any) => {
     if (!product) return;
-    const productBatches: any[] = product.batches || [];
-
-    if (productBatches.length === 0) {
-      // No batches -> add directly without batch
-      handleSelectBatchAndAdd(product, null);
-    } else if (productBatches.length === 1) {
-      // Only 1 batch -> add directly with that single batch
-      handleSelectBatchAndAdd(product, productBatches[0]);
-    } else {
-      // Multiple batches -> open batch selection view
-      setSelectedProductForBatch(product);
-    }
+    setSelectedProductForBatch(product);
   };
+
+  // Auto-add product if it has 1 or fewer batches
+  useEffect(() => {
+    if (selectedProductForBatch && !loadingBatches && itemsBatches !== undefined) {
+      if (itemsBatches.length <= 1) {
+        handleSelectBatchAndAdd(selectedProductForBatch, itemsBatches[0] || null);
+      }
+    }
+  }, [selectedProductForBatch, itemsBatches, loadingBatches]);
 
   // Remove Item Row
   const removeItemRow = (id: string) => {
@@ -661,6 +702,7 @@ function NewSaleContent() {
               (price * qty * (item.discountPercent / 100)).toFixed(2),
             ) || 0;
           const total = calculateRowTotal(qty, price, flat);
+          const taxAmount = calculateItemTaxAmount(qty, price, flat, item.taxRate || 0);
 
           // Recalculate offer with new quantity
           let appliedOffer: POSAppliedOffer | null = null;
@@ -717,6 +759,7 @@ function NewSaleContent() {
             ...item,
             quantity: qty,
             discountFlat: flat,
+            taxAmount,
             total,
             appliedOffer,
             chargedQuantity: chargedQty,
@@ -741,10 +784,12 @@ function NewSaleContent() {
               (rate * qty * (item.discountPercent / 100)).toFixed(2),
             ) || 0;
           const total = calculateRowTotal(qty, rate, flat);
+          const taxAmount = calculateItemTaxAmount(qty, rate, flat, item.taxRate || 0);
           return {
             ...item,
             unitPrice: rate,
             discountFlat: flat,
+            taxAmount,
             total,
           };
         }
@@ -765,12 +810,6 @@ function NewSaleContent() {
     const val = parseFloat(tempTaxValue) || 0;
     setTaxConfig({ type: tempTaxType, value: val });
     setIsEditTaxOpen(false);
-  };
-
-  const openEditVat = () => {
-    setTempVatType(vatConfig.type);
-    setTempVatValue(vatConfig.value.toString());
-    setIsEditVatOpen(true);
   };
 
   const saveVat = () => {
@@ -797,12 +836,11 @@ function NewSaleContent() {
       return;
     }
 
-
     const payload = {
       customerPhone: selectedParty?.phone || phoneSearchQuery || undefined,
       customerName: selectedParty?.name || partySearchQuery || defaultCustomerName,
       discount: totalDiscount,
-      tax: taxVal,
+      tax: parseFloat(totalTax.toFixed(2)),
       additionalCharges: additionalChargeVal,
       notes: notes || undefined,
       items: validItems.map((item) => ({
@@ -822,7 +860,6 @@ function NewSaleContent() {
         })),
     };
 
-    console.log(payload)
     mutate(payload, {
       onSuccess: () => {
         toast.success(
@@ -839,17 +876,12 @@ function NewSaleContent() {
     <div className="space-y-6">
       {/* Top Header Section */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          {isBangla ? "নতুন বিক্রি" : "New Sale"}
-        </h1>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? "পেছনে" : "Back"}
-        </Button>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            {isBangla ? "নতুন বিক্রি" : "New Sale"}
+          </h1>
+        </div>
       </div>
 
 
@@ -929,6 +961,14 @@ function NewSaleContent() {
                                   <span>SKU: {product.sku || "-"}</span>
                                   <span>•</span>
                                   <span>Stock: {product.currentStock} {product.unit || ""}</span>
+                                  {Number(product.taxRate ?? product.taxPercent ?? product.tax ?? 0) > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                        Tax: {Number(product.taxRate ?? product.taxPercent ?? product.tax ?? 0)}%
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -969,12 +1009,18 @@ function NewSaleContent() {
 
                         {/* Batches list */}
                         <div className="divide-y divide-border/60 max-h-56 overflow-y-auto">
-                          {(selectedProductForBatch?.batches && selectedProductForBatch.batches.length > 0) ? (
-                            selectedProductForBatch.batches.map((batch: any) => {
+                          {loadingBatches ? (
+                            <div className="p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                              <span>{isBangla ? "ব্যাচ লোড হচ্ছে..." : "Loading batches..."}</span>
+                            </div>
+                          ) : (itemsBatches && itemsBatches.length > 0) ? (
+                            itemsBatches.map((batch: any) => {
                               const bNo = batch?.batchNumber;
                               const stock = batch.quantity;
                               const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
                               const expiry = batch.expiryDate ? format(new Date(batch.expiryDate), "dd MMM yyyy") : null;
+                              const bTax = Number(batch?.taxRate ?? batch?.taxPercent ?? selectedProductForBatch?.taxRate ?? selectedProductForBatch?.taxPercent ?? selectedProductForBatch?.tax ?? 0);
 
                               return (
                                 <button
@@ -1006,6 +1052,11 @@ function NewSaleContent() {
                                       {expiry && (
                                         <span>
                                           {isBangla ? "মেয়াদ" : "Exp"}: {expiry}
+                                        </span>
+                                      )}
+                                      {bTax > 0 && (
+                                        <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                          Tax: {bTax}%
                                         </span>
                                       )}
                                     </div>
@@ -1216,7 +1267,7 @@ function NewSaleContent() {
         {/* left side */}
         {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
           <div className="w-full flex flex-col gap-5 bg-card border border-border/50 rounded-xl p-5 shadow-sm">
-           {/* Row 2: Billing Items Table */}
+            {/* Row 2: Billing Items Table */}
           <div className="w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
             <Table>
               <TableHeader className="bg-muted/30">
@@ -1227,14 +1278,17 @@ function NewSaleContent() {
                   <TableHead className="px-3 py-3 w-[5%] text-xs font-semibold uppercase">
                     {/* Thumbnail Image column */}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[45%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[35%] text-xs font-semibold uppercase">
                     {isBangla ? "প্রোডাক্ট" : "Product"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[20%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
                     {isBangla ? "দর" : "Rate"}
                   </TableHead>
-                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
+                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
                     {isBangla ? "পরিমাণ" : "Quantity"}
+                  </TableHead>
+                  <TableHead className="px-4 py-3 w-[13%] text-xs font-semibold uppercase">
+                    {isBangla ? "ট্যাক্স" : "Tax"}
                   </TableHead>
                   <TableHead className="px-4 py-3 w-[10%] text-right text-xs font-semibold uppercase">
                     {isBangla ? "মোট" : "Amount"}
@@ -1248,7 +1302,7 @@ function NewSaleContent() {
                 {selectedItems.filter((i) => i.itemId).length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="px-4 py-12 text-center text-muted-foreground text-xs"
                     >
                       <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
@@ -1360,6 +1414,18 @@ function NewSaleContent() {
                           />
                         </TableCell>
 
+                        {/* Tax Column */}
+                        <TableCell className="px-4 py-3 align-middle">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-foreground">
+                              {item.taxRate || 0}%
+                            </span>
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              Tk. {(item.taxAmount || 0).toFixed(2)}
+                            </span>
+                          </div>
+                        </TableCell>
+
                         {/* Amount & Action */}
                         <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
                           <div className="flex items-center justify-end gap-3">
@@ -1446,22 +1512,21 @@ function NewSaleContent() {
                 </div>
               )}
 
-              {/* Tax Display Row */}
+              {/* Total Tax Display Row */}
               <div className="flex justify-between items-center text-sm font-medium py-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">{isBangla ? "ট্যাক্স" : "Tax"}</span>
+                  <span className="text-muted-foreground">{isBangla ? "মোট ট্যাক্স" : "Total Tax"}</span>
                   <button
                     type="button"
                     onClick={openEditTax}
+                    title={isBangla ? "ট্যাক্স সম্পাদনা করুন" : "Edit Tax"}
                     className="text-primary hover:text-primary-hover p-0.5 rounded hover:bg-primary/10 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                 </div>
                 <span className="text-foreground text-xs font-semibold">
-                  {taxConfig.type === "percent"
-                    ? `${taxConfig.value}% (Tk. ${taxVal.toFixed(2)})`
-                    : `Tk. ${taxVal.toFixed(2)}`}
+                  Tk. {totalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 

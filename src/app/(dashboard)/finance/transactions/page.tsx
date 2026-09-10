@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import {
   Table,
   TableHeader,
@@ -189,14 +190,19 @@ export default function FinanceTransactionsPage() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {isBangla ? 'লেনদেন খাতা রেজিস্টার' : 'Transactions Ledger'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isBangla
-              ? 'আপনার ব্যবসায়ের সমস্ত আর্থিক লেনদেন দেখুন, রেকর্ড করুন এবং পরিচালনা করুন।'
-              : 'View, record, and manage every financial transaction ledger across your business.'}
-          </p>
+          <div className="flex items-center gap-3">
+            <BackButton fallbackHref="/finance" />
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                {isBangla ? 'লেনদেন খাতা রেজিস্টার' : 'Transactions Ledger'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isBangla
+                  ? 'আপনার ব্যবসায়ের সমস্ত আর্থিক লেনদেন দেখুন, রেকর্ড করুন এবং পরিচালনা করুন।'
+                  : 'View, record, and manage every financial transaction ledger across your business.'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Toolbar Trigger Buttons */}

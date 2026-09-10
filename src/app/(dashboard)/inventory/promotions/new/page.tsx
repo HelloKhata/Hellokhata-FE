@@ -33,6 +33,7 @@ const offerSchema = z.object({
 type OfferFormValues = z.infer<typeof offerSchema>;
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -372,20 +373,15 @@ function OfferFormContent() {
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-          <Sparkles className="h-6 w-6 text-primary" />
-          {offerIdParam
-            ? isBangla ? 'অফার সম্পাদনা করুন' : 'Edit Promotion Offer'
-            : isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Promotion Offer'}
-        </h1>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          {isBangla ? 'পেছনে' : 'Back'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <Sparkles className="h-6 w-6 text-primary" />
+            {offerIdParam
+              ? isBangla ? 'অফার সম্পাদনা করুন' : 'Edit Promotion Offer'
+              : isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Promotion Offer'}
+          </h1>
+        </div>
       </div>
 
       {/* Main 2 Column Grid: Form (65%) & Live Preview (35%) */}

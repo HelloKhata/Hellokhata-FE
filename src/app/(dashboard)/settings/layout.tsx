@@ -1,6 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/premium';
+import { BackButton } from '@/components/common';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import { useUiStore, useSessionStore } from '@/stores';
@@ -50,16 +51,19 @@ export default function Layout({
     <div className="space-y-6">
       {/* Settings Top Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/40">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary" />
-            {t('settings.title')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {isBangla
-              ? 'অ্যাপ ও ব্যবসার সেটিংস পরিচালনা করুন'
-              : 'Manage your app and business settings'}
-          </p>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <Settings className="h-6 w-6 text-primary" />
+              {t('settings.title')}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {isBangla
+                ? 'অ্যাপ ও ব্যবসার সেটিংস পরিচালনা করুন'
+                : 'Manage your app and business settings'}
+            </p>
+          </div>
         </div>
 
         {/* Global Controls (Language, Theme, Logout) */}

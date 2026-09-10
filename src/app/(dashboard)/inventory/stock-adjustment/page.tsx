@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Divider, EmptyState } from '@/components/ui/premium';
+import { BackButton } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -166,10 +167,8 @@ export default function StockAdjustmentPage() {
     <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon-sm" onClick={() => router.push('/inventory')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-3">
+            <BackButton fallbackHref="/inventory" />
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                 {adjustmentType === 'increase' ? (

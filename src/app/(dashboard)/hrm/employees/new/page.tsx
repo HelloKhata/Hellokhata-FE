@@ -27,7 +27,9 @@ import {
   CheckCircle2,
   FileUp,
 } from 'lucide-react';
-import { Button, Input, Card } from '@/components/ui/premium';
+import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -188,20 +190,16 @@ export default function AddEmployeePage() {
     <div className="space-y-6">
       {/* 1. HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/20 pb-4">
-        <div className="space-y-1">
-          <button
-            onClick={() => router.push('/hrm/employees')}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer group"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            {isBangla ? 'কর্মচারী তালিকায় ফিরুন' : 'Back to Employees'}
-          </button>
-          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
-            {isBangla ? 'নতুন কর্মচারী যোগ করুন' : 'Add New Employee'}
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            {isBangla ? 'একটি নতুন কর্মচারী প্রোফাইল তৈরি করুন।' : 'Create a new employee profile.'}
-          </p>
+        <div className="flex items-center gap-3">
+          <BackButton fallbackHref="/hrm/employees" />
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
+              {isBangla ? 'নতুন কর্মচারী যোগ করুন' : 'Add New Employee'}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isBangla ? 'একটি নতুন কর্মচারী প্রোফাইল তৈরি করুন।' : 'Create a new employee profile.'}
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center gap-2.5">

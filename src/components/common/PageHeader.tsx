@@ -5,7 +5,7 @@
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { BackButton } from './BackButton';
 import type { LucideIcon } from 'lucide-react';
 
 interface PageHeaderProps {
@@ -20,6 +20,7 @@ interface PageHeaderProps {
     icon?: LucideIcon;
   };
   backAction?: () => void;
+  showBack?: boolean;
   children?: React.ReactNode;
   className?: string;
   isBangla?: boolean;
@@ -33,6 +34,7 @@ export function PageHeader({
   icon: Icon,
   action,
   backAction,
+  showBack = true,
   children,
   className,
   isBangla = false,
@@ -42,22 +44,17 @@ export function PageHeader({
 
   return (
     <div className={cn('mb-6', className)}>
-      {/* Back Button Row */}
-      {backAction && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={backAction}
-          className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          {isBangla ? 'পেছনে' : 'Back'}
-        </Button>
-      )}
-      
       {/* Title Row */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-3">
+          {(showBack || backAction) && (
+            <BackButton
+              onClick={backAction}
+              size="default"
+              variant="default"
+              className="mt-0.5"
+            />
+          )}
           {Icon && (
             <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0 border border-primary/10">
               <Icon className="h-5 w-5 text-primary" />
