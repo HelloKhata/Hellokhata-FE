@@ -1112,22 +1112,16 @@ export default function AddProductPage() {
           sidebarCollapsed && "md:left-16"
         )}
       >
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-          <span className="hidden sm:inline">
-            Ready to register item into inventory master data
-          </span>
-          <span className="sm:hidden">Ready to submit</span>
-        </div>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Cancel
+        </button>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
-          >
-            Cancel
-          </button>
           <button
             type="button"
             onClick={handleSaveProduct}

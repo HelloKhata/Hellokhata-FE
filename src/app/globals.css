@@ -97,37 +97,37 @@
   
   /* ============================================
      ELITE LAYERED DARK SURFACES
-     Deep cinematic foundation
+     Deep cinematic foundation matching #0B0F19 and #0D131F
      ============================================ */
   
   /* Level 0 - Base Background */
-  --background: #0F141B;
+  --background: #0B0F19;
   
   /* Level 1 - Secondary Background */
-  --background-secondary: #131A22;
+  --background-secondary: #0D131F;
   
   /* Level 2 - Surface Layer */
-  --surface: #171F29;
+  --surface: #0D131F;
   
   /* Level 3 - Card Background */
-  --card: #1C2430;
-  --card-foreground: #E6EDF5;
+  --card: #0D131F;
+  --card-foreground: #F1F5F9;
   
   /* Level 4 - Elevated Card */
-  --card-elevated: #212B38;
+  --card-elevated: #111827;
   
   /* Primary Text */
-  --foreground: #E6EDF5;
+  --foreground: #F1F5F9;
   
   /* Secondary Text */
-  --foreground-secondary: #9DA7B3;
+  --foreground-secondary: #94A3B8;
   
   /* Muted Text */
-  --foreground-muted: #6B7684;
+  --foreground-muted: #64748B;
   
   /* Popover */
-  --popover: #1C2430;
-  --popover-foreground: #E6EDF5;
+  --popover: #0D131F;
+  --popover-foreground: #F1F5F9;
   
   /* ============================================
      PRIMARY BRAND ACCENT - INDIGO
@@ -136,33 +136,33 @@
   --primary: #4F5BFF;
   --primary-foreground: #FFFFFF;
   --primary-hover: #5E6AFF;
-  --primary-subtle: rgba(79, 91, 255, 0.08);
-  --primary-subtle-medium: rgba(79, 91, 255, 0.12);
+  --primary-subtle: rgba(79, 91, 255, 0.1);
+  --primary-subtle-medium: rgba(79, 91, 255, 0.16);
   
   /* ============================================
      SECONDARY ACCENT - EMERALD/TEAL
      For financial positive metrics only
      ============================================ */
-  --secondary: #212B38;
-  --secondary-foreground: #E6EDF5;
+  --secondary: #172033;
+  --secondary-foreground: #F1F5F9;
   --emerald: #0FBF9F;
-  --emerald-subtle: rgba(15, 191, 159, 0.08);
-  --emerald-subtle-medium: rgba(15, 191, 159, 0.12);
+  --emerald-subtle: rgba(15, 191, 159, 0.1);
+  --emerald-subtle-medium: rgba(15, 191, 159, 0.16);
   
   /* Legacy indigo vars for backward compatibility */
   --indigo: #4F5BFF;
-  --indigo-subtle: rgba(79, 91, 255, 0.08);
-  --indigo-subtle-medium: rgba(79, 91, 255, 0.12);
+  --indigo-subtle: rgba(79, 91, 255, 0.1);
+  --indigo-subtle-medium: rgba(79, 91, 255, 0.16);
   
   /* ============================================
      MUTED SURFACES
      ============================================ */
-  --muted: #171F29;
-  --muted-foreground: #9DA7B3;
+  --muted: #0F172A;
+  --muted-foreground: #94A3B8;
   
   /* Accent */
-  --accent: #212B38;
-  --accent-foreground: #E6EDF5;
+  --accent: #1E293B;
+  --accent-foreground: #F1F5F9;
   
   /* ============================================
      SEMANTIC COLORS - MUTED & REFINED
@@ -170,39 +170,39 @@
   
   /* Success - Muted Emerald (for financial positive) */
   --success: #1FAF86;
-  --success-subtle: rgba(31, 175, 134, 0.08);
+  --success-subtle: rgba(31, 175, 134, 0.1);
   
   /* Warning - Soft Amber */
   --warning: #E8A23A;
-  --warning-subtle: rgba(232, 162, 58, 0.08);
-  --warning-foreground: #0F141B;
+  --warning-subtle: rgba(232, 162, 58, 0.1);
+  --warning-foreground: #0B0F19;
   
   /* Destructive - Muted Crimson (alerts only) */
-  --destructive: #C93C42;
+  --destructive: #EF4444;
   --destructive-foreground: #FFFFFF;
-  --destructive-subtle: rgba(201, 60, 66, 0.08);
-  --destructive-subtle-medium: rgba(201, 60, 66, 0.12);
+  --destructive-subtle: rgba(239, 68, 68, 0.1);
+  --destructive-subtle-medium: rgba(239, 68, 68, 0.16);
   
   /* ============================================
      BORDERS & INPUTS - SUBTLE INNER CONTRAST
      ============================================ */
-  --border: rgba(255, 255, 255, 0.04);
-  --border-subtle: rgba(255, 255, 255, 0.03);
-  --border-highlight: rgba(255, 255, 255, 0.06);
-  --input: #171F29;
-  --ring: rgba(79, 91, 255, 0.25);
+  --border: rgba(51, 65, 85, 0.6);
+  --border-subtle: rgba(51, 65, 85, 0.4);
+  --border-highlight: rgba(99, 102, 241, 0.35);
+  --input: #0F172A;
+  --ring: rgba(99, 102, 241, 0.35);
   
   /* ============================================
      SIDEBAR - DEEP CINEMATIC
      ============================================ */
-  --sidebar: #0F141B;
-  --sidebar-foreground: #E6EDF5;
+  --sidebar: #0B0F19;
+  --sidebar-foreground: #F1F5F9;
   --sidebar-primary: #4F5BFF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #171F29;
-  --sidebar-accent-foreground: #E6EDF5;
-  --sidebar-border: rgba(255, 255, 255, 0.03);
-  --sidebar-ring: rgba(79, 91, 255, 0.25);
+  --sidebar-accent: #0F172A;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: rgba(51, 65, 85, 0.5);
+  --sidebar-ring: rgba(99, 102, 241, 0.35);
   
   /* ============================================
      CHART COLORS - REFINED PALETTE
@@ -216,8 +216,8 @@
   /* ============================================
      GLASS EFFECT - PREMIUM TRANSLUCENCY
      ============================================ */
-  --glass-bg: rgba(28, 36, 48, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-bg: rgba(13, 19, 31, 0.85);
+  --glass-border: rgba(51, 65, 85, 0.6);
   
   /* ============================================
      SHADOWS - SOFT LAYERED ELEVATION

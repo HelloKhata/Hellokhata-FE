@@ -5,6 +5,7 @@
 
 import { Badge } from '@/components/ui/premium';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { cn } from '@/lib/utils';
 import type {
   AttendanceStatus,
   EmployeeStatus,
@@ -81,16 +82,29 @@ export function AttendanceBadge({ status, className }: { status: AttendanceStatu
 
 export function EmployeeStatusBadge({ status, className }: { status: EmployeeStatus; className?: string }) {
   const { isBangla } = useAppTranslation();
-  const map: Record<EmployeeStatus, Variant> = {
-    Active: 'success',
-    'On Leave': 'warning',
-    Probation: 'indigo',
-    Inactive: 'destructive',
+  const styles: Record<EmployeeStatus, string> = {
+    Active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    'On Leave': 'bg-amber-500/10 text-amber-400 border-amber-500/25',
+    Probation: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/25',
+    Inactive: 'bg-rose-500/10 text-rose-400 border-rose-500/25',
+  };
+  const dotStyles: Record<EmployeeStatus, string> = {
+    Active: 'bg-emerald-400',
+    'On Leave': 'bg-amber-400',
+    Probation: 'bg-indigo-400',
+    Inactive: 'bg-rose-400',
   };
   return (
-    <Badge variant={map[status]} size="sm" dot className={className}>
-      {isBangla ? EMP_LABELS[status].bn : EMP_LABELS[status].en}
-    </Badge>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
+        styles[status],
+        className
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', dotStyles[status])} />
+      <span>{isBangla ? EMP_LABELS[status].bn : EMP_LABELS[status].en}</span>
+    </span>
   );
 }
 

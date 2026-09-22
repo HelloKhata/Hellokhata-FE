@@ -47,24 +47,24 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
   const endItem = totalItems ? Math.min(currentPage * (pageSize || 1), totalItems) : 0;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-border pt-4 mt-4 gap-3 w-full">
+    <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-800/80 px-5 py-4 bg-slate-900/40 text-slate-400 gap-3 w-full">
       {totalItems ? (
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-slate-400">
           {isBangla ? (
             <>
               দেখানো হচ্ছে{' '}
-              <span className="font-semibold text-foreground tabular-nums">
+              <span className="font-semibold text-slate-200 tabular-nums">
                 {startItem}-{endItem}
               </span>{' '}
-              (মোট <span className="font-semibold text-foreground tabular-nums">{totalItems}</span>)
+              (মোট <span className="font-semibold text-slate-200 tabular-nums">{totalItems}</span>)
             </>
           ) : (
             <>
               Showing{' '}
-              <span className="font-semibold text-foreground tabular-nums">
+              <span className="font-semibold text-slate-200 tabular-nums">
                 {startItem}-{endItem}
               </span>{' '}
-              of <span className="font-semibold text-foreground tabular-nums">{totalItems}</span>
+              of <span className="font-semibold text-slate-200 tabular-nums">{totalItems}</span>
             </>
           )}
         </div>
@@ -74,7 +74,7 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
 
       {totalPages > 1 && (
         <Pagination className="mx-0 w-auto">
-          <PaginationContent className="flex-wrap justify-center">
+          <PaginationContent className="flex-wrap justify-center gap-1.5">
             <PaginationItem>
               <PaginationPrevious
                 href="#"
@@ -83,7 +83,9 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
                   if (currentPage > 1) onPageChange(currentPage - 1);
                 }}
                 className={
-                  currentPage === 1 ? 'pointer-events-none opacity-50 select-none' : 'cursor-pointer'
+                  currentPage === 1
+                    ? 'pointer-events-none opacity-40 select-none text-slate-500 rounded-lg'
+                    : 'cursor-pointer text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 border border-slate-800/80 rounded-lg text-xs'
                 }
               >
                 {isBangla ? 'পূর্ববর্তী' : 'Previous'}
@@ -93,7 +95,7 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
             {getPages().map((page, idx) =>
               page === 'ellipsis' ? (
                 <PaginationItem key={`e-${idx}`}>
-                  <PaginationEllipsis />
+                  <PaginationEllipsis className="text-slate-500" />
                 </PaginationItem>
               ) : (
                 <PaginationItem key={page}>
@@ -104,7 +106,11 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
                       onPageChange(page);
                     }}
                     isActive={currentPage === page}
-                    className="cursor-pointer"
+                    className={
+                      currentPage === page
+                        ? 'cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white font-bold border-indigo-500 shadow-md shadow-indigo-600/30 rounded-lg text-xs h-8 w-8'
+                        : 'cursor-pointer text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 border border-slate-800/80 rounded-lg text-xs h-8 w-8'
+                    }
                   >
                     {page}
                   </PaginationLink>
@@ -121,8 +127,8 @@ export function HrmPagination({ currentPage, totalPages, totalItems, pageSize, o
                 }}
                 className={
                   currentPage === totalPages
-                    ? 'pointer-events-none opacity-50 select-none'
-                    : 'cursor-pointer'
+                    ? 'pointer-events-none opacity-40 select-none text-slate-500 rounded-lg'
+                    : 'cursor-pointer text-slate-300 hover:text-slate-100 hover:bg-slate-800/80 border border-slate-800/80 rounded-lg text-xs'
                 }
               >
                 {isBangla ? 'পরবর্তী' : 'Next'}

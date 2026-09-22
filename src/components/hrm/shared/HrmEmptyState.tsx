@@ -36,15 +36,15 @@ export function HrmEmptyState({
       className={`flex flex-col items-center justify-center text-center p-10 w-full min-h-[220px] ${className || ''}`}
     >
       {Icon && (
-        <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4 shrink-0">
-          <Icon className="h-8 w-8 text-muted-foreground/70" />
+        <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center mb-4 shrink-0 shadow-sm shadow-indigo-500/20 text-indigo-400">
+          <Icon className="h-8 w-8" />
         </div>
       )}
-      <h3 className="text-base font-semibold text-foreground mb-1">
+      <h3 className="text-base font-bold text-slate-100 mb-1">
         {isBangla && titleBn ? titleBn : title}
       </h3>
       {(description || descriptionBn) && (
-        <p className="text-sm text-muted-foreground mb-5 max-w-sm">
+        <p className="text-xs sm:text-sm text-slate-400 mb-5 max-w-sm">
           {isBangla && descriptionBn ? descriptionBn : description}
         </p>
       )}

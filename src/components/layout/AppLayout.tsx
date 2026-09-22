@@ -88,7 +88,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Main Content Area with sidebar margin */}
       <div
         className={cn(
-          'transition-all duration-300 ease-smooth',
+          'transition-all duration-300 ease-smooth min-h-screen bg-background text-foreground',
           'md:ml-64',
           sidebarCollapsed && 'md:ml-16'
         )}

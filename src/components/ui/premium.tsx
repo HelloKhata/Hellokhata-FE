@@ -84,12 +84,12 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-premium-default',
-        elevated: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(35,46,60,1)] to-[rgba(33,43,56,1)] shadow-premium-elevated hover:shadow-premium-elevated-hover hover:-translate-y-0.5',
-        glass: 'bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl',
+        default: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-xl shadow-black/40 backdrop-blur-xl',
+        elevated: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-2xl shadow-black/50 backdrop-blur-xl hover:border-slate-700/80 hover:-translate-y-0.5',
+        glass: 'bg-[#0d131f]/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-xl shadow-black/40',
         ghost: 'bg-transparent',
-        outline: 'border border-border rounded-xl',
-        glow: 'border border-[rgba(255,255,255,0.04)] rounded-xl bg-gradient-to-b from-[rgba(30,40,52,1)] to-[rgba(28,36,48,1)] shadow-premium-glow',
+        outline: 'border border-slate-800 rounded-2xl bg-transparent',
+        glow: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl',
       },
       padding: {
         none: 'p-0',
