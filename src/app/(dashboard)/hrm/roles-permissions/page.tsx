@@ -529,6 +529,25 @@ export const INITIAL_BASE_ROLES: BaseRoleDefinition[] = [
   },
 ];
 
+// ─── ROLE COLOR PRESETS ──────────────────────────────────────────────────────
+
+export const ROLE_COLOR_PRESETS = [
+  { name: 'Indigo', hex: '#6366f1' },
+  { name: 'Blue', hex: '#3b82f6' },
+  { name: 'Sky', hex: '#0ea5e9' },
+  { name: 'Cyan', hex: '#06b6d4' },
+  { name: 'Teal', hex: '#14b8a6' },
+  { name: 'Emerald', hex: '#10b981' },
+  { name: 'Amber', hex: '#f59e0b' },
+  { name: 'Orange', hex: '#f97316' },
+  { name: 'Rose', hex: '#f43f5e' },
+  { name: 'Red', hex: '#ef4444' },
+  { name: 'Pink', hex: '#ec4899' },
+  { name: 'Purple', hex: '#8b5cf6' },
+  { name: 'Violet', hex: '#7c3aed' },
+  { name: 'Slate', hex: '#64748b' },
+];
+
 // ─── INITIAL USER ACCESS PROFILES (MOCK DATA) ────────────────────────────────
 
 export const INITIAL_USER_PROFILES: UserAccessProfile[] = [
@@ -833,10 +852,19 @@ export default function UserAccessControlPage() {
   const [accessLevelFilter, setAccessLevelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Role Edit & Add Modal State
+  // Create Role Modal State
+  const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
+  const [createRoleData, setCreateRoleData] = useState({
+    name: '',
+    description: '',
+    color: '#6366f1',
+  });
+  const [createRolePermissions, setCreateRolePermissions] = useState<string[]>([]);
+
+  // Edit Role Modal State
+  const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<BaseRoleDefinition | null>(null);
   const [editingRolePermissions, setEditingRolePermissions] = useState<string[]>([]);
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   // View Staff Modal State
   const [viewStaffRole, setViewStaffRole] = useState<BaseRoleDefinition | null>(null);
@@ -944,37 +972,83 @@ export default function UserAccessControlPage() {
     });
   }, [baseRoles, searchQuery, roleTypeFilter, statusFilter]);
 
+  // ─── CREATE ROLE HANDLERS ──────────────────────────────────────────────────
+
   const handleOpenAddRole = () => {
+    setCreateRoleData({
+      name: '',
+      description: '',
+      color: '#6366f1',
+    });
+    setCreateRolePermissions([]);
+    setIsCreateRoleModalOpen(true);
+  };
+
+  const handleToggleCreateRolePermission = (permId: string) => {
+    setCreateRolePermissions((prev) =>
+      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
+    );
+  };
+
+  const handleToggleAllCreateModulePermissions = (module: ERPModuleDefinition, enable: boolean) => {
+    const modPermIds = module.permissions.map((p) => p.id);
+    if (enable) {
+      setCreateRolePermissions((prev) => Array.from(new Set([...prev, ...modPermIds])));
+    } else {
+      setCreateRolePermissions((prev) => prev.filter((p) => !modPermIds.includes(p)));
+    }
+  };
+
+  const handleSelectAllCreatePermissions = (enable: boolean) => {
+    if (enable) {
+      setCreateRolePermissions([...ALL_PERMISSION_IDS]);
+    } else {
+      setCreateRolePermissions([]);
+    }
+  };
+
+  const handleCreateRoleSubmit = () => {
+    if (!createRoleData.name.trim()) {
+      toast.error(isBangla ? 'অনুগ্রহ করে রোলের নাম লিখুন।' : 'Please enter role name.');
+      return;
+    }
     const newRole: BaseRoleDefinition = {
       id: `role-custom-${Date.now()}`,
-      name: '',
-      nameBn: '',
-      description: '',
-      descriptionBn: '',
+      name: createRoleData.name.trim(),
+      nameBn: createRoleData.name.trim(),
+      description: createRoleData.description.trim(),
+      descriptionBn: createRoleData.description.trim(),
       isSystemProtected: false,
-      color: '#3b82f6',
+      color: createRoleData.color || '#6366f1',
       defaultDataScope: 'assigned_branches',
       defaultBranchMode: 'selected',
-      permissionIds: [],
+      permissionIds: createRolePermissions,
     };
-    setEditingRole(newRole);
-    setEditingRolePermissions([]);
-    setIsRoleModalOpen(true);
+
+    setBaseRoles((prev) => [...prev, newRole]);
+    setIsCreateRoleModalOpen(false);
+    toast.success(
+      isBangla
+        ? `নতুন রোল "${newRole.name}" সফলভাবে তৈরি হয়েছে!`
+        : `New role "${newRole.name}" created successfully!`
+    );
   };
+
+  // ─── EDIT ROLE HANDLERS ────────────────────────────────────────────────────
 
   const handleEditRole = (role: BaseRoleDefinition) => {
     setEditingRole({ ...role });
     setEditingRolePermissions([...role.permissionIds]);
-    setIsRoleModalOpen(true);
+    setIsEditRoleModalOpen(true);
   };
 
-  const handleToggleRolePermission = (permId: string) => {
+  const handleToggleEditRolePermission = (permId: string) => {
     setEditingRolePermissions((prev) =>
       prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
     );
   };
 
-  const handleToggleAllModulePermissions = (module: ERPModuleDefinition, enable: boolean) => {
+  const handleToggleAllEditModulePermissions = (module: ERPModuleDefinition, enable: boolean) => {
     const modPermIds = module.permissions.map((p) => p.id);
     if (enable) {
       setEditingRolePermissions((prev) => Array.from(new Set([...prev, ...modPermIds])));
@@ -983,7 +1057,15 @@ export default function UserAccessControlPage() {
     }
   };
 
-  const handleSaveRole = () => {
+  const handleSelectAllEditPermissions = (enable: boolean) => {
+    if (enable) {
+      setEditingRolePermissions([...ALL_PERMISSION_IDS]);
+    } else {
+      setEditingRolePermissions([]);
+    }
+  };
+
+  const handleSaveEditRole = () => {
     if (!editingRole) return;
     if (!editingRole.name.trim()) {
       toast.error(isBangla ? 'অনুগ্রহ করে রোলের নাম লিখুন।' : 'Please enter role name.');
@@ -993,15 +1075,10 @@ export default function UserAccessControlPage() {
       ...editingRole,
       permissionIds: editingRolePermissions,
     };
-    setBaseRoles((prev) => {
-      const exists = prev.some((r) => r.id === editingRole.id);
-      if (exists) {
-        return prev.map((r) => (r.id === editingRole.id ? updatedRole : r));
-      } else {
-        return [...prev, updatedRole];
-      }
-    });
-    setIsRoleModalOpen(false);
+    setBaseRoles((prev) =>
+      prev.map((r) => (r.id === editingRole.id ? updatedRole : r))
+    );
+    setIsEditRoleModalOpen(false);
     toast.success(
       isBangla
         ? `রোল "${updatedRole.name}" সফলভাবে সংরক্ষিত হয়েছে!`
@@ -1375,7 +1452,7 @@ export default function UserAccessControlPage() {
 
   // ─── ADD NEW USER / ASSIGN ACCESS ──────────────────────────────────────────
 
-  const handleCreateNewUser = () => {
+  const handleCreateNewRole = () => {
     if (!newUserData.name || !newUserData.email) {
       toast.error(isBangla ? 'নাম ও ইমেইল আবশ্যক।' : 'Name and Email are required.');
       return;
@@ -1581,12 +1658,12 @@ export default function UserAccessControlPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-sm text-foreground">
-                                  {isBangla ? role.nameBn : role.name}
+                                  {isBangla ? role.nameBn || role.name : role.name}
                                 </span>
 
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 truncate">
-                                {isBangla ? role.descriptionBn : role.description}
+                                {isBangla ? role.descriptionBn || role.description : role.description}
                               </p>
                             </div>
                           </div>
@@ -1718,21 +1795,262 @@ export default function UserAccessControlPage() {
         </div>
       </div>
 
-      {/* ─── ROLE CONFIGURATION & PERMISSION MODAL ───────────────────────── */}
-      <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
-        <DialogContent className="max-w-4xl w-[94vw] max-h-[90vh] flex flex-col p-0 gap-0 rounded-2xl bg-card border-border overflow-hidden">
+      {/* ─── 1. CREATE ROLE MODAL ────────────────────────────────────────── */}
+      <Dialog open={isCreateRoleModalOpen} onOpenChange={setIsCreateRoleModalOpen}>
+        <DialogContent className="max-w-4xl w-[94vw] max-h-[90vh] flex flex-col p-0 gap-0 rounded-2xl bg-card border-border overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="p-4 sm:p-5 border-b border-border bg-gradient-to-r from-muted/30 via-muted/15 to-transparent flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
+                style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+              >
+                <Plus className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-extrabold text-foreground">
+                    {isBangla ? 'নতুন রোল তৈরি করুন' : 'Create New Role'}
+                  </h2>
+                  <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-bold">
+                    {isBangla ? 'নতুন ভূমিকা' : 'New Role'}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isBangla
+                    ? 'কাস্টম রোলের নাম, থিম কালার ও মডিউল পারমিশন নির্ধারণ করুন'
+                    : 'Define custom role identity, visual color, and configure modular permissions'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCreateRoleModalOpen(false)}
+                className="rounded-xl border-border text-xs font-semibold h-9 hover:bg-muted cursor-pointer"
+              >
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleCreateRoleSubmit}
+                className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                {isBangla ? 'রোল তৈরি করুন' : 'Create Role'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+            {/* Form Details */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/80 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold text-foreground mb-1.5 block">
+                    {isBangla ? 'রোলের নাম' : 'Role Name'} <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    value={createRoleData.name}
+                    onChange={(e) => setCreateRoleData({ ...createRoleData, name: e.target.value })}
+                    placeholder={isBangla ? 'যেমন: এরিয়া সেলস অফিসার' : 'e.g. Area Sales Officer'}
+                    className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-foreground mb-1.5 block">
+                    {isBangla ? 'বিবরণ' : 'Description'}
+                  </Label>
+                  <Input
+                    value={createRoleData.description}
+                    onChange={(e) => setCreateRoleData({ ...createRoleData, description: e.target.value })}
+                    placeholder={isBangla ? 'দায়িত্ব ও কাজের সংক্ষিপ্ত বিবরণ' : 'Brief summary of duties and responsibilities'}
+                    className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Role Color Template Picker */}
+              <div className="space-y-2 pt-2 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                    <span>{isBangla ? 'রোলের কালার থিম' : 'Role Color'}</span>
+                    <span
+                      className="w-3.5 h-3.5 rounded-full ring-1 ring-border/80 shadow-xs inline-block transition-transform duration-200"
+                      style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+                    />
+                  </Label>
+                  <span className="text-[11px] text-muted-foreground font-mono uppercase tracking-wider">
+                    {createRoleData.color || '#6366f1'}
+                  </span>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-2 p-2.5 rounded-xl bg-background/80 border border-border/70">
+                  {ROLE_COLOR_PRESETS.map((preset) => {
+                    const isSelected = (createRoleData.color || '').toLowerCase() === preset.hex.toLowerCase();
+                    return (
+                      <button
+                        key={preset.hex}
+                        type="button"
+                        onClick={() => setCreateRoleData({ ...createRoleData, color: preset.hex })}
+                        title={preset.name}
+                        className={`w-7 h-7 rounded-full transition-all duration-150 flex items-center justify-center cursor-pointer relative ${
+                          isSelected
+                            ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110 shadow-sm'
+                            : 'hover:scale-105 opacity-85 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: preset.hex }}
+                      >
+                        {isSelected && (
+                          <Check className="w-3.5 h-3.5 text-white drop-shadow stroke-[3]" />
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Custom Color Picker Swatch */}
+                  <div className="flex items-center gap-1.5 pl-2 border-l border-border/70 ml-1">
+                    <label
+                      title={isBangla ? 'কাস্টম কালার পিক করুন' : 'Pick custom color'}
+                      className="w-7 h-7 rounded-full border border-dashed border-border hover:border-primary flex items-center justify-center cursor-pointer relative overflow-hidden bg-muted/40 hover:bg-muted/80 transition-colors"
+                    >
+                      <input
+                        type="color"
+                        value={createRoleData.color || '#6366f1'}
+                        onChange={(e) => setCreateRoleData({ ...createRoleData, color: e.target.value })}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                      <span
+                        className="w-3.5 h-3.5 rounded-full"
+                        style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modules & Permissions Matrix */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span>{isBangla ? 'মডিউল ভিত্তিক অনুমতি' : 'Module Permissions'}</span>
+                </h3>
+                <div className="flex items-center gap-2.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSelectAllCreatePermissions(createRolePermissions.length !== ALL_PERMISSION_IDS.length)}
+                    className="h-7 px-2 text-xs font-semibold text-primary hover:bg-primary/10 cursor-pointer"
+                  >
+                    {createRolePermissions.length === ALL_PERMISSION_IDS.length
+                      ? (isBangla ? 'সব অনুমতি বাতিল' : 'Deselect All')
+                      : (isBangla ? 'সব অনুমতি নির্বাচন' : 'Select All Permissions')}
+                  </Button>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {createRolePermissions.length} / {ALL_PERMISSION_IDS.length} {isBangla ? 'সক্রিয়' : 'enabled'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {ERP_MODULES.map((module) => {
+                  const modPermIds = module.permissions.map((p) => p.id);
+                  const enabledCount = modPermIds.filter((id) => createRolePermissions.includes(id)).length;
+                  const allEnabled = enabledCount === modPermIds.length;
+
+                  return (
+                    <div key={module.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="p-3 bg-muted/30 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-bold text-xs text-foreground">{isBangla ? module.nameBn : module.name}</span>
+                          <span className="text-[10px] text-muted-foreground">({enabledCount} / {modPermIds.length})</span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAllCreateModulePermissions(module, !allEnabled)}
+                          className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 cursor-pointer"
+                        >
+                          {allEnabled ? (isBangla ? 'সব বাতিল' : 'Deselect All') : (isBangla ? 'সব নির্বাচন' : 'Select All')}
+                        </Button>
+                      </div>
+                      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {module.permissions.map((perm) => {
+                          const isChecked = createRolePermissions.includes(perm.id);
+                          return (
+                            <label
+                              key={perm.id}
+                              className={cn(
+                                'flex items-start gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-colors',
+                                isChecked
+                                  ? 'bg-primary/5 border-primary/30 text-foreground'
+                                  : 'border-border/60 text-muted-foreground hover:bg-muted/30'
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleCreateRolePermission(perm.id)}
+                                className="mt-0.5 rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+                              />
+                              <div>
+                                <span className="font-semibold block">{isBangla ? perm.nameBn : perm.name}</span>
+                                <span className="text-[10px] opacity-75 line-clamp-1">{perm.description}</span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── 2. EDIT ROLE MODAL ──────────────────────────────────────────── */}
+      <Dialog open={isEditRoleModalOpen} onOpenChange={setIsEditRoleModalOpen}>
+        <DialogContent className="max-w-4xl w-[94vw] max-h-[90vh] flex flex-col p-0 gap-0 rounded-2xl bg-card border-border overflow-hidden shadow-2xl">
           {editingRole && (
             <>
               {/* Header */}
-              <div className="p-4 sm:p-5 border-b border-border bg-muted/20 flex items-center justify-between gap-3">
+              <div className="p-4 sm:p-5 border-b border-border bg-gradient-to-r from-muted/30 via-muted/15 to-transparent flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-4 h-4 rounded-full" style={{ backgroundColor: editingRole.color }} />
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
+                    style={{ backgroundColor: editingRole.color || '#3b82f6' }}
+                  >
+                    <Crown className="w-5 h-5 text-white" />
+                  </div>
                   <div>
-                    <h2 className="text-lg font-extrabold text-foreground">
-                      {editingRole.name ? (isBangla ? editingRole.nameBn || editingRole.name : editingRole.name) : (isBangla ? 'নতুন রোল তৈরি' : 'Create New Role')}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {isBangla ? 'মডিউল ও পারমিশন কনফিগার করুন' : 'Configure role details and granular permissions'}
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-extrabold text-foreground">
+                        {isBangla ? `রোল সম্পাদনা: ${editingRole.nameBn || editingRole.name}` : `Edit Role: ${editingRole.name}`}
+                      </h2>
+                      {editingRole.isSystemProtected ? (
+                        <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" />
+                          {isBangla ? 'সুরক্ষিত সিস্টেম রোল' : 'System Protected'}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold">
+                          {isBangla ? 'কাস্টম রোল' : 'Custom Role'}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isBangla
+                        ? 'রোলের বিবরণ, কালার থিম এবং পারমিশন অ্যাক্সেস পরিবর্তন করুন'
+                        : 'Update role details, color branding, and configure granular permissions'}
                     </p>
                   </div>
                 </div>
@@ -1740,75 +2058,152 @@ export default function UserAccessControlPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsRoleModalOpen(false)}
+                    onClick={() => setIsEditRoleModalOpen(false)}
                     className="rounded-xl border-border text-xs font-semibold h-9 hover:bg-muted cursor-pointer"
                   >
                     {isBangla ? 'বাতিল' : 'Cancel'}
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleSaveRole}
+                    onClick={handleSaveEditRole}
                     className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5 mr-1" />
-                    {isBangla ? 'সংরক্ষণ করুন' : 'Save Role'}
+                    {isBangla ? 'সংরক্ষণ করুন' : 'Save Changes'}
                   </Button>
                 </div>
               </div>
 
               {/* Body */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-                {/* Role Details Form */}
-                <div className="p-4 rounded-2xl bg-muted/20 border border-border/80 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* System Protected Notice */}
+                {editingRole.isSystemProtected && (
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-2.5 text-xs text-foreground">
+                    <Lock className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
                     <div>
-                      <Label className="text-xs font-semibold text-foreground mb-1 block">
-                        {isBangla ? 'রোলের নাম (English)' : 'Role Name (English)'}
+                      <span className="font-bold block text-purple-300">
+                        {isBangla ? 'সিস্টেম সংরক্ষিত রোল' : 'System-Protected Baseline Role'}
+                      </span>
+                      <span className="text-muted-foreground text-[11px]">
+                        {isBangla
+                          ? 'এই রোলের মূল নাম সিস্টেমের সাথে যুক্ত থাকার কারণে অপরিবর্তনীয়, তবে আপনি কালার এবং পারমিশন কাস্টমাইজ করতে পারেন।'
+                          : 'Core role identity is locked to maintain system stability. You can customize the color theme and permissions.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Role Details Form */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/80 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs font-semibold text-foreground mb-1.5 block">
+                        {isBangla ? 'রোলের নাম' : 'Role Name'} <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         value={editingRole.name}
                         onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
-                        placeholder="e.g. Area Sales Officer"
-                        className="h-9 text-xs rounded-xl bg-background"
+                        placeholder={isBangla ? 'যেমন: এরিয়া সেলস অফিসার' : 'e.g. Area Sales Officer'}
+                        className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary disabled:opacity-75"
                         disabled={editingRole.isSystemProtected}
                       />
                     </div>
                     <div>
-                      <Label className="text-xs font-semibold text-foreground mb-1 block">
-                        {isBangla ? 'রোলের নাম (বাংলা)' : 'Role Name (Bengali)'}
+                      <Label className="text-xs font-semibold text-foreground mb-1.5 block">
+                        {isBangla ? 'বিবরণ' : 'Description'}
                       </Label>
                       <Input
-                        value={editingRole.nameBn}
-                        onChange={(e) => setEditingRole({ ...editingRole, nameBn: e.target.value })}
-                        placeholder="যেমন: এরিয়া সেলস অফিসার"
-                        className="h-9 text-xs rounded-xl bg-background"
-                        disabled={editingRole.isSystemProtected}
+                        value={editingRole.description}
+                        onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
+                        placeholder={isBangla ? 'দায়িত্ব ও কাজের সংক্ষিপ্ত বিবরণ' : 'Brief summary of duties and responsibilities'}
+                        className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary"
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label className="text-xs font-semibold text-foreground mb-1 block">
-                      {isBangla ? 'বিবরণ' : 'Description'}
-                    </Label>
-                    <Input
-                      value={editingRole.description}
-                      onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
-                      placeholder="Brief summary of duties and responsibilities"
-                      className="h-9 text-xs rounded-xl bg-background"
-                    />
+
+                  {/* Role Color Template Picker */}
+                  <div className="space-y-2 pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-foreground flex items-center gap-2">
+                        <span>{isBangla ? 'রোলের কালার থিম' : 'Role Color'}</span>
+                        <span
+                          className="w-3.5 h-3.5 rounded-full ring-1 ring-border/80 shadow-xs inline-block transition-transform duration-200"
+                          style={{ backgroundColor: editingRole.color || '#3b82f6' }}
+                        />
+                      </Label>
+                      <span className="text-[11px] text-muted-foreground font-mono uppercase tracking-wider">
+                        {editingRole.color || '#3b82f6'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center flex-wrap gap-2 p-2.5 rounded-xl bg-background/80 border border-border/70">
+                      {ROLE_COLOR_PRESETS.map((preset) => {
+                        const isSelected = (editingRole.color || '').toLowerCase() === preset.hex.toLowerCase();
+                        return (
+                          <button
+                            key={preset.hex}
+                            type="button"
+                            onClick={() => setEditingRole({ ...editingRole, color: preset.hex })}
+                            title={preset.name}
+                            className={`w-7 h-7 rounded-full transition-all duration-150 flex items-center justify-center cursor-pointer relative ${
+                              isSelected
+                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110 shadow-sm'
+                                : 'hover:scale-105 opacity-85 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: preset.hex }}
+                          >
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-white drop-shadow stroke-[3]" />
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {/* Custom Color Picker Swatch */}
+                      <div className="flex items-center gap-1.5 pl-2 border-l border-border/70 ml-1">
+                        <label
+                          title={isBangla ? 'কাস্টম কালার পিক করুন' : 'Pick custom color'}
+                          className="w-7 h-7 rounded-full border border-dashed border-border hover:border-primary flex items-center justify-center cursor-pointer relative overflow-hidden bg-muted/40 hover:bg-muted/80 transition-colors"
+                        >
+                          <input
+                            type="color"
+                            value={editingRole.color || '#3b82f6'}
+                            onChange={(e) => setEditingRole({ ...editingRole, color: e.target.value })}
+                            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                          />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full"
+                            style={{ backgroundColor: editingRole.color || '#3b82f6' }}
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Modules & Permissions Matrix */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                       <Shield className="w-4 h-4 text-primary" />
                       <span>{isBangla ? 'মডিউল ভিত্তিক অনুমতি' : 'Module Permissions'}</span>
                     </h3>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {editingRolePermissions.length} / {ALL_PERMISSION_IDS.length} {isBangla ? 'অনুমতি সক্রিয়' : 'enabled'}
-                    </span>
+                    <div className="flex items-center gap-2.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSelectAllEditPermissions(editingRolePermissions.length !== ALL_PERMISSION_IDS.length)}
+                        className="h-7 px-2 text-xs font-semibold text-primary hover:bg-primary/10 cursor-pointer"
+                      >
+                        {editingRolePermissions.length === ALL_PERMISSION_IDS.length
+                          ? (isBangla ? 'সব বাতিল' : 'Deselect All')
+                          : (isBangla ? 'সব নির্বাচন' : 'Select All Permissions')}
+                      </Button>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {editingRolePermissions.length} / {ALL_PERMISSION_IDS.length} {isBangla ? 'অনুমতি সক্রিয়' : 'enabled'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-3">
@@ -1825,9 +2220,10 @@ export default function UserAccessControlPage() {
                               <span className="text-[10px] text-muted-foreground">({enabledCount} / {modPermIds.length})</span>
                             </div>
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleToggleAllModulePermissions(module, !allEnabled)}
+                              onClick={() => handleToggleAllEditModulePermissions(module, !allEnabled)}
                               className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 cursor-pointer"
                             >
                               {allEnabled ? (isBangla ? 'সব বাতিল' : 'Deselect All') : (isBangla ? 'সব নির্বাচন' : 'Select All')}
@@ -1849,7 +2245,7 @@ export default function UserAccessControlPage() {
                                   <input
                                     type="checkbox"
                                     checked={isChecked}
-                                    onChange={() => handleToggleRolePermission(perm.id)}
+                                    onChange={() => handleToggleEditRolePermission(perm.id)}
                                     className="mt-0.5 rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
                                   />
                                   <div>
@@ -2806,7 +3202,7 @@ export default function UserAccessControlPage() {
             <Button variant="outline" onClick={() => setIsAddUserModalOpen(false)} className="rounded-xl text-xs cursor-pointer">
               {isBangla ? 'বাতিল' : 'Cancel'}
             </Button>
-            <Button onClick={handleCreateNewUser} className="rounded-xl bg-primary text-primary-foreground font-bold text-xs cursor-pointer">
+            <Button onClick={handleCreateNewRole} className="rounded-xl bg-primary text-primary-foreground font-bold text-xs cursor-pointer">
               {isBangla ? 'ব্যবহারকারী তৈরি করুন' : 'Create & Assign Access'}
             </Button>
           </DialogFooter>

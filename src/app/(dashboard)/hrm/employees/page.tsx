@@ -9,7 +9,6 @@ import {
   Users,
   UserPlus,
   Search,
-  Download,
   Eye,
   Pencil,
   Archive,
@@ -29,8 +28,10 @@ import {
   CalendarDays,
   BadgeCheck,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
-import { Button, Input, Card } from '@/components/ui/premium';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -65,8 +66,6 @@ import {
 import { toast } from 'sonner';
 import { useAppTranslation, useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
 import { useRouter } from 'next/navigation';
-import { HrmPageHeader } from '@/components/hrm/shared/HrmPageHeader';
-import { HrmStatCard } from '@/components/hrm/shared/HrmStatCard';
 import { HrmDataTable, type HrmColumn } from '@/components/hrm/shared/HrmDataTable';
 import { HrmPagination } from '@/components/hrm/shared/HrmPagination';
 import { HrmAvatar } from '@/components/hrm/shared/HrmAvatar';
@@ -74,6 +73,7 @@ import { EmployeeStatusBadge } from '@/components/hrm/shared/HrmStatusBadge';
 import { HRM_EMPLOYEES, HRM_BRANCHES, branchName } from '@/components/hrm/mock-data';
 import type { Employee } from '@/components/hrm/types';
 import { DEPARTMENTS, DESIGNATIONS } from '@/components/hrm/types';
+import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 8;
 
@@ -157,24 +157,18 @@ export default function EmployeesPage() {
     );
   };
 
-  const stats = useMemo(() => {
-    const active = HRM_EMPLOYEES.filter((e) => e.status === 'Active').length;
-    const onLeave = HRM_EMPLOYEES.filter((e) => e.status === 'On Leave').length;
-    const probation = HRM_EMPLOYEES.filter((e) => e.status === 'Probation').length;
-    const payroll = HRM_EMPLOYEES.reduce((s, e) => s + e.salary, 0);
-    return { active, onLeave, probation, payroll };
-  }, []);
-
   const columns: HrmColumn<Employee>[] = [
     {
       key: 'employee',
       header: isBangla ? 'কর্মচারী' : 'Employee',
       render: (e) => (
         <div className="flex items-center gap-3">
-          <HrmAvatar name={e.name} size="sm" />
+          <HrmAvatar name={e.name} size="sm" className="ring-1 ring-slate-700/60 shadow-sm" />
           <div className="min-w-0">
-            <p className="font-medium text-foreground text-sm truncate max-w-[160px]">{e.name}</p>
-            <p className="text-xs text-muted-foreground">{e.employeeId}</p>
+            <p className="font-semibold text-slate-100 text-sm truncate max-w-[170px] hover:text-indigo-400 transition-colors">
+              {e.name}
+            </p>
+            <p className="text-xs text-slate-400 font-mono mt-0.5">{e.employeeId}</p>
           </div>
         </div>
       ),
@@ -184,31 +178,33 @@ export default function EmployeesPage() {
       header: isBangla ? 'যোগাযোগ' : 'Contact',
       render: (e) => (
         <div className="min-w-0">
-          <p className="text-sm text-foreground tabular-nums">{e.phone}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[180px]">{e.email}</p>
+          <p className="text-sm text-slate-200 font-medium tabular-nums">{e.phone}</p>
+          <p className="text-xs text-slate-400 truncate max-w-[180px] mt-0.5">{e.email}</p>
         </div>
       ),
     },
     {
       key: 'department',
-      header: isBangla ? 'বিভাগ' : 'Department',
+      header: isBangla ? 'বিভাগ ও পদবি' : 'Department & Role',
       render: (e) => (
         <div>
-          <p className="text-sm text-foreground whitespace-nowrap">{e.department}</p>
-          <p className="text-xs text-muted-foreground whitespace-nowrap">{e.designation}</p>
+          <p className="text-sm text-slate-200 font-medium whitespace-nowrap">{e.department}</p>
+          <p className="text-xs text-slate-400 whitespace-nowrap mt-0.5">{e.designation}</p>
         </div>
       ),
     },
     {
       key: 'branch',
       header: isBangla ? 'শাখা' : 'Branch',
-      render: (e) => <span className="text-sm text-muted-foreground whitespace-nowrap">{branchName(e.branchId)}</span>,
+      render: (e) => (
+        <span className="text-sm text-slate-300 whitespace-nowrap">{branchName(e.branchId)}</span>
+      ),
     },
     {
       key: 'joining',
       header: isBangla ? 'যোগদান' : 'Joined',
       render: (e) => (
-        <span className="text-sm text-muted-foreground whitespace-nowrap tabular-nums">
+        <span className="text-sm text-slate-400 whitespace-nowrap tabular-nums">
           {formatDate(e.joiningDate)}
         </span>
       ),
@@ -218,7 +214,7 @@ export default function EmployeesPage() {
       header: isBangla ? 'বেতন' : 'Salary',
       align: 'right',
       render: (e) => (
-        <span className="text-sm font-medium text-foreground whitespace-nowrap tabular-nums">
+        <span className="text-sm font-bold text-emerald-400 whitespace-nowrap tabular-nums">
           {formatCurrency(e.salary)}
         </span>
       ),
@@ -234,32 +230,50 @@ export default function EmployeesPage() {
       header: '',
       align: 'right',
       render: (e) => (
-        <div className="flex items-center justify-end gap-1" onClick={(ev) => ev.stopPropagation()}>
-          <Button variant="ghost" size="icon-sm" onClick={() => openDrawer(e)} aria-label="View">
+        <div className="flex items-center justify-end gap-1.5" onClick={(ev) => ev.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => openDrawer(e)}
+            aria-label="View"
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
+          >
             <Eye className="h-4 w-4" />
-          </Button>
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="More">
+              <button
+                type="button"
+                aria-label="More"
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
+              >
                 <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => openEdit(e)}>
-                <Pencil className="h-4 w-4" /> {isBangla ? 'সম্পাদনা' : 'Edit'}
+            <DropdownMenuContent align="end" className="w-48 bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl shadow-black/80 rounded-xl p-1.5">
+              <DropdownMenuItem
+                onClick={() => openEdit(e)}
+                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+              >
+                <Pencil className="h-4 w-4 mr-2 text-indigo-400" /> {isBangla ? 'সম্পাদনা' : 'Edit'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push(`/hrm/employees/${e.id}`)}>
-                <FileText className="h-4 w-4" /> {isBangla ? 'প্রোফাইল' : 'Profile'}
+              <DropdownMenuItem
+                onClick={() => router.push(`/hrm/employees/${e.id}`)}
+                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+              >
+                <FileText className="h-4 w-4 mr-2 text-sky-400" /> {isBangla ? 'প্রোফাইল' : 'Profile'}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setResetTarget(e)}>
-                <KeyRound className="h-4 w-4" /> {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset Password'}
+              <DropdownMenuSeparator className="bg-slate-800/80 my-1" />
+              <DropdownMenuItem
+                onClick={() => setResetTarget(e)}
+                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+              >
+                <KeyRound className="h-4 w-4 mr-2 text-amber-400" /> {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset Password'}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setArchiveTarget(e)}
-                className="text-destructive focus:text-destructive"
+                className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
-                <Archive className="h-4 w-4" /> {isBangla ? 'আর্কাইভ' : 'Archive'}
+                <Archive className="h-4 w-4 mr-2" /> {isBangla ? 'আর্কাইভ' : 'Archive'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -269,84 +283,44 @@ export default function EmployeesPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <HrmPageHeader
-        title={isBangla ? 'কর্মচারী ব্যবস্থাপনা' : 'Employee Management'}
-        titleBn="কর্মচারী ব্যবস্থাপনা"
-        subtitle={isBangla ? 'কর্মচারী তালিকা পরিচালনা করুন — যোগ, সম্পাদনা ও প্রোফাইল দেখুন।' : 'Manage your workforce — add, edit and view employee profiles.'}
-        subtitleBn="কর্মচারী তালিকা পরিচালনা করুন — যোগ, সম্পাদনা ও প্রোফাইল দেখুন।"
-        icon={Users}
-        // breadcrumbs={[{ label: isBangla ? 'কর্মচারী' : 'Employees', labelBn: 'কর্মচারী' }]}
-        actions={
-          <>
-            {/* <Button
-              variant="outline"
-              size="default"
-              leftIcon={<Download className="h-4 w-4" />}
-              onClick={() => toast.success(isBangla ? 'রপ্তানি শুরু হয়েছে' : 'Export started')}
-            >
-              <span className="hidden sm:inline">{isBangla ? 'রপ্তানি' : 'Export'}</span>
-            </Button> */}
-            <Button leftIcon={<UserPlus className="h-4 w-4" />} onClick={openAdd}>
-              {isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}
-            </Button>
-          </>
-        }
-      />
+    <div className="w-full space-y-6 pb-12 px-1 sm:px-2">
+      {/* 1. TOP HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
+        <div className="flex items-center gap-3.5">
+          <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
+              <span>{isBangla ? 'কর্মচারী ব্যবস্থাপনা' : 'Employee Management'}</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isBangla
+                ? 'কর্মচারী তালিকা পরিচালনা করুন — যোগ, সম্পাদনা ও প্রোফাইল দেখুন।'
+                : 'Manage your workforce — add, edit and view employee profiles.'}
+            </p>
+          </div>
+        </div>
 
-      {/* Stats */}
-      {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <HrmStatCard
-          title="Total Employees"
-          titleBn="মোট কর্মচারী"
-          value={String(HRM_EMPLOYEES.length)}
-          icon={Users}
-          tone="indigo"
-          caption="across 5 branches"
-          captionBn="৫টি শাখায়"
-          index={0}
-        />
-        <HrmStatCard
-          title="Active"
-          titleBn="সক্রিয়"
-          value={String(stats.active)}
-          icon={BadgeCheck}
-          tone="emerald"
-          trend={{ value: 2.5, isPositive: true }}
-          caption="working now"
-          captionBn="কর্মরত"
-          index={1}
-        />
-        <HrmStatCard
-          title="On Leave"
-          titleBn="ছুটিতে"
-          value={String(stats.onLeave)}
-          icon={CalendarDays}
-          tone="warning"
-          caption="currently away"
-          captionBn="বর্তমানে ছুটিতে"
-          index={2}
-        />
-        <HrmStatCard
-          title="Probation"
-          titleBn="পরীক্ষামূলক"
-          value={String(stats.probation)}
-          icon={ShieldCheck}
-          tone="sky"
-          caption="in probation"
-          captionBn="পরীক্ষামূলক সময়ে"
-          index={3}
-        />
-      </div> */}
+        <div className="flex items-center gap-2.5">
+          <Button
+            onClick={openAdd}
+            className="cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
+          </Button>
+        </div>
+      </div>
 
-      {/* Toolbar */}
-      <Card padding="lg">
-        <div className="flex flex-col gap-3">
+      {/* 2. SEARCH & FILTER TOOLBAR */}
+      <div className="rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-xl shadow-black/40 backdrop-blur-xl p-4 sm:p-5 transition-all">
+        <div className="flex flex-col gap-3.5">
           <div className="flex flex-col md:flex-row md:items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-10"
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                className="w-full h-10.5 pl-10 pr-4 bg-slate-900/60 border border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg text-xs focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
                 placeholder={isBangla ? 'নাম, আইডি, ফোন বা ইমেইল খুঁজুন…' : 'Search name, ID, phone or email…'}
                 value={searchTerm}
                 onChange={(e) => {
@@ -355,23 +329,28 @@ export default function EmployeesPage() {
                 }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={showFilters ? 'secondary' : 'outline'}
-                size="default"
-                leftIcon={<Filter className="h-4 w-4" />}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
                 onClick={() => setShowFilters((v) => !v)}
+                className={cn(
+                  'h-10.5 px-3.5 rounded-lg border text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer select-none',
+                  showFilters
+                    ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300'
+                    : 'bg-slate-900/60 border-slate-800/90 text-slate-300 hover:text-slate-100 hover:bg-slate-800/60'
+                )}
               >
-                {isBangla ? 'ফিল্টার' : 'Filters'}
+                <Filter className="h-4 w-4" />
+                <span>{isBangla ? 'ফিল্টার' : 'Filters'}</span>
                 {branchFilter !== 'all' || deptFilter !== 'all' || statusFilter !== 'all' || designationFilter !== 'all' ? (
-                  <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
                 ) : null}
-              </Button>
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
+              </button>
+              <div className="h-10.5 px-3.5 rounded-lg bg-slate-900/60 border border-slate-800/90 text-xs text-slate-400 flex items-center justify-center whitespace-nowrap font-medium">
                 {isBangla
                   ? `${filtered.length} জন ফলাফল`
                   : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}
-              </span>
+              </div>
             </div>
           </div>
 
@@ -381,7 +360,7 @@ export default function EmployeesPage() {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-1"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-800/60"
             >
               <Select
                 value={branchFilter}
@@ -390,10 +369,10 @@ export default function EmployeesPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-200 text-xs rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
                   <SelectValue placeholder={isBangla ? 'শাখা' : 'Branch'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব শাখা' : 'All branches'}</SelectItem>
                   {HRM_BRANCHES.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
@@ -409,10 +388,10 @@ export default function EmployeesPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-200 text-xs rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
                   <SelectValue placeholder={isBangla ? 'বিভাগ' : 'Department'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব বিভাগ' : 'All departments'}</SelectItem>
                   {DEPARTMENTS.map((d) => (
                     <SelectItem key={d} value={d}>
@@ -428,10 +407,10 @@ export default function EmployeesPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-200 text-xs rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
                   <SelectValue placeholder={isBangla ? 'পদবি' : 'Designation'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব পদবি' : 'All designations'}</SelectItem>
                   {DESIGNATIONS.map((d) => (
                     <SelectItem key={d} value={d}>
@@ -447,10 +426,10 @@ export default function EmployeesPage() {
                   setCurrentPage(1);
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-200 text-xs rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30">
                   <SelectValue placeholder={isBangla ? 'স্ট্যাটাস' : 'Status'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব স্ট্যাটাস' : 'All statuses'}</SelectItem>
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="On Leave">On Leave</SelectItem>
@@ -461,9 +440,9 @@ export default function EmployeesPage() {
             </motion.div>
           )}
         </div>
-      </Card>
+      </div>
 
-      {/* Table */}
+      {/* 3. TABLE */}
       <HrmDataTable
         columns={columns}
         data={paged}
@@ -476,8 +455,12 @@ export default function EmployeesPage() {
         emptyDescription={isBangla ? 'অন্য ফিল্টার ব্যবহার করে দেখুন বা নতুন কর্মচারী যোগ করুন।' : 'Try different filters or add a new employee.'}
         emptyDescriptionBn="অন্য ফিল্টার ব্যবহার করে দেখুন বা নতুন কর্মচারী যোগ করুন।"
         emptyAction={
-          <Button leftIcon={<UserPlus className="h-4 w-4" />} onClick={openAdd}>
-            {isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}
+          <Button
+            onClick={openAdd}
+            className="cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm mt-3"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
           </Button>
         }
         onRowClick={openDrawer}
@@ -496,34 +479,38 @@ export default function EmployeesPage() {
         }
       />
 
-      {/* Details Drawer */}
+      {/* 4. DETAILS DRAWER */}
       <Drawer direction="right" open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="w-full max-w-md">
+        <DrawerContent className="w-full max-w-md bg-[#0d131f] border-l border-slate-800 text-slate-100 shadow-2xl">
           {selectedEmployee && (
             <>
-              <DrawerHeader className="border-b border-border px-5 pb-4">
-                <div className="flex items-center gap-3">
-                  <HrmAvatar name={selectedEmployee.name} size="lg" />
+              <DrawerHeader className="border-b border-slate-800/80 px-6 py-5">
+                <div className="flex items-center gap-3.5">
+                  <HrmAvatar name={selectedEmployee.name} size="lg" className="ring-2 ring-indigo-500/30 shadow-md" />
                   <div className="min-w-0 flex-1">
-                    <DrawerTitle className="text-lg font-semibold text-foreground truncate">
+                    <DrawerTitle className="text-lg font-bold text-slate-100 truncate">
                       {selectedEmployee.name}
                     </DrawerTitle>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
                       {selectedEmployee.employeeId} · {selectedEmployee.designation}
                     </p>
-                    <div className="mt-1.5">
+                    <div className="mt-2">
                       <EmployeeStatusBadge status={selectedEmployee.status} />
                     </div>
                   </div>
                   <DrawerClose asChild>
-                    <Button variant="ghost" size="icon-sm">
+                    <button
+                      type="button"
+                      aria-label="Close"
+                      className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
+                    >
                       <ChevronRight className="h-4 w-4 rotate-180" />
-                    </Button>
+                    </button>
                   </DrawerClose>
                 </div>
               </DrawerHeader>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
                 <div className="grid grid-cols-2 gap-3">
                   <DetailChip icon={Building2} label={isBangla ? 'বিভাগ' : 'Department'} value={selectedEmployee.department} />
                   <DetailChip icon={ShieldCheck} label={isBangla ? 'শিফট' : 'Shift'} value={selectedEmployee.shift} />
@@ -538,8 +525,9 @@ export default function EmployeesPage() {
                 <Divider />
 
                 <div>
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    {isBangla ? 'যোগাযোগ' : 'Contact'}
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                    <span>{isBangla ? 'যোগাযোগের তথ্য' : 'Contact Information'}</span>
                   </h4>
                   <div className="space-y-2.5">
                     <ContactRow icon={Phone} label={isBangla ? 'মোবাইল' : 'Phone'} value={selectedEmployee.phone} />
@@ -550,27 +538,27 @@ export default function EmployeesPage() {
                 </div>
               </div>
 
-              <DrawerFooter className="border-t border-border px-5 py-4 flex-row gap-2">
+              <DrawerFooter className="border-t border-slate-800/80 px-6 py-4 flex-row gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1"
-                  leftIcon={<Pencil className="h-4 w-4" />}
+                  className="flex-1 border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg h-10 cursor-pointer text-xs"
                   onClick={() => {
                     setDrawerOpen(false);
                     openEdit(selectedEmployee);
                   }}
                 >
-                  {isBangla ? 'সম্পাদনা' : 'Edit'}
+                  <Pencil className="h-3.5 w-3.5 mr-1.5 text-indigo-400" />
+                  <span>{isBangla ? 'সম্পাদনা' : 'Edit'}</span>
                 </Button>
                 <Button
-                  className="flex-1"
-                  leftIcon={<FileText className="h-4 w-4" />}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg h-10 shadow-lg shadow-indigo-600/30 cursor-pointer text-xs"
                   onClick={() => {
                     setDrawerOpen(false);
                     router.push(`/hrm/employees/${selectedEmployee.id}`);
                   }}
                 >
-                  {isBangla ? 'প্রোফাইল' : 'Profile'}
+                  <FileText className="h-3.5 w-3.5 mr-1.5" />
+                  <span>{isBangla ? 'প্রোফাইল' : 'Profile'}</span>
                 </Button>
               </DrawerFooter>
             </>
@@ -578,11 +566,11 @@ export default function EmployeesPage() {
         </DrawerContent>
       </Drawer>
 
-      {/* Add / Edit Dialog */}
+      {/* 5. ADD / EDIT DIALOG */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg font-bold text-slate-100">
               {editingEmployee
                 ? isBangla
                   ? 'কর্মচারী সম্পাদনা'
@@ -595,28 +583,58 @@ export default function EmployeesPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="emp-name">{isBangla ? 'পুরো নাম *' : 'Full Name *'}</Label>
-              <Input id="emp-name" placeholder="e.g. Abdur Rahman" defaultValue={editingEmployee?.name} />
+              <Label htmlFor="emp-name" className="text-xs font-semibold text-slate-300">
+                {isBangla ? 'পুরো নাম *' : 'Full Name *'}
+              </Label>
+              <Input
+                id="emp-name"
+                placeholder="e.g. Abdur Rahman"
+                defaultValue={editingEmployee?.name}
+                className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="emp-phone">{isBangla ? 'মোবাইল *' : 'Phone *'}</Label>
-              <Input id="emp-phone" placeholder="01XXXXXXXXX" defaultValue={editingEmployee?.phone} />
+              <Label htmlFor="emp-phone" className="text-xs font-semibold text-slate-300">
+                {isBangla ? 'মোবাইল *' : 'Phone *'}
+              </Label>
+              <Input
+                id="emp-phone"
+                placeholder="01XXXXXXXXX"
+                defaultValue={editingEmployee?.phone}
+                className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="emp-email">{isBangla ? 'ইমেইল' : 'Email'}</Label>
-              <Input id="emp-email" type="email" placeholder="name@hellokhata.com" defaultValue={editingEmployee?.email} />
+              <Label htmlFor="emp-email" className="text-xs font-semibold text-slate-300">
+                {isBangla ? 'ইমেইল' : 'Email'}
+              </Label>
+              <Input
+                id="emp-email"
+                type="email"
+                placeholder="name@hellokhata.com"
+                defaultValue={editingEmployee?.email}
+                className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="emp-salary">{isBangla ? 'বেতন (৳) *' : 'Salary (৳) *'}</Label>
-              <Input id="emp-salary" type="number" placeholder="30000" defaultValue={editingEmployee?.salary} />
+              <Label htmlFor="emp-salary" className="text-xs font-semibold text-slate-300">
+                {isBangla ? 'বেতন (৳) *' : 'Salary (৳) *'}
+              </Label>
+              <Input
+                id="emp-salary"
+                type="number"
+                placeholder="30000"
+                defaultValue={editingEmployee?.salary}
+                className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>{isBangla ? 'শাখা *' : 'Branch *'}</Label>
+              <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'শাখা *' : 'Branch *'}</Label>
               <Select defaultValue={editingEmployee?.branchId || HRM_BRANCHES[0].id}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'শাখা নির্বাচন' : 'Select branch'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
                   {HRM_BRANCHES.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
@@ -626,12 +644,12 @@ export default function EmployeesPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>{isBangla ? 'বিভাগ *' : 'Department *'}</Label>
+              <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'বিভাগ *' : 'Department *'}</Label>
               <Select defaultValue={editingEmployee?.department || DEPARTMENTS[1]}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'বিভাগ নির্বাচন' : 'Select department'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
                   {DEPARTMENTS.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
@@ -641,12 +659,12 @@ export default function EmployeesPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>{isBangla ? 'পদবি *' : 'Designation *'}</Label>
+              <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'পদবি *' : 'Designation *'}</Label>
               <Select defaultValue={editingEmployee?.designation || DESIGNATIONS[2]}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'পদবি নির্বাচন' : 'Select designation'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
                   {DESIGNATIONS.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
@@ -656,12 +674,12 @@ export default function EmployeesPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>{isBangla ? 'স্ট্যাটাস' : 'Status'}</Label>
+              <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'স্ট্যাটাস' : 'Status'}</Label>
               <Select defaultValue={editingEmployee?.status || 'Active'}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'স্ট্যাটাস' : 'Status'} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="On Leave">On Leave</SelectItem>
                   <SelectItem value="Probation">Probation</SelectItem>
@@ -670,16 +688,26 @@ export default function EmployeesPage() {
               </Select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="emp-address">{isBangla ? 'ঠিকানা' : 'Address'}</Label>
-              <Input id="emp-address" placeholder={isBangla ? 'বাড়ি, রোড, এলাকা, ঢাকা' : 'House, Road, Area, Dhaka'} defaultValue={editingEmployee?.address} />
+              <Label htmlFor="emp-address" className="text-xs font-semibold text-slate-300">
+                {isBangla ? 'ঠিকানা' : 'Address'}
+              </Label>
+              <Input
+                id="emp-address"
+                placeholder={isBangla ? 'বাড়ি, রোড, এলাকা, ঢাকা' : 'House, Road, Area, Dhaka'}
+                defaultValue={editingEmployee?.address}
+                className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
+              />
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
             <DialogClose asChild>
-              <Button variant="outline">{isBangla ? 'বাতিল' : 'Cancel'}</Button>
+              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg text-xs h-10 cursor-pointer">
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
             </DialogClose>
             <Button
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30 rounded-lg text-xs h-10 px-5 cursor-pointer"
               onClick={() => {
                 setFormOpen(false);
                 toast.success(
@@ -699,40 +727,50 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Archive Confirm */}
+      {/* 6. ARCHIVE CONFIRM DIALOG */}
       <Dialog open={!!archiveTarget} onOpenChange={(o) => !o && setArchiveTarget(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle>{isBangla ? 'কর্মচারী আর্কাইভ করুন?' : 'Archive employee?'}</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-slate-100">
+              {isBangla ? 'কর্মচারী আর্কাইভ করুন?' : 'Archive employee?'}
+            </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-slate-400 py-2 leading-relaxed">
             {archiveTarget
               ? isBangla
                 ? `${archiveTarget.name} কে আর্কাইভ করলে তিনি আর সক্রিয় কর্মচারী তালিকায় থাকবেন না।`
                 : `${archiveTarget.name} will no longer appear in the active employee list. You can restore anytime.`
               : ''}
           </p>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
             <DialogClose asChild>
-              <Button variant="outline">{isBangla ? 'বাতিল' : 'Cancel'}</Button>
+              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg text-xs h-10 cursor-pointer">
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
             </DialogClose>
-            <Button variant="destructive" onClick={handleArchive}>
+            <Button
+              variant="destructive"
+              onClick={handleArchive}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-600/30 rounded-lg text-xs h-10 px-4 cursor-pointer flex items-center gap-1.5"
+            >
               <Archive className="h-4 w-4" />
-              {isBangla ? 'আর্কাইভ করুন' : 'Archive'}
+              <span>{isBangla ? 'আর্কাইভ করুন' : 'Archive'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password */}
+      {/* 7. RESET PASSWORD DIALOG */}
       <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle>{isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset password'}</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-slate-100">
+              {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset password'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex items-start gap-3 rounded-xl border border-[rgba(255,255,255,0.04)] bg-muted/30 p-3">
-            <KeyRound className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3.5 my-2">
+            <KeyRound className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-300 leading-relaxed">
               {resetTarget
                 ? isBangla
                   ? `${resetTarget.name} এর লগইন পাসওয়ার্ড রিসেট করতে একটি লিংক পাঠানো হবে।`
@@ -740,13 +778,18 @@ export default function EmployeesPage() {
                 : ''}
             </p>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
             <DialogClose asChild>
-              <Button variant="outline">{isBangla ? 'বাতিল' : 'Cancel'}</Button>
+              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg text-xs h-10 cursor-pointer">
+                {isBangla ? 'বাতিল' : 'Cancel'}
+              </Button>
             </DialogClose>
-            <Button onClick={handleResetPassword}>
+            <Button
+              onClick={handleResetPassword}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30 rounded-lg text-xs h-10 px-5 cursor-pointer flex items-center gap-1.5"
+            >
               <KeyRound className="h-4 w-4" />
-              {isBangla ? 'লিংক পাঠান' : 'Send Link'}
+              <span>{isBangla ? 'লিংক পাঠান' : 'Send Link'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -765,12 +808,12 @@ function DetailChip({
   value: string;
 }) {
   return (
-    <div className="rounded-xl border border-[rgba(255,255,255,0.04)] bg-muted/20 p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
+    <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-3 transition-all hover:border-slate-700/60">
+      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
+        <Icon className="h-3.5 w-3.5 text-indigo-400" />
+        <span>{label}</span>
       </div>
-      <p className="text-sm font-medium text-foreground truncate">{value}</p>
+      <p className="text-sm font-semibold text-slate-100 truncate">{value}</p>
     </div>
   );
 }
@@ -785,18 +828,18 @@ function ContactRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-8 w-8 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
-        <Icon className="h-4 w-4 text-primary" />
+    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
+      <div className="h-8 w-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-indigo-400" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-muted-foreground">{label}</p>
-        <p className="text-sm text-foreground truncate">{value}</p>
+        <p className="text-[11px] text-slate-400">{label}</p>
+        <p className="text-sm text-slate-200 font-medium truncate">{value}</p>
       </div>
     </div>
   );
 }
 
 function Divider() {
-  return <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />;
+  return <div className="h-px w-full bg-slate-800/80" />;
 }
