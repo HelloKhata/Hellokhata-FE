@@ -22,4 +22,9 @@ export const getInvetorySettings = async () => {
 export const updateInventorySettings = async (inventorySettings: any) => {
     const res = await client.put('/api/settings/inventory', inventorySettings);
     return res.data;
+};
+
+export const getPermissions = async() =>{
+    const res = await client.get('/api/settings/permissions');
+    return res.data;
 }

@@ -49,7 +49,10 @@ import {
   generateAttendanceHistory,
   HRM_LEAVES,
   hrmPayroll,
+  HRM_BRANCHES,
 } from '@/components/hrm/mock-data';
+import { useGetSingleEmployee } from '@/hooks/api/useEmployes';
+import { useGetBranches } from '@/hooks/api/useBranches';
 
 export default function EmployeeProfilePage() {
   const params = useParams<{ id: string }>();
@@ -58,12 +61,28 @@ export default function EmployeeProfilePage() {
   const { formatCurrency } = useCurrency();
   const { formatDate } = useDateFormat();
 
-  const employee = useMemo(() => employeeById(params.id), [params.id]);
+  const { data: apiEmployee, isLoading: isEmpLoading } = useGetSingleEmployee(params.id);
+  const { data: branchesData = [] } = useGetBranches();
+
+  const employee = useMemo(() => {
+    if (apiEmployee && (apiEmployee.id || apiEmployee.fullName || apiEmployee.name)) {
+      return apiEmployee;
+    }
+    return employeeById(params.id);
+  }, [apiEmployee, params.id]);
+
+  const getBranchLabel = (bId?: string) => {
+    if (!bId) return isBangla ? 'মূল শাখা' : 'Main Branch';
+    const found = branchesData?.find((b: any) => b.id === bId) || HRM_BRANCHES.find((b) => b.id === bId);
+    if (found) return isBangla ? found.nameBn || found.name : found.name;
+    return branchName(bId);
+  };
+
   const attendance = useMemo(() => generateAttendanceHistory(30), []);
   const leaves = useMemo(() => HRM_LEAVES.filter((l) => l.employeeId === params.id), [params.id]);
   const payroll = useMemo(() => hrmPayroll().filter((p) => p.employeeId === params.id), [params.id]);
 
-  if (!employee) {
+  if (!employee && !isEmpLoading) {
     return (
       <div className="space-y-6">
         <Button variant="ghost" size="sm" onClick={() => router.push('/hrm/employees')}>
@@ -79,6 +98,8 @@ export default function EmployeeProfilePage() {
     );
   }
 
+  if (!employee) return null;
+
   const empAttendance = attendance.filter((a) => a.employeeId === employee.id);
   const presentDays = empAttendance.filter((a) => a.status === 'Present' || a.status === 'Overtime').length;
   const lateDays = empAttendance.filter((a) => a.status === 'Late').length;
@@ -89,25 +110,27 @@ export default function EmployeeProfilePage() {
   const balance = payroll[0];
 
   const profileFields = [
-    { icon: Mail, label: isBangla ? 'ইমেইল' : 'Email', value: employee.email },
-    { icon: Phone, label: isBangla ? 'মোবাইল' : 'Phone', value: employee.phone },
-    { icon: MapPin, label: isBangla ? 'ঠিকানা' : 'Address', value: employee.address },
-    { icon: Building2, label: isBangla ? 'শাখা' : 'Branch', value: branchName(employee.branchId) },
-    { icon: Briefcase, label: isBangla ? 'বিভাগ' : 'Department', value: employee.department },
-    { icon: ShieldCheck, label: isBangla ? 'শিফট' : 'Shift', value: employee.shift },
-    { icon: CalendarDays, label: isBangla ? 'যোগদান' : 'Joined', value: formatDate(employee.joiningDate) },
-    { icon: Banknote, label: isBangla ? 'মাসিক বেতন' : 'Monthly Salary', value: formatCurrency(employee.salary) },
-    { icon: User, label: isBangla ? 'লিঙ্গ' : 'Gender', value: employee.gender },
-    { icon: Droplets, label: 'Blood Group', value: employee.bloodGroup },
-    { icon: PhoneCall, label: isBangla ? 'জরুরি যোগাযোগ' : 'Emergency', value: employee.emergencyContact },
+    { icon: Mail, label: isBangla ? 'ইমেইল' : 'Email', value: employee.emailAddress || employee.email || '-' },
+    { icon: Phone, label: isBangla ? 'মোবাইল' : 'Phone', value: employee.phoneNumber || employee.phone || '-' },
+    { icon: MapPin, label: isBangla ? 'ঠিকানা' : 'Address', value: employee.presentAddress || employee.address || '-' },
+    { icon: Building2, label: isBangla ? 'শাখা' : 'Branch', value: getBranchLabel(employee.branchId) },
+    { icon: Briefcase, label: isBangla ? 'বিভাগ' : 'Department', value: employee.department || '-' },
+    { icon: ShieldCheck, label: isBangla ? 'শিফট' : 'Shift', value: employee.workShift || employee.shift || 'General' },
+    { icon: CalendarDays, label: isBangla ? 'যোগদান' : 'Joined', value: employee.joiningDate ? formatDate(employee.joiningDate) : '-' },
+    { icon: Banknote, label: isBangla ? 'মাসিক বেতন' : 'Monthly Salary', value: formatCurrency(employee.basicSalary ?? employee.salary ?? 0) },
+    { icon: User, label: isBangla ? 'লিঙ্গ' : 'Gender', value: employee.gender || '-' },
+    { icon: Droplets, label: 'Blood Group', value: employee.bloodGroup ? employee.bloodGroup.replace('_', ' ') : '-' },
+    { icon: PhoneCall, label: isBangla ? 'জরুরি যোগাযোগ' : 'Emergency', value: employee.emergencyContact || employee.reportingManager || '-' },
   ];
+
+  const empName = employee.fullName || employee.name || 'Employee';
 
   return (
     <div className="space-y-6">
       <HrmBreadcrumb
         items={[
           { label: isBangla ? 'কর্মচারী' : 'Employees', href: '/hrm/employees', labelBn: 'কর্মচারী' },
-          { label: employee.name, labelBn: employee.nameBn },
+          { label: empName, labelBn: employee.nameBn || empName },
         ]}
       />
 
@@ -119,16 +142,16 @@ export default function EmployeeProfilePage() {
       >
         <div className="flex items-center gap-3">
           <BackButton fallbackHref="/hrm/employees" />
-          <HrmAvatar name={employee.name} size="xl" />
+          <HrmAvatar name={empName} imageUrl={employee.imageUrl} size="xl" />
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                {isBangla ? employee.nameBn : employee.name}
+                {isBangla ? employee.nameBn || empName : empName}
               </h1>
-              <EmployeeStatusBadge status={employee.status} />
+              <EmployeeStatusBadge status={employee.status || (employee.isProbation ? 'Probation' : 'Active')} />
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              {employee.employeeId} · {employee.designation} · {employee.department}
+              {employee.employeeId} · {employee.designation || 'Staff'} · {employee.department || 'General'}
             </p>
           </div>
         </div>
@@ -142,12 +165,13 @@ export default function EmployeeProfilePage() {
           </Button>
           <Button
             leftIcon={<Pencil className="h-4 w-4" />}
-            onClick={() => toast.success(isBangla ? 'সম্পাদনা মোড খোলা হয়েছে' : 'Edit mode opened')}
+            onClick={() => router.push(`/hrm/employees`)}
           >
             {isBangla ? 'সম্পাদনা' : 'Edit'}
           </Button>
         </div>
       </motion.div>
+
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -243,12 +267,12 @@ export default function EmployeeProfilePage() {
                 <CardTitle className="text-base">{isBangla ? 'ওভারভিউ' : 'At a Glance'}</CardTitle>
               </CardHeader>
               <CardContent className="px-5 pb-5 pt-2 space-y-3">
-                <OverviewRow icon={BadgeCheck} label={isBangla ? 'স্ট্যাটাস' : 'Status'} value={employee.status} />
-                <OverviewRow icon={Building2} label={isBangla ? 'শাখা' : 'Branch'} value={branchName(employee.branchId)} />
-                <OverviewRow icon={Briefcase} label={isBangla ? 'বিভাগ' : 'Department'} value={employee.department} />
-                <OverviewRow icon={ShieldCheck} label={isBangla ? 'পদবি' : 'Designation'} value={employee.designation} />
-                <OverviewRow icon={CalendarDays} label={isBangla ? 'যোগদান' : 'Joined'} value={formatDate(employee.joiningDate)} />
-                <OverviewRow icon={Banknote} label={isBangla ? 'বেতন' : 'Salary'} value={formatCurrency(employee.salary)} />
+                <OverviewRow icon={BadgeCheck} label={isBangla ? 'স্ট্যাটাস' : 'Status'} value={String(employee.status || 'Active')} />
+                <OverviewRow icon={Building2} label={isBangla ? 'শাখা' : 'Branch'} value={getBranchLabel(employee.branchId)} />
+                <OverviewRow icon={Briefcase} label={isBangla ? 'বিভাগ' : 'Department'} value={employee.department || '-'} />
+                <OverviewRow icon={ShieldCheck} label={isBangla ? 'পদবি' : 'Designation'} value={employee.designation || '-'} />
+                <OverviewRow icon={CalendarDays} label={isBangla ? 'যোগদান' : 'Joined'} value={employee.joiningDate ? formatDate(employee.joiningDate) : '-'} />
+                <OverviewRow icon={Banknote} label={isBangla ? 'বেতন' : 'Salary'} value={formatCurrency(employee.basicSalary ?? employee.salary ?? 0)} />
               </CardContent>
             </Card>
           </div>

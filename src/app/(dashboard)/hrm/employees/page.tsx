@@ -29,6 +29,9 @@ import {
   BadgeCheck,
   ChevronRight,
   Sparkles,
+  CreditCard,
+  Briefcase,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,11 +72,13 @@ import { useRouter } from 'next/navigation';
 import { HrmDataTable, type HrmColumn } from '@/components/hrm/shared/HrmDataTable';
 import { HrmPagination } from '@/components/hrm/shared/HrmPagination';
 import { HrmAvatar } from '@/components/hrm/shared/HrmAvatar';
-import { EmployeeStatusBadge } from '@/components/hrm/shared/HrmStatusBadge';
+import { EmployeeStatusBadge, normalizeEmployeeStatus } from '@/components/hrm/shared/HrmStatusBadge';
 import { HRM_EMPLOYEES, HRM_BRANCHES, branchName } from '@/components/hrm/mock-data';
 import type { Employee } from '@/components/hrm/types';
 import { DEPARTMENTS, DESIGNATIONS } from '@/components/hrm/types';
 import { cn } from '@/lib/utils';
+import { useGetEmployes } from '@/hooks/api/useEmployes';
+import { useGetBranches } from '@/hooks/api/useBranches';
 
 const PAGE_SIZE = 8;
 
@@ -82,6 +87,10 @@ export default function EmployeesPage() {
   const { formatCurrency } = useCurrency();
   const { formatDate } = useDateFormat();
   const router = useRouter();
+
+  // Get all employees & branches from server
+  const { data: apiEmployees, isLoading: isLoadingEmployee } = useGetEmployes();
+  const { data: branchesData = [] } = useGetBranches();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [branchFilter, setBranchFilter] = useState('all');
@@ -99,17 +108,74 @@ export default function EmployeesPage() {
   const [archiveTarget, setArchiveTarget] = useState<Employee | null>(null);
   const [resetTarget, setResetTarget] = useState<Employee | null>(null);
 
+  // Normalize employees list with fallback
+  const rawEmployees: Employee[] = useMemo(() => {
+    if (Array.isArray(apiEmployees) && apiEmployees.length > 0) {
+      return apiEmployees;
+    }
+    if (apiEmployees && typeof apiEmployees === 'object' && Array.isArray((apiEmployees as any).data)) {
+      return (apiEmployees as any).data;
+    }
+    return Array.isArray(apiEmployees) ? apiEmployees : HRM_EMPLOYEES;
+  }, [apiEmployees]);
+
+  // Normalize branches list with fallback
+  const branchList = useMemo(() => {
+    if (Array.isArray(branchesData) && branchesData.length > 0) {
+      return branchesData;
+    }
+    return HRM_BRANCHES;
+  }, [branchesData]);
+
+  const getBranchLabel = (bId?: string) => {
+    if (!bId) return isBangla ? 'মূল শাখা' : 'Main Branch';
+    const found = branchList.find((b: any) => b.id === bId);
+    if (found) return isBangla ? found.nameBn || found.name : found.name;
+    return branchName(bId);
+  };
+
+  // Available unique departments and designations
+  const availableDepartments = useMemo(() => {
+    const set = new Set<string>(DEPARTMENTS);
+    rawEmployees.forEach((e) => {
+      if (e.department) set.add(e.department);
+    });
+    return Array.from(set);
+  }, [rawEmployees]);
+
+  const availableDesignations = useMemo(() => {
+    const set = new Set<string>(DESIGNATIONS);
+    rawEmployees.forEach((e) => {
+      if (e.designation) set.add(e.designation);
+    });
+    return Array.from(set);
+  }, [rawEmployees]);
+
+  // Filtered employees
   const filtered = useMemo(() => {
-    const q = searchTerm.toLowerCase();
-    return HRM_EMPLOYEES.filter((e) => {
-      if (q && !`${e.name} ${e.employeeId} ${e.phone} ${e.email}`.toLowerCase().includes(q)) return false;
+    const q = searchTerm.toLowerCase().trim();
+    return rawEmployees.filter((e) => {
+      const nameStr = `${e.fullName || ''} ${e.name || ''} ${e.nameBn || ''}`.toLowerCase();
+      const idStr = `${e.employeeId || ''}`.toLowerCase();
+      const contactStr = `${e.phoneNumber || ''} ${e.phone || ''} ${e.emailAddress || ''} ${e.email || ''}`.toLowerCase();
+      const deptStr = `${e.department || ''} ${e.designation || ''}`.toLowerCase();
+
+      if (q && !`${nameStr} ${idStr} ${contactStr} ${deptStr}`.includes(q)) return false;
       if (branchFilter !== 'all' && e.branchId !== branchFilter) return false;
       if (deptFilter !== 'all' && e.department !== deptFilter) return false;
       if (designationFilter !== 'all' && e.designation !== designationFilter) return false;
-      if (statusFilter !== 'all' && e.status !== statusFilter) return false;
+      if (statusFilter !== 'all') {
+        const norm = normalizeEmployeeStatus(e.status);
+        if (
+          norm.toLowerCase() !== statusFilter.toLowerCase() &&
+          (e.status || '').toLowerCase() !== statusFilter.toLowerCase()
+        ) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [searchTerm, branchFilter, deptFilter, designationFilter, statusFilter]);
+  }, [rawEmployees, searchTerm, branchFilter, deptFilter, designationFilter, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -120,7 +186,7 @@ export default function EmployeesPage() {
     setTimeout(() => {
       fn();
       setLoading(false);
-    }, 500);
+    }, 400);
   };
 
   const openDrawer = (e: Employee) => {
@@ -139,21 +205,23 @@ export default function EmployeesPage() {
 
   const handleArchive = () => {
     if (!archiveTarget) return;
+    const name = archiveTarget.fullName || archiveTarget.name || 'Employee';
     setArchiveTarget(null);
     toast.success(
       isBangla
-        ? `${archiveTarget.name} কে আর্কাইভ করা হয়েছে`
-        : `${archiveTarget.name} has been archived`
+        ? `${name} কে আর্কাইভ করা হয়েছে`
+        : `${name} has been archived`
     );
   };
 
   const handleResetPassword = () => {
     if (!resetTarget) return;
+    const name = resetTarget.fullName || resetTarget.name || 'Employee';
     setResetTarget(null);
     toast.success(
       isBangla
-        ? `${resetTarget.name} এর পাসওয়ার্ড রিসেট করা হয়েছে`
-        : `Password reset link sent to ${resetTarget.name}`
+        ? `${name} এর পাসওয়ার্ড রিসেট করা হয়েছে`
+        : `Password reset link sent to ${name}`
     );
   };
 
@@ -161,35 +229,47 @@ export default function EmployeesPage() {
     {
       key: 'employee',
       header: isBangla ? 'কর্মচারী' : 'Employee',
-      render: (e) => (
-        <div className="flex items-center gap-3">
-          <HrmAvatar name={e.name} size="sm" className="ring-1 ring-slate-700/60 shadow-sm" />
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-100 text-sm truncate max-w-[170px] hover:text-indigo-400 transition-colors">
-              {e.name}
-            </p>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">{e.employeeId}</p>
+      render: (e) => {
+        const empName = e.fullName || e.name || 'Unnamed Employee';
+        return (
+          <div className="flex items-center gap-3">
+            <HrmAvatar
+              name={empName}
+              imageUrl={e.imageUrl}
+              size="sm"
+              className="ring-1 ring-slate-700/60 shadow-sm"
+            />
+            <div className="min-w-0">
+              <p className="font-semibold text-slate-100 text-sm truncate max-w-[170px] hover:text-indigo-400 transition-colors">
+                {isBangla ? e.nameBn || empName : empName}
+              </p>
+              <p className="text-xs text-slate-400 font-mono mt-0.5">{e.employeeId}</p>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'contact',
       header: isBangla ? 'যোগাযোগ' : 'Contact',
-      render: (e) => (
-        <div className="min-w-0">
-          <p className="text-sm text-slate-200 font-medium tabular-nums">{e.phone}</p>
-          <p className="text-xs text-slate-400 truncate max-w-[180px] mt-0.5">{e.email}</p>
-        </div>
-      ),
+      render: (e) => {
+        const phone = e.phoneNumber || e.phone || '-';
+        const email = e.emailAddress || e.email || '-';
+        return (
+          <div className="min-w-0">
+            <p className="text-sm text-slate-200 font-medium tabular-nums">{phone}</p>
+            <p className="text-xs text-slate-400 truncate max-w-[180px] mt-0.5">{email}</p>
+          </div>
+        );
+      },
     },
     {
       key: 'department',
       header: isBangla ? 'বিভাগ ও পদবি' : 'Department & Role',
       render: (e) => (
         <div>
-          <p className="text-sm text-slate-200 font-medium whitespace-nowrap">{e.department}</p>
-          <p className="text-xs text-slate-400 whitespace-nowrap mt-0.5">{e.designation}</p>
+          <p className="text-sm text-slate-200 font-medium whitespace-nowrap">{e.department || '-'}</p>
+          <p className="text-xs text-slate-400 whitespace-nowrap mt-0.5">{e.designation || '-'}</p>
         </div>
       ),
     },
@@ -197,7 +277,7 @@ export default function EmployeesPage() {
       key: 'branch',
       header: isBangla ? 'শাখা' : 'Branch',
       render: (e) => (
-        <span className="text-sm text-slate-300 whitespace-nowrap">{branchName(e.branchId)}</span>
+        <span className="text-sm text-slate-300 whitespace-nowrap">{getBranchLabel(e.branchId)}</span>
       ),
     },
     {
@@ -205,7 +285,7 @@ export default function EmployeesPage() {
       header: isBangla ? 'যোগদান' : 'Joined',
       render: (e) => (
         <span className="text-sm text-slate-400 whitespace-nowrap tabular-nums">
-          {formatDate(e.joiningDate)}
+          {e.joiningDate ? formatDate(e.joiningDate) : '-'}
         </span>
       ),
     },
@@ -213,17 +293,29 @@ export default function EmployeesPage() {
       key: 'salary',
       header: isBangla ? 'বেতন' : 'Salary',
       align: 'right',
-      render: (e) => (
-        <span className="text-sm font-bold text-emerald-400 whitespace-nowrap tabular-nums">
-          {formatCurrency(e.salary)}
-        </span>
-      ),
+      render: (e) => {
+        const salaryVal = e.basicSalary ?? e.salary ?? 0;
+        return (
+          <div className="text-right">
+            <span className="text-sm font-bold text-emerald-400 whitespace-nowrap tabular-nums">
+              {formatCurrency(salaryVal)}
+            </span>
+            {e.salaryCycle && (
+              <span className="text-[10px] text-slate-400 block font-normal capitalize">
+                /{e.salaryCycle.toLowerCase()}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'status',
       header: isBangla ? 'স্ট্যাটাস' : 'Status',
       align: 'center',
-      render: (e) => <EmployeeStatusBadge status={e.status} />,
+      render: (e) => (
+        <EmployeeStatusBadge status={e.status || (e.isProbation ? 'Probation' : 'Active')} />
+      ),
     },
     {
       key: 'actions',
@@ -233,7 +325,7 @@ export default function EmployeesPage() {
         <div className="flex items-center justify-end gap-1.5" onClick={(ev) => ev.stopPropagation()}>
           <button
             type="button"
-            onClick={() => openDrawer(e)}
+            onClick={() => router.push(`/hrm/employees/${e.id}`)}
             aria-label="View"
             className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
           >
@@ -374,9 +466,9 @@ export default function EmployeesPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব শাখা' : 'All branches'}</SelectItem>
-                  {HRM_BRANCHES.map((b) => (
+                  {branchList.map((b: any) => (
                     <SelectItem key={b.id} value={b.id}>
-                      {b.name}
+                      {isBangla ? b.nameBn || b.name : b.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -393,7 +485,7 @@ export default function EmployeesPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব বিভাগ' : 'All departments'}</SelectItem>
-                  {DEPARTMENTS.map((d) => (
+                  {availableDepartments.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -412,7 +504,7 @@ export default function EmployeesPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব পদবি' : 'All designations'}</SelectItem>
-                  {DESIGNATIONS.map((d) => (
+                  {availableDesignations.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -431,10 +523,10 @@ export default function EmployeesPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl">
                   <SelectItem value="all">{isBangla ? 'সব স্ট্যাটাস' : 'All statuses'}</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Probation">Probation</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Active">{isBangla ? 'সক্রিয় (Active)' : 'Active'}</SelectItem>
+                  <SelectItem value="On Leave">{isBangla ? 'ছুটিতে (On Leave)' : 'On Leave'}</SelectItem>
+                  <SelectItem value="Probation">{isBangla ? 'পরীক্ষামূলক (Probation)' : 'Probation'}</SelectItem>
+                  <SelectItem value="Inactive">{isBangla ? 'নিষ্ক্রিয় (Inactive)' : 'Inactive'}</SelectItem>
                 </SelectContent>
               </Select>
             </motion.div>
@@ -447,7 +539,7 @@ export default function EmployeesPage() {
         columns={columns}
         data={paged}
         keyField={(e) => e.id}
-        loading={loading}
+        loading={isLoadingEmployee || loading}
         skeletonRows={6}
         emptyIcon={Users}
         emptyTitle={isBangla ? 'কোনো কর্মচারী পাওয়া যায়নি' : 'No employees found'}
@@ -486,16 +578,23 @@ export default function EmployeesPage() {
             <>
               <DrawerHeader className="border-b border-slate-800/80 px-6 py-5">
                 <div className="flex items-center gap-3.5">
-                  <HrmAvatar name={selectedEmployee.name} size="lg" className="ring-2 ring-indigo-500/30 shadow-md" />
+                  <HrmAvatar
+                    name={selectedEmployee.fullName || selectedEmployee.name || 'Employee'}
+                    imageUrl={selectedEmployee.imageUrl}
+                    size="lg"
+                    className="ring-2 ring-indigo-500/30 shadow-md"
+                  />
                   <div className="min-w-0 flex-1">
                     <DrawerTitle className="text-lg font-bold text-slate-100 truncate">
-                      {selectedEmployee.name}
+                      {selectedEmployee.fullName || selectedEmployee.name}
                     </DrawerTitle>
                     <p className="text-xs text-slate-400 font-medium mt-0.5">
-                      {selectedEmployee.employeeId} · {selectedEmployee.designation}
+                      {selectedEmployee.employeeId} · {selectedEmployee.designation || 'Staff'}
                     </p>
                     <div className="mt-2">
-                      <EmployeeStatusBadge status={selectedEmployee.status} />
+                      <EmployeeStatusBadge
+                        status={selectedEmployee.status || (selectedEmployee.isProbation ? 'Probation' : 'Active')}
+                      />
                     </div>
                   </div>
                   <DrawerClose asChild>
@@ -512,28 +611,121 @@ export default function EmployeesPage() {
 
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
                 <div className="grid grid-cols-2 gap-3">
-                  <DetailChip icon={Building2} label={isBangla ? 'বিভাগ' : 'Department'} value={selectedEmployee.department} />
-                  <DetailChip icon={ShieldCheck} label={isBangla ? 'শিফট' : 'Shift'} value={selectedEmployee.shift} />
-                  <DetailChip icon={MapPin} label={isBangla ? 'শাখা' : 'Branch'} value={branchName(selectedEmployee.branchId)} />
-                  <DetailChip icon={CalendarDays} label={isBangla ? 'যোগদান' : 'Joined'} value={formatDate(selectedEmployee.joiningDate)} />
-                  <DetailChip icon={Banknote} label={isBangla ? 'বেতন' : 'Salary'} value={formatCurrency(selectedEmployee.salary)} />
-                  <DetailChip icon={User} label={isBangla ? 'লিঙ্গ' : 'Gender'} value={selectedEmployee.gender} />
-                  <DetailChip icon={Droplets} label="Blood" value={selectedEmployee.bloodGroup} />
-                  <DetailChip icon={Baby} label="NID" value={selectedEmployee.nid} />
+                  <DetailChip
+                    icon={Building2}
+                    label={isBangla ? 'বিভাগ' : 'Department'}
+                    value={selectedEmployee.department || '-'}
+                  />
+                  <DetailChip
+                    icon={ShieldCheck}
+                    label={isBangla ? 'শিফট' : 'Shift'}
+                    value={selectedEmployee.workShift || selectedEmployee.shift || 'General'}
+                  />
+                  <DetailChip
+                    icon={MapPin}
+                    label={isBangla ? 'শাখা' : 'Branch'}
+                    value={getBranchLabel(selectedEmployee.branchId)}
+                  />
+                  <DetailChip
+                    icon={CalendarDays}
+                    label={isBangla ? 'যোগদান' : 'Joined'}
+                    value={selectedEmployee.joiningDate ? formatDate(selectedEmployee.joiningDate) : '-'}
+                  />
+                  <DetailChip
+                    icon={Banknote}
+                    label={isBangla ? 'মূল বেতন' : 'Salary'}
+                    value={`${formatCurrency(selectedEmployee.basicSalary ?? selectedEmployee.salary ?? 0)} ${selectedEmployee.salaryCycle ? `(${selectedEmployee.salaryCycle})` : ''}`}
+                  />
+                  <DetailChip
+                    icon={User}
+                    label={isBangla ? 'লিঙ্গ' : 'Gender'}
+                    value={selectedEmployee.gender || '-'}
+                  />
+                  <DetailChip
+                    icon={Droplets}
+                    label={isBangla ? 'রক্তের গ্রুপ' : 'Blood'}
+                    value={selectedEmployee.bloodGroup ? selectedEmployee.bloodGroup.replace('_', ' ') : '-'}
+                  />
+                  <DetailChip
+                    icon={Baby}
+                    label={isBangla ? 'জাতীয় পরিচয়পত্র' : 'NID / Passport'}
+                    value={selectedEmployee.nationalId || selectedEmployee.nid || selectedEmployee.passportNo || '-'}
+                  />
                 </div>
 
                 <Divider />
 
+                {/* Employment details */}
+                {(selectedEmployee.employmentStatus || selectedEmployee.reportingManager || selectedEmployee.paymentMethod) && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Briefcase className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>{isBangla ? 'কাজের বিবরণ' : 'Employment Details'}</span>
+                    </h4>
+                    <div className="space-y-2.5">
+                      {selectedEmployee.employmentStatus && (
+                        <ContactRow
+                          icon={Briefcase}
+                          label={isBangla ? 'চুক্তির ধরন' : 'Employment Type'}
+                          value={selectedEmployee.employmentStatus}
+                        />
+                      )}
+                      {selectedEmployee.reportingManager && (
+                        <ContactRow
+                          icon={User}
+                          label={isBangla ? 'রিপোর্টিং ম্যানেজার' : 'Reporting Manager'}
+                          value={selectedEmployee.reportingManager}
+                        />
+                      )}
+                      {selectedEmployee.paymentMethod && (
+                        <ContactRow
+                          icon={CreditCard}
+                          label={isBangla ? 'পেমেন্ট মেথড' : 'Payment Method'}
+                          value={selectedEmployee.paymentMethod}
+                        />
+                      )}
+                      {selectedEmployee.workingDays && (
+                        <ContactRow
+                          icon={Clock}
+                          label={isBangla ? 'সাপ্তাহিক কার্যদিবস' : 'Working Days'}
+                          value={`${selectedEmployee.workingDays} ${isBangla ? 'দিন' : 'days'}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <Divider />
+
+                {/* Contact Information */}
                 <div>
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
                     <span>{isBangla ? 'যোগাযোগের তথ্য' : 'Contact Information'}</span>
                   </h4>
                   <div className="space-y-2.5">
-                    <ContactRow icon={Phone} label={isBangla ? 'মোবাইল' : 'Phone'} value={selectedEmployee.phone} />
-                    <ContactRow icon={Mail} label="Email" value={selectedEmployee.email} />
-                    <ContactRow icon={MapPin} label={isBangla ? 'ঠিকানা' : 'Address'} value={selectedEmployee.address} />
-                    <ContactRow icon={BadgeCheck} label={isBangla ? 'জরুরি যোগাযোগ' : 'Emergency'} value={selectedEmployee.emergencyContact} />
+                    <ContactRow
+                      icon={Phone}
+                      label={isBangla ? 'মোবাইল' : 'Phone'}
+                      value={selectedEmployee.phoneNumber || selectedEmployee.phone || '-'}
+                    />
+                    <ContactRow
+                      icon={Mail}
+                      label="Email"
+                      value={selectedEmployee.emailAddress || selectedEmployee.email || '-'}
+                    />
+                    <ContactRow
+                      icon={MapPin}
+                      label={isBangla ? 'ঠিকানা' : 'Address'}
+                      value={selectedEmployee.presentAddress || selectedEmployee.address || '-'}
+                    />
+                    {selectedEmployee.emergencyContact && (
+                      <ContactRow
+                        icon={BadgeCheck}
+                        label={isBangla ? 'জরুরি যোগাযোগ' : 'Emergency'}
+                        value={selectedEmployee.emergencyContact}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -566,7 +758,7 @@ export default function EmployeesPage() {
         </DrawerContent>
       </Drawer>
 
-      {/* 5. ADD / EDIT DIALOG */}
+      {/* 5. EDIT DIALOG */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
           <DialogHeader>
@@ -574,7 +766,7 @@ export default function EmployeesPage() {
               {editingEmployee
                 ? isBangla
                   ? 'কর্মচারী সম্পাদনা'
-                  : `Edit ${editingEmployee.name}`
+                  : `Edit ${editingEmployee.fullName || editingEmployee.name}`
                 : isBangla
                   ? 'নতুন কর্মচারী যোগ করুন'
                   : 'Add New Employee'}
@@ -589,7 +781,7 @@ export default function EmployeesPage() {
               <Input
                 id="emp-name"
                 placeholder="e.g. Abdur Rahman"
-                defaultValue={editingEmployee?.name}
+                defaultValue={editingEmployee?.fullName || editingEmployee?.name}
                 className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
               />
             </div>
@@ -600,7 +792,7 @@ export default function EmployeesPage() {
               <Input
                 id="emp-phone"
                 placeholder="01XXXXXXXXX"
-                defaultValue={editingEmployee?.phone}
+                defaultValue={editingEmployee?.phoneNumber || editingEmployee?.phone}
                 className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
               />
             </div>
@@ -612,7 +804,7 @@ export default function EmployeesPage() {
                 id="emp-email"
                 type="email"
                 placeholder="name@hellokhata.com"
-                defaultValue={editingEmployee?.email}
+                defaultValue={editingEmployee?.emailAddress || editingEmployee?.email}
                 className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
               />
             </div>
@@ -624,20 +816,20 @@ export default function EmployeesPage() {
                 id="emp-salary"
                 type="number"
                 placeholder="30000"
-                defaultValue={editingEmployee?.salary}
+                defaultValue={editingEmployee?.basicSalary ?? editingEmployee?.salary}
                 className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'শাখা *' : 'Branch *'}</Label>
-              <Select defaultValue={editingEmployee?.branchId || HRM_BRANCHES[0].id}>
+              <Select defaultValue={editingEmployee?.branchId || branchList[0]?.id}>
                 <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'শাখা নির্বাচন' : 'Select branch'} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
-                  {HRM_BRANCHES.map((b) => (
+                  {branchList.map((b: any) => (
                     <SelectItem key={b.id} value={b.id}>
-                      {b.name}
+                      {isBangla ? b.nameBn || b.name : b.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -645,12 +837,12 @@ export default function EmployeesPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'বিভাগ *' : 'Department *'}</Label>
-              <Select defaultValue={editingEmployee?.department || DEPARTMENTS[1]}>
+              <Select defaultValue={editingEmployee?.department || availableDepartments[0]}>
                 <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'বিভাগ নির্বাচন' : 'Select department'} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
-                  {DEPARTMENTS.map((d) => (
+                  {availableDepartments.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -660,12 +852,12 @@ export default function EmployeesPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'পদবি *' : 'Designation *'}</Label>
-              <Select defaultValue={editingEmployee?.designation || DESIGNATIONS[2]}>
+              <Select defaultValue={editingEmployee?.designation || availableDesignations[0]}>
                 <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'পদবি নির্বাচন' : 'Select designation'} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
-                  {DESIGNATIONS.map((d) => (
+                  {availableDesignations.map((d) => (
                     <SelectItem key={d} value={d}>
                       {d}
                     </SelectItem>
@@ -675,15 +867,15 @@ export default function EmployeesPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-300">{isBangla ? 'স্ট্যাটাস' : 'Status'}</Label>
-              <Select defaultValue={editingEmployee?.status || 'Active'}>
+              <Select defaultValue={normalizeEmployeeStatus(editingEmployee?.status)}>
                 <SelectTrigger className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus:border-indigo-500">
                   <SelectValue placeholder={isBangla ? 'স্ট্যাটাস' : 'Status'} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0d131f] border-slate-800 text-slate-200">
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Probation">Probation</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="Active">{isBangla ? 'সক্রিয়' : 'Active'}</SelectItem>
+                  <SelectItem value="On Leave">{isBangla ? 'ছুটিতে' : 'On Leave'}</SelectItem>
+                  <SelectItem value="Probation">{isBangla ? 'পরীক্ষামূলক' : 'Probation'}</SelectItem>
+                  <SelectItem value="Inactive">{isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -694,7 +886,7 @@ export default function EmployeesPage() {
               <Input
                 id="emp-address"
                 placeholder={isBangla ? 'বাড়ি, রোড, এলাকা, ঢাকা' : 'House, Road, Area, Dhaka'}
-                defaultValue={editingEmployee?.address}
+                defaultValue={editingEmployee?.presentAddress || editingEmployee?.address}
                 className="h-10 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500"
               />
             </div>
@@ -738,8 +930,8 @@ export default function EmployeesPage() {
           <p className="text-xs sm:text-sm text-slate-400 py-2 leading-relaxed">
             {archiveTarget
               ? isBangla
-                ? `${archiveTarget.name} কে আর্কাইভ করলে তিনি আর সক্রিয় কর্মচারী তালিকায় থাকবেন না।`
-                : `${archiveTarget.name} will no longer appear in the active employee list. You can restore anytime.`
+                ? `${archiveTarget.fullName || archiveTarget.name} কে আর্কাইভ করলে তিনি আর সক্রিয় কর্মচারী তালিকায় থাকবেন না।`
+                : `${archiveTarget.fullName || archiveTarget.name} will no longer appear in the active employee list. You can restore anytime.`
               : ''}
           </p>
           <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
@@ -773,8 +965,8 @@ export default function EmployeesPage() {
             <p className="text-xs text-slate-300 leading-relaxed">
               {resetTarget
                 ? isBangla
-                  ? `${resetTarget.name} এর লগইন পাসওয়ার্ড রিসেট করতে একটি লিংক পাঠানো হবে।`
-                  : `A password reset link will be sent to ${resetTarget.email || resetTarget.phone}.`
+                  ? `${resetTarget.fullName || resetTarget.name} এর লগইন পাসওয়ার্ড রিসেট করতে একটি লিংক পাঠানো হবে।`
+                  : `A password reset link will be sent to ${resetTarget.emailAddress || resetTarget.email || resetTarget.phoneNumber || resetTarget.phone}.`
                 : ''}
             </p>
           </div>
@@ -843,3 +1035,4 @@ function ContactRow({
 function Divider() {
   return <div className="h-px w-full bg-slate-800/80" />;
 }
+

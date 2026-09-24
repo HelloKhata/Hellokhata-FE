@@ -1,4 +1,4 @@
-import { getInvetorySettings, updateBusiness, updateInventorySettings, updatePassword, updateUser } from "@/services/settings.services"
+import { getInvetorySettings, getPermissions, updateBusiness, updateInventorySettings, updatePassword, updateUser } from "@/services/settings.services"
 import { useMutation, useQuery } from "@tanstack/react-query"
 
 export const useUpdateUser = () => {
@@ -30,5 +30,14 @@ export const useGetInventorySettings = () => {
 export const useUpdateInventorySettings = () => {
     return useMutation({
         mutationFn: updateInventorySettings
+    })
+};
+
+
+export const useGetPermissions = () =>{
+    return useQuery({
+        queryKey: ['permissions'],
+        queryFn: getPermissions,
+        select: data => data.data
     })
 }

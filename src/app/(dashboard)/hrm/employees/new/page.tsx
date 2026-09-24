@@ -26,6 +26,7 @@ import {
   Upload,
   Trophy,
   BadgeCheck,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/common';
@@ -38,13 +39,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { HRM_BRANCHES } from '@/components/hrm/mock-data';
 import { DEPARTMENTS, DESIGNATIONS } from '@/components/hrm/types';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
+import { useCreateEmployee } from '@/hooks/api/useEmployes';
 
 export default function AddEmployeePage() {
   const { isBangla } = useAppTranslation();
@@ -52,17 +53,18 @@ export default function AddEmployeePage() {
   const { sidebarCollapsed } = useUiStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // api state
+  const { mutate: createEmployee, isPending: isCreating } = useCreateEmployee();
   // Form states - General
-  const [loading, setLoading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   // Form states - Personal
   const [fullName, setFullName] = useState('');
   const [employeeId, setEmployeeId] = useState(`HK-${Math.floor(1000 + Math.random() * 9000)}`);
   const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('Male');
-  const [bloodGroup, setBloodGroup] = useState('A+');
-  const [maritalStatus, setMaritalStatus] = useState('Single');
+  const [gender, setGender] = useState('MALE');
+  const [bloodGroup, setBloodGroup] = useState('A_PLUS');
+  const [maritalStatus, setMaritalStatus] = useState('SINGLE');
   const [nid, setNid] = useState('');
   const [passport, setPassport] = useState('');
   const [nationality, setNationality] = useState(isBangla ? 'বাংলাদেশী' : 'Bangladeshi');
@@ -71,34 +73,28 @@ export default function AddEmployeePage() {
   // Form states - Contact
   const [phoneVal, setPhoneVal] = useState('');
   const [emailVal, setEmailVal] = useState('');
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-  const [emergencyRelation, setEmergencyRelation] = useState('Spouse');
   const [presentAddress, setPresentAddress] = useState('');
-  const [sameAsPresent, setSameAsPresent] = useState(false);
-  const [permanentAddress, setPermanentAddress] = useState('');
-  const [city, setCity] = useState('Dhaka');
-  const [district, setDistrict] = useState('Dhaka');
-  const [postalCode, setPostalCode] = useState('1205');
-  const [country, setCountry] = useState(isBangla ? 'বাংলাদেশ' : 'Bangladesh');
 
   // Form states - Employment
   const [branch, setBranch] = useState(HRM_BRANCHES[0]?.id || 'b1');
   const [department, setDepartment] = useState(DEPARTMENTS[1] || 'Sales');
   const [designation, setDesignation] = useState(DESIGNATIONS[2] || 'Sales Executive');
-  const [role, setRole] = useState('Employee');
+  const [role, setRole] = useState('');
+  const [password, setPassword] = useState('');
   const [manager, setManager] = useState('');
   const [joiningDate, setJoiningDate] = useState(new Date().toISOString().split('T')[0]);
   const [employmentType, setEmploymentType] = useState('Full Time');
   const [workShift, setWorkShift] = useState('Day');
   const [workingDays, setWorkingDays] = useState('5');
   const [probation, setProbation] = useState('Yes (3 Months)');
-  const [status, setStatus] = useState('Active');
+  const [status, setStatus] = useState('ACTIVE');
 
   // Form states - Salary
   const [salaryVal, setSalaryVal] = useState('');
-  const [salaryType, setSalaryType] = useState('Monthly');
-  const [paymentMethod, setPaymentMethod] = useState<'Bank' | 'Mobile Banking' | 'Cash'>('Bank');
+  const [salaryType, setSalaryType] = useState('MONTHLY');
+
+
+  const [paymentMethod, setPaymentMethod] = useState<'BANK_TRANSFER' | 'MOBILE_BANKING' | 'CASH' | 'CHEQUE'>('BANK_TRANSFER');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankBranch, setBankBranch] = useState('');
@@ -110,13 +106,6 @@ export default function AddEmployeePage() {
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [, setTouched] = useState<Record<string, boolean>>({});
-
-  // Sync permanent address when "same as present" is checked
-  useEffect(() => {
-    if (sameAsPresent) {
-      setPermanentAddress(presentAddress);
-    }
-  }, [sameAsPresent, presentAddress]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -196,20 +185,66 @@ export default function AddEmployeePage() {
       return;
     }
 
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success(
-        isBangla
-          ? 'নতুন কর্মচারী প্রোফাইল সফলভাবে তৈরি হয়েছে!'
-          : 'New employee profile created successfully!'
-      );
-      router.push('/hrm/employees');
-    }, 800);
-  };
+    const payload = {
+      fullName: fullName.trim(),
+      employeeId: employeeId.trim(),
+      imageUrl: photoUrl || '',
+      dateOfBirth: new Date(dob).toISOString().split('T')[0] || '',
+      gender: gender,
+      bloodGroup: bloodGroup,
+      maritalStatus: maritalStatus,
+      nationalId: nid.trim(),
+      passportNo: passport.trim(),
+      nationality: nationality.trim(),
+      religion: religion,
+      phoneNumber: phoneVal.trim(),
+      emailAddress: emailVal.trim(),
+      presentAddress: presentAddress.trim(),
+      branchId: 'cmu2iml45002401pl74asd47u',
+      department: department,
+      designation: designation,
+      // branchIds: [branch],
+      roleId: 'cmu2iml46002501plbvxgcxaa',
+      password: password || '123456',
+      reportingManager: manager.trim(),
+      joiningDate: joiningDate || '',
+      employmentStatus: employmentType,
+      workShift: workShift,
+      workingDays: String(workingDays),
+      isProbation: probation.toLowerCase().includes('yes'),
+      status: status,
+      basicSalary: parseFloat(salaryVal) || 0,
+      salaryCycle: salaryType,
+      paymentMethod: paymentMethod,
+      bankName:
+        paymentMethod === 'BANK_TRANSFER'
+          ? bankName.trim()
+          : paymentMethod === 'MOBILE_BANKING'
+          ? mobileBanking
+          : '',
+      accountNumber:
+        paymentMethod === 'BANK_TRANSFER'
+          ? accountNumber.trim()
+          : paymentMethod === 'MOBILE_BANKING'
+          ? mobileWalletNumber.trim()
+          : '',
+      branchOrRoutingNo: paymentMethod === 'BANK_TRANSFER' ? bankBranch.trim() : '',
+      allowancesAndBenefits:  allowances,
+      payrollRemarks: notesVal.trim(),
+    };
 
-  const handleSaveDraft = () => {
-    toast.success(isBangla ? 'ড্রাফট হিসেবে সংরক্ষিত হয়েছে' : 'Saved as draft successfully');
+    console.log(payload)
+    createEmployee(payload, {
+      onSuccess: () => {
+        toast.success(
+          isBangla
+            ? 'নতুন কর্মচারী প্রোফাইল সফলভাবে তৈরি হয়েছে!'
+            : 'New employee profile created successfully!'
+        );
+        router.push('/hrm/employees');
+      },
+      
+    });
   };
 
   const generateNewId = () => {
@@ -454,9 +489,9 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Male">{isBangla ? 'পুরুষ (Male)' : 'Male'}</SelectItem>
-                      <SelectItem value="Female">{isBangla ? 'নারী (Female)' : 'Female'}</SelectItem>
-                      <SelectItem value="Other">{isBangla ? 'অন্যান্য (Other)' : 'Other'}</SelectItem>
+                      <SelectItem value="MALE">{isBangla ? 'পুরুষ (Male)' : 'Male'}</SelectItem>
+                      <SelectItem value="FEMALE">{isBangla ? 'নারী (Female)' : 'Female'}</SelectItem>
+                      <SelectItem value="OTHER">{isBangla ? 'অন্যান্য (Other)' : 'Other'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -471,9 +506,9 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100 font-mono">
-                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                      {["A_PLUS", "A_MINUS", "B_PLUS", "B_MINUS", "AB_PLUS", "AB_MINUS", "O_PLUS", "O_MINUS"].map((bg) => (
                         <SelectItem key={bg} value={bg}>
-                          {bg}
+                          {bg.split('_')[0] + " " + (bg.split('_')[1] == "PLUS" ? '+' : '-')}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -490,10 +525,10 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Single">{isBangla ? 'অবিবাহিত (Single)' : 'Single'}</SelectItem>
-                      <SelectItem value="Married">{isBangla ? 'বিবাহিত (Married)' : 'Married'}</SelectItem>
-                      <SelectItem value="Divorced">{isBangla ? 'তালাকপ্রাপ্ত (Divorced)' : 'Divorced'}</SelectItem>
-                      <SelectItem value="Widowed">{isBangla ? 'বিধবা/বিপত্নীক (Widowed)' : 'Widowed'}</SelectItem>
+                      <SelectItem value="SINGLE">{isBangla ? 'অবিবাহিত (Single)' : 'Single'}</SelectItem>
+                      <SelectItem value="MARRIED">{isBangla ? 'বিবাহিত (Married)' : 'Married'}</SelectItem>
+                      <SelectItem value="DIVORCED">{isBangla ? 'তালাকপ্রাপ্ত (Divorced)' : 'Divorced'}</SelectItem>
+                      <SelectItem value="WIDOW">{isBangla ? 'বিধবা/বিপত্নীক (Widowed)' : 'Widowed'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -559,16 +594,17 @@ export default function AddEmployeePage() {
                   <Label className="text-xs font-semibold text-slate-300">
                     {isBangla ? 'ধর্ম' : 'Religion'}
                   </Label>
+
                   <Select value={religion} onValueChange={setReligion}>
                     <SelectTrigger className="w-full h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Islam">{isBangla ? 'ইসলাম (Islam)' : 'Islam'}</SelectItem>
-                      <SelectItem value="Hinduism">{isBangla ? 'হিন্দু (Hinduism)' : 'Hinduism'}</SelectItem>
-                      <SelectItem value="Buddhism">{isBangla ? 'বৌদ্ধ (Buddhism)' : 'Buddhism'}</SelectItem>
-                      <SelectItem value="Christianity">{isBangla ? 'খ্রিস্টান (Christianity)' : 'Christianity'}</SelectItem>
-                      <SelectItem value="Others">{isBangla ? 'অন্যান্য (Others)' : 'Others'}</SelectItem>
+                      <SelectItem value="ISLAM">{isBangla ? 'ইসলাম (Islam)' : 'Islam'}</SelectItem>
+                      <SelectItem value="HINDUISM">{isBangla ? 'হিন্দু (Hinduism)' : 'Hinduism'}</SelectItem>
+                      <SelectItem value="BUDDHISM">{isBangla ? 'বৌদ্ধ (Buddhism)' : 'Buddhism'}</SelectItem>
+                      <SelectItem value="CHRISTIANITY">{isBangla ? 'খ্রিস্টান (Christianity)' : 'Christianity'}</SelectItem>
+                      <SelectItem value="OTHER">{isBangla ? 'অন্যান্য (Others)' : 'Others'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -599,8 +635,8 @@ export default function AddEmployeePage() {
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {isBangla
-                    ? 'মোবাইল নম্বর, ইমেইল, জরুরি যোগাযোগ ও ঠিকানার বিবরণ'
-                    : 'Phone, email, emergency contact and addresses'}
+                    ? 'মোবাইল নম্বর, ইমেইল ও বর্তমান ঠিকানার বিবরণ'
+                    : 'Phone, email, and present address details'}
                 </p>
               </div>
             </div>
@@ -670,180 +706,26 @@ export default function AddEmployeePage() {
               </div>
             </div>
 
-            {/* 2.2 Emergency Contact */}
+            {/* 2.2 Address */}
             <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
               <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
-                <span>{isBangla ? 'জরুরি যোগাযোগ' : 'EMERGENCY CONTACT'}</span>
+                <span>{isBangla ? 'ঠিকানা' : 'ADDRESS'}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Contact Person Name */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="emergencyName" className="text-xs font-semibold text-slate-300">
-                    {isBangla ? 'যোগাযোগকারীর নাম' : 'Contact Person Name'}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                    <Input
-                      id="emergencyName"
-                      value={emergencyName}
-                      onChange={(e) => setEmergencyName(e.target.value)}
-                      placeholder={isBangla ? 'যেমন: ফাতেমা বেগম' : 'Fatema Begum'}
-                      className="pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Emergency Phone */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="emergencyPhone" className="text-xs font-semibold text-slate-300">
-                    {isBangla ? 'জরুরি মোবাইল নম্বর' : 'Emergency Phone'}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                    <Input
-                      id="emergencyPhone"
-                      value={emergencyPhone}
-                      onChange={(e) => setEmergencyPhone(e.target.value)}
-                      placeholder="01887654321"
-                      className="pl-10 h-10.5 font-mono bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Relationship */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-300">
-                    {isBangla ? 'সম্পর্ক' : 'Relationship'}
-                  </Label>
-                  <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
-                    <SelectTrigger className="w-full h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Spouse">{isBangla ? 'স্বামী/স্ত্রী (Spouse)' : 'Spouse'}</SelectItem>
-                      <SelectItem value="Parent">{isBangla ? 'পিতা/মাতা (Parent)' : 'Parent'}</SelectItem>
-                      <SelectItem value="Sibling">{isBangla ? 'ভাই/বোন (Sibling)' : 'Sibling'}</SelectItem>
-                      <SelectItem value="Relative">{isBangla ? 'আত্মীয় (Relative)' : 'Relative'}</SelectItem>
-                      <SelectItem value="Friend">{isBangla ? 'বন্ধু (Friend)' : 'Friend'}</SelectItem>
-                      <SelectItem value="Other">{isBangla ? 'অন্যান্য (Other)' : 'Other'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* 2.3 Address & Location */}
-            <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
-                  <span>{isBangla ? 'ঠিকানা ও অবস্থান' : 'ADDRESS & LOCATION'}</span>
-                </div>
-
-                {/* Same as present address checkbox */}
-                <div className="flex items-center space-x-2 bg-slate-900/40 border border-slate-800/80 px-3 py-1.5 rounded-lg">
-                  <Checkbox
-                    id="sameAddress"
-                    checked={sameAsPresent}
-                    onCheckedChange={(checked) => setSameAsPresent(Boolean(checked))}
-                    className="border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 rounded-[4px]"
+              <div className="space-y-1.5">
+                <Label htmlFor="presentAddress" className="text-xs font-semibold text-slate-300">
+                  {isBangla ? 'বর্তমান ঠিকানা' : 'Present Address'}
+                </Label>
+                <div className="relative flex items-center">
+                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                  <Input
+                    id="presentAddress"
+                    value={presentAddress}
+                    onChange={(e) => setPresentAddress(e.target.value)}
+                    placeholder={isBangla ? 'যেমন: বাড়ি # ৪২, রোড # ১১, বনানী ব্লক-ডি, ঢাকা' : 'House # 42, Road # 11, Banani Block-D, Dhaka'}
+                    className="pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
                   />
-                  <label
-                    htmlFor="sameAddress"
-                    className="text-xs font-medium text-slate-400 hover:text-slate-200 cursor-pointer select-none"
-                  >
-                    {isBangla ? 'বর্তমান ও স্থায়ী ঠিকানা একই' : 'Permanent address is same as present'}
-                  </label>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {/* Present Address */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="presentAddress" className="text-xs font-semibold text-slate-300">
-                    {isBangla ? 'বর্তমান ঠিকানা' : 'Present Address'}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                    <Input
-                      id="presentAddress"
-                      value={presentAddress}
-                      onChange={(e) => setPresentAddress(e.target.value)}
-                      placeholder={isBangla ? 'যেমন: বাড়ি # ৪২, রোড # ১১, বনানী ব্লক-ডি' : 'House # 42, Road # 11, Banani Block-D'}
-                      className="pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Permanent Address */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="permanentAddress" className="text-xs font-semibold text-slate-300">
-                    {isBangla ? 'স্থায়ী ঠিকানা' : 'Permanent Address'}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                    <Input
-                      id="permanentAddress"
-                      value={permanentAddress}
-                      disabled={sameAsPresent}
-                      onChange={(e) => setPermanentAddress(e.target.value)}
-                      placeholder={isBangla ? 'গ্রাম: রামনগর, ডাকঘর: সোনাপুর, থানা: বেগমগঞ্জ' : 'Village: Ramnagar, Post: Sonapur, Thana: Begumganj'}
-                      className={cn(
-                        'pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
-                        sameAsPresent && 'opacity-50 cursor-not-allowed bg-slate-950/60'
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* 4-col City, District, Postal, Country */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="city" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'শহর' : 'City'}
-                    </Label>
-                    <Input
-                      id="city"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="district" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'জেলা' : 'District'}
-                    </Label>
-                    <Input
-                      id="district"
-                      value={district}
-                      onChange={(e) => setDistrict(e.target.value)}
-                      className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="postal" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'পোস্টাল কোড' : 'Postal Code'}
-                    </Label>
-                    <Input
-                      id="postal"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
-                      className="h-10.5 font-mono bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="country" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'দেশ' : 'Country'}
-                    </Label>
-                    <Input
-                      id="country"
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
@@ -966,7 +848,7 @@ export default function AddEmployeePage() {
                 <span>{isBangla ? 'ভূমিকা ও নিয়োগ শর্ত' : 'ROLE & EMPLOYMENT TERMS'}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {/* System Role */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
@@ -1018,6 +900,24 @@ export default function AddEmployeePage() {
                       value={joiningDate}
                       onChange={(e) => setJoiningDate(e.target.value)}
                       className="pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Login Password */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="passwordVal" className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                    {isBangla ? 'লগইন পাসওয়ার্ড' : 'Login Password'}
+                  </Label>
+                  <div className="relative flex items-center">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                    <Input
+                      id="passwordVal"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="123456"
+                      className="pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
                     />
                   </div>
                 </div>
@@ -1111,25 +1011,25 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Active">
+                      <SelectItem value="ACTIVE">
                         <span className="flex items-center gap-1.5 font-medium text-emerald-400">
                           <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500" />
                           Active
                         </span>
                       </SelectItem>
-                      <SelectItem value="Probation">
+                      <SelectItem value="PROBATION">
                         <span className="flex items-center gap-1.5 font-medium text-amber-400">
                           <span className="h-2 w-2 rounded-full bg-amber-500" />
                           Probation
                         </span>
                       </SelectItem>
-                      <SelectItem value="On Leave">
+                      <SelectItem value="ON_LEAVE">
                         <span className="flex items-center gap-1.5 font-medium text-blue-400">
                           <span className="h-2 w-2 rounded-full bg-blue-500" />
                           On Leave
                         </span>
                       </SelectItem>
-                      <SelectItem value="Inactive">
+                      <SelectItem value="INACTIVE">
                         <span className="flex items-center gap-1.5 font-medium text-slate-400">
                           <span className="h-2 w-2 rounded-full bg-slate-500" />
                           Inactive
@@ -1226,9 +1126,10 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Monthly">{isBangla ? 'মাসিক (প্রতি মাসে)' : 'Monthly (প্রতি মাসে)'}</SelectItem>
-                      <SelectItem value="Hourly">{isBangla ? 'ঘণ্টাভিত্তিক (Hourly)' : 'Hourly'}</SelectItem>
-                      <SelectItem value="Daily">{isBangla ? 'দৈনিক (Daily)' : 'Daily'}</SelectItem>
+                      <SelectItem value="MONTHLY">{isBangla ? 'মাসিক (প্রতি মাসে)' : 'Monthly (প্রতি মাসে)'}</SelectItem>
+                      <SelectItem value="HOURLY">{isBangla ? 'ঘণ্টাভিত্তিক (Hourly)' : 'Hourly'}</SelectItem>
+                      <SelectItem value="WEEKLY">{isBangla ? 'সাপ্তাহিক (প্রতি সপ্তাহে)' : 'Weekly (প্রতি সপ্তাহে)'}</SelectItem>
+                      <SelectItem value="BIWEEKLY">{isBangla ? 'পাক্ষিক (প্রতি ১৫ দিনে)' : 'Bi-weekly (প্রতি ১৫ দিনে)'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1243,9 +1144,10 @@ export default function AddEmployeePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      <SelectItem value="Bank">{isBangla ? 'ব্যাংক ট্রান্সফার (BEFTN/NPSB)' : 'Bank Transfer (BEFTN/NPSB)'}</SelectItem>
-                      <SelectItem value="Mobile Banking">{isBangla ? 'মোবাইল ব্যাংকিং (MFS)' : 'Mobile Banking (bKash/Nagad)'}</SelectItem>
-                      <SelectItem value="Cash">{isBangla ? 'নগদ / ক্যাশ (Cash)' : 'Cash Payout'}</SelectItem>
+                      <SelectItem value="BANK_TRANSFER">{isBangla ? 'ব্যাংক ট্রান্সফার (BEFTN/NPSB)' : 'Bank Transfer (BEFTN/NPSB)'}</SelectItem>
+                      <SelectItem value="MOBILE_BANKING">{isBangla ? 'মোবাইল ব্যাংকিং (MFS)' : 'Mobile Banking (bKash/Nagad)'}</SelectItem>
+                      <SelectItem value="CASH">{isBangla ? 'নগদ / ক্যাশ (Cash)' : 'Cash Payout'}</SelectItem>
+                      <SelectItem value="CHEQUE">{isBangla ? 'নগদ / ক্যাশ (Cash)' : 'Cash Payout'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1253,7 +1155,7 @@ export default function AddEmployeePage() {
             </div>
 
             {/* 4.2 Dynamic Payment Details */}
-            {paymentMethod === 'Bank' && (
+            {paymentMethod === 'BANK_TRANSFER' && (
               <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
                 <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
@@ -1315,7 +1217,7 @@ export default function AddEmployeePage() {
               </div>
             )}
 
-            {paymentMethod === 'Mobile Banking' && (
+            {paymentMethod === 'MOBILE_BANKING' && (
               <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
                 <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
@@ -1359,7 +1261,7 @@ export default function AddEmployeePage() {
               </div>
             )}
 
-            {paymentMethod === 'Cash' && (
+            {paymentMethod === 'CASH' && (
               <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center gap-3 text-xs text-slate-300">
                 <Info className="h-4 w-4 text-indigo-400 shrink-0" />
                 <span>
@@ -1443,10 +1345,10 @@ export default function AddEmployeePage() {
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={isCreating}
                 className="flex-1 sm:flex-none cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-6 rounded-lg transition-all min-w-[160px]"
               >
-                {loading ? (
+                {isCreating ? (
                   <span className="flex items-center gap-2">
                     <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                     {isBangla ? 'তৈরি হচ্ছে...' : 'Creating...'}
