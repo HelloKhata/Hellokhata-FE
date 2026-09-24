@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import type { BaseRoleDefinition, PermissionModuleItem } from './types';
-import { ROLE_COLOR_PRESETS, DEFAULT_PERMISSION_MODULES } from './mock-data';
+import { ROLE_COLOR_PRESETS, DEFAULT_PERMISSION_MODULES, ALL_PERMISSION_IDS } from './mock-data';
 import { getModuleIcon, getActionDetails } from './utils';
 import { useGetPermissions } from '@/hooks/api/useSettings';
 
@@ -55,9 +55,12 @@ export const formatPermissions = (
 
 // Helper to extract flat permission IDs from either permissionIds array or permissions object
 export const extractPermissionIds = (
-  role: (Partial<BaseRoleDefinition> & { permissions?: Record<string, string[]> }) | null
+  role: (Partial<BaseRoleDefinition> & { permissions?: any }) | null
 ): string[] => {
   if (!role) return [];
+  if (role.permissions === '*' || role.permissions === 'all') {
+    return ALL_PERMISSION_IDS;
+  }
   const ids = new Set<string>();
 
   if (Array.isArray(role.permissionIds)) {
@@ -78,8 +81,8 @@ export const extractPermissionIds = (
 interface EditRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  role: (BaseRoleDefinition & { permissions?: Record<string, string[]> }) | null;
-  onRoleSaved: (role: BaseRoleDefinition & { permissions?: Record<string, string[]> }) => void;
+  role: (Partial<BaseRoleDefinition> & { permissions?: any }) | any | null;
+  onRoleSaved: (role: any) => void;
   onSubmit?: (rolePayload: any) => Promise<void> | void;
 }
 

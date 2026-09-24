@@ -151,6 +151,11 @@ export default function AddEmployeePage() {
     if (!salaryVal || parseFloat(salaryVal) <= 0) {
       newErrors.salary = isBangla ? 'মূল বেতন আবশ্যক' : 'Basic salary is required';
     }
+    if (role && role !== 'none') {
+      if (!password.trim()) {
+        newErrors.password = isBangla ? 'পাসওয়ার্ড আবশ্যক' : 'Password is required';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -167,6 +172,7 @@ export default function AddEmployeePage() {
       department: true,
       designation: true,
       salary: true,
+      ...(role && role !== 'none' ? { password: true } : {}),
     });
 
     if (!validateForm()) {
@@ -204,8 +210,12 @@ export default function AddEmployeePage() {
       department: department,
       designation: designation,
       // branchIds: [branch],
-      roleId: 'cmu2iml46002501plbvxgcxaa',
-      password: password || '123456',
+      ...(role && role !== 'none'
+        ? {
+            roleId: role === 'Admin' || role === 'HR' || role === 'Manager' || role === 'Employee' ? 'cmu2iml46002501plbvxgcxaa' : role,
+            password: password.trim(),
+          }
+        : {}),
       reportingManager: manager.trim(),
       joiningDate: joiningDate || '',
       employmentStatus: employmentType,
@@ -848,20 +858,33 @@ export default function AddEmployeePage() {
                 <span>{isBangla ? 'ভূমিকা ও নিয়োগ শর্ত' : 'ROLE & EMPLOYMENT TERMS'}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className={cn(
+                'grid grid-cols-1 sm:grid-cols-2 gap-4',
+                role && role !== 'none' ? 'md:grid-cols-4' : 'md:grid-cols-3'
+              )}>
                 {/* System Role */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                    {isBangla ? 'সিস্টেম রোল' : 'System Role'} <span className="text-rose-400 font-bold">*</span>
+                    {isBangla ? 'সিস্টেম রোল' : 'System Role'}
                   </Label>
-                  <Select value={role} onValueChange={setRole}>
+                  <Select
+                    value={role}
+                    onValueChange={(val) => {
+                      setRole(val);
+                      if (!val || val === 'none') {
+                        setPassword('');
+                        setErrors((prev) => ({ ...prev, password: '' }));
+                      }
+                    }}
+                  >
                     <SelectTrigger className="w-full h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
                       <div className="flex items-center gap-2 truncate">
                         <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0" />
-                        <SelectValue />
+                        <SelectValue placeholder={isBangla ? 'রোল নির্বাচন করুন (ঐচ্ছিক)' : 'Select Role (Optional)'} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                      <SelectItem value="none">{isBangla ? 'কোনো রোল নেই (ঐচ্ছিক)' : 'No Role (Optional)'}</SelectItem>
                       <SelectItem value="Admin">Admin (পূর্ণ নিয়ন্ত্রণ)</SelectItem>
                       <SelectItem value="HR">HR Manager (মানবসম্পদ)</SelectItem>
                       <SelectItem value="Manager">Manager (ব্যবস্থাপক)</SelectItem>
@@ -904,23 +927,37 @@ export default function AddEmployeePage() {
                   </div>
                 </div>
 
-                {/* Login Password */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="passwordVal" className="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                    {isBangla ? 'লগইন পাসওয়ার্ড' : 'Login Password'}
-                  </Label>
-                  <div className="relative flex items-center">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                    <Input
-                      id="passwordVal"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="123456"
-                      className="pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
+                {/* Login Password - Only displayed when role is selected */}
+                {role && role !== 'none' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="passwordVal" className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                      {isBangla ? 'লগইন পাসওয়ার্ড' : 'Login Password'} <span className="text-rose-400 font-bold">*</span>
+                    </Label>
+                    <div className="relative flex items-center">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                      <Input
+                        id="passwordVal"
+                        type="password"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
+                        }}
+                        placeholder="••••••••"
+                        aria-invalid={!!errors.password}
+                        className={cn(
+                          'pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                          errors.password && 'border-rose-500/80 focus-visible:ring-rose-500/30'
+                        )}
+                      />
+                    </div>
+                    {errors.password && (
+                      <p className="text-[11px] text-rose-400 flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" /> {errors.password}
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             </div>
 

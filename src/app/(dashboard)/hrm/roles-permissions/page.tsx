@@ -19,6 +19,17 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
@@ -26,7 +37,6 @@ import {
   type BaseRoleDefinition,
   type UserAccessProfile,
   type AccessAuditEntry,
-  INITIAL_BASE_ROLES,
   INITIAL_USER_PROFILES,
   INITIAL_AUDIT_LOGS,
   ERP_MODULES,
@@ -39,13 +49,26 @@ import {
   QuickPreviewDialog,
   AddUserModal,
 } from '@/components/hrm/roles-permissions';
+import { useGetRoles, useDeleteRole } from '@/hooks/api/useRoles';
+
+const getRoleBadgeColor = (color?: string | null) => {
+  if (!color) return '#6366f1';
+  const c = color.toLowerCase();
+  if (c === 'gray' || c === 'grey') return '#64748b';
+  if (c === 'purple') return '#8b5cf6';
+  if (c === 'blue') return '#3b82f6';
+  if (c === 'indigo') return '#6366f1';
+  if (c === 'emerald' || c === 'green') return '#10b981';
+  if (c === 'amber' || c === 'orange') return '#f59e0b';
+  if (c === 'rose' || c === 'red') return '#f43f5e';
+  return color;
+};
 
 export default function UserAccessControlPage() {
   const { isBangla } = useAppTranslation();
 
   // Core State Collections
   const [users, setUsers] = useState<UserAccessProfile[]>(INITIAL_USER_PROFILES);
-  const [baseRoles, setBaseRoles] = useState<BaseRoleDefinition[]>(INITIAL_BASE_ROLES);
   const [auditLogs, setAuditLogs] = useState<AccessAuditEntry[]>(INITIAL_AUDIT_LOGS);
 
   // Table Filters & Search
@@ -55,9 +78,9 @@ export default function UserAccessControlPage() {
 
   // Modal States
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<BaseRoleDefinition | null>(null);
+  const [editingRole, setEditingRole] = useState<any>(null);
   const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
-  const [viewStaffRole, setViewStaffRole] = useState<BaseRoleDefinition | null>(null);
+  const [viewStaffRole, setViewStaffRole] = useState<any>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [activeUser, setActiveUser] = useState<UserAccessProfile | null>(null);
   const [isManageAccessOpen, setIsManageAccessOpen] = useState(false);
@@ -65,43 +88,27 @@ export default function UserAccessControlPage() {
   const [isQuickPreviewOpen, setIsQuickPreviewOpen] = useState(false);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
-  // Filtered Roles
-  const filteredRoles = useMemo(() => {
-    return baseRoles.filter((r) => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchQuery =
-        !q ||
-        r.name.toLowerCase().includes(q) ||
-        r.nameBn.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.descriptionBn.toLowerCase().includes(q);
+  // Delete Confirmation State
+  const [roleToDelete, setRoleToDelete] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-      const matchType =
-        roleTypeFilter === 'all' ||
-        (roleTypeFilter === 'system' && r.isSystemProtected) ||
-        (roleTypeFilter === 'custom' && !r.isSystemProtected);
+  // get all roles from API
+  const { data: allRoles, isLoading: isLoadingRoles, refetch: refetchRoles } = useGetRoles();
+  const deleteRoleMutation = useDeleteRole();
 
-      const matchStatus = statusFilter === 'all' || statusFilter === 'active';
-
-      return matchQuery && matchType && matchStatus;
-    });
-  }, [baseRoles, searchQuery, roleTypeFilter, statusFilter]);
-
-
-  const handleRoleSaved = (updatedRole: BaseRoleDefinition) => {
-    setBaseRoles((prev) =>
-      prev.map((r) => (r.id === updatedRole.id ? updatedRole : r))
-    );
+ 
+  const handleRoleSaved = () => {
+    refetchRoles();
   };
 
-  const handleDeleteRole = (role: BaseRoleDefinition) => {
-    if (role.isSystemProtected) {
+  const handleDeleteRole = (role: any) => {
+    if (role.isSystem || role.isDefault || role.name?.toLowerCase() === 'owner') {
       toast.error(
         isBangla ? 'সিস্টেম রোল মুছে ফেলা সম্ভব নয়!' : 'System-protected roles cannot be deleted!'
       );
       return;
     }
-    const hasAssignedStaff = users.some((u) => u.baseRoleId === role.id);
+    const hasAssignedStaff = (role.userCount ?? 0) > 0 || users.some((u) => u.baseRoleId === role.id);
     if (hasAssignedStaff) {
       toast.error(
         isBangla
@@ -110,16 +117,39 @@ export default function UserAccessControlPage() {
       );
       return;
     }
-    setBaseRoles((prev) => prev.filter((r) => r.id !== role.id));
-    toast.success(isBangla ? `রোল "${role.name}" মুছে ফেলা হয়েছে!` : `Role "${role.name}" deleted!`);
+
+    setRoleToDelete(role);
+    setIsDeleteDialogOpen(true);
   };
 
-  const handleViewStaff = (role: BaseRoleDefinition) => {
+  const handleConfirmDelete = () => {
+    if (!roleToDelete) return;
+
+    deleteRoleMutation.mutate(roleToDelete.id, {
+      onSuccess: () => {
+        toast.success(
+          isBangla
+            ? `রোল "${roleToDelete.nameBn || roleToDelete.name}" মুছে ফেলা হয়েছে!`
+            : `Role "${roleToDelete.name}" deleted!`
+        );
+        setIsDeleteDialogOpen(false);
+        setRoleToDelete(null);
+      },
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message ||
+            (isBangla ? 'রোল মুছতে ব্যর্থ হয়েছে' : 'Failed to delete role')
+        );
+      },
+    });
+  };
+
+  const handleViewStaff = (role: any) => {
     setViewStaffRole(role);
     setIsStaffModalOpen(true);
   };
 
-  const handleEditRole = (role: BaseRoleDefinition) => {
+  const handleEditRole = (role: any) => {
     setEditingRole(role);
     setIsEditRoleModalOpen(true);
   };
@@ -131,7 +161,7 @@ export default function UserAccessControlPage() {
 
   const handleUserCreated = (createdUser: UserAccessProfile) => {
     setUsers((prev) => [createdUser, ...prev]);
-    const roleName = baseRoles.find((r) => r.id === createdUser.baseRoleId)?.name || 'Staff';
+    const roleName = allRoles.find((r: any) => r.id === createdUser.baseRoleId)?.name || 'Staff';
     setAuditLogs((prev) => [
       {
         id: `aud-${Date.now()}`,
@@ -273,12 +303,23 @@ export default function UserAccessControlPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {filteredRoles.length === 0 ? (
+                {isLoadingRoles ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                        <p className="text-xs font-medium">
+                          {isBangla ? 'রোল লোড হচ্ছে...' : 'Loading roles from server...'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : allRoles.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-muted-foreground">
                       <Shield className="w-8 h-8 mx-auto mb-2 opacity-30" />
                       <p className="font-semibold text-sm">
-                        {isBangla ? 'কোনো রোল পাওয়া যায়নি' : 'No roles found matching filter criteria'}
+                        {isBangla ? 'কোনো রোল পাওয়া যায়নি' : 'No roles found'}
                       </p>
                       <p className="text-xs mt-1">
                         {isBangla ? 'অনুগ্রহ করে ফিল্টার বা সার্চ পরিবর্তন করুন।' : 'Try resetting your search query or filters.'}
@@ -286,11 +327,12 @@ export default function UserAccessControlPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredRoles.map((role) => {
-                    const assignedUsers = users.filter((u) => u.baseRoleId === role.id);
-                    const coveredModules = ERP_MODULES.filter((m) =>
-                      m.permissions.some((p) => role.permissionIds.includes(p.id))
-                    );
+                  allRoles.map((role: any) => {
+                    const assignedUsersCount = typeof role.userCount === 'number'
+                      ? role.userCount
+                      : users.filter((u) => u.baseRoleId === role.id).length;
+
+                    const isFullAccess = role.permissions === '*' || role.permissions === 'all';
 
                     return (
                       <tr key={role.id} className="hover:bg-muted/20 transition-colors">
@@ -299,18 +341,34 @@ export default function UserAccessControlPage() {
                           <div className="flex items-center gap-3">
                             <div
                               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-xs"
-                              style={{ backgroundColor: role.color }}
+                              style={{ backgroundColor: getRoleBadgeColor(role.color) }}
                             >
-                              <Crown className="w-4 h-4 text-white" />
+                              {role.isSystem || role.isDefault || role.name?.toLowerCase() === 'owner' ? (
+                                <Crown className="w-4 h-4 text-white" />
+                              ) : (
+                                <Shield className="w-4 h-4 text-white" />
+                              )}
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-foreground">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-sm text-foreground capitalize">
                                   {isBangla ? role.nameBn || role.name : role.name}
                                 </span>
+                                {role.isSystem && (
+                                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-semibold py-0 px-1.5">
+                                    {isBangla ? 'সিস্টেম' : 'System'}
+                                  </Badge>
+                                )}
+                                {role.isDefault && (
+                                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20 font-semibold py-0 px-1.5">
+                                    {isBangla ? 'ডিফল্ট' : 'Default'}
+                                  </Badge>
+                                )}
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 truncate">
-                                {isBangla ? role.descriptionBn || role.description : role.description}
+                                {isBangla
+                                  ? role.nameBn || role.description || (isBangla ? 'কোনো বিবরণ নেই' : 'No description')
+                                  : role.description || (isBangla ? 'কোনো বিবরণ নেই' : 'No description')}
                               </p>
                             </div>
                           </div>
@@ -318,33 +376,89 @@ export default function UserAccessControlPage() {
 
                         {/* 2. MODULES & PERMISSIONS */}
                         <td className="py-4 px-4 align-middle">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
-                              <span>
-                                {coveredModules.length} / {ERP_MODULES.length} {isBangla ? 'মডিউল' : 'Modules'}
-                              </span>
-                              <span className="text-muted-foreground/60 font-normal">•</span>
-                              <span>
-                                {role.permissionIds.length} {isBangla ? 'অনুমতি' : 'Permissions'}
+                          {isFullAccess ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold text-[11px] py-0.5 px-2">
+                                  <Crown className="w-3 h-3 mr-1" />
+                                  {isBangla ? 'পূর্ণ নিয়ন্ত্রণ' : 'Full Access'}
+                                </Badge>
+                              </div>
+                              <span className="text-[11px] text-muted-foreground">
+                                {isBangla ? 'সকল মডিউল ও পারমিশন অন্তর্ভুক্ত' : 'All modules & permissions included'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              {coveredModules.slice(0, 3).map((m) => (
-                                <span
-                                  key={m.id}
-                                  className="inline-flex items-center gap-1 px-1 py-1 rounded-md text-[11px] font-medium bg-muted/40 text-foreground/85 border border-border/50"
-                                >
-                                  {getModuleIcon(m.id)}
-                                  <span>{getModuleShortName(m, isBangla)}</span>
-                                </span>
-                              ))}
-                              {coveredModules.length > 3 && (
-                                <span className="inline-flex items-center justify-center py-0.5 rounded-md text-[10px] leading-tight font-medium bg-muted/40 text-muted-foreground border border-border/50">
-                                  <span>+{coveredModules.length - 3} {isBangla ? 'আরো' : 'More'}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          ) : (
+                            (() => {
+                              const rolePerms = typeof role.permissions === 'object' && role.permissions && !Array.isArray(role.permissions)
+                                ? role.permissions
+                                : null;
+
+                              const moduleEntries = rolePerms
+                                ? Object.entries(rolePerms).filter(([, acts]) => Array.isArray(acts) && (acts as any[]).length > 0)
+                                : [];
+
+                              const coveredModules = ERP_MODULES.filter((m) =>
+                                m.permissions.some((p) => Array.isArray(role.permissionIds) && role.permissionIds.includes(p.id))
+                              );
+
+                              const modulesCount = moduleEntries.length > 0 ? moduleEntries.length : coveredModules.length;
+                              const totalPermsCount = moduleEntries.length > 0
+                                ? moduleEntries.reduce((sum, [, acts]) => sum + (acts as any[]).length, 0)
+                                : Array.isArray(role.permissionIds) ? role.permissionIds.length : 0;
+
+                              if (modulesCount === 0) {
+                                return (
+                                  <span className="text-xs text-muted-foreground italic">
+                                    {isBangla ? 'কোনো পারমিশন নেই' : 'No permissions'}
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <div className="flex flex-col gap-1.5">
+                                  <div className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                                    <span>
+                                      {modulesCount} {isBangla ? 'মডিউল' : 'Modules'}
+                                    </span>
+                                    <span className="text-muted-foreground/60 font-normal">•</span>
+                                    <span>
+                                      {totalPermsCount} {isBangla ? 'অনুমতি' : 'Permissions'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    {moduleEntries.length > 0
+                                      ? moduleEntries.slice(0, 3).map(([modName, acts]) => (
+                                          <span
+                                            key={modName}
+                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-muted/40 text-foreground/85 border border-border/50"
+                                          >
+                                            {getModuleIcon(modName)}
+                                            <span className="capitalize">{modName}</span>
+                                            <span className="text-[10px] text-muted-foreground font-mono">
+                                              ({(acts as any[]).length})
+                                            </span>
+                                          </span>
+                                        ))
+                                      : coveredModules.slice(0, 3).map((m) => (
+                                          <span
+                                            key={m.id}
+                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-muted/40 text-foreground/85 border border-border/50"
+                                          >
+                                            {getModuleIcon(m.id)}
+                                            <span>{getModuleShortName(m, isBangla)}</span>
+                                          </span>
+                                        ))}
+                                    {modulesCount > 3 && (
+                                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-muted/40 text-muted-foreground border border-border/50">
+                                        +{modulesCount - 3} {isBangla ? 'আরো' : 'More'}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()
+                          )}
                         </td>
 
                         {/* 3. STATUS */}
@@ -354,17 +468,19 @@ export default function UserAccessControlPage() {
                               <span
                                 className={cn(
                                   'w-2 h-2 rounded-full shrink-0',
-                                  role.isSystemProtected ? 'bg-purple-500' : 'bg-emerald-500'
+                                  role.deletedAt
+                                    ? 'bg-rose-500'
+                                    : role.isSystem || role.isDefault
+                                    ? 'bg-purple-500'
+                                    : 'bg-emerald-500'
                                 )}
                               />
                               <span>
-                                {isBangla
-                                  ? role.isSystemProtected
-                                    ? 'Active (Protected)'
-                                    : 'Active (Custom)'
-                                  : role.isSystemProtected
-                                  ? 'Active (Protected)'
-                                  : 'Active (Custom)'}
+                                {role.deletedAt
+                                  ? (isBangla ? 'নিষ্ক্রিয় (Inactive)' : 'Inactive')
+                                  : role.isSystem || role.isDefault
+                                  ? (isBangla ? 'সক্রিয় (সুরক্ষিত)' : 'Active (System)')
+                                  : (isBangla ? 'সক্রিয় (কাস্টম)' : 'Active (Custom)')}
                               </span>
                             </div>
                           </div>
@@ -379,7 +495,7 @@ export default function UserAccessControlPage() {
                             title={isBangla ? 'নিয়োজিত কর্মী তালিকা দেখুন' : 'View assigned staff'}
                           >
                             <span className="font-bold text-xs text-foreground group-hover:text-primary transition-colors underline decoration-dotted underline-offset-4">
-                              {assignedUsers.length} {isBangla ? 'কর্মী' : 'staff'}
+                              {assignedUsersCount} {isBangla ? 'কর্মী' : 'staff'}
                             </span>
                           </button>
                         </td>
@@ -410,6 +526,7 @@ export default function UserAccessControlPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDeleteRole(role)}
+                              disabled={deleteRoleMutation.isPending}
                               className="h-8 w-8 p-0 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                               title={isBangla ? 'মুছে ফেলুন' : 'Delete Role'}
                             >
@@ -459,7 +576,7 @@ export default function UserAccessControlPage() {
         open={isManageAccessOpen}
         onOpenChange={setIsManageAccessOpen}
         user={activeUser}
-        baseRoles={baseRoles}
+        baseRoles={allRoles}
         onSaveUser={handleSaveUserAccess}
       />
 
@@ -467,16 +584,53 @@ export default function UserAccessControlPage() {
         open={isQuickPreviewOpen}
         onOpenChange={setIsQuickPreviewOpen}
         user={previewingUser}
-        baseRoles={baseRoles}
+        baseRoles={allRoles}
         onOpenFullEditor={handleOpenFullEditorFromPreview}
       />
 
       <AddUserModal
         open={isAddUserModalOpen}
         onOpenChange={setIsAddUserModalOpen}
-        baseRoles={baseRoles}
+        baseRoles={allRoles}
         onUserCreated={handleUserCreated}
       />
+
+      {/* ─── DELETE ROLE CONFIRMATION DIALOG ──────────────────────────────── */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setRoleToDelete(null);
+        }}
+      >
+        <AlertDialogContent className="rounded-2xl max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              <span>{isBangla ? 'রোল মুছে ফেলতে নিশ্চিত?' : 'Delete Role Confirmation'}</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm text-muted-foreground pt-1">
+              {isBangla
+                ? `আপনি কি নিশ্চিত যে "${roleToDelete?.nameBn || roleToDelete?.name}" রোলটি মুছে ফেলতে চান? এটি মুছে ফেললে আর পুনরুদ্ধার করা যাবে না।`
+                : `Are you sure you want to delete the role "${roleToDelete?.name}"? This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0 mt-2">
+            <AlertDialogCancel className="rounded-xl text-xs font-semibold cursor-pointer">
+              {isBangla ? 'বাতিল' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deleteRoleMutation.isPending}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs font-semibold cursor-pointer"
+            >
+              {deleteRoleMutation.isPending
+                ? (isBangla ? 'মুছে ফেলা হচ্ছে...' : 'Deleting...')
+                : (isBangla ? 'হ্যাঁ, মুছে ফেলুন' : 'Yes, Delete Role')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

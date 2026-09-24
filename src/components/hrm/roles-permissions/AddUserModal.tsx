@@ -21,11 +21,12 @@ import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { HRM_BRANCHES } from '@/components/hrm/mock-data';
 import { cn } from '@/lib/utils';
 import type { BaseRoleDefinition, UserAccessProfile } from './types';
+import { getRolePermissionIds } from './utils';
 
 interface AddUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  baseRoles: BaseRoleDefinition[];
+  baseRoles: (BaseRoleDefinition | any)[];
   onUserCreated: (user: UserAccessProfile) => void;
 }
 
@@ -178,11 +179,18 @@ export function AddUserModal({
               onChange={(e) => setNewUserData({ ...newUserData, baseRoleId: e.target.value })}
               className="w-full mt-1 h-9 px-3 rounded-xl border border-border bg-background text-xs font-bold text-foreground cursor-pointer focus:outline-none"
             >
-              {baseRoles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {isBangla ? r.nameBn : r.name} ({r.permissionIds.length} Permissions)
-                </option>
-              ))}
+              {baseRoles?.map((r: any) => {
+                const isFull = r.permissions === '*' || r.permissions === 'all';
+                const permIds = getRolePermissionIds(r);
+                return (
+                  <option key={r.id} value={r.id}>
+                    {isBangla ? r.nameBn || r.name : r.name}{' '}
+                    {isFull
+                      ? (isBangla ? '(পূর্ণ নিয়ন্ত্রণ)' : '(Full Access)')
+                      : `(${permIds.length} Permissions)`}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
