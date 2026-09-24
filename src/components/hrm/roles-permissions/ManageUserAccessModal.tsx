@@ -45,7 +45,7 @@ import {
   PERMISSION_BY_ID_MAP,
   MODULE_BY_PERMISSION_ID_MAP,
 } from './mock-data';
-import { computeEffectivePermissions } from './utils';
+import { computeEffectivePermissions, getRolePermissionIds } from './utils';
 import { FullAccessWarningDialog } from './FullAccessWarningDialog';
 import { DiffConfirmDialog } from './DiffConfirmDialog';
 
@@ -53,7 +53,7 @@ interface ManageUserAccessModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: UserAccessProfile | null;
-  baseRoles: BaseRoleDefinition[];
+  baseRoles: (BaseRoleDefinition | any)[];
   onSaveUser: (updatedUser: UserAccessProfile, auditEntry: AccessAuditEntry) => void;
 }
 
@@ -84,6 +84,10 @@ export function ManageUserAccessModal({
     if (!draftUser) return null;
     return baseRoles.find((r) => r.id === draftUser.baseRoleId) || null;
   }, [draftUser, baseRoles]);
+
+  const activeRolePermissionIds = useMemo(() => {
+    return getRolePermissionIds(activeRoleDefinition);
+  }, [activeRoleDefinition]);
 
   const draftEffectivePermissions = useMemo(() => {
     if (!draftUser) return new Set<string>();
@@ -229,7 +233,7 @@ export function ManageUserAccessModal({
     if (draftUser.isFullSystemAccess || !activeRoleDefinition) return;
 
     const isCurrentlyGranted = draftEffectivePermissions.has(permissionId);
-    const roleHasIt = activeRoleDefinition.permissionIds.includes(permissionId);
+    const roleHasIt = activeRolePermissionIds.includes(permissionId);
 
     let newGranted = [...draftUser.customGrantedPermissions];
     let newRevoked = [...draftUser.customRevokedPermissions];
@@ -282,7 +286,7 @@ export function ManageUserAccessModal({
 
     module.permissions.forEach((p) => {
       const shouldHave = targetGrantedIds.includes(p.id);
-      const roleHas = activeRoleDefinition.permissionIds.includes(p.id);
+      const roleHas = activeRolePermissionIds.includes(p.id);
 
       if (shouldHave && !roleHas) {
         newGranted.push(p.id);
@@ -556,11 +560,16 @@ export function ManageUserAccessModal({
                         onChange={(e) => handleBaseRoleChange(e.target.value)}
                         className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-bold text-foreground cursor-pointer focus:outline-none"
                       >
-                        {baseRoles.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {isBangla ? r.nameBn : r.name} ({r.permissionIds.length} Perms)
-                          </option>
-                        ))}
+                        {baseRoles.map((r: any) => {
+                          const isFull = r.permissions === '*' || r.permissions === 'all';
+                          const permIds = getRolePermissionIds(r);
+                          return (
+                            <option key={r.id} value={r.id}>
+                              {isBangla ? r.nameBn || r.name : r.name}{' '}
+                              {isFull ? (isBangla ? '(পূর্ণ নিয়ন্ত্রণ)' : '(Full Access)') : `(${permIds.length} Perms)`}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
@@ -829,7 +838,7 @@ export function ManageUserAccessModal({
                               const isGranted = draftEffectivePermissions.has(perm.id);
                               const isCustomGranted = draftUser.customGrantedPermissions.includes(perm.id);
                               const isCustomRevoked = draftUser.customRevokedPermissions.includes(perm.id);
-                              const isRoleInherited = activeRoleDefinition?.permissionIds.includes(perm.id);
+                              const isRoleInherited = activeRolePermissionIds.includes(perm.id);
 
                               return (
                                 <div

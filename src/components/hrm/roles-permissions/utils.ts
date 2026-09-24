@@ -20,24 +20,45 @@ import {
 import type { UserAccessProfile, BaseRoleDefinition, ERPModuleDefinition, PermissionModuleItem } from './types';
 import { ALL_PERMISSION_IDS } from './mock-data';
 
+// ─── HELPER: Extract Permission IDs from a Role ───────────────────────────
+
+export function getRolePermissionIds(role: any): string[] {
+  if (!role) return [];
+  if (role.permissions === '*' || role.permissions === 'all') {
+    return ALL_PERMISSION_IDS;
+  }
+  if (Array.isArray(role.permissionIds)) {
+    return role.permissionIds;
+  }
+  if (role.permissions && typeof role.permissions === 'object' && !Array.isArray(role.permissions)) {
+    return Object.entries(role.permissions).flatMap(([mod, acts]) =>
+      Array.isArray(acts) ? acts.map((act) => `${mod}_${act}`) : []
+    );
+  }
+  if (Array.isArray(role.permissions)) {
+    return role.permissions;
+  }
+  return [];
+}
+
 // ─── HELPER: Compute Effective Permissions for a User ────────────────────────
 
 export function computeEffectivePermissions(
   user: UserAccessProfile,
-  baseRoles: BaseRoleDefinition[]
+  baseRoles: (BaseRoleDefinition | any)[]
 ): Set<string> {
   if (user.isFullSystemAccess || user.isOwner) {
     return new Set(ALL_PERMISSION_IDS);
   }
 
   const role = baseRoles.find((r) => r.id === user.baseRoleId);
-  const basePermissions = new Set(role ? role.permissionIds : []);
+  const basePermissions = new Set(getRolePermissionIds(role));
 
   // Apply custom granted overrides (+)
-  user.customGrantedPermissions.forEach((pId) => basePermissions.add(pId));
+  user.customGrantedPermissions?.forEach((pId) => basePermissions.add(pId));
 
   // Apply custom revoked overrides (-)
-  user.customRevokedPermissions.forEach((pId) => basePermissions.delete(pId));
+  user.customRevokedPermissions?.forEach((pId) => basePermissions.delete(pId));
 
   return basePermissions;
 }

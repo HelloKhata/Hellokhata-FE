@@ -17,6 +17,7 @@ import type { BaseRoleDefinition, PermissionModuleItem } from './types';
 import { ROLE_COLOR_PRESETS, DEFAULT_PERMISSION_MODULES } from './mock-data';
 import { getModuleIcon, getActionDetails } from './utils';
 import { useGetPermissions } from '@/hooks/api/useSettings';
+import { useCreateRole } from '@/hooks/api/useRoles';
 
 export interface RolePayload {
   name: string;
@@ -86,6 +87,10 @@ export function CreateRoleModal({
   // get all roles & permissions from API
   const { data: rawPermissions } = useGetPermissions();
 
+  // create role api
+  const {mutate: createRole,isPending: isCreatingRole} = useCreateRole();
+
+
   const permissionModules: PermissionModuleItem[] = useMemo(() => {
     if (Array.isArray(rawPermissions) && rawPermissions.length > 0) {
       return rawPermissions;
@@ -124,9 +129,6 @@ export function CreateRoleModal({
 
   const handleToggleAllModulePermissions = (mod: PermissionModuleItem, enable: boolean) => {
     const modPermIds = mod.actions.map((action) => `${mod.module}_${action}`);
-    console.log('mod',mod);
-    console.log('modPermIds',modPermIds);
-    console.log('enable',enable)
     if (enable) {
       setCreateRolePermissions((prev) => Array.from(new Set([...prev, ...modPermIds])));
     } else {
@@ -157,37 +159,15 @@ export function CreateRoleModal({
       permissions: formattedPermissions,
     };
 
-    console.log('newRole payload:', newRole);
-
-    try {
-      if (onSubmit) {
-        await onSubmit(newRole);
+   createRole(newRole,{
+    onSuccess: (data) => {
+      if(data.success) {
+        toast.success(isBangla ? 'রোল সফলভাবে তৈরি হয়েছে!' : 'Role created successfully!');
+        resetForm();
+        handleOpenChange(false);
       }
-      if (onRoleCreated) {
-        const newRoleDef: BaseRoleDefinition = {
-          id: `role-${Date.now()}`,
-          name: newRole.name,
-          nameBn: newRole.name,
-          description: newRole.description,
-          descriptionBn: newRole.description,
-          isSystemProtected: false,
-          color: newRole.color,
-          defaultDataScope: 'entire_business',
-          defaultBranchMode: 'all',
-          permissionIds: createRolePermissions,
-        };
-        onRoleCreated(newRole, newRoleDef);
-      }
-
-      handleOpenChange(false);
-      toast.success(
-        isBangla
-          ? `নতুন রোল "${newRole.name}" সফলভাবে তৈরি হয়েছে!`
-          : `New role "${newRole.name}" created successfully!`
-      );
-    } catch (err: any) {
-      toast.error(err?.message || (isBangla ? 'রোল তৈরি করতে সমস্যা হয়েছে।' : 'Failed to create role.'));
-    }
+    },
+   })
   };
 
   return (
@@ -358,10 +338,6 @@ export function CreateRoleModal({
                 const modPermIds = module.actions.map((act) => `${module.module}_${act}`);
                 const enabledCount = modPermIds.filter((id) => createRolePermissions.includes(id)).length;
                 const allEnabled = modPermIds.length > 0 && enabledCount === modPermIds.length;
-                console.log('modPermIds',modPermIds)
-                console.log('enabledCount',enabledCount)
-                console.log('allEnabled',allEnabled)
-                console.log('module',module)
                 return (
                   <div key={module.module} className="rounded-xl border border-border bg-card overflow-hidden">
                     <div className="p-3 bg-muted/30 flex items-center justify-between">

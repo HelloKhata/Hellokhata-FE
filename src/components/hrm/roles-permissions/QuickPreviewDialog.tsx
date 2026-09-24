@@ -24,7 +24,7 @@ interface QuickPreviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: UserAccessProfile | null;
-  baseRoles: BaseRoleDefinition[];
+  baseRoles: (BaseRoleDefinition | any)[];
   onOpenFullEditor: (user: UserAccessProfile) => void;
 }
 
