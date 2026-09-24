@@ -354,15 +354,15 @@ export function generateAttendanceHistory(days = 30, endDate: Date = new Date())
       records.push({
         id: `att-${toISODate(date)}-${emp.id}`,
         employeeId: emp.id,
-        name: emp.name,
+        name: emp.fullName || emp.name || 'Employee',
         date: toISODate(date),
         checkIn: isHoliday ? '—' : checkInMap[status] || '08:55',
         checkOut: isHoliday ? '—' : checkOutMap[status] || '17:50',
         status,
         hoursWorked: isHoliday ? 0 : 8 + (status === 'Overtime' ? 1.2 : status === 'Half Day' ? -0.8 : Math.random() * 0.8),
         overtimeHours: status === 'Overtime' ? 1.2 : 0,
-        branchId: emp.branchId,
-        department: emp.department,
+        branchId: emp.branchId || 'branch-1',
+        department: emp.department || 'Management',
       });
     });
   }
@@ -505,11 +505,12 @@ export const HRM_LEAVE_BALANCES: LeaveBalance[] = [
 // ── Payroll ───────────────────────────────────────────────────────────────────
 function payrollFor(month: Date): PayrollRecord[] {
   const base = (emp: Employee) => {
-    const allowance = Math.round(emp.salary * 0.35);
-    const bonus = emp.department === 'Sales' ? Math.round(emp.salary * 0.12) : Math.round(emp.salary * 0.08);
-    const deduction = Math.round(emp.salary * 0.05) + 1000;
-    const net = emp.salary + allowance + bonus - deduction;
-    return { allowance, bonus, deduction, net };
+    const salary = emp.basicSalary ?? emp.salary ?? 30000;
+    const allowance = Math.round(salary * 0.35);
+    const bonus = emp.department === 'Sales' ? Math.round(salary * 0.12) : Math.round(salary * 0.08);
+    const deduction = Math.round(salary * 0.05) + 1000;
+    const net = salary + allowance + bonus - deduction;
+    return { allowance, bonus, deduction, net, salary };
   };
   const monthLabel = month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   const paymentIndex = month.getMonth();
@@ -526,11 +527,11 @@ function payrollFor(month: Date): PayrollRecord[] {
     return {
       id: `pay-${monthLabel}-${emp.id}`,
       employeeId: emp.id,
-      name: emp.name,
-      branchId: emp.branchId,
-      department: emp.department,
-      designation: emp.designation,
-      basicSalary: emp.salary,
+      name: emp.fullName || emp.name || 'Employee',
+      branchId: emp.branchId || 'branch-1',
+      department: emp.department || 'Management',
+      designation: emp.designation || 'Staff',
+      basicSalary: c.salary,
       allowance: c.allowance,
       bonus: c.bonus,
       deduction: c.deduction,
@@ -625,7 +626,10 @@ export const ROLE_TEMPLATES = [
 // ── Dashboard aggregates ──────────────────────────────────────────────────────
 export function departmentDistribution(): DepartmentDist[] {
   const map = new Map<string, number>();
-  HRM_EMPLOYEES.forEach((e) => map.set(e.department, (map.get(e.department) || 0) + 1));
+  HRM_EMPLOYEES.forEach((e) => {
+    const dept = e.department || 'Management';
+    map.set(dept, (map.get(dept) || 0) + 1);
+  });
   return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
 }
 

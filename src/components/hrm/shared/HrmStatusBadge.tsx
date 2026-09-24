@@ -80,8 +80,19 @@ export function AttendanceBadge({ status, className }: { status: AttendanceStatu
   );
 }
 
-export function EmployeeStatusBadge({ status, className }: { status: EmployeeStatus; className?: string }) {
+export function normalizeEmployeeStatus(status?: string): EmployeeStatus {
+  if (!status) return 'Active';
+  const s = status.toUpperCase().replace(/\s+/g, '_');
+  if (s === 'ACTIVE') return 'Active';
+  if (s === 'ON_LEAVE' || s === 'ONLEAVE' || s === 'LEAVE') return 'On Leave';
+  if (s === 'PROBATION') return 'Probation';
+  if (s === 'INACTIVE' || s === 'TERMINATED' || s === 'RESIGNED') return 'Inactive';
+  return 'Active';
+}
+
+export function EmployeeStatusBadge({ status, className }: { status: EmployeeStatus | string; className?: string }) {
   const { isBangla } = useAppTranslation();
+  const normalized = normalizeEmployeeStatus(status);
   const styles: Record<EmployeeStatus, string> = {
     Active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
     'On Leave': 'bg-amber-500/10 text-amber-400 border-amber-500/25',
@@ -98,12 +109,12 @@ export function EmployeeStatusBadge({ status, className }: { status: EmployeeSta
     <span
       className={cn(
         'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
-        styles[status],
+        styles[normalized] || styles.Active,
         className
       )}
     >
-      <span className={cn('h-1.5 w-1.5 rounded-full', dotStyles[status])} />
-      <span>{isBangla ? EMP_LABELS[status].bn : EMP_LABELS[status].en}</span>
+      <span className={cn('h-1.5 w-1.5 rounded-full', dotStyles[normalized] || dotStyles.Active)} />
+      <span>{isBangla ? EMP_LABELS[normalized]?.bn || normalized : EMP_LABELS[normalized]?.en || normalized}</span>
     </span>
   );
 }

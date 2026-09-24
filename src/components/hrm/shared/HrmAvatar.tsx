@@ -32,6 +32,7 @@ function initials(name: string): string {
 
 interface Props {
   name: string;
+  imageUrl?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
@@ -43,17 +44,30 @@ const SIZES = {
   xl: 'h-16 w-16 text-lg',
 };
 
-export function HrmAvatar({ name, className, size = 'md' }: Props) {
+export function HrmAvatar({ name, imageUrl, className, size = 'md' }: Props) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name || 'Avatar'}
+        className={cn(
+          'rounded-full object-cover shrink-0 select-none ring-1 ring-border/50',
+          SIZES[size],
+          className
+        )}
+      />
+    );
+  }
   return (
     <div
       className={cn(
         'relative rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-white shrink-0 select-none',
-        gradientFor(name),
+        gradientFor(name || 'HK'),
         SIZES[size],
         className
       )}
     >
-      {initials(name)}
+      {initials(name || 'HK')}
     </div>
   );
 }
