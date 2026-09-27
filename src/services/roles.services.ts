@@ -6,7 +6,7 @@ export const createRole = async(roleData: any) => {
 };
 
 
-export const getAlRoles = async() => {
+export const getAllRoles = async() => {
    const res = await client.get('/api/settings/roles')
    return res.data
 };

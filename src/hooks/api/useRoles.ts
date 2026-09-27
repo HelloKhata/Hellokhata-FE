@@ -1,4 +1,4 @@
-import { createRole, deleteRole, getAlRoles } from "@/services/roles.services";
+import { createRole, deleteRole, getAllRoles } from "@/services/roles.services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useCreateRole = () => {
@@ -15,7 +15,7 @@ export const useCreateRole = () => {
 export const useGetRoles = () =>{
     return useQuery({
         queryKey: ['roles'],
-        queryFn: getAlRoles,
+        queryFn: getAllRoles,
         select: data => data.data
     });
 };
