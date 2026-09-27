@@ -603,7 +603,7 @@ export default function UserAccessControlPage() {
           if (!open) setRoleToDelete(null);
         }}
       >
-        <AlertDialogContent className="rounded-2xl max-w-md">
+        <AlertDialogContent className="rounded-2xl max-w-[380px] md:max-w-[500px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />

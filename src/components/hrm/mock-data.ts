@@ -14,17 +14,27 @@ import type {
   RolePermission,
 } from './types';
 
-export const HRM_BRANCHES = [
-  { id: 'branch-1', name: 'Main Branch' },
-  { id: 'branch-2', name: 'Dhanmondi Branch' },
-  { id: 'branch-3', name: 'Gulshan Branch' },
-  { id: 'branch-4', name: 'Mirpur Branch' },
-  { id: 'branch-5', name: 'Uttara Branch' },
+
+export interface HrmBranchMock {
+  id: string;
+  name: string;
+  nameBn?: string;
+}
+
+export const HRM_BRANCHES: HrmBranchMock[] = [
+  { id: 'branch-1', name: 'Main Branch (Dhanmondi)', nameBn: 'প্রধান শাখা (ধানমন্ডি)' },
+  { id: 'branch-2', name: 'Uttara Branch', nameBn: 'উত্তরা শাখা' },
+  { id: 'branch-3', name: 'Mirpur Branch', nameBn: 'মিরপুর শাখা' },
+  { id: 'branch-4', name: 'Chittagong Branch', nameBn: 'চট্টগ্রাম শাখা' },
+  { id: 'branch-5', name: 'Sylhet Branch', nameBn: 'সিলেট শাখা' },
 ];
 
-export function branchName(id: string): string {
-  return HRM_BRANCHES.find((b) => b.id === id)?.name || 'Main Branch';
-}
+export const branchName = (branchId?: string, isBangla = false): string => {
+  if (!branchId) return isBangla ? 'মূল শাখা' : 'Main Branch';
+  const branch = HRM_BRANCHES.find((b) => b.id === branchId);
+  if (!branch) return branchId;
+  return isBangla && branch.nameBn ? branch.nameBn : branch.name;
+};
 
 export const HRM_EMPLOYEES: Employee[] = [
   {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -27,6 +27,8 @@ import {
   Trophy,
   BadgeCheck,
   Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BackButton } from '@/components/common';
@@ -41,11 +43,12 @@ import {
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { HRM_BRANCHES } from '@/components/hrm/mock-data';
 import { DEPARTMENTS, DESIGNATIONS } from '@/components/hrm/types';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/stores/uiStore';
 import { useCreateEmployee } from '@/hooks/api/useEmployes';
+import { useGetBranches } from '@/hooks/api/useBranches';
+import { useGetRoles } from '@/hooks/api/useRoles';
 
 export default function AddEmployeePage() {
   const { isBangla } = useAppTranslation();
@@ -54,7 +57,10 @@ export default function AddEmployeePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // api state
+  const { data: branches = [], isLoading: isBranchesLoading } = useGetBranches();
+  const {data: roles = [], isLoading: isRolesLoading} = useGetRoles();
   const { mutate: createEmployee, isPending: isCreating } = useCreateEmployee();
+
   // Form states - General
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
@@ -66,7 +72,7 @@ export default function AddEmployeePage() {
   const [bloodGroup, setBloodGroup] = useState('A_PLUS');
   const [maritalStatus, setMaritalStatus] = useState('SINGLE');
   const [nid, setNid] = useState('');
-  const [passport, setPassport] = useState('');
+  const [passport, setPassport] = useState(null);
   const [nationality, setNationality] = useState(isBangla ? 'বাংলাদেশী' : 'Bangladeshi');
   const [religion, setReligion] = useState('Islam');
 
@@ -76,11 +82,12 @@ export default function AddEmployeePage() {
   const [presentAddress, setPresentAddress] = useState('');
 
   // Form states - Employment
-  const [branch, setBranch] = useState(HRM_BRANCHES[0]?.id || 'b1');
+  const [branch, setBranch] = useState<string>('');
   const [department, setDepartment] = useState(DEPARTMENTS[1] || 'Sales');
   const [designation, setDesignation] = useState(DESIGNATIONS[2] || 'Sales Executive');
   const [role, setRole] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [manager, setManager] = useState('');
   const [joiningDate, setJoiningDate] = useState(new Date().toISOString().split('T')[0]);
   const [employmentType, setEmploymentType] = useState('Full Time');
@@ -200,19 +207,18 @@ export default function AddEmployeePage() {
       bloodGroup: bloodGroup,
       maritalStatus: maritalStatus,
       nationalId: nid.trim(),
-      passportNo: passport.trim(),
+      passportNo: passport?.trim(),
       nationality: nationality.trim(),
       religion: religion,
       phoneNumber: phoneVal.trim(),
       emailAddress: emailVal.trim(),
-      presentAddress: presentAddress.trim(),
-      branchId: 'cmu2iml45002401pl74asd47u',
+      branchId: branch || '',
       department: department,
       designation: designation,
-      // branchIds: [branch],
+      // branchIds: branch ? [branch] : [],
       ...(role && role !== 'none'
         ? {
-            roleId: role === 'Admin' || role === 'HR' || role === 'Manager' || role === 'Employee' ? 'cmu2iml46002501plbvxgcxaa' : role,
+            roleId: role,
             password: password.trim(),
           }
         : {}),
@@ -792,15 +798,30 @@ export default function AddEmployeePage() {
                     <SelectTrigger className="w-full h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
                       <div className="flex items-center gap-2 truncate">
                         <Building2 className="h-4 w-4 text-indigo-400 shrink-0" />
-                        <SelectValue />
+                        <SelectValue placeholder={isBangla ? 'শাখা নির্বাচন করুন' : 'Select Branch'} />
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                      {HRM_BRANCHES.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
+                      {branches && branches.length > 0 ? (
+                        branches.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{isBangla && b.nameBn ? b.nameBn : b.name}</span>
+                              {b.isMain && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                  {isBangla ? 'মূল' : 'Main'}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          {isBranchesLoading
+                            ? (isBangla ? 'লোড হচ্ছে...' : 'Loading...')
+                            : (isBangla ? 'কোন শাখা পাওয়া যায়নি' : 'No branches found')}
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -885,13 +906,72 @@ export default function AddEmployeePage() {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
                       <SelectItem value="none">{isBangla ? 'কোনো রোল নেই (ঐচ্ছিক)' : 'No Role (Optional)'}</SelectItem>
-                      <SelectItem value="Admin">Admin (পূর্ণ নিয়ন্ত্রণ)</SelectItem>
-                      <SelectItem value="HR">HR Manager (মানবসম্পদ)</SelectItem>
-                      <SelectItem value="Manager">Manager (ব্যবস্থাপক)</SelectItem>
-                      <SelectItem value="Employee">Employee (সাধারণ কর্মচারী)</SelectItem>
+                      {roles && roles.length > 0 ? (
+                        roles.map((r: any) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="capitalize">{isBangla && r.nameBn ? r.nameBn : r.name}</span>
+                              {r.isSystem && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                  {isBangla ? 'সিস্টেম' : 'System'}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="loading" disabled>
+                          {isRolesLoading
+                            ? (isBangla ? 'লোড হচ্ছে...' : 'Loading roles...')
+                            : (isBangla ? 'কোন রোল পাওয়া যায়নি' : 'No roles found')}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Login Password - Only displayed when role is selected */}
+                {role && role !== 'none' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="passwordVal" className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+                      {isBangla ? 'লগইন পাসওয়ার্ড' : 'Login Password'} <span className="text-rose-400 font-bold">*</span>
+                    </Label>
+                    <div className="relative flex items-center">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                      <Input
+                        id="passwordVal"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
+                        }}
+                        placeholder="••••••••"
+                        aria-invalid={!!errors.password}
+                        className={cn(
+                          'pl-10 pr-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                          errors.password && 'border-rose-500/80 focus-visible:ring-rose-500/30'
+                        )}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? (isBangla ? 'পাসওয়ার্ড লুকান' : 'Hide password') : (isBangla ? 'পাসওয়ার্ড দেখুন' : 'Show password')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-[11px] text-rose-400 flex items-center gap-1 mt-1">
+                        <AlertCircle className="h-3 w-3" /> {errors.password}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Reporting Manager */}
                 <div className="space-y-1.5">
@@ -923,41 +1003,9 @@ export default function AddEmployeePage() {
                       value={joiningDate}
                       onChange={(e) => setJoiningDate(e.target.value)}
                       className="pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                    />
+                    /> 
                   </div>
                 </div>
-
-                {/* Login Password - Only displayed when role is selected */}
-                {role && role !== 'none' && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="passwordVal" className="text-xs font-semibold text-slate-300 flex items-center gap-1">
-                      {isBangla ? 'লগইন পাসওয়ার্ড' : 'Login Password'} <span className="text-rose-400 font-bold">*</span>
-                    </Label>
-                    <div className="relative flex items-center">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                      <Input
-                        id="passwordVal"
-                        type="password"
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
-                        }}
-                        placeholder="••••••••"
-                        aria-invalid={!!errors.password}
-                        className={cn(
-                          'pl-10 h-10.5 font-mono text-sm bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
-                          errors.password && 'border-rose-500/80 focus-visible:ring-rose-500/30'
-                        )}
-                      />
-                    </div>
-                    {errors.password && (
-                      <p className="text-[11px] text-rose-400 flex items-center gap-1 mt-1">
-                        <AlertCircle className="h-3 w-3" /> {errors.password}
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 
