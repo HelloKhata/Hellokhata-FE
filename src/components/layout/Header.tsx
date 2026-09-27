@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { BranchSwitcher, BackButton } from '@/components/common';
 import { useGetMyFeatures } from '@/hooks/api/useFeaturesPlan';
 import Link from 'next/link';
+import AIChatWidget from '../AIWidget';
 
 interface HeaderProps {
   onOpenCommandPalette?: () => void;
@@ -31,6 +32,7 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
+
   const { user, logout } = useSessionStore();
   const { setMobileMenuOpen, unreadNotifications } = useUiStore();
   const { t, isBangla, changeLanguage } = useAppTranslation();
@@ -433,6 +435,8 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <AIChatWidget></AIChatWidget>
       </div>
     </header>
   );
