@@ -72,7 +72,7 @@ export default function AddEmployeePage() {
   const [bloodGroup, setBloodGroup] = useState('A_PLUS');
   const [maritalStatus, setMaritalStatus] = useState('SINGLE');
   const [nid, setNid] = useState('');
-  const [passport, setPassport] = useState(null);
+  const [passport, setPassport] = useState('');
   const [nationality, setNationality] = useState(isBangla ? 'বাংলাদেশী' : 'Bangladeshi');
   const [religion, setReligion] = useState('Islam');
 
@@ -1232,131 +1232,12 @@ export default function AddEmployeePage() {
                       <SelectItem value="BANK_TRANSFER">{isBangla ? 'ব্যাংক ট্রান্সফার (BEFTN/NPSB)' : 'Bank Transfer (BEFTN/NPSB)'}</SelectItem>
                       <SelectItem value="MOBILE_BANKING">{isBangla ? 'মোবাইল ব্যাংকিং (MFS)' : 'Mobile Banking (bKash/Nagad)'}</SelectItem>
                       <SelectItem value="CASH">{isBangla ? 'নগদ / ক্যাশ (Cash)' : 'Cash Payout'}</SelectItem>
-                      <SelectItem value="CHEQUE">{isBangla ? 'নগদ / ক্যাশ (Cash)' : 'Cash Payout'}</SelectItem>
+                      <SelectItem value="CHEQUE">{isBangla ? 'নগদ / চেক (Cheque)' : 'Cash Cheque'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
-
-            {/* 4.2 Dynamic Payment Details */}
-            {paymentMethod === 'BANK_TRANSFER' && (
-              <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
-                <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
-                  <span>{isBangla ? 'ব্যাংকিং বিবরণ' : 'BANKING DETAILS'}</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Bank Name */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bankName" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'ব্যাংকের নাম' : 'Bank Name'}
-                    </Label>
-                    <div className="relative flex items-center">
-                      <Landmark className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                      <Input
-                        id="bankName"
-                        value={bankName}
-                        onChange={(e) => setBankName(e.target.value)}
-                        placeholder="City Bank Ltd"
-                        className="pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Account Number */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="accNumber" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'অ্যাকাউন্ট নম্বর' : 'Account Number'}
-                    </Label>
-                    <div className="relative flex items-center">
-                      <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                      <Input
-                        id="accNumber"
-                        value={accountNumber}
-                        onChange={(e) => setAccountNumber(e.target.value)}
-                        placeholder="1203948201948"
-                        className="pl-10 h-10.5 font-mono bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Branch / Routing */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bankBranch" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'শাখা / রাউটিং নং' : 'Branch / Routing No'}
-                    </Label>
-                    <div className="relative flex items-center">
-                      <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                      <Input
-                        id="bankBranch"
-                        value={bankBranch}
-                        onChange={(e) => setBankBranch(e.target.value)}
-                        placeholder="Gulshan Branch – 090271"
-                        className="pl-10 h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {paymentMethod === 'MOBILE_BANKING' && (
-              <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
-                <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
-                  <span>{isBangla ? 'মোবাইল ওয়ালেট বিবরণ' : 'MOBILE BANKING (MFS) DETAILS'}</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'মোবাইল ব্যাংকিং প্রোভাইডার' : 'MFS Provider'}
-                    </Label>
-                    <Select value={mobileBanking} onValueChange={setMobileBanking}>
-                      <SelectTrigger className="w-full h-10.5 bg-slate-900/60 border-slate-800/90 text-slate-100 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                        <SelectItem value="bKash">bKash (বিকাশ)</SelectItem>
-                        <SelectItem value="Nagad">Nagad (নগদ)</SelectItem>
-                        <SelectItem value="Rocket">Rocket (রকেট)</SelectItem>
-                        <SelectItem value="Upay">Upay (উপায়)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="mobileWalletNumber" className="text-xs font-semibold text-slate-300">
-                      {isBangla ? 'ওয়ালেট মোবাইল নম্বর' : 'Wallet Account Number'}
-                    </Label>
-                    <div className="relative flex items-center">
-                      <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-                      <Input
-                        id="mobileWalletNumber"
-                        value={mobileWalletNumber}
-                        onChange={(e) => setMobileWalletNumber(e.target.value)}
-                        placeholder="017XXXXXXXX"
-                        className="pl-10 h-10.5 font-mono bg-slate-900/60 border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {paymentMethod === 'CASH' && (
-              <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center gap-3 text-xs text-slate-300">
-                <Info className="h-4 w-4 text-indigo-400 shrink-0" />
-                <span>
-                  {isBangla
-                    ? 'নগদ বেতন পরিশোধ কোম্পানি ক্যাশ রেজিস্টার ও এইচআর পে-রোল রসিদ দ্বারা পরিচালিত হবে।'
-                    : 'Cash salary disbursement will be logged via company cashier register and signed payslips.'}
-                </span>
-              </div>
-            )}
-
             {/* 4.3 Additional Compensation & Notes */}
             <div className="space-y-3.5 pt-2 border-t border-slate-800/60">
               <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">

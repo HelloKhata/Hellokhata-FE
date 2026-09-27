@@ -551,6 +551,7 @@ export default function UserAccessControlPage() {
       />
 
       <EditRoleModal
+        key={editingRole?.id || 'edit-role'}
         open={isEditRoleModalOpen}
         onOpenChange={setIsEditRoleModalOpen}
         role={editingRole}
@@ -595,7 +596,7 @@ export default function UserAccessControlPage() {
         onUserCreated={handleUserCreated}
       />
 
-      {/* ─── DELETE ROLE CONFIRMATION DIALOG ──────────────────────────────── */}
+      {/* ─── DELETE ROLE CONFIRMATION DIALOG ────*/}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={(open) => {

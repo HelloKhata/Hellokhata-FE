@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Plus, Check, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import type { BaseRoleDefinition, PermissionModuleItem } from './types';
-import { ROLE_COLOR_PRESETS, DEFAULT_PERMISSION_MODULES } from './mock-data';
+import { ROLE_COLOR_PRESETS } from './constants';
 import { getModuleIcon, getActionDetails } from './utils';
 import { useGetPermissions } from '@/hooks/api/useSettings';
 import { useCreateRole } from '@/hooks/api/useRoles';
@@ -27,41 +27,6 @@ export interface RolePayload {
   permissions: Record<string, string[]>;
 }
 
-// Helper to format flat permission IDs into module-grouped permissions object
-export const formatPermissions = (
-  permIds: string[],
-  modules: PermissionModuleItem[] = DEFAULT_PERMISSION_MODULES
-): Record<string, string[]> => {
-  const result: Record<string, string[]> = {};
-
-  // Group actions by module based on available modules
-  modules.forEach((mod) => {
-    const selectedActions = mod.actions.filter((action) =>
-      permIds.includes(`${mod.module}_${action}`)
-    );
-    if (selectedActions.length > 0) {
-      result[mod.module] = selectedActions;
-    }
-  });
-
-  // Fallback for any custom or extra permId not explicitly in modules
-  permIds.forEach((permId) => {
-    const lastUnderscore = permId.lastIndexOf('_');
-    if (lastUnderscore !== -1) {
-      const modName = permId.slice(0, lastUnderscore);
-      const action = permId.slice(lastUnderscore + 1);
-      if (!result[modName]) {
-        result[modName] = [];
-      }
-      if (!result[modName].includes(action)) {
-        result[modName].push(action);
-      }
-    }
-  });
-
-  return result;
-};
-
 interface CreateRoleModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -73,44 +38,30 @@ export function CreateRoleModal({
   open,
   onOpenChange,
   onRoleCreated,
-  onSubmit,
 }: CreateRoleModalProps) {
   const { isBangla } = useAppTranslation();
 
-  const [createRoleData, setCreateRoleData] = useState({
-    name: '',
-    description: '',
-    color: '#6366f1',
-  });
-  const [createRolePermissions, setCreateRolePermissions] = useState<string[]>([]);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [color, setColor] = useState('#6366f1');
+  const [permissions, setPermissions] = useState<Record<string, string[]>>({});
 
-  // get all roles & permissions from API
-  const { data: rawPermissions } = useGetPermissions();
+  // get all permissions from API
+  const { data: rawPermissions = [], isLoading: isPermissionsLoading } = useGetPermissions();
+  const permissionsList: PermissionModuleItem[] = Array.isArray(rawPermissions) ? rawPermissions : [];
 
-  // create role api
-  const {mutate: createRole,isPending: isCreatingRole} = useCreateRole();
+  // create role API mutation
+  const { mutate: createRole, isPending: isCreatingRole } = useCreateRole();
 
-
-  const permissionModules: PermissionModuleItem[] = useMemo(() => {
-    if (Array.isArray(rawPermissions) && rawPermissions.length > 0) {
-      return rawPermissions;
-    }
-    return DEFAULT_PERMISSION_MODULES;
-  }, [rawPermissions]);
-
-  const allAvailablePermissionIds = useMemo(() => {
-    return permissionModules.flatMap((mod) =>
-      mod.actions.map((action) => `${mod.module}_${action}`)
-    );
-  }, [permissionModules]);
+  const selectedCount = Object.values(permissions).reduce((acc, actions) => acc + (actions?.length || 0), 0);
+  const totalAvailablePerms = permissionsList.reduce((acc, mod) => acc + (mod.actions?.length || 0), 0);
+  const isAllSelected = selectedCount === totalAvailablePerms && totalAvailablePerms > 0;
 
   const resetForm = () => {
-    setCreateRoleData({
-      name: '',
-      description: '',
-      color: '#6366f1',
-    });
-    setCreateRolePermissions([]);
+    setName('');
+    setDescription('');
+    setColor('#6366f1');
+    setPermissions({});
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -120,54 +71,80 @@ export function CreateRoleModal({
     onOpenChange(newOpen);
   };
 
+  const handleTogglePermission = (moduleName: string, action: string) => {
+    setPermissions((prev) => {
+      const currentActions = prev[moduleName] || [];
+      const updated = currentActions.includes(action)
+        ? currentActions.filter((a) => a !== action)
+        : [...currentActions, action];
 
-  const handleTogglePermission = (permId: string) => {
-    setCreateRolePermissions((prev) =>
-      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
-    );
+      if (updated.length === 0) {
+        const copy = { ...prev };
+        delete copy[moduleName];
+        return copy;
+      }
+
+      return {
+        ...prev,
+        [moduleName]: updated,
+      };
+    });
   };
 
-  const handleToggleAllModulePermissions = (mod: PermissionModuleItem, enable: boolean) => {
-    const modPermIds = mod.actions.map((action) => `${mod.module}_${action}`);
-    if (enable) {
-      setCreateRolePermissions((prev) => Array.from(new Set([...prev, ...modPermIds])));
-    } else {
-      setCreateRolePermissions((prev) => prev.filter((p) => !modPermIds.includes(p)));
-    }
+  const handleToggleAllModule = (moduleName: string, actions: string[], enable: boolean) => {
+    setPermissions((prev) => {
+      if (!enable) {
+        const copy = { ...prev };
+        delete copy[moduleName];
+        return copy;
+      }
+      return {
+        ...prev,
+        [moduleName]: [...actions],
+      };
+    });
   };
 
   const handleSelectAllPermissions = (enable: boolean) => {
     if (enable) {
-      setCreateRolePermissions([...allAvailablePermissionIds]);
+      const all: Record<string, string[]> = {};
+      permissionsList.forEach((mod) => {
+        all[mod.module] = [...(mod.actions || [])];
+      });
+      setPermissions(all);
     } else {
-      setCreateRolePermissions([]);
+      setPermissions({});
     }
   };
 
   const handleSubmit = async () => {
-    if (!createRoleData.name.trim()) {
+    if (!name.trim()) {
       toast.error(isBangla ? 'অনুগ্রহ করে রোলের নাম লিখুন।' : 'Please enter role name.');
       return;
     }
 
-    const formattedPermissions = formatPermissions(createRolePermissions, permissionModules);
-
-    const newRole: RolePayload = {
-      name: createRoleData.name.trim(),
-      description: createRoleData.description.trim(),
-      color: createRoleData.color || '#6366f1',
-      permissions: formattedPermissions,
+    const rolePayload: RolePayload = {
+      name: name.trim(),
+      description: description.trim(),
+      color: color || '#6366f1',
+      permissions,
     };
 
-   createRole(newRole,{
-    onSuccess: (data) => {
-      if(data.success) {
-        toast.success(isBangla ? 'রোল সফলভাবে তৈরি হয়েছে!' : 'Role created successfully!');
-        resetForm();
-        handleOpenChange(false);
-      }
-    },
-   })
+    createRole(rolePayload, {
+      onSuccess: (data) => {
+        if (data?.success || data) {
+          toast.success(isBangla ? 'রোল সফলভাবে তৈরি হয়েছে!' : 'Role created successfully!');
+          if (onRoleCreated) {
+            onRoleCreated(rolePayload);
+          }
+          resetForm();
+          handleOpenChange(false);
+        }
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || (isBangla ? 'রোল তৈরি করতে সমস্যা হয়েছে।' : 'Failed to create role.'));
+      },
+    });
   };
 
   return (
@@ -178,7 +155,7 @@ export function CreateRoleModal({
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
-              style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+              style={{ backgroundColor: color || '#6366f1' }}
             >
               <Plus className="w-5 h-5 text-white" />
             </div>
@@ -210,17 +187,20 @@ export function CreateRoleModal({
             <Button
               size="sm"
               onClick={handleSubmit}
-              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer"
+              disabled={isCreatingRole}
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer disabled:opacity-50"
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
-              {isBangla ? 'রোল তৈরি করুন' : 'Create Role'}
+              {isCreatingRole
+                ? (isBangla ? 'তৈরি হচ্ছে...' : 'Creating...')
+                : (isBangla ? 'রোল তৈরি করুন' : 'Create Role')}
             </Button>
           </div>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-          {/* Form Details */}
+          {/* Role Details Form */}
           <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/80 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -228,11 +208,10 @@ export function CreateRoleModal({
                   {isBangla ? 'রোলের নাম' : 'Role Name'} <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  value={createRoleData.name}
-                  onChange={(e) => setCreateRoleData({ ...createRoleData, name: e.target.value })}
-                  placeholder={isBangla ? 'যেমন: এরিয়া সেলস অফিসার' : 'e.g. Area Sales Officer'}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={isBangla ? 'যেমন: সেলস অফিসার' : 'e.g. Sales Officer'}
                   className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary"
-                  autoFocus
                 />
               </div>
               <div>
@@ -240,8 +219,8 @@ export function CreateRoleModal({
                   {isBangla ? 'বিবরণ' : 'Description'}
                 </Label>
                 <Input
-                  value={createRoleData.description}
-                  onChange={(e) => setCreateRoleData({ ...createRoleData, description: e.target.value })}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder={isBangla ? 'দায়িত্ব ও কাজের সংক্ষিপ্ত বিবরণ' : 'Brief summary of duties and responsibilities'}
                   className="h-9 text-xs rounded-xl bg-background border-border/80 focus-visible:border-primary"
                 />
@@ -255,22 +234,22 @@ export function CreateRoleModal({
                   <span>{isBangla ? 'রোলের কালার থিম' : 'Role Color'}</span>
                   <span
                     className="w-3.5 h-3.5 rounded-full ring-1 ring-border/80 shadow-xs inline-block transition-transform duration-200"
-                    style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+                    style={{ backgroundColor: color || '#6366f1' }}
                   />
                 </Label>
                 <span className="text-[11px] text-muted-foreground font-mono uppercase tracking-wider">
-                  {createRoleData.color || '#6366f1'}
+                  {color || '#6366f1'}
                 </span>
               </div>
 
               <div className="flex items-center flex-wrap gap-2 p-2.5 rounded-xl bg-background/80 border border-border/70">
                 {ROLE_COLOR_PRESETS.map((preset) => {
-                  const isSelected = (createRoleData.color || '').toLowerCase() === preset.hex.toLowerCase();
+                  const isSelected = (color || '').toLowerCase() === preset.hex.toLowerCase();
                   return (
                     <button
                       key={preset.hex}
                       type="button"
-                      onClick={() => setCreateRoleData({ ...createRoleData, color: preset.hex })}
+                      onClick={() => setColor(preset.hex)}
                       title={preset.name}
                       className={`w-7 h-7 rounded-full transition-all duration-150 flex items-center justify-center cursor-pointer relative ${
                         isSelected
@@ -294,13 +273,13 @@ export function CreateRoleModal({
                   >
                     <input
                       type="color"
-                      value={createRoleData.color || '#6366f1'}
-                      onChange={(e) => setCreateRoleData({ ...createRoleData, color: e.target.value })}
+                      value={color || '#6366f1'}
+                      onChange={(e) => setColor(e.target.value)}
                       className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
                     />
                     <span
                       className="w-3.5 h-3.5 rounded-full"
-                      style={{ backgroundColor: createRoleData.color || '#6366f1' }}
+                      style={{ backgroundColor: color || '#6366f1' }}
                     />
                   </label>
                 </div>
@@ -320,87 +299,98 @@ export function CreateRoleModal({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleSelectAllPermissions(createRolePermissions.length !== allAvailablePermissionIds.length)}
+                  onClick={() => handleSelectAllPermissions(!isAllSelected)}
                   className="h-7 px-2 text-xs font-semibold text-primary hover:bg-primary/10 cursor-pointer"
                 >
-                  {createRolePermissions.length === allAvailablePermissionIds.length
+                  {isAllSelected
                     ? (isBangla ? 'সব অনুমতি বাতিল' : 'Deselect All')
                     : (isBangla ? 'সব অনুমতি নির্বাচন' : 'Select All Permissions')}
                 </Button>
                 <span className="text-xs text-muted-foreground font-mono">
-                  {createRolePermissions.length} / {allAvailablePermissionIds.length} {isBangla ? 'সক্রিয়' : 'enabled'}
+                  {selectedCount} / {totalAvailablePerms} {isBangla ? 'সক্রিয়' : 'enabled'}
                 </span>
               </div>
             </div>
 
             <div className="space-y-3">
-              {permissionModules.map((module) => {
-                const modPermIds = module.actions.map((act) => `${module.module}_${act}`);
-                const enabledCount = modPermIds.filter((id) => createRolePermissions.includes(id)).length;
-                const allEnabled = modPermIds.length > 0 && enabledCount === modPermIds.length;
-                return (
-                  <div key={module.module} className="rounded-xl border border-border bg-card overflow-hidden">
-                    <div className="p-3 bg-muted/30 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg bg-background border border-border/80 flex items-center justify-center">
-                          {getModuleIcon(module.module)}
-                        </div>
-                        <span className="font-bold text-xs text-foreground">
-                          {isBangla ? module.labelBn || module.label : module.label}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground font-mono">
-                          ({enabledCount} / {modPermIds.length})
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleAllModulePermissions(module, !allEnabled)}
-                        className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 cursor-pointer"
-                      >
-                        {allEnabled ? (isBangla ? 'সব বাতিল' : 'Deselect All') : (isBangla ? 'সব নির্বাচন' : 'Select All')}
-                      </Button>
-                    </div>
-                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                      {module.actions.map((action) => {
-                        const permId = `${module.module}_${action}`;
-                        const isChecked = createRolePermissions.includes(permId);
-                        const actionInfo = getActionDetails(action, isBangla);
+              {isPermissionsLoading ? (
+                <div className="p-8 text-center text-xs text-muted-foreground">
+                  {isBangla ? 'অনুমতি লোড হচ্ছে...' : 'Loading permissions...'}
+                </div>
+              ) : permissionsList && permissionsList.length > 0 ? (
+                permissionsList.map((module) => {
+                  const moduleActions = module.actions || [];
+                  const selectedModuleActions = permissions[module.module] || [];
+                  const enabledCount = selectedModuleActions.length;
+                  const allEnabled = moduleActions.length > 0 && enabledCount === moduleActions.length;
 
-                        return (
-                          <label
-                            key={permId}
-                            className={cn(
-                              'flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors',
-                              isChecked
-                                ? 'bg-primary/5 border-primary/30 text-foreground shadow-xs'
-                                : 'border-border/60 text-muted-foreground hover:bg-muted/30 hover:border-border'
-                            )}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleTogglePermission(permId)}
-                              className="mt-0.5 rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer shrink-0"
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between gap-1 mb-0.5">
-                                <span className="font-bold text-xs text-foreground block truncate">
-                                  {actionInfo.label}
+                  return (
+                    <div key={module.module} className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="p-3 bg-muted/30 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-lg bg-background border border-border/80 flex items-center justify-center">
+                            {getModuleIcon(module.module)}
+                          </div>
+                          <span className="font-bold text-xs text-foreground">
+                            {isBangla ? module.labelBn || module.label : module.label}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            ({enabledCount} / {moduleActions.length})
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAllModule(module.module, moduleActions, !allEnabled)}
+                          className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 cursor-pointer"
+                        >
+                          {allEnabled ? (isBangla ? 'সব বাতিল' : 'Deselect All') : (isBangla ? 'সব নির্বাচন' : 'Select All')}
+                        </Button>
+                      </div>
+                      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        {moduleActions.map((action) => {
+                          const isChecked = selectedModuleActions.includes(action);
+                          const actionInfo = getActionDetails(action, isBangla);
+
+                          return (
+                            <label
+                              key={action}
+                              className={cn(
+                                'flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors',
+                                isChecked
+                                  ? 'bg-primary/5 border-primary/30 text-foreground shadow-xs'
+                                  : 'border-border/60 text-muted-foreground hover:bg-muted/30 hover:border-border'
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleTogglePermission(module.module, action)}
+                                className="mt-0.5 rounded border-border text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer shrink-0"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-1 mb-0.5">
+                                  <span className="font-bold text-xs text-foreground block truncate">
+                                    {actionInfo.label}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">
+                                  {actionInfo.description}
                                 </span>
                               </div>
-                              <span className="text-[10px] text-muted-foreground leading-tight line-clamp-1 block">
-                                {actionInfo.description}
-                              </span>
-                            </div>
-                          </label>
-                        );
-                      })}
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="p-8 text-center text-xs text-muted-foreground">
+                  {isBangla ? 'কোন অনুমতি পাওয়া যায়নি' : 'No permissions found'}
+                </div>
+              )}
             </div>
           </div>
         </div>
