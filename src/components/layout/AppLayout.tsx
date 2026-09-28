@@ -7,6 +7,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { MobileBottomNav } from './MobileBottomNav';
 import { AIDrawer, AILauncherButton } from '@/components/ai/AIDrawer';
 import { useUiStore } from '@/stores/uiStore';
 import { cn } from '@/lib/utils';
@@ -96,11 +97,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sticky Header */}
         <Header />
 
-        {/* Main Content */}
-        <main className="p-4 md:p-6 lg:p-8 animate-fade-in min-h-[calc(100vh-4rem)]">
+        {/* Main Content with bottom padding on mobile to accommodate 2-layer MobileBottomNav */}
+        <main className="p-4 md:p-6 lg:p-8 pb-32 md:pb-8 animate-fade-in min-h-[calc(100vh-4rem)]">
           {children}
         </main>
+
       </div>
+
+      {/* Mobile Bottom Navigation (Mobile/Tablet only) */}
+      <MobileBottomNav />
     </>
   );
 }
+

@@ -436,7 +436,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AIChatWidget></AIChatWidget>
+        {/* <AIChatWidget></AIChatWidget> */}
       </div>
     </header>
   );
