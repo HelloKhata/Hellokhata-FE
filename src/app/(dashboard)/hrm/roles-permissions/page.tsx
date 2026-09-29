@@ -503,7 +503,7 @@ export default function UserAccessControlPage() {
                         {/* 5. ACTIONS */}
                         <td className="py-4 px-4 align-middle text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
+                            {/* <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleViewStaff(role)}
@@ -511,7 +511,7 @@ export default function UserAccessControlPage() {
                             >
                               <Eye className="w-3.5 h-3.5 text-sky-400" />
                               <span>{isBangla ? 'View' : 'View'}</span>
-                            </Button>
+                            </Button> */}
 
                             <Button
                               size="sm"

@@ -151,7 +151,7 @@ export function CreateRoleModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl w-[94vw] max-h-[90vh] flex flex-col p-0 gap-0 rounded-2xl bg-card border-border overflow-hidden shadow-2xl">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-border bg-gradient-to-r from-muted/30 via-muted/15 to-transparent flex items-center justify-between gap-3">
+        <div className="sticky top-0 z-20 border-b border-border bg-card bg-gradient-to-r from-muted/40 via-muted/20 to-card p-4 sm:p-5 flex items-center justify-between gap-3 shrink-0 shadow-xs backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
@@ -199,7 +199,7 @@ export function CreateRoleModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-5">
           {/* Role Details Form */}
           <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/80 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

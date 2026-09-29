@@ -1,15 +1,7 @@
 import { createSales, getSaleById, getSales, getSalesSummary } from "@/services/sales.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-export const useCreateSales = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: createSales,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
-        }
-    })
-}
+
 
 export const useGetSales = (filter: { search?: string, partyId?: string,limit?:number,page?:number } = {}) => {
     return useQuery({
@@ -36,3 +28,12 @@ export const useGetSaleById = (id: string) => {
 
 
 
+export const useCreateSales = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createSales,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["sales"] });
+        }
+    })
+}

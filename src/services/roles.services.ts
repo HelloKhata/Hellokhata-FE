@@ -11,12 +11,12 @@ export const getAllRoles = async() => {
    return res.data
 };
 
-export const updateRole = async(roleData: any) => {
-   const res = await client.put(`/api/settings/roles/${roleData.id}`, roleData)
+export const updateRole = async({roleData,roleId}: {roleData: any,roleId: string}) => {
+   const res = await client.patch(`/api/settings/roles/${roleId}`, roleData)
    return res.data
 };
 
 export const deleteRole = async(roleId: string) => {
    const res = await client.delete(`/api/settings/roles/${roleId}`)
    return res.data
-};
+}; 
