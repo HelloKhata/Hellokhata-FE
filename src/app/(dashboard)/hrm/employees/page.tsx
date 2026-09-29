@@ -18,20 +18,15 @@ import {
   Mail,
   Phone,
   MapPin,
-  Droplets,
   FileText,
-  Baby,
   User,
   Building2,
   Banknote,
   ShieldCheck,
   CalendarDays,
-  BadgeCheck,
   ChevronRight,
   Sparkles,
-  CreditCard,
   Briefcase,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,14 +46,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-  DrawerFooter,
-} from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,8 +88,6 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Employee | null>(null);
@@ -187,11 +172,6 @@ export default function EmployeesPage() {
       fn();
       setLoading(false);
     }, 400);
-  };
-
-  const openDrawer = (e: Employee) => {
-    setSelectedEmployee(e);
-    setDrawerOpen(true);
   };
 
   const openAdd = () => {
@@ -555,7 +535,7 @@ export default function EmployeesPage() {
             <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
           </Button>
         }
-        onRowClick={openDrawer}
+        onRowClick={(e) => router.push(`/hrm/employees/${e.id}`)}
         isBangla={isBangla}
         footer={
           <HrmPagination
@@ -571,194 +551,7 @@ export default function EmployeesPage() {
         }
       />
 
-      {/* 4. DETAILS DRAWER */}
-      <Drawer direction="right" open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="w-full max-w-md bg-[#0d131f] border-l border-slate-800 text-slate-100 shadow-2xl">
-          {selectedEmployee && (
-            <>
-              <DrawerHeader className="border-b border-slate-800/80 px-6 py-5">
-                <div className="flex items-center gap-3.5">
-                  <HrmAvatar
-                    name={selectedEmployee.fullName || selectedEmployee.name || 'Employee'}
-                    imageUrl={selectedEmployee.imageUrl}
-                    size="lg"
-                    className="ring-2 ring-indigo-500/30 shadow-md"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <DrawerTitle className="text-lg font-bold text-slate-100 truncate">
-                      {selectedEmployee.fullName || selectedEmployee.name}
-                    </DrawerTitle>
-                    <p className="text-xs text-slate-400 font-medium mt-0.5">
-                      {selectedEmployee.employeeId} · {selectedEmployee.designation || 'Staff'}
-                    </p>
-                    <div className="mt-2">
-                      <EmployeeStatusBadge
-                        status={selectedEmployee.status || (selectedEmployee.isProbation ? 'Probation' : 'Active')}
-                      />
-                    </div>
-                  </div>
-                  <DrawerClose asChild>
-                    <button
-                      type="button"
-                      aria-label="Close"
-                      className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
-                    >
-                      <ChevronRight className="h-4 w-4 rotate-180" />
-                    </button>
-                  </DrawerClose>
-                </div>
-              </DrawerHeader>
-
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-                <div className="grid grid-cols-2 gap-3">
-                  <DetailChip
-                    icon={Building2}
-                    label={isBangla ? 'বিভাগ' : 'Department'}
-                    value={selectedEmployee.department || '-'}
-                  />
-                  <DetailChip
-                    icon={ShieldCheck}
-                    label={isBangla ? 'শিফট' : 'Shift'}
-                    value={selectedEmployee.workShift || selectedEmployee.shift || 'General'}
-                  />
-                  <DetailChip
-                    icon={MapPin}
-                    label={isBangla ? 'শাখা' : 'Branch'}
-                    value={getBranchLabel(selectedEmployee.branchId)}
-                  />
-                  <DetailChip
-                    icon={CalendarDays}
-                    label={isBangla ? 'যোগদান' : 'Joined'}
-                    value={selectedEmployee.joiningDate ? formatDate(selectedEmployee.joiningDate) : '-'}
-                  />
-                  <DetailChip
-                    icon={Banknote}
-                    label={isBangla ? 'মূল বেতন' : 'Salary'}
-                    value={`${formatCurrency(selectedEmployee.basicSalary ?? selectedEmployee.salary ?? 0)} ${selectedEmployee.salaryCycle ? `(${selectedEmployee.salaryCycle})` : ''}`}
-                  />
-                  <DetailChip
-                    icon={User}
-                    label={isBangla ? 'লিঙ্গ' : 'Gender'}
-                    value={selectedEmployee.gender || '-'}
-                  />
-                  <DetailChip
-                    icon={Droplets}
-                    label={isBangla ? 'রক্তের গ্রুপ' : 'Blood'}
-                    value={selectedEmployee.bloodGroup ? selectedEmployee.bloodGroup.replace('_', ' ') : '-'}
-                  />
-                  <DetailChip
-                    icon={Baby}
-                    label={isBangla ? 'জাতীয় পরিচয়পত্র' : 'NID / Passport'}
-                    value={selectedEmployee.nationalId || selectedEmployee.nid || selectedEmployee.passportNo || '-'}
-                  />
-                </div>
-
-                <Divider />
-
-                {/* Employment details */}
-                {(selectedEmployee.employmentStatus || selectedEmployee.reportingManager || selectedEmployee.paymentMethod) && (
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <Briefcase className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{isBangla ? 'কাজের বিবরণ' : 'Employment Details'}</span>
-                    </h4>
-                    <div className="space-y-2.5">
-                      {selectedEmployee.employmentStatus && (
-                        <ContactRow
-                          icon={Briefcase}
-                          label={isBangla ? 'চুক্তির ধরন' : 'Employment Type'}
-                          value={selectedEmployee.employmentStatus}
-                        />
-                      )}
-                      {selectedEmployee.reportingManager && (
-                        <ContactRow
-                          icon={User}
-                          label={isBangla ? 'রিপোর্টিং ম্যানেজার' : 'Reporting Manager'}
-                          value={selectedEmployee.reportingManager}
-                        />
-                      )}
-                      {selectedEmployee.paymentMethod && (
-                        <ContactRow
-                          icon={CreditCard}
-                          label={isBangla ? 'পেমেন্ট মেথড' : 'Payment Method'}
-                          value={selectedEmployee.paymentMethod}
-                        />
-                      )}
-                      {selectedEmployee.workingDays && (
-                        <ContactRow
-                          icon={Clock}
-                          label={isBangla ? 'সাপ্তাহিক কার্যদিবস' : 'Working Days'}
-                          value={`${selectedEmployee.workingDays} ${isBangla ? 'দিন' : 'days'}`}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <Divider />
-
-                {/* Contact Information */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-                    <span>{isBangla ? 'যোগাযোগের তথ্য' : 'Contact Information'}</span>
-                  </h4>
-                  <div className="space-y-2.5">
-                    <ContactRow
-                      icon={Phone}
-                      label={isBangla ? 'মোবাইল' : 'Phone'}
-                      value={selectedEmployee.phoneNumber || selectedEmployee.phone || '-'}
-                    />
-                    <ContactRow
-                      icon={Mail}
-                      label="Email"
-                      value={selectedEmployee.emailAddress || selectedEmployee.email || '-'}
-                    />
-                    <ContactRow
-                      icon={MapPin}
-                      label={isBangla ? 'ঠিকানা' : 'Address'}
-                      value={selectedEmployee.presentAddress || selectedEmployee.address || '-'}
-                    />
-                    {selectedEmployee.emergencyContact && (
-                      <ContactRow
-                        icon={BadgeCheck}
-                        label={isBangla ? 'জরুরি যোগাযোগ' : 'Emergency'}
-                        value={selectedEmployee.emergencyContact}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <DrawerFooter className="border-t border-slate-800/80 px-6 py-4 flex-row gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg h-10 cursor-pointer text-xs"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    openEdit(selectedEmployee);
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5 mr-1.5 text-indigo-400" />
-                  <span>{isBangla ? 'সম্পাদনা' : 'Edit'}</span>
-                </Button>
-                <Button
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg h-10 shadow-lg shadow-indigo-600/30 cursor-pointer text-xs"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    router.push(`/hrm/employees/${selectedEmployee.id}`);
-                  }}
-                >
-                  <FileText className="h-3.5 w-3.5 mr-1.5" />
-                  <span>{isBangla ? 'প্রোফাইল' : 'Profile'}</span>
-                </Button>
-              </DrawerFooter>
-            </>
-          )}
-        </DrawerContent>
-      </Drawer>
-
-      {/* 5. EDIT DIALOG */}
+      {/* 4. EDIT DIALOG */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
           <DialogHeader>
@@ -990,49 +783,5 @@ export default function EmployeesPage() {
   );
 }
 
-function DetailChip({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-3 transition-all hover:border-slate-700/60">
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">
-        <Icon className="h-3.5 w-3.5 text-indigo-400" />
-        <span>{label}</span>
-      </div>
-      <p className="text-sm font-semibold text-slate-100 truncate">{value}</p>
-    </div>
-  );
-}
 
-function ContactRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
-      <div className="h-8 w-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-        <Icon className="h-4 w-4 text-indigo-400" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] text-slate-400">{label}</p>
-        <p className="text-sm text-slate-200 font-medium truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function Divider() {
-  return <div className="h-px w-full bg-slate-800/80" />;
-}
 
