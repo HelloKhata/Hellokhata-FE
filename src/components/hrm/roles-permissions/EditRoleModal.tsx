@@ -3,7 +3,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import  {  useState } from 'react';
 import { Crown, Lock, Save, Check, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,35 +19,17 @@ import { getModuleIcon, getActionDetails } from './utils';
 import { useGetPermissions } from '@/hooks/api/useSettings';
 import { useUpdateRole } from '@/hooks/api/useRoles';
 
-// Helper to extract initial module-grouped permissions
+// Helper to extract initial permissions with wildcard support
 export const getInitialPermissions = (
   role: any,
   permissionsList: PermissionModuleItem[] = []
 ): Record<string, string[]> => {
-  if (!role?.permissions) return {};
-
-  // Wildcard permissions (e.g. "*") -> assign all actions for all modules
-  if (role.permissions === '*' || role.permissions === 'all') {
-    const all: Record<string, string[]> = {};
-    permissionsList.forEach((mod) => {
-      all[mod.module] = [...(mod.actions || [])];
-    });
-    return all;
+  if (role?.permissions === '*' || role?.permissions === 'all') {
+    return Object.fromEntries(permissionsList.map((m) => [m.module, [...(m.actions || [])]]));
   }
-
-  // Module-grouped object: { sales: ['view', 'create', 'update', 'delete'], ... }
-  if (typeof role.permissions === 'object' && !Array.isArray(role.permissions)) {
-    const result: Record<string, string[]> = {};
-    Object.entries(role.permissions).forEach(([mod, actions]) => {
-      if (Array.isArray(actions)) {
-        result[mod] = [...actions];
-      }
-    });
-    return result;
-  }
-
-  return {};
+  return role?.permissions || {};
 };
+
 
 interface EditRoleModalProps {
   open: boolean;
@@ -66,6 +48,7 @@ export function EditRoleModal({
 }: EditRoleModalProps) {
   const { isBangla } = useAppTranslation();
 
+
   const [name, setName] = useState(role?.name || '');
   const [description, setDescription] = useState(role?.description || '');
   const [color, setColor] = useState(role?.color || '#3b82f6');
@@ -74,20 +57,9 @@ export function EditRoleModal({
   const { data: rawPermissions = [], isLoading: isPermissionsLoading } = useGetPermissions();
   const permissionsList: PermissionModuleItem[] = Array.isArray(rawPermissions) ? rawPermissions : [];
 
+  
   // Module-grouped permissions state: { sales: ['view', 'create'], ... }
-  const [permissions, setPermissions] = useState<Record<string, string[]>>(() =>
-    getInitialPermissions(role, permissionsList)
-  );
-
-  // Sync state whenever modal opens or role changes
-  useEffect(() => {
-    if (open && role) {
-      setName(role.name || '');
-      setDescription(role.description || '');
-      setColor(role.color || '#3b82f6');
-      setPermissions(getInitialPermissions(role, permissionsList));
-    }
-  }, [open, role, permissionsList]);
+  const [permissions, setPermissions] = useState<Record<string, string[]>>(getInitialPermissions(role, permissionsList));
 
   // Update role API mutation
   const { mutate: updateRoleMutate, isPending: isUpdating } = useUpdateRole();
@@ -149,11 +121,9 @@ export function EditRoleModal({
     }
 
     const updatedRole = {
-      ...role,
-      id: role?.id,
       name: name.trim(),
       description: description.trim(),
-      color: color || '#3b82f6',
+      color: color,
       permissions,
     };
 
@@ -168,7 +138,7 @@ export function EditRoleModal({
       return;
     }
 
-    updateRoleMutate(updatedRole, {
+    updateRoleMutate({roleId:role?.id,roleData: updatedRole}, {
       onSuccess: (data) => {
         if (data?.success || data) {
           toast.success(
@@ -179,10 +149,7 @@ export function EditRoleModal({
           if (onRoleSaved) onRoleSaved(updatedRole);
           onOpenChange(false);
         }
-      },
-      onError: (err: any) => {
-        toast.error(err?.message || (isBangla ? 'রোল সংরক্ষণ করতে সমস্যা হয়েছে।' : 'Failed to save role.'));
-      },
+      }
     });
   };
 
@@ -191,63 +158,63 @@ export function EditRoleModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[94vw] max-h-[90vh] flex flex-col p-0 gap-0 rounded-2xl bg-card border-border overflow-hidden shadow-2xl">
-      {/* Header */}
-      <div className="p-4 sm:p-5 border-b border-border bg-gradient-to-r from-muted/30 via-muted/15 to-transparent flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
-            style={{ backgroundColor: color || '#3b82f6' }}
-          >
-            <Crown className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-extrabold text-foreground">
-                {isBangla ? `রোল সম্পাদনা: ${role?.nameBn || name}` : `Edit Role: ${name}`}
-              </h2>
-              {role?.isSystem || role?.isSystemProtected ? (
-                <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" />
-                  {isBangla ? 'সুরক্ষিত সিস্টেম রোল' : 'System Protected'}
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold">
-                  {isBangla ? 'কাস্টম রোল' : 'Custom Role'}
-                </Badge>
-              )}
+        {/* Header */}
+        <div className="sticky top-0 z-20 border-b border-border bg-card bg-gradient-to-r from-muted/40 via-muted/20 to-card p-4 sm:p-5 flex items-center justify-between gap-3 shrink-0 shadow-xs backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ring-1 ring-border/50"
+              style={{ backgroundColor: color || '#3b82f6' }}
+            >
+              <Crown className="w-5 h-5 text-white" />
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isBangla
-                ? 'রোলের বিবরণ, কালার থিম এবং পারমিশন অ্যাক্সেস পরিবর্তন করুন'
-                : 'Update role details, color branding, and configure granular permissions'}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-extrabold text-foreground">
+                  {isBangla ? `রোল সম্পাদনা: ${role?.nameBn || name}` : `Edit Role: ${name}`}
+                </h2>
+                {role?.isSystem || role?.isSystemProtected ? (
+                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-400 border-purple-500/20 font-bold flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" />
+                    {isBangla ? 'সুরক্ষিত সিস্টেম রোল' : 'System Protected'}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold">
+                    {isBangla ? 'কাস্টম রোল' : 'Custom Role'}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isBangla
+                  ? 'রোলের বিবরণ, কালার থিম এবং পারমিশন অ্যাক্সেস পরিবর্তন করুন'
+                  : 'Update role details, color branding, and configure granular permissions'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="rounded-xl border-border text-xs font-semibold h-9 hover:bg-muted cursor-pointer"
+            >
+              {isBangla ? 'বাতিল' : 'Cancel'}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={isUpdating}
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5 mr-1" />
+              {isUpdating
+                ? (isBangla ? 'সংরক্ষণ হচ্ছে...' : 'Saving...')
+                : (isBangla ? 'সংরক্ষণ করুন' : 'Save Changes')}
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="rounded-xl border-border text-xs font-semibold h-9 hover:bg-muted cursor-pointer"
-          >
-            {isBangla ? 'বাতিল' : 'Cancel'}
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={isUpdating}
-            className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-9 shadow-sm cursor-pointer disabled:opacity-50"
-          >
-            <Save className="w-3.5 h-3.5 mr-1" />
-            {isUpdating
-              ? (isBangla ? 'সংরক্ষণ হচ্ছে...' : 'Saving...')
-              : (isBangla ? 'সংরক্ষণ করুন' : 'Save Changes')}
-          </Button>
-        </div>
-      </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        {/* Body */}
+        <div className="p-4 sm:p-6 space-y-5">
         {/* System Protected Notice */}
         {(role?.isSystem || role?.isSystemProtected) && (
           <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-2.5 text-xs text-foreground">
@@ -385,7 +352,6 @@ export function EditRoleModal({
               </div>
             ) : permissionsList && permissionsList.length > 0 ? (
               permissionsList.map((module) => {
-                console.log(module,'module')
                 const moduleActions = module.actions || [];
                 const selectedModuleActions = permissions[module.module] || [];
                 const enabledCount = selectedModuleActions.length;
