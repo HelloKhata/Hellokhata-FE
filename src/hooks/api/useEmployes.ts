@@ -1,5 +1,5 @@
 
-import { createEmployee, getAllEmployes, getSingleEmployee } from "@/services/employes.services";
+import { createEmployee, getAllEmployes, getSingleEmployee, updateEmployee } from "@/services/employes.services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useCreateEmployee = () =>{
@@ -21,11 +21,24 @@ export const useGetEmployes = () =>{
     })
 };
 
+export const useUpdateEmployee = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateEmployee,
+        mutationKey: ["update-employee"],
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["employees"] });
+            queryClient.invalidateQueries({ queryKey: ["employee", variables.id] });
+        },
+    });
+};
+
 export const useGetSingleEmployee = (id: string) => {
+    const queryClient = useQueryClient();
     return useQuery({
         queryKey: ["employee", id],
         queryFn: () => getSingleEmployee(id),
         enabled: Boolean(id),
         select: data => data?.data || data
     });
-};
+};
