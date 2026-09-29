@@ -13,4 +13,9 @@ export const getAllEmployes = async () =>{
 export const getSingleEmployee = async (id: string) => {
     const res = await client.get(`/api/employees/${id}`)
     return res.data;
+};
+
+export const updateEmployee = async ({ id, employee }: { id: string; employee: any }) => {
+    const res = await client.patch(`/api/employees/${id}`, employee);
+    return res.data;
 };

@@ -202,7 +202,7 @@ export default function EmployeeProfilePage() {
           </Button>
           <Button
             size="sm"
-            onClick={() => router.push('/hrm/employees')}
+            onClick={() => router.push(`/hrm/employees/edit/${params.id}`)}
             className="rounded-xl bg-primary text-primary-foreground text-xs font-bold h-9 shadow-xs cursor-pointer"
           >
             <Pencil className="h-3.5 w-3.5 mr-1.5" />
@@ -239,7 +239,7 @@ export default function EmployeeProfilePage() {
                 <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                   {empName}
                 </h3>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-xs text-primary font-bold font-mono">
                   {employee.employeeId}
                 </p>
 
