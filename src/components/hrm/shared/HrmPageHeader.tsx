@@ -6,7 +6,6 @@
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { HrmBreadcrumb } from './HrmBreadcrumb';
 
 interface Props {
   title: string;
@@ -36,7 +35,6 @@ export function HrmPageHeader({
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="mb-6"
     >
-      {breadcrumbs && <HrmBreadcrumb items={breadcrumbs} />}
 
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div className="flex items-start gap-3">
