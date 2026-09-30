@@ -30,13 +30,49 @@ export function getRolePermissionIds(role: any): string[] {
   if (Array.isArray(role.permissionIds)) {
     return role.permissionIds;
   }
-  if (role.permissions && typeof role.permissions === 'object' && !Array.isArray(role.permissions)) {
-    return Object.entries(role.permissions).flatMap(([mod, acts]) =>
-      Array.isArray(acts) ? acts.map((act) => `${mod}_${act}`) : []
-    );
+  let parsedPermissions = role.permissions;
+  if (typeof parsedPermissions === 'string') {
+    try {
+      parsedPermissions = JSON.parse(parsedPermissions);
+    } catch {
+      // ignore
+    }
   }
-  if (Array.isArray(role.permissions)) {
-    return role.permissions;
+  if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+    return Object.entries(parsedPermissions).flatMap(([mod, acts]) => {
+      if (!Array.isArray(acts)) return [];
+      return acts.flatMap((act) => {
+        const directId = `${mod}_${act}`;
+        const matchingPerms = ALL_PERMISSION_IDS.filter((id) => {
+          if (id === directId) return true;
+          const modPrefix =
+            mod === 'purchases'
+              ? 'pur_'
+              : mod === 'inventory'
+              ? 'inv_'
+              : mod === 'parties'
+              ? 'party_'
+              : mod === 'dashboard'
+              ? 'dash_'
+              : mod === 'reports'
+              ? 'rep_'
+              : mod === 'settings'
+              ? 'set_'
+              : mod === 'staff'
+              ? 'hrm_'
+              : `${mod}_`;
+          if (act === 'view' && id.startsWith(modPrefix) && (id.includes('view') || id.includes('overview'))) return true;
+          if (act === 'create' && id.startsWith(modPrefix) && (id.includes('create') || id.includes('add'))) return true;
+          if (act === 'edit' && id.startsWith(modPrefix) && id.includes('edit')) return true;
+          if (act === 'delete' && id.startsWith(modPrefix) && (id.includes('delete') || id.includes('terminate'))) return true;
+          return false;
+        });
+        return matchingPerms.length > 0 ? matchingPerms : [directId];
+      });
+    });
+  }
+  if (Array.isArray(parsedPermissions)) {
+    return parsedPermissions;
   }
   return [];
 }
@@ -44,21 +80,27 @@ export function getRolePermissionIds(role: any): string[] {
 // ─── HELPER: Compute Effective Permissions for a User ────────────────────────
 
 export function computeEffectivePermissions(
-  user: UserAccessProfile,
-  baseRoles: (BaseRoleDefinition | any)[]
+  user: UserAccessProfile | null | any,
+  baseRoles: (BaseRoleDefinition | any)[] = []
 ): Set<string> {
+  if (!user) return new Set<string>();
   if (user.isFullSystemAccess || user.isOwner) {
     return new Set(ALL_PERMISSION_IDS);
   }
 
-  const role = baseRoles.find((r) => r.id === user.baseRoleId);
+  const safeRoles = Array.isArray(baseRoles) ? baseRoles : [];
+  const role = safeRoles.find((r) => r && r.id === user.baseRoleId);
   const basePermissions = new Set(getRolePermissionIds(role));
 
   // Apply custom granted overrides (+)
-  user.customGrantedPermissions?.forEach((pId) => basePermissions.add(pId));
+  if (Array.isArray(user.customGrantedPermissions)) {
+    user.customGrantedPermissions.forEach((pId: string) => basePermissions.add(pId));
+  }
 
   // Apply custom revoked overrides (-)
-  user.customRevokedPermissions?.forEach((pId) => basePermissions.delete(pId));
+  if (Array.isArray(user.customRevokedPermissions)) {
+    user.customRevokedPermissions.forEach((pId: string) => basePermissions.delete(pId));
+  }
 
   return basePermissions;
 }
