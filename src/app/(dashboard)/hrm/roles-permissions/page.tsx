@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,7 +34,6 @@ import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import {
-  type BaseRoleDefinition,
   type UserAccessProfile,
   type AccessAuditEntry,
   INITIAL_USER_PROFILES,
@@ -561,8 +560,7 @@ export default function UserAccessControlPage() {
       <ViewStaffModal
         open={isStaffModalOpen}
         onOpenChange={setIsStaffModalOpen}
-        role={viewStaffRole}
-        users={users}
+        roleId={viewStaffRole?.id}
         onManageAccess={(u) => {
           setActiveUser(u);
           setIsManageAccessOpen(true);

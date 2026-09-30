@@ -15,7 +15,9 @@ export const getSingleEmployee = async (id: string) => {
     return res.data;
 };
 
+
 export const updateEmployee = async ({ id, employee }: { id: string; employee: any }) => {
     const res = await client.patch(`/api/employees/${id}`, employee);
     return res.data;
-};
+};
+

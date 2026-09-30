@@ -1,6 +1,3 @@
-// Hello Khata OS - HRM Employees Page
-// হ্যালো খাতা - এইচআরএম কর্মচারী তালিকা পেজ
-
 'use client';
 
 import { useState } from 'react';
@@ -95,8 +92,8 @@ export default function EmployeesPage() {
     router.push('/hrm/employees/new');
   };
 
-  const openEdit = (e: Employee) => {
-    router.push(`/hrm/employees/edit/${e.id}`);
+  const openEdit = (id) => {
+    router.push(`/hrm/employees/edit/${id}`);
   };
 
   const handleArchive = () => {
@@ -227,6 +224,14 @@ export default function EmployeesPage() {
           >
             <Eye className="h-4 w-4" />
           </button>
+
+          <Button
+          variant="outline"
+            onClick={() => openEdit(e.id)}
+            className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+          >
+            <Pencil className="h-4 w-4 mr-2 text-indigo-400" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -239,7 +244,7 @@ export default function EmployeesPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl shadow-black/80 rounded-xl p-1.5">
               <DropdownMenuItem
-                onClick={() => openEdit(e)}
+                onClick={() => openEdit(e.id)}
                 className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
                 <Pencil className="h-4 w-4 mr-2 text-indigo-400" /> {isBangla ? 'সম্পাদনা' : 'Edit'}

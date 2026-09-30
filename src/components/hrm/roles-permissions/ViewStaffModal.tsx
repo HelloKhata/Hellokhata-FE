@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/dialog';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import type { BaseRoleDefinition, UserAccessProfile } from './types';
+import { useGetAsignedUsers, useGetRoles } from '@/hooks/api/useRoles';
 
 interface ViewStaffModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  role: BaseRoleDefinition | null;
-  users: UserAccessProfile[];
+  roleId: string;
   onManageAccess?: (user: UserAccessProfile) => void;
   onQuickPreview?: (user: UserAccessProfile) => void;
 }
@@ -30,17 +30,15 @@ interface ViewStaffModalProps {
 export function ViewStaffModal({
   open,
   onOpenChange,
-  role,
-  users,
+  roleId,
   onManageAccess,
   onQuickPreview,
 }: ViewStaffModalProps) {
   const { isBangla } = useAppTranslation();
+  const {data:assignedUsers, isLoading: isLoadingAssignedUsers} = useGetAsignedUsers(roleId || '')
+  if (!roleId) return null;
 
-  if (!role) return null;
-
-  const assigned = users.filter((u) => u.baseRoleId === role.id);
-
+  const assigned = assignedUsers?.employees || []
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg rounded-2xl bg-card border-border p-6">
@@ -48,7 +46,7 @@ export function ViewStaffModal({
           <DialogTitle className="flex items-center gap-2 text-foreground font-bold text-base">
             <Users className="w-5 h-5 text-primary" />
             <span>
-              {isBangla ? `${role.nameBn || role.name} - নিয়োজিত কর্মী` : `Staff Assigned to ${role.name}`}
+              {isBangla ? `${assignedUsers?.nameBn || assignedUsers?.name} - নিয়োজিত কর্মী` : `Staff Assigned to ${assignedUsers?.nameBn || assignedUsers?.name}`}
             </span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -65,27 +63,27 @@ export function ViewStaffModal({
               <p>{isBangla ? 'এই রোলে কোনো কর্মী নিযুক্ত নেই।' : 'No staff members are assigned to this role.'}</p>
             </div>
           ) : (
-            assigned.map((u) => (
-              <div key={u.id} className="p-3 rounded-xl border border-border bg-muted/20 flex items-center justify-between gap-3">
+            assigned.map((user: any) => (
+              <div key={user.id} className="p-3 rounded-xl border border-border bg-muted/20 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar className="w-8 h-8 shrink-0">
+                  <Avatar className="w-9 h-9 shrink-0 border border-primary/20">
                     <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {u.name.slice(0, 2).toUpperCase()}
+                      {(user.fullName || user.name || 'HK').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <div className="font-bold text-xs text-foreground truncate">{isBangla ? u.nameBn || u.name : u.name}</div>
+                    <div className="font-bold text-xs text-foreground truncate">{isBangla ? user.fullNameBn || user.fullName || user.name : user.fullName || user.name}</div>
                     <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 truncate">
-                      <span>{u.designation}</span>
-                      <span>•</span>
-                      <span>{u.department}</span>
+                      {user.phoneNumber && <span>{user.phoneNumber}</span>}
+                      {user.phoneNumber && user.emailAddress && <span>•</span>}
+                      {user.emailAddress && <span className="truncate">{user.emailAddress}</span>}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600 bg-emerald-500/10">
-                    {u.status === 'active' ? (isBangla ? 'সক্রিয়' : 'Active') : (isBangla ? 'নিষ্ক্রিয়' : 'Inactive')}
+                    {user.status === 'inactive' ? (isBangla ? 'নিষ্ক্রিয়' : 'Inactive') : (isBangla ? 'সক্রিয়' : 'Active')}
                   </Badge>
 
                   {onQuickPreview && (
@@ -94,7 +92,11 @@ export function ViewStaffModal({
                       variant="ghost"
                       onClick={() => {
                         onOpenChange(false);
-                        onQuickPreview(u);
+                        onQuickPreview({
+                          ...user,
+                          baseRoleId: roleId,
+                          designation: assignedUsers?.name || 'Staff',
+                        });
                       }}
                       className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
                       title={isBangla ? 'প্রিভিউ দেখুন' : 'Quick Preview'}
@@ -109,7 +111,11 @@ export function ViewStaffModal({
                       variant="outline"
                       onClick={() => {
                         onOpenChange(false);
-                        onManageAccess(u);
+                        onManageAccess({
+                          ...user,
+                          baseRoleId: roleId,
+                          designation: assignedUsers?.name || 'Staff',
+                        });
                       }}
                       className="h-7 px-2 text-[11px] rounded-lg border-primary/30 text-primary hover:bg-primary/10 font-semibold cursor-pointer flex items-center gap-1"
                       title={isBangla ? 'অ্যাক্সেস ও পারমিশন পরিবর্তন' : 'Manage Permissions'}

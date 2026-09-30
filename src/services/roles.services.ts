@@ -16,6 +16,10 @@ export const updateRole = async({roleData,roleId}: {roleData: any,roleId: string
    return res.data
 };
 
+export const getAsignedUsers = async(id:string) => {
+   const res = await client.get(`/api/settings/roles/${id}/assign-employees`);
+   return res.data
+}
 export const deleteRole = async(roleId: string) => {
    const res = await client.delete(`/api/settings/roles/${roleId}`)
    return res.data

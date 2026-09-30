@@ -28,6 +28,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
+import { useGetBranches } from '@/hooks/api/useBranches';
 import { HRM_BRANCHES } from '@/components/hrm/mock-data';
 import { cn } from '@/lib/utils';
 import type {
@@ -52,21 +53,139 @@ import { DiffConfirmDialog } from './DiffConfirmDialog';
 interface ManageUserAccessModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: UserAccessProfile | null;
-  baseRoles: (BaseRoleDefinition | any)[];
-  onSaveUser: (updatedUser: UserAccessProfile, auditEntry: AccessAuditEntry) => void;
+  user?: UserAccessProfile | null | any;
+  baseRoles?: (BaseRoleDefinition | any)[];
+  onSaveUser?: (updatedUser: UserAccessProfile, auditEntry: AccessAuditEntry) => void;
+}
+
+// Normalizer to ensure every single field is safe and complete for any incoming user/employee object
+function normalizeUserProfile(
+  u: any,
+  rolesList: any[] = [],
+  branchesList: any[] = []
+): UserAccessProfile {
+  if (!u) {
+    return {
+      id: `u-${Date.now()}`,
+      userId: 'usr-default',
+      employeeId: 'EMP-001',
+      name: 'Staff Member',
+      nameBn: 'কর্মী',
+      email: 'staff@hellokhata.com',
+      phone: '01700-000000',
+      department: 'General',
+      designation: 'Staff',
+      avatarUrl: '',
+      status: 'active',
+      isOwner: false,
+      isFullSystemAccess: false,
+      baseRoleId: rolesList[0]?.id || 'role-sales-person',
+      accessLevel: 'custom_access',
+      branchScopeMode: 'all',
+      allowedBranchIds: branchesList.map((b: any) => b.id),
+      dataScope: 'entire_business',
+      customGrantedPermissions: [],
+      customRevokedPermissions: [],
+      lastActive: 'Just now',
+      updatedAt: 'Recently',
+      updatedBy: 'System SuperAdmin',
+    };
+  }
+
+  const name = u.fullName || u.name || 'Staff Member';
+  const nameBn = u.fullNameBn || u.nameBn || u.fullName || u.name || 'কর্মী';
+  const email = u.emailAddress || u.email || 'staff@hellokhata.com';
+  const phone = u.phoneNumber || u.phone || '01700-000000';
+  const employeeId = u.employeeId || (u.id ? `EMP-${String(u.id).slice(-4).toUpperCase()}` : 'EMP-001');
+  const department = u.department || 'General';
+  const designation = u.designation || 'Staff';
+  const avatarUrl = u.imageUrl || u.avatarUrl || '';
+  const status = u.status || 'active';
+  const isOwner = Boolean(u.isOwner);
+  const isFullSystemAccess = Boolean(
+    u.isFullSystemAccess || u.isOwner || (u.baseRoleId && (u.baseRoleId === 'role-owner' || u.baseRoleId === 'role_owner'))
+  );
+  const baseRoleId = u.baseRoleId || (rolesList[0]?.id ?? 'role-sales-person');
+  const allowedBranchIds =
+    Array.isArray(u.allowedBranchIds) && u.allowedBranchIds.length > 0
+      ? u.allowedBranchIds
+      : u.branchId
+      ? [u.branchId]
+      : branchesList.length > 0
+      ? [branchesList[0].id]
+      : ['branch-1'];
+  const branchScopeMode =
+    u.branchScopeMode || (allowedBranchIds.length >= (branchesList.length || 1) ? 'all' : 'selected');
+  const accessLevel =
+    u.accessLevel ||
+    (isFullSystemAccess
+      ? 'full_system'
+      : allowedBranchIds.length < (branchesList.length || 1)
+      ? 'branch_restricted'
+      : 'custom_access');
+  const dataScope = u.dataScope || 'entire_business';
+  const customGrantedPermissions = Array.isArray(u.customGrantedPermissions) ? u.customGrantedPermissions : [];
+  const customRevokedPermissions = Array.isArray(u.customRevokedPermissions) ? u.customRevokedPermissions : [];
+  const lastActive = u.lastActive || 'Just now';
+  const updatedAt = u.updatedAt
+    ? typeof u.updatedAt === 'string' && u.updatedAt.includes('T')
+      ? new Date(u.updatedAt).toLocaleDateString()
+      : u.updatedAt
+    : 'Recently';
+  const updatedBy = u.updatedBy || 'Owner';
+
+  return {
+    id: u.id || `u-${Date.now()}`,
+    userId: u.userId || u.id || 'usr-default',
+    employeeId,
+    name,
+    nameBn,
+    email,
+    phone,
+    department,
+    designation,
+    avatarUrl,
+    status,
+    isOwner,
+    isFullSystemAccess,
+    baseRoleId,
+    accessLevel,
+    branchScopeMode,
+    allowedBranchIds,
+    dataScope,
+    customGrantedPermissions,
+    customRevokedPermissions,
+    lastActive,
+    updatedAt,
+    updatedBy,
+  };
 }
 
 export function ManageUserAccessModal({
   open,
   onOpenChange,
   user,
-  baseRoles,
+  baseRoles = [],
   onSaveUser,
 }: ManageUserAccessModalProps) {
   const { isBangla } = useAppTranslation();
+  const { data: apiBranches = [] } = useGetBranches();
 
-  const [draftUser, setDraftUser] = useState<UserAccessProfile | null>(null);
+  // Resolve dynamic branches with static fallback
+  const branches = useMemo(() => {
+    if (Array.isArray(apiBranches) && apiBranches.length > 0) {
+      return apiBranches;
+    }
+    return HRM_BRANCHES;
+  }, [apiBranches]);
+
+  const safeBaseRoles = useMemo(() => {
+    return Array.isArray(baseRoles) ? baseRoles : [];
+  }, [baseRoles]);
+
+  const [draftUser, setDraftUser] = useState<UserAccessProfile | null>(() =>
+    user ? normalizeUserProfile(user, safeBaseRoles, branches) : null
+  );
   const [expandedModuleIds, setExpandedModuleIds] = useState<string[]>(['mod_sales', 'mod_inventory']);
   const [permissionModuleSearch, setPermissionModuleSearch] = useState('');
 
@@ -76,14 +195,16 @@ export function ManageUserAccessModal({
 
   useEffect(() => {
     if (user && open) {
-      setDraftUser(JSON.parse(JSON.stringify(user)));
+      setDraftUser(normalizeUserProfile(user, safeBaseRoles, branches));
+    } else if (!open) {
+      setDraftUser(null);
     }
-  }, [user, open]);
+  }, [user, open, safeBaseRoles, branches]);
 
   const activeRoleDefinition = useMemo(() => {
     if (!draftUser) return null;
-    return baseRoles.find((r) => r.id === draftUser.baseRoleId) || null;
-  }, [draftUser, baseRoles]);
+    return safeBaseRoles.find((r: any) => r && r.id === draftUser.baseRoleId) || safeBaseRoles[0] || null;
+  }, [draftUser, safeBaseRoles]);
 
   const activeRolePermissionIds = useMemo(() => {
     return getRolePermissionIds(activeRoleDefinition);
@@ -91,8 +212,8 @@ export function ManageUserAccessModal({
 
   const draftEffectivePermissions = useMemo(() => {
     if (!draftUser) return new Set<string>();
-    return computeEffectivePermissions(draftUser, baseRoles);
-  }, [draftUser, baseRoles]);
+    return computeEffectivePermissions(draftUser, safeBaseRoles);
+  }, [draftUser, safeBaseRoles]);
 
   // Diff computation for confirmation dialog
   const permissionDiff = useMemo(() => {
@@ -100,8 +221,9 @@ export function ManageUserAccessModal({
       return { added: [], removed: [], branchAdded: [], branchRemoved: [], sensitiveGranted: [] };
     }
 
-    const oldPerms = computeEffectivePermissions(user, baseRoles);
-    const newPerms = computeEffectivePermissions(draftUser, baseRoles);
+    const baselineUser = normalizeUserProfile(user, safeBaseRoles, branches);
+    const oldPerms = computeEffectivePermissions(baselineUser, safeBaseRoles);
+    const newPerms = computeEffectivePermissions(draftUser, safeBaseRoles);
 
     const added: PermissionAction[] = [];
     const removed: PermissionAction[] = [];
@@ -124,41 +246,52 @@ export function ManageUserAccessModal({
       }
     });
 
-    const oldBranches = new Set(user.allowedBranchIds);
-    const newBranches = new Set(draftUser.allowedBranchIds);
+    const oldBranches = new Set(baselineUser.allowedBranchIds || []);
+    const newBranches = new Set(draftUser.allowedBranchIds || []);
 
-    const branchAdded = draftUser.allowedBranchIds.filter((id) => !oldBranches.has(id));
-    const branchRemoved = user.allowedBranchIds.filter((id) => !newBranches.has(id));
+    const branchAdded = (draftUser.allowedBranchIds || []).filter((id) => !oldBranches.has(id));
+    const branchRemoved = (baselineUser.allowedBranchIds || []).filter((id) => !newBranches.has(id));
 
     return { added, removed, branchAdded, branchRemoved, sensitiveGranted };
-  }, [user, draftUser, baseRoles]);
+  }, [user, draftUser, safeBaseRoles, branches]);
 
-  if (!draftUser || !user) return null;
+  if (!draftUser) return null;
 
   // Handlers
   const handleToggleFullSystemAccess = (enable: boolean) => {
     if (enable) {
       setIsFullAccessWarningOpen(true);
     } else {
-      setDraftUser({
-        ...draftUser,
-        isFullSystemAccess: false,
-        accessLevel: draftUser.allowedBranchIds.length < HRM_BRANCHES.length ? 'branch_restricted' : 'custom_access',
+      setDraftUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isFullSystemAccess: false,
+          accessLevel:
+            (prev.allowedBranchIds || []).length < branches.length ? 'branch_restricted' : 'custom_access',
+        };
       });
-      toast.info(isBangla ? 'পূর্ণ সিস্টেম অ্যাক্সেস নিষ্ক্রিয় করা হয়েছে।' : 'Full System Access disabled. Base role permissions restored.');
+      toast.info(
+        isBangla
+          ? 'পূর্ণ সিস্টেম অ্যাক্সেস নিষ্ক্রিয় করা হয়েছে।'
+          : 'Full System Access disabled. Base role permissions restored.'
+      );
     }
   };
 
   const confirmGrantFullSystemAccess = () => {
-    setDraftUser({
-      ...draftUser,
-      isFullSystemAccess: true,
-      accessLevel: 'full_system',
-      branchScopeMode: 'all',
-      allowedBranchIds: HRM_BRANCHES.map((b) => b.id),
-      dataScope: 'entire_business',
-      customGrantedPermissions: [],
-      customRevokedPermissions: [],
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        isFullSystemAccess: true,
+        accessLevel: 'full_system',
+        branchScopeMode: 'all',
+        allowedBranchIds: branches.map((b: any) => b.id),
+        dataScope: 'entire_business',
+        customGrantedPermissions: [],
+        customRevokedPermissions: [],
+      };
     });
     setIsFullAccessWarningOpen(false);
     toast.success(
@@ -169,18 +302,21 @@ export function ManageUserAccessModal({
   };
 
   const handleBaseRoleChange = (roleId: string) => {
-    const selectedRole = baseRoles.find((r) => r.id === roleId);
+    const selectedRole = safeBaseRoles.find((r: any) => r && r.id === roleId);
     if (!selectedRole) return;
 
-    setDraftUser({
-      ...draftUser,
-      baseRoleId: roleId,
-      isFullSystemAccess: selectedRole.id === 'role-owner',
-      accessLevel: selectedRole.id === 'role-owner' ? 'full_system' : 'custom_access',
-      dataScope: selectedRole.defaultDataScope,
-      branchScopeMode: selectedRole.defaultBranchMode,
-      customGrantedPermissions: [],
-      customRevokedPermissions: [],
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        baseRoleId: roleId,
+        isFullSystemAccess: selectedRole.id === 'role-owner' || selectedRole.name?.toLowerCase() === 'owner',
+        accessLevel: selectedRole.id === 'role-owner' ? 'full_system' : 'custom_access',
+        dataScope: selectedRole.defaultDataScope || prev.dataScope || 'entire_business',
+        branchScopeMode: selectedRole.defaultBranchMode || prev.branchScopeMode || 'all',
+        customGrantedPermissions: [],
+        customRevokedPermissions: [],
+      };
     });
     toast.info(
       isBangla
@@ -191,40 +327,50 @@ export function ManageUserAccessModal({
 
   const handleToggleBranch = (branchId: string) => {
     if (draftUser.isFullSystemAccess) return;
-    const exists = draftUser.allowedBranchIds.includes(branchId);
+    const currentBranches = draftUser.allowedBranchIds || [];
+    const exists = currentBranches.includes(branchId);
     let newBranches: string[];
     if (exists) {
-      if (draftUser.allowedBranchIds.length === 1) {
+      if (currentBranches.length === 1) {
         toast.error(isBangla ? 'কমপক্ষে একটি শাখা নির্বাচন করতে হবে।' : 'At least one branch must be assigned.');
         return;
       }
-      newBranches = draftUser.allowedBranchIds.filter((id) => id !== branchId);
+      newBranches = currentBranches.filter((id) => id !== branchId);
     } else {
-      newBranches = [...draftUser.allowedBranchIds, branchId];
+      newBranches = [...currentBranches, branchId];
     }
 
-    setDraftUser({
-      ...draftUser,
-      allowedBranchIds: newBranches,
-      branchScopeMode: newBranches.length === HRM_BRANCHES.length ? 'all' : 'selected',
-      accessLevel: newBranches.length < HRM_BRANCHES.length ? 'branch_restricted' : 'custom_access',
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        allowedBranchIds: newBranches,
+        branchScopeMode: newBranches.length === branches.length ? 'all' : 'selected',
+        accessLevel: newBranches.length < branches.length ? 'branch_restricted' : 'custom_access',
+      };
     });
   };
 
   const handleToggleAllBranches = (all: boolean) => {
     if (draftUser.isFullSystemAccess) return;
     if (all) {
-      setDraftUser({
-        ...draftUser,
-        branchScopeMode: 'all',
-        allowedBranchIds: HRM_BRANCHES.map((b) => b.id),
+      setDraftUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          branchScopeMode: 'all',
+          allowedBranchIds: branches.map((b: any) => b.id),
+        };
       });
     } else {
-      setDraftUser({
-        ...draftUser,
-        branchScopeMode: 'selected',
-        allowedBranchIds: [HRM_BRANCHES[0].id],
-        accessLevel: 'branch_restricted',
+      setDraftUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          branchScopeMode: 'selected',
+          allowedBranchIds: [branches[0]?.id || 'branch-1'],
+          accessLevel: 'branch_restricted',
+        };
       });
     }
   };
@@ -235,8 +381,8 @@ export function ManageUserAccessModal({
     const isCurrentlyGranted = draftEffectivePermissions.has(permissionId);
     const roleHasIt = activeRolePermissionIds.includes(permissionId);
 
-    let newGranted = [...draftUser.customGrantedPermissions];
-    let newRevoked = [...draftUser.customRevokedPermissions];
+    let newGranted = [...(draftUser.customGrantedPermissions || [])];
+    let newRevoked = [...(draftUser.customRevokedPermissions || [])];
 
     if (isCurrentlyGranted) {
       if (roleHasIt) {
@@ -252,11 +398,14 @@ export function ManageUserAccessModal({
       }
     }
 
-    setDraftUser({
-      ...draftUser,
-      customGrantedPermissions: newGranted,
-      customRevokedPermissions: newRevoked,
-      accessLevel: 'custom_access',
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        customGrantedPermissions: newGranted,
+        customRevokedPermissions: newRevoked,
+        accessLevel: 'custom_access',
+      };
     });
   };
 
@@ -269,20 +418,20 @@ export function ManageUserAccessModal({
     if (level === 'no_access') {
       targetGrantedIds = [];
     } else if (level === 'read_only') {
-      targetGrantedIds = module.readOnlyPermissionIds;
+      targetGrantedIds = module.readOnlyPermissionIds || [];
     } else if (level === 'standard') {
-      targetGrantedIds = module.standardPermissionIds;
+      targetGrantedIds = module.standardPermissionIds || [];
     } else if (level === 'full_access') {
       targetGrantedIds = modulePermissionIds;
     } else {
       if (!expandedModuleIds.includes(module.id)) {
-        setExpandedModuleIds([...expandedModuleIds, module.id]);
+        setExpandedModuleIds((prev) => [...prev, module.id]);
       }
       return;
     }
 
-    let newGranted = draftUser.customGrantedPermissions.filter((id) => !modulePermissionIds.includes(id));
-    let newRevoked = draftUser.customRevokedPermissions.filter((id) => !modulePermissionIds.includes(id));
+    let newGranted = (draftUser.customGrantedPermissions || []).filter((id) => !modulePermissionIds.includes(id));
+    let newRevoked = (draftUser.customRevokedPermissions || []).filter((id) => !modulePermissionIds.includes(id));
 
     module.permissions.forEach((p) => {
       const shouldHave = targetGrantedIds.includes(p.id);
@@ -295,11 +444,14 @@ export function ManageUserAccessModal({
       }
     });
 
-    setDraftUser({
-      ...draftUser,
-      customGrantedPermissions: newGranted,
-      customRevokedPermissions: newRevoked,
-      accessLevel: 'custom_access',
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        customGrantedPermissions: newGranted,
+        customRevokedPermissions: newRevoked,
+        accessLevel: 'custom_access',
+      };
     });
 
     toast.success(
@@ -311,13 +463,16 @@ export function ManageUserAccessModal({
 
   const handleResetModuleToRole = (module: ERPModuleDefinition) => {
     const modulePermissionIds = module.permissions.map((p) => p.id);
-    const newGranted = draftUser.customGrantedPermissions.filter((id) => !modulePermissionIds.includes(id));
-    const newRevoked = draftUser.customRevokedPermissions.filter((id) => !modulePermissionIds.includes(id));
+    const newGranted = (draftUser.customGrantedPermissions || []).filter((id) => !modulePermissionIds.includes(id));
+    const newRevoked = (draftUser.customRevokedPermissions || []).filter((id) => !modulePermissionIds.includes(id));
 
-    setDraftUser({
-      ...draftUser,
-      customGrantedPermissions: newGranted,
-      customRevokedPermissions: newRevoked,
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        customGrantedPermissions: newGranted,
+        customRevokedPermissions: newRevoked,
+      };
     });
 
     toast.info(
@@ -328,11 +483,15 @@ export function ManageUserAccessModal({
   };
 
   const handleResetAllToRole = () => {
-    setDraftUser({
-      ...draftUser,
-      customGrantedPermissions: [],
-      customRevokedPermissions: [],
-      accessLevel: draftUser.allowedBranchIds.length < HRM_BRANCHES.length ? 'branch_restricted' : 'custom_access',
+    setDraftUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        customGrantedPermissions: [],
+        customRevokedPermissions: [],
+        accessLevel:
+          (prev.allowedBranchIds || []).length < branches.length ? 'branch_restricted' : 'custom_access',
+      };
     });
     toast.success(
       isBangla
@@ -342,23 +501,26 @@ export function ManageUserAccessModal({
   };
 
   const handleSaveClick = () => {
+    const baselineUser = user ? normalizeUserProfile(user, safeBaseRoles, branches) : draftUser;
     const hasPermDiff = permissionDiff.added.length > 0 || permissionDiff.removed.length > 0;
     const hasBranchDiff = permissionDiff.branchAdded.length > 0 || permissionDiff.branchRemoved.length > 0;
-    const hasRoleDiff = user.baseRoleId !== draftUser.baseRoleId;
-    const hasFullAccessDiff = user.isFullSystemAccess !== draftUser.isFullSystemAccess;
+    const hasRoleDiff = baselineUser.baseRoleId !== draftUser.baseRoleId;
+    const hasFullAccessDiff = baselineUser.isFullSystemAccess !== draftUser.isFullSystemAccess;
 
     if (!hasPermDiff && !hasBranchDiff && !hasRoleDiff && !hasFullAccessDiff) {
-      onSaveUser(draftUser, {
-        id: `aud-${Date.now()}`,
-        timestamp: 'Just now',
-        performedBy: 'Sweet Ali (Owner)',
-        targetUserName: draftUser.name,
-        targetUserRole: activeRoleDefinition?.name || 'Custom',
-        actionType: 'status_changed',
-        addedPermissions: [],
-        removedPermissions: [],
-        notes: 'Access profile verified with no changes.',
-      });
+      if (onSaveUser) {
+        onSaveUser(draftUser, {
+          id: `aud-${Date.now()}`,
+          timestamp: 'Just now',
+          performedBy: 'Sweet Ali (Owner)',
+          targetUserName: draftUser.name,
+          targetUserRole: activeRoleDefinition?.name || 'Custom',
+          actionType: 'status_changed',
+          addedPermissions: [],
+          removedPermissions: [],
+          notes: 'Access profile verified with no changes.',
+        });
+      }
       onOpenChange(false);
       toast.success(isBangla ? 'পরিবর্তন সংরক্ষিত হয়েছে।' : 'Changes saved successfully.');
       return;
@@ -378,8 +540,8 @@ export function ManageUserAccessModal({
       addedPermissions: permissionDiff.added.map((p) => `${MODULE_BY_PERMISSION_ID_MAP.get(p.id)?.name || ''} → ${p.name}`),
       removedPermissions: permissionDiff.removed.map((p) => `${MODULE_BY_PERMISSION_ID_MAP.get(p.id)?.name || ''} → ${p.name}`),
       branchChanges: {
-        added: permissionDiff.branchAdded.map((id) => HRM_BRANCHES.find((b) => b.id === id)?.name || id),
-        removed: permissionDiff.branchRemoved.map((id) => HRM_BRANCHES.find((b) => b.id === id)?.name || id),
+        added: permissionDiff.branchAdded.map((id) => branches.find((b: any) => b.id === id)?.name || id),
+        removed: permissionDiff.branchRemoved.map((id) => branches.find((b: any) => b.id === id)?.name || id),
       },
       notes: `Access profile updated by Owner with ${permissionDiff.added.length} added and ${permissionDiff.removed.length} revoked permissions.`,
     };
@@ -390,7 +552,9 @@ export function ManageUserAccessModal({
       updatedBy: 'Sweet Ali',
     };
 
-    onSaveUser(updatedUser, newAudit);
+    if (onSaveUser) {
+      onSaveUser(updatedUser, newAudit);
+    }
     setIsDiffConfirmOpen(false);
     onOpenChange(false);
     toast.success(
@@ -399,6 +563,10 @@ export function ManageUserAccessModal({
         : `Access control and permissions updated for ${draftUser.name}!`
     );
   };
+
+  const assignedBranchesCount = (draftUser.allowedBranchIds || []).length;
+  const customGrantedCount = (draftUser.customGrantedPermissions || []).length;
+  const customRevokedCount = (draftUser.customRevokedPermissions || []).length;
 
   return (
     <>
@@ -409,7 +577,7 @@ export function ManageUserAccessModal({
             <div className="flex items-center gap-3.5">
               <Avatar className="w-11 h-11 border-2 border-primary/20 shadow-xs">
                 <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
-                  {draftUser.name.slice(0, 2).toUpperCase()}
+                  {(draftUser.name || 'HK').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -430,13 +598,13 @@ export function ManageUserAccessModal({
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span className="font-mono">{draftUser.employeeId}</span>
+                  <span className="font-mono">{draftUser.employeeId || 'EMP-001'}</span>
                   <span>•</span>
-                  <span>{draftUser.department}</span>
+                  <span>{draftUser.department || 'General'}</span>
                   <span>•</span>
-                  <span>{draftUser.designation}</span>
+                  <span>{draftUser.designation || 'Staff'}</span>
                   <span>•</span>
-                  <span>{draftUser.email}</span>
+                  <span>{draftUser.email || 'staff@hellokhata.com'}</span>
                 </div>
               </div>
             </div>
@@ -475,7 +643,7 @@ export function ManageUserAccessModal({
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-[10px] font-bold">
-                    {draftUser.accessLevel.replace('_', ' ').toUpperCase()}
+                    {(draftUser.accessLevel || 'custom_access').replace('_', ' ').toUpperCase()}
                   </Badge>
                 )}
               </div>
@@ -484,8 +652,8 @@ export function ManageUserAccessModal({
                 <span className="text-muted-foreground font-medium">{isBangla ? 'শাখা সীমা' : 'Branches'}:</span>
                 <span className="font-bold text-foreground">
                   {draftUser.branchScopeMode === 'all' || draftUser.isFullSystemAccess
-                    ? `All (${HRM_BRANCHES.length})`
-                    : `${draftUser.allowedBranchIds.length} of ${HRM_BRANCHES.length}`}
+                    ? `All (${branches.length})`
+                    : `${assignedBranchesCount} of ${branches.length}`}
                 </span>
               </div>
 
@@ -494,19 +662,21 @@ export function ManageUserAccessModal({
                 <span className="font-bold text-foreground">{draftEffectivePermissions.size} / {ALL_PERMISSION_IDS.length}</span>
               </div>
 
-              {(draftUser.customGrantedPermissions.length > 0 || draftUser.customRevokedPermissions.length > 0) && (
+              {(customGrantedCount > 0 || customRevokedCount > 0) && (
                 <div className="flex items-center gap-1.5 text-[11px]">
-                  <span className="text-emerald-500 font-bold">+{draftUser.customGrantedPermissions.length} Overrides</span>
-                  {draftUser.customRevokedPermissions.length > 0 && (
-                    <span className="text-rose-500 font-bold">-{draftUser.customRevokedPermissions.length} Revoked</span>
+                  {customGrantedCount > 0 && (
+                    <span className="text-emerald-500 font-bold">+{customGrantedCount} Overrides</span>
+                  )}
+                  {customRevokedCount > 0 && (
+                    <span className="text-rose-500 font-bold">-{customRevokedCount} Revoked</span>
                   )}
                 </div>
               )}
             </div>
 
             <div className="flex items-center gap-2 text-muted-foreground text-[11px]">
-              <span>Last updated: {draftUser.updatedAt}</span>
-              <span>by {draftUser.updatedBy}</span>
+              <span>Last updated: {draftUser.updatedAt || 'Recently'}</span>
+              <span>by {draftUser.updatedBy || 'Sweet Ali'}</span>
             </div>
           </div>
 
@@ -531,7 +701,7 @@ export function ManageUserAccessModal({
                     </Label>
                     <Switch
                       id="full-access-toggle"
-                      checked={draftUser.isFullSystemAccess}
+                      checked={Boolean(draftUser.isFullSystemAccess)}
                       onCheckedChange={handleToggleFullSystemAccess}
                     />
                   </div>
@@ -556,15 +726,15 @@ export function ManageUserAccessModal({
                         {isBangla ? 'বেস রোল টেমপ্লেট নির্বাচন করুন' : 'Select Base Role Template'}
                       </label>
                       <select
-                        value={draftUser.baseRoleId}
+                        value={draftUser.baseRoleId || safeBaseRoles[0]?.id || 'role-sales-person'}
                         onChange={(e) => handleBaseRoleChange(e.target.value)}
                         className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-bold text-foreground cursor-pointer focus:outline-none"
                       >
-                        {baseRoles.map((r: any) => {
+                        {safeBaseRoles.map((r: any) => {
                           const isFull = r.permissions === '*' || r.permissions === 'all';
                           const permIds = getRolePermissionIds(r);
                           return (
-                            <option key={r.id} value={r.id}>
+                            <option key={r.id || r.name} value={r.id}>
                               {isBangla ? r.nameBn || r.name : r.name}{' '}
                               {isFull ? (isBangla ? '(পূর্ণ নিয়ন্ত্রণ)' : '(Full Access)') : `(${permIds.length} Perms)`}
                             </option>
@@ -578,8 +748,10 @@ export function ManageUserAccessModal({
                         {isBangla ? 'ব্যবসায়িক ডেটা দৃশ্যমানতার সীমা (Data Scope)' : 'Business Data Scope'}
                       </label>
                       <select
-                        value={draftUser.dataScope}
-                        onChange={(e) => setDraftUser({ ...draftUser, dataScope: e.target.value as any })}
+                        value={draftUser.dataScope || 'entire_business'}
+                        onChange={(e) =>
+                          setDraftUser((prev) => (prev ? { ...prev, dataScope: e.target.value as any } : prev))
+                        }
                         className="w-full h-10 px-3 rounded-xl border border-border bg-background text-xs font-medium text-foreground cursor-pointer focus:outline-none"
                       >
                         <option value="entire_business">{isBangla ? 'সমগ্র প্রতিষ্ঠান (Entire Business)' : 'Entire Business'}</option>
@@ -632,8 +804,11 @@ export function ManageUserAccessModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
-                  {HRM_BRANCHES.map((branch) => {
-                    const isAssigned = draftUser.branchScopeMode === 'all' || draftUser.isFullSystemAccess || draftUser.allowedBranchIds.includes(branch.id);
+                  {branches.map((branch: any) => {
+                    const isAssigned =
+                      draftUser.branchScopeMode === 'all' ||
+                      draftUser.isFullSystemAccess ||
+                      (draftUser.allowedBranchIds || []).includes(branch.id);
                     return (
                       <div
                         key={branch.id}
@@ -654,7 +829,7 @@ export function ManageUserAccessModal({
                           >
                             {isAssigned && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
-                          <span className="text-xs font-bold">{branch.name}</span>
+                          <span className="text-xs font-bold">{isBangla ? branch.nameBn || branch.name : branch.name}</span>
                         </div>
 
                         {isAssigned && (
@@ -707,21 +882,21 @@ export function ManageUserAccessModal({
                     if (grantedCountInModule === 0) currentLevel = 'no_access';
                     else if (grantedCountInModule === totalInModule) currentLevel = 'full_access';
                     else if (
-                      grantedCountInModule === module.standardPermissionIds.length &&
-                      module.standardPermissionIds.every((id) => draftEffectivePermissions.has(id))
+                      grantedCountInModule === (module.standardPermissionIds || []).length &&
+                      (module.standardPermissionIds || []).every((id) => draftEffectivePermissions.has(id))
                     ) {
                       currentLevel = 'standard';
                     } else if (
-                      grantedCountInModule === module.readOnlyPermissionIds.length &&
-                      module.readOnlyPermissionIds.every((id) => draftEffectivePermissions.has(id))
+                      grantedCountInModule === (module.readOnlyPermissionIds || []).length &&
+                      (module.readOnlyPermissionIds || []).every((id) => draftEffectivePermissions.has(id))
                     ) {
                       currentLevel = 'read_only';
                     }
 
                     if (permissionModuleSearch) {
                       const q = permissionModuleSearch.toLowerCase();
-                      const matchMod = module.name.toLowerCase().includes(q) || module.nameBn.includes(q);
-                      const matchPerm = module.permissions.some((p) => p.name.toLowerCase().includes(q) || p.nameBn.includes(q));
+                      const matchMod = module.name.toLowerCase().includes(q) || (module.nameBn && module.nameBn.includes(q));
+                      const matchPerm = module.permissions.some((p) => p.name.toLowerCase().includes(q) || (p.nameBn && p.nameBn.includes(q)));
                       if (!matchMod && !matchPerm) return null;
                     }
 
@@ -738,9 +913,9 @@ export function ManageUserAccessModal({
                           <div
                             onClick={() => {
                               if (isExpanded) {
-                                setExpandedModuleIds(expandedModuleIds.filter((id) => id !== module.id));
+                                setExpandedModuleIds((prev) => prev.filter((id) => id !== module.id));
                               } else {
-                                setExpandedModuleIds([...expandedModuleIds, module.id]);
+                                setExpandedModuleIds((prev) => [...prev, module.id]);
                               }
                             }}
                             className="flex items-center gap-3 cursor-pointer select-none flex-1"
@@ -836,8 +1011,8 @@ export function ManageUserAccessModal({
                           <div className="p-3.5 bg-background border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {module.permissions.map((perm) => {
                               const isGranted = draftEffectivePermissions.has(perm.id);
-                              const isCustomGranted = draftUser.customGrantedPermissions.includes(perm.id);
-                              const isCustomRevoked = draftUser.customRevokedPermissions.includes(perm.id);
+                              const isCustomGranted = (draftUser.customGrantedPermissions || []).includes(perm.id);
+                              const isCustomRevoked = (draftUser.customRevokedPermissions || []).includes(perm.id);
                               const isRoleInherited = activeRolePermissionIds.includes(perm.id);
 
                               return (
@@ -939,15 +1114,18 @@ export function ManageUserAccessModal({
                   </span>
                   {draftUser.branchScopeMode === 'all' || draftUser.isFullSystemAccess ? (
                     <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5" /> All Branches Across Business
+                      <Globe className="w-3.5 h-3.5" /> {isBangla ? 'প্রতিষ্ঠানের সকল শাখা' : 'All Branches Across Business'}
                     </p>
                   ) : (
                     <div className="flex flex-wrap gap-1">
-                      {draftUser.allowedBranchIds.map((bId) => (
-                        <Badge key={bId} variant="secondary" className="text-[10px]">
-                          {HRM_BRANCHES.find((b) => b.id === bId)?.name}
-                        </Badge>
-                      ))}
+                      {(draftUser.allowedBranchIds || []).map((bId) => {
+                        const b = branches.find((br: any) => br.id === bId);
+                        return (
+                          <Badge key={bId} variant="secondary" className="text-[10px]">
+                            {isBangla ? b?.nameBn || b?.name || bId : b?.name || bId}
+                          </Badge>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -998,7 +1176,7 @@ export function ManageUserAccessModal({
                       {ALL_SENSITIVE_PERMISSION_IDS.filter((id) => draftEffectivePermissions.has(id)).map((sId) => (
                         <div key={sId} className="flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
                           <Lock className="w-2.5 h-2.5" />
-                          <span>{PERMISSION_BY_ID_MAP.get(sId)?.name}</span>
+                          <span>{PERMISSION_BY_ID_MAP.get(sId)?.name || sId}</span>
                         </div>
                       ))}
                     </div>

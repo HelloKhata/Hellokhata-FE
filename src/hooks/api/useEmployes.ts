@@ -34,7 +34,6 @@ export const useUpdateEmployee = () => {
 };
 
 export const useGetSingleEmployee = (id: string) => {
-    const queryClient = useQueryClient();
     return useQuery({
         queryKey: ["employee", id],
         queryFn: () => getSingleEmployee(id),
@@ -42,3 +41,4 @@ export const useGetSingleEmployee = (id: string) => {
         select: data => data?.data || data
     });
 };
+

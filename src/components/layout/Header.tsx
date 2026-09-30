@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { Bell, Search, Menu, Globe, LogOut, Sparkles, Loader2, ShoppingCart } from 'lucide-react';
+import { Bell, Search, Menu, Globe, LogOut, Sparkles, Loader2, SquarePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -188,15 +188,15 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
         {/* Health Score Badge */}
         <button
           onClick={() => window.location.href = '/sales/new'}
-          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 bg-primary rounded-xl hover:bg-primary/70 transition-colors  text-white"
+          className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 bg-primary rounded-xl hover:bg-primary/70 transition-colors  text-white cursor-pointer"
           title={isBangla ? 'পয়েন্ট অফ সেল (POS)' : 'Point of Sale (POS)'}
         >
-          <ShoppingCart className="h-4 w-4" />
+          <SquarePlus className="h-4 w-4" />
           <span className="text-xs font-bold">POS</span>
         </button>
         
         {/* Voice Mic (Primary CTA) */}
-        <button
+        {/* <button
           onClick={() => {
             if (onOpenVoice) {
               onOpenVoice();
@@ -219,7 +219,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
             <line x1="12" y1="19" x2="12" y2="23" />
             <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
-        </button>
+        </button> */}
 
         {/* Language Toggle */}
         <Button
