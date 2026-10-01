@@ -40,6 +40,7 @@ export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
   onOpenViewAllCategories,
   isBangla,
 }) => {
+  
   // Chart Data calculation
   const totalAmount = useMemo(() => {
     return (incomes || []).reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0);

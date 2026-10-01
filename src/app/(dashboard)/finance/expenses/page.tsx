@@ -9,6 +9,8 @@ import { useBranchStore } from "@/stores/branchStore";
 import {
   useGetExpenseCategories,
   useCreateExpenseCategories,
+  useUpdateExpenseCategory,
+  useDeleteExpenseCategory,
   useCreateExpense,
   useUploadExpenseImage,
   useGetExpenses,
@@ -68,7 +70,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Switch } from "@/components/ui/switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,210 +98,20 @@ import {
 import { cn } from "@/lib/utils";
 
 // --- Types ---
-interface CategoryItem {
+export interface ExpenseCategory {
   id: string;
-  nameEn: string;
-  nameBn: string;
-  percentage: number;
-  amount: number;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  icon: React.ElementType;
+  name: string;
+  nameBn?: string;
+  icon?: string;
+  color?: string;
+  isDefault?: boolean;
+  amount?: number;
+  percentage?: number;
 }
-
-interface ExpenseRecord {
-  id: string;
-  voucherCode: string;
-  categoryId: string;
-  titleEn: string;
-  titleBn: string;
-  subtitleEn: string;
-  subtitleBn: string;
-  dateEn: string;
-  dateBn: string;
-  branch: string;
-  paymentMethod: string;
-  isRecurring: boolean;
-  recurringFrequency?: string;
-  attachmentName?: string | null;
-  amount: number;
-  color: string;
-  bgColor: string;
-  icon: React.ElementType;
-}
-
-// Initial Categories Data
-const INITIAL_CATEGORIES: CategoryItem[] = [
-  {
-    id: "rent",
-    nameEn: "Rent",
-    nameBn: "বাড়ি ভাড়া",
-    percentage: 32,
-    amount: 15800,
-    color: "#f43f5e",
-    bgColor: "bg-rose-500/15 text-rose-400",
-    borderColor: "border-rose-500/20",
-    icon: Home,
-  },
-  {
-    id: "utilities",
-    nameEn: "Utilities",
-    nameBn: "বিদ্যুৎ ও গ্যাস",
-    percentage: 14,
-    amount: 6860,
-    color: "#eab308",
-    bgColor: "bg-amber-500/15 text-amber-400",
-    borderColor: "border-amber-500/20",
-    icon: Zap,
-  },
-  {
-    id: "salary",
-    nameEn: "Salary",
-    nameBn: "বেতন",
-    percentage: 20,
-    amount: 9800,
-    color: "#8b5cf6",
-    bgColor: "bg-purple-500/15 text-purple-400",
-    borderColor: "border-purple-500/20",
-    icon: Users,
-  },
-  {
-    id: "inventory",
-    nameEn: "Inventory",
-    nameBn: "মালামাল",
-    percentage: 18,
-    amount: 8820,
-    color: "#06b6d4",
-    bgColor: "bg-cyan-500/15 text-cyan-400",
-    borderColor: "border-cyan-500/20",
-    icon: Package,
-  },
-  {
-    id: "transport",
-    nameEn: "Transport",
-    nameBn: "পরিবহন খরচ",
-    percentage: 8,
-    amount: 3900,
-    color: "#22c55e",
-    bgColor: "bg-emerald-500/15 text-emerald-400",
-    borderColor: "border-emerald-500/20",
-    icon: Truck,
-  },
-];
-
-const INITIAL_EXPENSE_RECORDS: ExpenseRecord[] = [
-  {
-    id: "exp-1",
-    voucherCode: "EXP-2026-0822",
-    categoryId: "transport",
-    titleEn: "Transport",
-    titleBn: "পরিবহন",
-    subtitleEn: "Courier dispatch charges",
-    subtitleBn: "কুরিয়ার ডেলিভারি চার্জ",
-    dateEn: "Aug 22, 2026",
-    dateBn: "২২ আগস্ট, ২০২৬",
-    branch: "Tejgaon Central Depot",
-    paymentMethod: "cash",
-    isRecurring: false,
-    attachmentName: "courier_receipt_aug22.pdf",
-    amount: 850,
-    color: "#22c55e",
-    bgColor: "bg-emerald-500/15 text-emerald-400",
-    icon: Truck,
-  },
-  {
-    id: "exp-2",
-    voucherCode: "EXP-2026-0821",
-    categoryId: "utilities",
-    titleEn: "Utilities",
-    titleBn: "ইউটিলিটি",
-    subtitleEn: "Showroom internet bill (July)",
-    subtitleBn: "শোরুম ইন্টারনেট বিল (জুলাই)",
-    dateEn: "Aug 21, 2026",
-    dateBn: "২১ আগস্ট, ২০২৬",
-    branch: "Main Branch",
-    paymentMethod: "bkash",
-    isRecurring: true,
-    recurringFrequency: "monthly",
-    attachmentName: "link3_bill_july.jpg",
-    amount: 2500,
-    color: "#eab308",
-    bgColor: "bg-amber-500/15 text-amber-400",
-    icon: Zap,
-  },
-  {
-    id: "exp-3",
-    voucherCode: "EXP-2026-0820",
-    categoryId: "rent",
-    titleEn: "Rent",
-    titleBn: "ভাড়া",
-    subtitleEn: "Gulshan showroom shop rent advance",
-    subtitleBn: "গুলশান শোরুমের অগ্রিম ভাড়া",
-    dateEn: "Aug 20, 2026",
-    dateBn: "২০ আগস্ট, ২০২৬",
-    branch: "Gulshan Store",
-    paymentMethod: "bank",
-    isRecurring: true,
-    recurringFrequency: "monthly",
-    attachmentName: "shop_rent_voucher.pdf",
-    amount: 15000,
-    color: "#f43f5e",
-    bgColor: "bg-rose-500/15 text-rose-400",
-    icon: Home,
-  },
-  {
-    id: "exp-4",
-    voucherCode: "EXP-2026-0818",
-    categoryId: "inventory",
-    titleEn: "Inventory",
-    titleBn: "মালামাল",
-    subtitleEn: "Carton packaging & bubble wrap boxes",
-    subtitleBn: "প্যাকেজিং কার্টন ও বাবল র্যাপ ক্রয়",
-    dateEn: "Aug 18, 2026",
-    dateBn: "১৮ আগস্ট, ২০২৬",
-    branch: "Main Branch",
-    paymentMethod: "cash",
-    isRecurring: false,
-    attachmentName: "packaging_invoice.pdf",
-    amount: 4200,
-    color: "#06b6d4",
-    bgColor: "bg-cyan-500/15 text-cyan-400",
-    icon: Package,
-  },
-  {
-    id: "exp-5",
-    voucherCode: "EXP-2026-0815",
-    categoryId: "salary",
-    titleEn: "Salary",
-    titleBn: "বেতন",
-    subtitleEn: "Showroom sales staff overtime bonus",
-    subtitleBn: "শোরুম বিক্রয়কর্মীদের ওভারটাইম বোনাস",
-    dateEn: "Aug 15, 2026",
-    dateBn: "১৫ আগস্ট, ২০২৬",
-    branch: "Gulshan Store",
-    paymentMethod: "bank",
-    isRecurring: false,
-    attachmentName: null,
-    amount: 9800,
-    color: "#8b5cf6",
-    bgColor: "bg-purple-500/15 text-purple-400",
-    icon: Users,
-  },
-];
-
-// Donut Chart Data
-const OVERVIEW_DATA = [
-  { nameEn: "Rent", nameBn: "বাড়ি ভাড়া", value: 15800, percentage: "32%", color: "#f43f5e" },
-  { nameEn: "Utilities", nameBn: "ইউটিলিটি", value: 6860, percentage: "14%", color: "#eab308" },
-  { nameEn: "Salary", nameBn: "বেতন", value: 9800, percentage: "20%", color: "#8b5cf6" },
-  { nameEn: "Inventory", nameBn: "মালামাল", value: 8820, percentage: "18%", color: "#06b6d4" },
-  { nameEn: "Transport", nameBn: "পরিবহন", value: 3900, percentage: "8%", color: "#22c55e" },
-  { nameEn: "Others", nameBn: "অন্যান্য", value: 3720, percentage: "8%", color: "#64748b" },
-];
 
 // Number converter for Bengali numerals
-const toBnNum = (num: number | string): string => {
+const toBnNum = (num: number | string | undefined | null): string => {
+  if (num === undefined || num === null) return "০";
   const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
   return String(num).replace(/[0-9]/g, (w) => bnDigits[+w]);
 };
@@ -380,24 +191,32 @@ export default function ExpensePageContent() {
   const [tableCategoryFilter, setTableCategoryFilter] = useState("all");
   const [tableBranchFilter, setTableBranchFilter] = useState("all");
 
-  const { data: apiCategories = [] } = useGetExpenseCategories();
+  const { data: expenseCategories = [] } = useGetExpenseCategories();
   const { data: branchesData = [] } = useGetBranches();
   const { data: paymentMethodsData = [] } = useGetPaymentMethods();
-  const { data: apiExpenses, isLoading: isExpensesLoading } = useGetExpenses({
+  const { data: expenseSummary } = useExpenseSummary();
+  const { data: expenses, isLoading: isExpensesLoading } = useGetExpenses({
     search: searchQuery.trim() || undefined,
     categoryId: tableCategoryFilter !== "all" ? tableCategoryFilter : undefined,
   });
-  const {mutate:createExpense, isPending: isSubmitting} = useCreateExpense();
-  const {mutate:createExpenseCategory, isPending: isCreatingCategory} = useCreateExpenseCategories();
+
+  const { mutate: createExpense, isPending: isSubmitting } = useCreateExpense();
+  const { mutate: createExpenseCategory, isPending: isCreatingCategory } = useCreateExpenseCategories();
+  const { mutate: updateExpenseCategory, isPending: isUpdatingCategory } = useUpdateExpenseCategory();
+  const { mutate: deleteExpenseCategory, isPending: isDeletingCategory } = useDeleteExpenseCategory();
   const uploadExpenseImageMutation = useUploadExpenseImage();
   const deleteExpenseMutation = useDeletExpense();
 
+  console.log('categories',expenseCategories)  
+  // console.log('accounts: ', accounts); 
+  const [categoryToDelete, setCategoryToDelete] = useState<any | null>(null);
+  const [isDeleteCategoryOpen, setIsDeleteCategoryOpen] = useState(false);
+
   // State
-  const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
   const [dateRange, setDateRange] = useState("Jul 23, 2026 - Aug 22, 2026");
 
   // Selected Expense for Split Layout Detail Panel
-  const [selectedExpense, setSelectedExpense] = useState<ExpenseRecord | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
 
 // Utility Types List
 const UTILITY_TYPES = [
@@ -413,7 +232,7 @@ const UTILITY_TYPES = [
   const [paymentStatus, setPaymentStatus] = useState<"paid" | "partial" | "unpaid">("paid");
   const [dueAmount, setDueAmount] = useState("");
   const [amount, setAmount] = useState("");
-  const [entryDate, setEntryDate] = useState<Date>(new Date(2026, 7, 22));
+  const [entryDate, setEntryDate] = useState<Date>(new Date());
   const [employeeName, setEmployeeName] = useState("");
   const [utilityType, setUtilityType] = useState("electricity");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -422,187 +241,34 @@ const UTILITY_TYPES = [
   const [expenseNote, setExpenseNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
-  const [recurringDueDate, setRecurringDueDate] = useState<Date>(new Date(2026, 8, 22));
+  const [recurringDueDate, setRecurringDueDate] = useState<Date>(new Date());
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
 
 
   // Modals State
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [categoryFormNameEn, setCategoryFormNameEn] = useState("");
   const [categoryFormNameBn, setCategoryFormNameBn] = useState("");
   const [categoryFormColor, setCategoryFormColor] = useState("#F59E0B");
   const [categoryFormIcon, setCategoryFormIcon] = useState("zap");
   const [isViewAllCategoriesOpen, setIsViewAllCategoriesOpen] = useState(false);
 
-  // Dynamic Categories from API with fallback
-  const categoriesList: CategoryItem[] = useMemo(() => {
-    if (apiCategories && Array.isArray(apiCategories) && apiCategories.length > 0) {
-      return apiCategories.map((cat: any, index: number) => {
-        const colors = ["#f43f5e", "#eab308", "#8b5cf6", "#06b6d4", "#22c55e", "#ec4899", "#3b82f6", "#14B8A6"];
-        const color = cat.color || colors[index % colors.length];
-        return {
-          id: cat.id,
-          nameEn: cat.name || "Expense",
-          nameBn: cat.nameBn || cat.name || "ব্যয়",
-          percentage: cat.percentage || Math.max(5, Math.round(100 / apiCategories.length)),
-          amount: cat.amount || 0,
-          color: color,
-          bgColor: `bg-indigo-500/15 text-indigo-400`,
-          borderColor: `border-indigo-500/20`,
-          icon: getCategoryIcon(cat.icon || cat.name),
-        };
-      });
-    }
-    return categories;
-  }, [apiCategories, categories]);
-
-  // Selected Category Object & Type Helpers
-  const selectedCategoryObj = useMemo(() => {
-    return categoriesList.find((c) => c.id === selectedCategoryId);
-  }, [categoriesList, selectedCategoryId]);
-
-  const isSalaryCategory = useMemo(() => {
-    if (!selectedCategoryObj) return false;
-    const en = (selectedCategoryObj.nameEn || "").toLowerCase();
-    const bn = selectedCategoryObj.nameBn || "";
-    return en.includes("salary") || en.includes("wage") || bn.includes("বেতন");
-  }, [selectedCategoryObj]);
-
-  const isUtilityCategory = useMemo(() => {
-    if (!selectedCategoryObj) return false;
-    const en = (selectedCategoryObj.nameEn || "").toLowerCase();
-    const bn = selectedCategoryObj.nameBn || "";
-    return en.includes("util") || en.includes("bill") || bn.includes("ইউটিলিটি");
-  }, [selectedCategoryObj]);
-
-  // Dynamic Branches with fallback
-  const branchesList = useMemo(() => {
-    if (branchesData && Array.isArray(branchesData) && branchesData.length > 0) {
-      return branchesData;
-    }
-    if (branches && branches.length > 0) {
-      return branches;
-    }
-    return [
-      { id: "main-branch", name: "Main Branch", nameBn: "প্রধান শাখা (ধানমন্ডি)" },
-      { id: "gulshan-store", name: "Gulshan Store", nameBn: "গুলশান স্টোর" },
-      { id: "tejgaon-depot", name: "Tejgaon Central Depot", nameBn: "তেজগাঁও সেন্ট্রাল ডিপো" },
-      { id: "uttara-branch", name: "Uttara Branch", nameBn: "উত্তরা শাখা" },
-    ];
-  }, [branchesData, branches]);
-
-  // Dynamic Accounts / Payment Methods with fallback
-  const paymentMethodsList = useMemo(() => {
-    if (paymentMethodsData && Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0) {
-      return paymentMethodsData;
-    }
-    return [
-      { id: "cash-account", name: "Cash in Hand", nameBn: "ক্যাশ / নগদ টাকা", type: "cash" },
-      { id: "bank-account", name: "Bank Transfer", nameBn: "ব্যাংক ট্রান্সফার", type: "bank" },
-      { id: "bkash-account", name: "bKash Merchant / Personal", nameBn: "বিকাশ মার্চেন্ট / পার্সোনাল", type: "bkash" },
-      { id: "nagad-account", name: "Nagad Wallet", nameBn: "নগদ ওয়ালেট", type: "nagad" },
-      { id: "card-account", name: "Company Credit Card", nameBn: "কোম্পানি ক্রেডিট কার্ড", type: "card" },
-      { id: "cheque-account", name: "Cheque", nameBn: "চেক", type: "cheque" },
-    ];
-  }, [paymentMethodsData]);
-
-  // Initialize Selection Defaults
-  useEffect(() => {
-    if (!selectedCategoryId && categoriesList.length > 0) {
-      setSelectedCategoryId(categoriesList[0].id);
-    }
-  }, [categoriesList, selectedCategoryId]);
-
-  useEffect(() => {
-    if (!selectedBranchId && branchesList.length > 0) {
-      setSelectedBranchId(branchesList[0].id);
-    }
-  }, [branchesList, selectedBranchId]);
-
-  useEffect(() => {
-    if (!selectedAccountId && paymentMethodsList.length > 0) {
-      setSelectedAccountId(paymentMethodsList[0].id);
-    }
-  }, [paymentMethodsList, selectedAccountId]);
-
-  // Dynamic Expenses from API
-  const expensesList: ExpenseRecord[] = useMemo(() => {
-    if (apiExpenses && Array.isArray(apiExpenses)) {
-      return apiExpenses.map((exp: any) => {
-        const catNameEn = exp.category?.name || "Expense";
-        const catNameBn = exp.category?.nameBn || catNameEn;
-        const color = exp.category?.color || "#14B8A6";
-        const iconComp = getCategoryIcon(exp.category?.icon || exp.category?.name);
-        const branchObj = branchesList.find((b: any) => b.id === exp.branchId);
-        const accountObj = paymentMethodsList.find((a: any) => a.id === exp.accountId);
-
-        const expDate = exp.date ? new Date(exp.date) : new Date(exp.createdAt || Date.now());
-        const validDate = isNaN(expDate.getTime()) ? new Date() : expDate;
-
-        return {
-          id: exp.id,
-          voucherCode: `EXP-${exp.id.slice(-6).toUpperCase()}`,
-          categoryId: exp.categoryId || exp.category?.id || "",
-          titleEn: catNameEn,
-          titleBn: catNameBn,
-          subtitleEn: exp.description || "Manual Expense Entry",
-          subtitleBn: exp.description || "ম্যানুয়াল ব্যয় এন্ট্রি",
-          dateEn: format(validDate, "MMM dd, yyyy"),
-          dateBn: formatBnDate(validDate),
-          branch: branchObj?.name || "Main Branch",
-          paymentMethod: accountObj?.type || exp.paymentMethod || "cash",
-          isRecurring: Boolean(exp.isRecurring),
-          recurringFrequency: exp.recurringFrequency,
-          attachmentName: exp.receipt
-            ? typeof exp.receipt === "string"
-              ? exp.receipt.split("/").pop()
-              : "receipt.jpg"
-            : null,
-          receiptUrl: typeof exp.receipt === "string" ? exp.receipt : null,
-          amount: typeof exp.amount === "number" ? exp.amount : parseFloat(exp.amount) || 0,
-          color: color,
-          bgColor: "bg-emerald-500/15 text-emerald-400",
-          icon: iconComp,
-        };
-      });
-    }
-    return INITIAL_EXPENSE_RECORDS;
-  }, [apiExpenses, branchesList, paymentMethodsList]);
-
-  // Filtered Expenses for Recent Expenses Full Table
-  const filteredExpenses = useMemo(() => {
-    return expensesList.filter((exp) => {
-      const matchSearch =
-        searchQuery.trim() === "" ||
-        exp.voucherCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exp.titleEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exp.titleBn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exp.subtitleEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exp.subtitleBn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        exp.branch.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchCategory =
-        tableCategoryFilter === "all" || exp.categoryId === tableCategoryFilter;
-      const matchBranch =
-        tableBranchFilter === "all" || exp.branch === tableBranchFilter;
-
-      return matchSearch && matchCategory && matchBranch;
-    });
-  }, [expensesList, searchQuery, tableCategoryFilter, tableBranchFilter]);
-
-  // Computed summary metrics from live expenses list
-  const totalExpenseAmount = useMemo(() => {
-    return expensesList.reduce((sum, item) => sum + (item.amount || 0), 0);
-  }, [expensesList]);
-
-  const todayExpenseAmount = useMemo(() => {
-    const todayStr = format(new Date(), "MMM dd, yyyy");
-    return expensesList
-      .filter((item) => item.dateEn === todayStr)
-      .reduce((sum, item) => sum + (item.amount || 0), 0);
-  }, [expensesList]);
+  // Selected Category Object & Type Helpers (directly from API)
+  const selectedCategoryObj = expenseCategories?.find((c: any) => c.id === selectedCategoryId);
+  const isSalaryCategory = Boolean(
+    selectedCategoryObj &&
+      ((selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("salary") ||
+        (selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("wage") ||
+        (selectedCategoryObj.nameBn || "").includes("বেতন"))
+  );
+  const isUtilityCategory = Boolean(
+    selectedCategoryObj &&
+      ((selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("util") ||
+        (selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("bill") ||
+        (selectedCategoryObj.nameBn || "").includes("ইউটিলিটি"))
+  );
 
   // Form Submit
   const handleSaveExpense = async (e: React.FormEvent) => {
@@ -698,15 +364,15 @@ const UTILITY_TYPES = [
       accountId: selectedAccountId,
       branchId: selectedBranchId,
       amount: parsedAmount,
-      status: paymentStatus,
-      ...(paymentStatus === "partial" ? { dueAmount: parsedDueAmount } : {}),
-      ...(effectivePayee ? { payeeName: effectivePayee } : {}),
-      ...(isSalaryCategory ? { employeeName: employeeName.trim() } : {}),
-      ...(isUtilityCategory ? { utilityType } : {}),
+      // status: paymentStatus,
+      // ...(paymentStatus === "partial" ? { dueAmount: parsedDueAmount } : {}),
+      // ...(effectivePayee ? { payeeName: effectivePayee } : {}),
+      // ...(isSalaryCategory ? { employeeName: employeeName.trim() } : {}),
+      // ...(isUtilityCategory ? { utilityType } : {}),
       description: generatedDescription || selectedCategoryObj?.nameEn || undefined,
       date: formattedDate,
     };
-
+    
     // 3. Call create expense API mutation
     createExpense(payload, {
       onSuccess: () => {
@@ -759,12 +425,12 @@ const UTILITY_TYPES = [
     setIsAddCategoryOpen(true);
   };
 
-  const handleOpenEditCategory = (cat: CategoryItem) => {
+  const handleOpenEditCategory = (cat: any) => {
     setEditingCategory(cat);
-    setCategoryFormNameEn(cat.nameEn);
-    setCategoryFormNameBn(cat.nameBn);
-    setCategoryFormColor(cat.color);
-    setCategoryFormIcon("tag");
+    setCategoryFormNameEn(cat.name || cat.nameEn || "");
+    setCategoryFormNameBn(cat.nameBn || cat.name || "");
+    setCategoryFormColor(cat.color || "#F59E0B");
+    setCategoryFormIcon(cat.icon || "zap");
     setIsAddCategoryOpen(true);
   };
 
@@ -782,64 +448,100 @@ const UTILITY_TYPES = [
     const bnName = categoryFormNameBn.trim() || categoryFormNameEn.trim();
 
     if (editingCategory) {
-      // setCategories((prev) =>
-      //   prev.map((c) =>
-      //     c.id === editingCategory.id
-      //       ? {
-      //           ...c,
-      //           nameEn: enName,
-      //           nameBn: bnName,
-      //           color: categoryFormColor,
-      //         }
-      //       : c
-      //   )
-      // );
-      toast({ title: isBangla ? "ক্যাটাগরি আপডেট হয়েছে" : "Category Updated" });
-      setIsAddCategoryOpen(false);
-    } else {
-        const payload = {
-          name: enName,
-          nameBn: bnName,
-          icon: categoryFormIcon || "zap",
-          color: categoryFormColor || "#F59E0B",
-        };
+      const payload = {
+        name: enName,
+        nameBn: bnName,
+        icon: categoryFormIcon || "zap",
+        color: categoryFormColor || "#F59E0B",
+      };
 
-      createExpenseCategory(payload,{
-        onSuccess: data => {
-         toast({
-          title: isBangla ? "নতুন ক্যাটাগরি তৈরি হয়েছে" : "Category Added",
-          description: isBangla ? bnName : enName,
-        });
+      updateExpenseCategory(
+        { id: editingCategory.id, data: payload },
+        {
+          onSuccess: () => {
+            toast({
+              title: isBangla ? "ক্যাটাগরি আপডেট হয়েছে" : "Category Updated",
+              description: isBangla ? bnName : enName,
+            });
+            setIsAddCategoryOpen(false);
+            setEditingCategory(null);
+          },
+          onError: (err: any) => {
+            toast({
+              title: isBangla ? "আপডেট ব্যর্থ হয়েছে" : "Failed to update category",
+              description:
+                err?.response?.data?.message ||
+                err?.message ||
+                (isBangla ? "অনুগ্রহ করে আবার চেষ্টা করুন" : "Please try again."),
+              variant: "destructive",
+            });
+          },
         }
-      });
+      );
+    } else {
+      const payload = {
+        name: enName,
+        nameBn: bnName,
+        icon: categoryFormIcon || "zap",
+        color: categoryFormColor || "#F59E0B",
+      };
 
-        setIsAddCategoryOpen(false);
+      createExpenseCategory(payload, {
+        onSuccess: () => {
+          toast({
+            title: isBangla ? "নতুন ক্যাটাগরি তৈরি হয়েছে" : "Category Added",
+            description: isBangla ? bnName : enName,
+          });
+          setIsAddCategoryOpen(false);
+        },
+        onError: (err: any) => {
+          toast({
+            title: isBangla ? "ক্যাটাগরি তৈরি ব্যর্থ হয়েছে" : "Failed to create category",
+            description:
+              err?.response?.data?.message ||
+              err?.message ||
+              (isBangla ? "অনুগ্রহ করে আবার চেষ্টা করুন" : "Please try again."),
+            variant: "destructive",
+          });
+        },
+      });
     }
   };
 
-  const handleDeleteCategory = (catId: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== catId));
-    toast({ title: isBangla ? "ক্যাটাগরি মুছে ফেলা হয়েছে" : "Category Deleted" });
+  const handlePromptDeleteCategory = (cat: any) => {
+    setCategoryToDelete(cat);
+    setIsDeleteCategoryOpen(true);
+  };
+
+  const handleConfirmDeleteCategory = () => {
+    if (!categoryToDelete) return;
+    console.log()
+    deleteExpenseCategory(categoryToDelete.id, {
+      onSuccess: () => {
+        toast({
+          title: isBangla ? "ক্যাটাগরি মুছে ফেলা হয়েছে" : "Category Deleted",
+          description: isBangla
+            ? `${categoryToDelete.nameBn || categoryToDelete.name || "ক্যাটাগরি"} সফলভাবে মুছে ফেলা হয়েছে`
+            : `${categoryToDelete.name || "Category"} removed successfully`,
+        });
+        setIsDeleteCategoryOpen(false);
+        setCategoryToDelete(null);
+      },
+      onError: (err: any) => {
+        toast({
+          title: isBangla ? "মুছে ফেলা ব্যর্থ হয়েছে" : "Failed to delete category",
+          description:
+            err?.response?.data?.message ||
+            err?.message ||
+            (isBangla ? "অনুগ্রহ করে আবার চেষ্টা করুন" : "Please try again"),
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleDeleteExpense = async (expId: string) => {
-    try {
-      await deleteExpenseMutation.mutateAsync(expId);
-      if (selectedExpense?.id === expId) {
-        setSelectedExpense(null);
-      }
-      toast({
-        title: isBangla ? "ভাউচার মুছে ফেলা হয়েছে" : "Expense Deleted",
-        description: isBangla ? "রেকর্ড সফলভাবে অপসারণ করা হলো।" : "Expense entry removed.",
-      });
-    } catch (err: any) {
-      console.error("Delete expense error:", err);
-      toast({
-        title: isBangla ? "মুছে ফেলা ব্যর্থ হয়েছে" : "Delete Failed",
-        description: err?.response?.data?.message || err?.message || (isBangla ? "অনুগ্রহ করে আবার চেষ্টা করুন" : "Please try again."),
-        variant: "destructive",
-      });
-    }
+    console.log()
   };
 
   const copyVoucherCode = (code: string) => {
@@ -959,7 +661,7 @@ const UTILITY_TYPES = [
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "আজকের মোট ব্যয়" : "Total Today"}</span>
+                <span>{isBangla ? "আজকের মোট ব্যয়" : expenseSummary?.today?.label || "Today's Expense"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -971,14 +673,23 @@ const UTILITY_TYPES = [
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
-                  ? `৳${toBnNum((todayExpenseAmount || (totalExpenseAmount > 0 ? totalExpenseAmount : 2500)).toLocaleString())}.০০`
-                  : `৳${(todayExpenseAmount || (totalExpenseAmount > 0 ? totalExpenseAmount : 2500)).toLocaleString()}.00`}
+                  ? `৳${toBnNum((expenseSummary?.today?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(expenseSummary?.today?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গতকালের চেয়ে +১২.৫%" : "vs yesterday +12.5%"}</span>
-                <span>↑</span>
+              <p
+                className={cn(
+                  "text-[11px] font-semibold flex items-center gap-1",
+                  (expenseSummary?.today?.change ?? 0) <= 0 ? "text-emerald-400" : "text-rose-400"
+                )}
+              >
+                <span>
+                  {isBangla
+                    ? `${expenseSummary?.today?.changeLabel === "vs Yesterday" ? "গতকালের চেয়ে" : expenseSummary?.today?.changeLabel || "গতকালের চেয়ে"} ${(expenseSummary?.today?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(expenseSummary?.today?.change ?? 0)}%`
+                    : `${expenseSummary?.today?.changeLabel || "vs Yesterday"} ${(expenseSummary?.today?.change ?? 0) >= 0 ? "+" : ""}${expenseSummary?.today?.change ?? 0}%`}
+                </span>
+                <span>{(expenseSummary?.today?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
-            </div>
+            </div> 
 
             {/* Sparkline Wave */}
             <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
@@ -999,7 +710,7 @@ const UTILITY_TYPES = [
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই মাসের মোট ব্যয়" : "Total This Month"}</span>
+                <span>{isBangla ? "এই মাসের মোট ব্যয়" : expenseSummary?.thisMonth?.label || "This Month"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -1011,12 +722,21 @@ const UTILITY_TYPES = [
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
-                  ? `৳${toBnNum((totalExpenseAmount || 48900).toLocaleString())}.০০`
-                  : `৳${(totalExpenseAmount || 48900).toLocaleString()}.00`}
+                  ? `৳${toBnNum((expenseSummary?.thisMonth?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(expenseSummary?.thisMonth?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-rose-400 flex items-center gap-1">
-                <span>{isBangla ? "গত মাসের চেয়ে -৮.৪%" : "vs last month -8.4%"}</span>
-                <span>↓</span>
+              <p
+                className={cn(
+                  "text-[11px] font-semibold flex items-center gap-1",
+                  (expenseSummary?.thisMonth?.change ?? 0) <= 0 ? "text-emerald-400" : "text-rose-400"
+                )}
+              >
+                <span>
+                  {isBangla
+                    ? `${expenseSummary?.thisMonth?.changeLabel === "vs Last Month" ? "গত মাসের চেয়ে" : expenseSummary?.thisMonth?.changeLabel || "গত মাসের চেয়ে"} ${(expenseSummary?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(expenseSummary?.thisMonth?.change ?? 0)}%`
+                    : `${expenseSummary?.thisMonth?.changeLabel || "vs Last Month"} ${(expenseSummary?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${expenseSummary?.thisMonth?.change ?? 0}%`}
+                </span>
+                <span>{(expenseSummary?.thisMonth?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
             </div>
 
@@ -1039,24 +759,32 @@ const UTILITY_TYPES = [
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই বছরের মোট ব্যয়" : "Total This Year"}</span>
+                <span>{isBangla ? "সর্বমোট ব্যয়" : expenseSummary?.allTime?.label || "Total Expenses"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isBangla ? "২০২৬ সালের সর্বমোট ব্যয়" : "Expenses recorded in 2026"}
+                    {isBangla ? "সর্বমোট আদায়কৃত ব্যয়" : "All-time total expenses"}
                   </TooltipContent>
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
-                  ? `৳${toBnNum((totalExpenseAmount > 0 ? totalExpenseAmount : 612350).toLocaleString())}.০০`
-                  : `৳${(totalExpenseAmount > 0 ? totalExpenseAmount : 612350).toLocaleString()}.00`}
+                  ? `৳${toBnNum((expenseSummary?.allTime?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(expenseSummary?.allTime?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গত বছরের চেয়ে +১৮.৬%" : "vs last year +18.6%"}</span>
-                <span>↑</span>
+              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono">
+                <span>
+                  {expenseSummary?.allTime?.avgExpense !== undefined && expenseSummary?.allTime?.avgExpense !== null
+                    ? isBangla
+                      ? `গড়: ৳${toBnNum((expenseSummary.allTime.avgExpense ?? 0).toLocaleString())}`
+                      : `Avg: ৳${(expenseSummary.allTime.avgExpense ?? 0).toLocaleString()}`
+                    : isBangla
+                    ? "সর্বমোট হিসাব"
+                    : "Live overview"}
+                </span>
+                <span>•</span>
               </p>
             </div>
 
@@ -1090,10 +818,16 @@ const UTILITY_TYPES = [
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
-                {isBangla ? toBnNum(expensesList.length) : expensesList.length}
+                {isBangla
+                  ? toBnNum(expenseSummary?.allTime?.count ?? 0)
+                  : (expenseSummary?.allTime?.count ?? 0)}
               </p>
               <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গত মাসে +৯টি" : "vs last month +9"}</span>
+                <span>
+                  {isBangla
+                    ? `এই মাসে +${toBnNum(expenseSummary?.thisMonth?.count ?? 0)}টি`
+                    : `This month: +${expenseSummary?.thisMonth?.count ?? 0}`}
+                </span>
                 <span>↑</span>
               </p>
             </div>
@@ -1107,6 +841,7 @@ const UTILITY_TYPES = [
             <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-transparent pointer-events-none" />
           </div>
         </div>
+
 
         {/* =========================================================================
             3. MIDDLE SECTION (LEFT FORM | RIGHT CATEGORIES + EXPENSE OVERVIEW)
@@ -1141,7 +876,7 @@ const UTILITY_TYPES = [
                     <SelectValue placeholder={isBangla ? "ক্যাটাগরি নির্বাচন করুন" : "Select Category"} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border max-h-60">
-                    {categoriesList.map((c) => (
+                    {expenseCategories?.map((c: any) => (
                       <SelectItem key={c.id} value={c.id}>
                         <div className="flex items-center gap-2">
                           {c.color && (
@@ -1150,7 +885,7 @@ const UTILITY_TYPES = [
                               style={{ backgroundColor: c.color }}
                             />
                           )}
-                          <span>{isBangla ? (c.nameBn || c.nameEn) : (c.nameEn || c.nameBn)}</span>
+                          <span>{isBangla ? (c.nameBn || c.name) : (c.name || c.nameBn)}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -1219,7 +954,7 @@ const UTILITY_TYPES = [
                     <SelectValue placeholder={isBangla ? "পদ্ধতি নির্বাচন করুন" : "Select Payment Method"} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border max-h-60">
-                    {paymentMethodsList.map((pm: any) => {
+                    {paymentMethodsData?.map((pm: any) => {
                       const labelEn = pm.name || pm.bankName || pm.provider || pm.accountNumber || pm.type || "Account";
                       const labelBn = pm.nameBn || labelEn;
                       return (
@@ -1249,7 +984,7 @@ const UTILITY_TYPES = [
                     <SelectValue placeholder={isBangla ? "ব্রাঞ্চ নির্বাচন করুন" : "Select Branch"} />
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border max-h-60">
-                    {branchesList.map((b: any) => (
+                    {branchesData?.map((b: any) => (
                       <SelectItem key={b.id} value={b.id}>
                         {isBangla ? (b.nameBn || b.name) : b.name}
                       </SelectItem>
@@ -1647,7 +1382,7 @@ const UTILITY_TYPES = [
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-foreground text-background hover:bg-foreground/90 font-semibold text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-md transition-all"
+                className="bg-red-500 text-white hover:bg-red-500/90 font-semibold text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-md transition-all"
               >
                 {isSubmitting ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1655,15 +1390,6 @@ const UTILITY_TYPES = [
                   <Save className="h-3.5 w-3.5" />
                 )}
                 {isBangla ? "ব্যয় সংরক্ষণ করুন" : "Save Expense"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={handleCancelForm}
-                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 rounded-xl px-5 py-2.5 cursor-pointer"
-              >
-                {isBangla ? "বাতিল" : "Cancel"}
               </Button>
             </div>
           </form>
@@ -1691,8 +1417,13 @@ const UTILITY_TYPES = [
 
               {/* Category List */}
               <div className="space-y-3">
-                {categoriesList.slice(0, 5).map((cat) => {
-                  const Icon = cat.icon;
+                {expenseCategories?.slice(0, 5).map((cat: any) => {
+                  const Icon = getCategoryIcon(cat.icon || cat.name);
+                  const color = cat.color || "#14B8A6";
+                  const percentage = cat.percentage || 0;
+                  const amount = cat.amount || 0;
+                  const nameBn = cat.nameBn || cat.name || "ব্যয়";
+                  const nameEn = cat.name || "Expense";
                   return (
                     <div
                       key={cat.id}
@@ -1702,16 +1433,14 @@ const UTILITY_TYPES = [
                       <div className="flex items-center gap-2.5 w-28 shrink-0 min-w-0">
                         <div
                           className={cn(
-                            "p-1.5 rounded-lg border shrink-0",
-                            cat.bgColor,
-                            cat.borderColor
+                            "p-1.5 rounded-lg border shrink-0 bg-indigo-500/15 text-indigo-400 border-indigo-500/20"
                           )}
                         >
                           <Icon className="h-3.5 w-3.5" />
                         </div>
                         <div className="min-w-0 truncate">
                           <p className="font-bold text-foreground truncate">
-                            {isBangla ? cat.nameBn : cat.nameEn}
+                            {isBangla ? nameBn : nameEn}
                           </p>
                         </div>
                       </div>
@@ -1722,13 +1451,13 @@ const UTILITY_TYPES = [
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{
-                              width: `${cat.percentage}%`,
-                              backgroundColor: cat.color,
+                              width: `${percentage}%`,
+                              backgroundColor: color,
                             }}
                           />
                         </div>
                         <span className="text-[11px] font-mono text-muted-foreground w-8 text-right shrink-0">
-                          {isBangla ? `${toBnNum(cat.percentage)}%` : `${cat.percentage}%`}
+                          {isBangla ? `${toBnNum(percentage)}%` : `${percentage}%`}
                         </span>
                       </div>
 
@@ -1736,8 +1465,8 @@ const UTILITY_TYPES = [
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-mono font-bold text-foreground text-xs">
                           {isBangla
-                            ? `৳${toBnNum(cat.amount.toLocaleString())}.০০`
-                            : `৳${cat.amount.toLocaleString()}.00`}
+                            ? `৳${toBnNum((amount ?? 0).toLocaleString())}.০০`
+                            : `৳${(amount ?? 0).toLocaleString()}.00`}
                         </span>
 
                         <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -1751,7 +1480,7 @@ const UTILITY_TYPES = [
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteCategory(cat.id)}
+                            onClick={() => handlePromptDeleteCategory(cat)}
                             className="p-1 text-muted-foreground hover:text-rose-400 rounded transition-colors cursor-pointer"
                             title={isBangla ? "মুছে ফেলুন" : "Delete"}
                           >
@@ -1783,82 +1512,97 @@ const UTILITY_TYPES = [
                 <h3 className="text-sm font-bold text-foreground">
                   {isBangla ? "ব্যয় সংক্ষিপ্ত বিবরণ" : "Expense Overview"}
                 </h3>
-                <Select defaultValue="this-month">
-                  <SelectTrigger className="h-7 text-[11px] w-28 bg-muted/20 border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="this-month">
-                      {isBangla ? "এই মাস" : "This Month"}
-                    </SelectItem>
-                    <SelectItem value="last-month">
-                      {isBangla ? "গত মাস" : "Last Month"}
-                    </SelectItem>
-                    <SelectItem value="this-year">
-                      {isBangla ? "এই বছর" : "This Year"}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* Donut Chart and Legend */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
-                {/* Donut Chart (Col Span 5) */}
-                <div className="sm:col-span-5 h-40 relative flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={OVERVIEW_DATA}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={44}
-                        outerRadius={62}
-                        paddingAngle={3}
-                        dataKey="value"
-                      >
-                        {OVERVIEW_DATA.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+              {(() => {
+                const colors = ["#f43f5e", "#eab308", "#8b5cf6", "#06b6d4", "#22c55e", "#ec4899", "#3b82f6", "#14B8A6"];
+                const topCats = expenseSummary?.topCategories && Array.isArray(expenseSummary.topCategories) && expenseSummary.topCategories.length > 0
+                  ? expenseSummary.topCategories.map((tc: any, index: number) => ({
+                      nameEn: tc.name || tc.category?.name || "Expense",
+                      nameBn: tc.nameBn || tc.category?.nameBn || tc.name || "ব্যয়",
+                      value: Number(tc.total ?? tc.amount ?? 0),
+                      percentage: `${tc.percentage ?? 0}%`,
+                      color: tc.color || tc.category?.color || colors[index % colors.length],
+                    }))
+                  : expenseCategories && Array.isArray(expenseCategories) && expenseCategories.length > 0
+                  ? expenseCategories.slice(0, 6).map((cat: any, index: number) => ({
+                      nameEn: cat.name || "Expense",
+                      nameBn: cat.nameBn || cat.name || "ব্যয়",
+                      value: Number(cat.amount ?? 0),
+                      percentage: `${cat.percentage ?? 0}%`,
+                      color: cat.color || colors[index % colors.length],
+                    }))
+                  : [];
 
-                  {/* Center Text inside Donut */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                    <span className="text-sm font-extrabold font-mono text-foreground leading-none">
-                      {isBangla ? `৳${toBnNum("48,900")}` : "৳48,900"}
-                    </span>
-                    <span className="text-[9.5px] text-muted-foreground mt-0.5">
-                      {isBangla ? "মোট ব্যয়" : "Total Expense"}
-                    </span>
-                  </div>
-                </div>
+                const totalVal = expenseSummary?.thisMonth?.total ?? expenseSummary?.allTime?.total ?? 0;
 
-                {/* Legend List (Col Span 7) */}
-                <div className="sm:col-span-7 grid grid-cols-1 gap-y-1.5 text-[11px]">
-                  {OVERVIEW_DATA.map((item) => (
-                    <div key={item.nameEn} className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className="h-2 w-2 rounded-full shrink-0"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-muted-foreground truncate">
-                          {isBangla ? item.nameBn : item.nameEn}
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                    {/* Donut Chart (Col Span 5) */}
+                    <div className="sm:col-span-5 h-40 relative flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={topCats.length > 0 ? topCats : [{ nameEn: "No Data", nameBn: "তথ্য নেই", value: 1, color: "#334155" }]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={44}
+                            outerRadius={62}
+                            paddingAngle={topCats.length > 0 ? 3 : 0}
+                            dataKey="value"
+                          >
+                            {(topCats.length > 0 ? topCats : [{ color: "#334155" }]).map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+
+                      {/* Center Text inside Donut */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                        <span className="text-sm font-extrabold font-mono text-foreground leading-none">
+                          {isBangla ? `৳${toBnNum((totalVal ?? 0).toLocaleString())}` : `৳${(totalVal ?? 0).toLocaleString()}`}
+                        </span>
+                        <span className="text-[9.5px] text-muted-foreground mt-0.5">
+                          {isBangla ? "মোট ব্যয়" : "Total Expense"}
                         </span>
                       </div>
-                      <span className="font-mono font-medium text-foreground ml-1 shrink-0 text-[10.5px]">
-                        {isBangla
-                          ? `৳${toBnNum(item.value.toLocaleString())}`
-                          : `৳${item.value.toLocaleString()}`}{" "}
-                        <span className="text-muted-foreground text-[10px]">
-                          ({isBangla ? toBnNum(item.percentage) : item.percentage})
-                        </span>
-                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
+
+                    {/* Legend List (Col Span 7) */}
+                    <div className="sm:col-span-7 grid grid-cols-1 gap-y-1.5 text-[11px]">
+                      {topCats.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {isBangla ? "কোন ক্যাটাগরি তথ্য নেই" : "No category data"}
+                        </p>
+                      ) : (
+                        topCats.map((item: any) => (
+                          <div key={item.nameEn} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className="h-2 w-2 rounded-full shrink-0"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="text-muted-foreground truncate">
+                                {isBangla ? item.nameBn : item.nameEn}
+                              </span>
+                            </div>
+                            <span className="font-mono font-medium text-foreground ml-1 shrink-0 text-[10.5px]">
+                              {isBangla
+                                ? `৳${toBnNum((item.value ?? 0).toLocaleString())}`
+                                : `৳${(item.value ?? 0).toLocaleString()}`}{" "}
+                              <span className="text-muted-foreground text-[10px]">
+                                ({isBangla ? toBnNum(item.percentage) : item.percentage})
+                              </span>
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1885,11 +1629,11 @@ const UTILITY_TYPES = [
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-indigo-400" />
-                    <h3 className="text-base font-bold text-foreground">
+                    {/* <h3 className="text-base font-bold text-foreground">
                       {isBangla
                         ? `ব্যয়ের তালিকা (${toBnNum(filteredExpenses.length)})`
                         : `Expenses (${filteredExpenses.length})`}
-                    </h3>
+                    </h3> */}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {isBangla
@@ -1939,9 +1683,9 @@ const UTILITY_TYPES = [
                       <SelectItem value="all">
                         {isBangla ? "সকল ক্যাটাগরি" : "All Categories"}
                       </SelectItem>
-                      {categoriesList.map((c) => (
+                      {expenseCategories?.map((c: any) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {isBangla ? c.nameBn : c.nameEn}
+                          {isBangla ? (c.nameBn || c.name) : (c.name || c.nameBn)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1955,7 +1699,7 @@ const UTILITY_TYPES = [
                       <SelectItem value="all">
                         {isBangla ? "সকল ব্রাঞ্চ" : "All Branches"}
                       </SelectItem>
-                      {branchesList.map((b: any) => (
+                      {branchesData?.map((b: any) => (
                         <SelectItem key={b.id} value={b.name}>
                           {isBangla ? (b.nameBn || b.name) : b.name}
                         </SelectItem>
@@ -1974,7 +1718,7 @@ const UTILITY_TYPES = [
                       {isBangla ? "ব্যয়ের তালিকা লোড হচ্ছে..." : "Loading expenses..."}
                     </p>
                   </div>
-                ) : filteredExpenses.length === 0 ? (
+                ) : expenses.length === 0 ? (
                   <div className="py-16 text-center space-y-2">
                     <Receipt className="h-10 w-10 text-muted-foreground/40 mx-auto" />
                     <p className="text-sm font-semibold text-foreground">
@@ -2000,14 +1744,31 @@ const UTILITY_TYPES = [
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/60">
-                      {filteredExpenses.map((exp) => {
-                        const Icon = exp.icon;
+                      {expenses.map((exp: any) => {
+                        const Icon = getCategoryIcon(exp.category?.icon || exp.category?.name);
                         const isSelected = selectedExpense?.id === exp.id;
-                        const payInfo = PAYMENT_METHOD_MAP[exp.paymentMethod] || {
-                          en: exp.paymentMethod,
-                          bn: exp.paymentMethod,
+                        const catNameEn = exp.category?.name || "Expense";
+                        const catNameBn = exp.category?.nameBn || catNameEn;
+                        const catColor = exp.category?.color || "#F59E0B";
+                        const voucherCode = exp.voucherCode || (exp.id ? `EXP-${exp.id.slice(-6).toUpperCase()}` : "EXP-000000");
+                        const branchName = exp.branch?.name || branchesData?.find((b: any) => b.id === exp.branchId)?.name || "Main Branch";
+                        const paymentMethodKey = exp.account?.type || exp.paymentMethod || "cash";
+                        const payInfo = PAYMENT_METHOD_MAP[paymentMethodKey] || {
+                          en: exp.account?.name || paymentMethodKey,
+                          bn: exp.account?.name || paymentMethodKey,
                           badgeColor: "bg-muted text-muted-foreground",
                         };
+                        const dateObj = exp.date ? new Date(exp.date) : new Date(exp.createdAt || Date.now());
+                        const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+                        const dateEn = format(validDate, "MMM dd, yyyy");
+                        const dateBn = formatBnDate(validDate);
+                        const amountVal = typeof exp.amount === "number" ? exp.amount : parseFloat(exp.amount) || 0;
+                        const description = exp.description || exp.note || "—";
+                        const attachment = exp.receipt
+                          ? typeof exp.receipt === "string"
+                            ? exp.receipt.split("/").pop()
+                            : "receipt.jpg"
+                          : null;
 
                         return (
                           <tr
@@ -2021,24 +1782,31 @@ const UTILITY_TYPES = [
                             {/* Voucher & Description */}
                             <td className="py-3 px-3.5 align-middle">
                               <div className="flex items-center gap-2.5">
-                                <div className={cn("p-2 rounded-xl shrink-0 border", exp.bgColor)}>
+                                <div
+                                  className="p-2 rounded-xl shrink-0 border"
+                                  style={{
+                                    backgroundColor: `${catColor}15`,
+                                    borderColor: `${catColor}30`,
+                                    color: catColor,
+                                  }}
+                                >
                                   <Icon className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <p className="font-mono font-bold text-foreground text-xs leading-tight group-hover:text-indigo-400 transition-colors">
-                                      {exp.voucherCode}
+                                      {voucherCode}
                                     </p>
                                     <span className="text-[10px] text-muted-foreground">
-                                      • {isBangla ? exp.titleBn : exp.titleEn}
+                                      • {isBangla ? catNameBn : catNameEn}
                                     </span>
                                   </div>
                                   <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">
-                                    {isBangla ? exp.subtitleBn : exp.subtitleEn}
+                                    {description}
                                   </p>
                                   <p className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5 font-mono">
                                     <Clock className="h-2.5 w-2.5" />
-                                    <span>{isBangla ? exp.dateBn : exp.dateEn}</span>
+                                    <span>{isBangla ? dateBn : dateEn}</span>
                                   </p>
                                 </div>
                               </div>
@@ -2050,7 +1818,7 @@ const UTILITY_TYPES = [
                                 <td className="py-3 px-3.5 align-middle whitespace-nowrap">
                                   <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                                     <Building2 className="h-3 w-3 text-muted-foreground/70" />
-                                    {exp.branch}
+                                    {branchName}
                                   </span>
                                 </td>
 
@@ -2066,18 +1834,22 @@ const UTILITY_TYPES = [
                                 </td>
 
                                 <td className="py-3 px-3.5 align-middle whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                  {exp.attachmentName ? (
+                                  {attachment ? (
                                     <span
                                       className="inline-flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 cursor-pointer"
-                                      onClick={() =>
-                                        toast({
-                                          title: isBangla ? "সংযুক্ত ফাইল ওপেন হচ্ছে" : "Viewing Document",
-                                          description: exp.attachmentName || undefined,
-                                        })
-                                      }
+                                      onClick={() => {
+                                        if (typeof exp.receipt === "string") {
+                                          window.open(exp.receipt, "_blank");
+                                        } else {
+                                          toast({
+                                            title: isBangla ? "সংযুক্ত ফাইল" : "Attached Document",
+                                            description: attachment,
+                                          });
+                                        }
+                                      }}
                                     >
                                       <Paperclip className="h-3 w-3" />
-                                      <span className="max-w-[75px] truncate">{exp.attachmentName}</span>
+                                      <span className="max-w-[75px] truncate">{attachment}</span>
                                     </span>
                                   ) : (
                                     <span className="text-[11px] text-muted-foreground/60">—</span>
@@ -2090,8 +1862,8 @@ const UTILITY_TYPES = [
                             <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
                               <span className="font-mono font-bold text-rose-400 text-xs">
                                 {isBangla
-                                  ? `-৳${toBnNum(exp.amount.toLocaleString())}`
-                                  : `-৳${exp.amount.toLocaleString()}`}
+                                  ? `-৳${toBnNum(amountVal.toLocaleString())}`
+                                  : `-৳${amountVal.toLocaleString()}`}
                               </span>
                             </td>
 
@@ -2141,261 +1913,263 @@ const UTILITY_TYPES = [
                 : "w-0 h-0 min-h-0 opacity-0 pointer-events-none"
             )}
           >
-            {selectedExpense && (
-              <div className="rounded-2xl border border-border/80 bg-card/95 shadow-sm backdrop-blur-sm p-6 flex flex-col h-full flex-1 space-y-6">
-                {/* Details Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border/80">
-                  <div className="flex items-center gap-3.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 h-9 w-9 p-0 flex items-center justify-center rounded-xl hover:bg-muted cursor-pointer"
-                      onClick={() => setSelectedExpense(null)}
-                      title={isBangla ? "তালিকায় ফিরে যান" : "Back to List"}
-                    >
-                      <ChevronLeft className="h-5 w-5 text-foreground" />
-                    </Button>
+            {selectedExpense && (() => {
+              const SelIcon = getCategoryIcon(selectedExpense.category?.icon || selectedExpense.category?.name);
+              const selCatNameEn = selectedExpense.category?.name || selectedExpense.titleEn || "Expense";
+              const selCatNameBn = selectedExpense.category?.nameBn || selectedExpense.titleBn || selCatNameEn;
+              const selCatColor = selectedExpense.category?.color || selectedExpense.color || "#F59E0B";
+              const selVoucherCode = selectedExpense.voucherCode || (selectedExpense.id ? `EXP-${selectedExpense.id.slice(-6).toUpperCase()}` : "EXP-000000");
+              const selBranch = selectedExpense.branch?.name || selectedExpense.branch || branchesData?.find((b: any) => b.id === selectedExpense.branchId)?.name || "Main Branch";
+              const selPaymentMethodKey = selectedExpense.account?.type || selectedExpense.paymentMethod || "cash";
+              const selPaymentLabel = PAYMENT_METHOD_MAP[selPaymentMethodKey]?.[isBangla ? "bn" : "en"] || selectedExpense.account?.name || selPaymentMethodKey;
+              const selDateObj = selectedExpense.date ? new Date(selectedExpense.date) : new Date(selectedExpense.createdAt || Date.now());
+              const selValidDate = isNaN(selDateObj.getTime()) ? new Date() : selDateObj;
+              const selDateEn = format(selValidDate, "MMM dd, yyyy");
+              const selDateBn = formatBnDate(selValidDate);
+              const selAmount = typeof selectedExpense.amount === "number" ? selectedExpense.amount : parseFloat(selectedExpense.amount) || 0;
+              const selDescription = selectedExpense.description || selectedExpense.note || selectedExpense.subtitleBn || selectedExpense.subtitleEn || "—";
+              const selAttachment = selectedExpense.receipt ? (typeof selectedExpense.receipt === "string" ? selectedExpense.receipt.split("/").pop() : "receipt.jpg") : null;
+              const selReceiptUrl = typeof selectedExpense.receipt === "string" ? selectedExpense.receipt : null;
 
-                    <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 border", selectedExpense.bgColor)}>
-                      {React.createElement(selectedExpense.icon, { className: "h-6 w-6" })}
+              return (
+                <div className="rounded-2xl border border-border/80 bg-card/95 shadow-sm backdrop-blur-sm p-6 flex flex-col h-full flex-1 space-y-6">
+                  {/* Details Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border/80">
+                    <div className="flex items-center gap-3.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 h-9 w-9 p-0 flex items-center justify-center rounded-xl hover:bg-muted cursor-pointer"
+                        onClick={() => setSelectedExpense(null)}
+                        title={isBangla ? "তালিকায় ফিরে যান" : "Back to List"}
+                      >
+                        <ChevronLeft className="h-5 w-5 text-foreground" />
+                      </Button>
+
+                      <div
+                        className="h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 border"
+                        style={{
+                          backgroundColor: `${selCatColor}15`,
+                          borderColor: `${selCatColor}30`,
+                          color: selCatColor,
+                        }}
+                      >
+                        <SelIcon className="h-6 w-6" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-foreground truncate">
+                            {isBangla ? selCatNameBn : selCatNameEn}
+                          </h2>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            {isBangla ? "পরিশোধিত" : "PAID"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                          {selVoucherCode} • {isBangla ? selDateBn : selDateEn}
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-bold text-foreground truncate">
-                          {isBangla ? selectedExpense.titleBn : selectedExpense.titleEn}
-                        </h2>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {isBangla ? "পরিশোধিত" : "PAID"}
+                    {/* Header Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyVoucherCode(selVoucherCode)}
+                        className="h-8.5 text-xs rounded-xl gap-1.5 cursor-pointer font-mono"
+                      >
+                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>{selVoucherCode}</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.print()}
+                        className="h-8.5 text-xs rounded-xl gap-1.5 cursor-pointer"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        <span>{isBangla ? "প্রিন্ট" : "Print"}</span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedExpense(null)}
+                        className="h-8.5 w-8.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Amount Highlight Card */}
+                  <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
+                        {isBangla ? "ব্যয়কৃত মোট পরিমাণ" : "TOTAL EXPENSE AMOUNT"}
+                      </p>
+                      <p className="text-3xl font-extrabold font-mono text-rose-400 tracking-tight">
+                        {isBangla
+                          ? `-৳${toBnNum(selAmount.toLocaleString())}.০০`
+                          : `-৳${selAmount.toLocaleString()}.00`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>{selBranch}</span>
+                      </span>
+                      <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
+                        <span>{selPaymentLabel}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Information Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {/* Category */}
+                    <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {isBangla ? "ব্যয়ের খাত / ক্যাটাগরি" : "Expense Category"}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <Tag className="h-3.5 w-3.5 text-indigo-400" />
+                        <span className="font-semibold text-foreground text-xs">
+                          {isBangla ? selCatNameBn : selCatNameEn}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {selectedExpense.voucherCode} • {isBangla ? selectedExpense.dateBn : selectedExpense.dateEn}
+                    </div>
+
+                    {/* Transaction Date */}
+                    <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {isBangla ? "লেনদেনের তারিখ" : "Transaction Date"}
                       </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <Calendar className="h-3.5 w-3.5 text-indigo-400" />
+                        <span className="font-semibold text-foreground font-mono text-xs">
+                          {isBangla ? selDateBn : selDateEn}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Branch */}
+                    <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {isBangla ? "ব্রাঞ্চ / শাখা" : "Branch Location"}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <Building2 className="h-3.5 w-3.5 text-indigo-400" />
+                        <span className="font-semibold text-foreground text-xs">
+                          {selBranch}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Payment Method */}
+                    <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"}
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
+                        <span className="font-semibold text-foreground capitalize text-xs">
+                          {selPaymentLabel}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Header Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyVoucherCode(selectedExpense.voucherCode)}
-                      className="h-8.5 text-xs rounded-xl gap-1.5 cursor-pointer font-mono"
-                    >
-                      <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{selectedExpense.voucherCode}</span>
-                    </Button>
+                  {/* Expense Note / Description */}
+                  <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-1.5 text-xs">
+                    <p className="text-[11px] font-medium text-muted-foreground">
+                      {isBangla ? "ভাউচার নোট / বিবরণ" : "Expense Note / Description"}
+                    </p>
+                    <p className="text-xs text-foreground leading-relaxed font-medium">
+                      {selDescription}
+                    </p>
+                  </div>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.print()}
-                      className="h-8.5 text-xs rounded-xl gap-1.5 cursor-pointer"
-                    >
-                      <Printer className="h-3.5 w-3.5" />
-                      <span>{isBangla ? "প্রিন্ট" : "Print"}</span>
-                    </Button>
+                  {/* Attachment Document */}
+                  {selAttachment ? (
+                    <div className="p-4 rounded-xl border border-border/60 bg-muted/10 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2.5 rounded-xl bg-card border border-border">
+                          <Paperclip className="h-4 w-4 text-indigo-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate text-xs">
+                            {selAttachment}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {isBangla ? "সংযুক্ত রসিদ / ভাউচার ফাইল" : "Attached Receipt Voucher File"}
+                          </p>
+                        </div>
+                      </div>
 
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (selReceiptUrl) {
+                            window.open(selReceiptUrl, "_blank");
+                          } else {
+                            toast({
+                              title: isBangla ? "ডকুমেন্ট ডাউনলোড হচ্ছে" : "Downloading Document",
+                              description: selAttachment || undefined,
+                            });
+                          }
+                        }}
+                        className="h-8.5 text-xs rounded-xl shrink-0 gap-1.5"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>{isBangla ? "ডাউনলোড" : "Download"}</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-dashed border-border/60 bg-muted/5 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5 text-muted-foreground">
+                        <Paperclip className="h-4 w-4" />
+                        <span>{isBangla ? "কোন ডকুমেন্ট সংযুক্ত নেই" : "No document attached"}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Panel Footer Actions */}
+                  <div className="pt-4 border-t border-border/80 flex items-center justify-between mt-auto">
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedExpense(null)}
-                      className="h-8.5 w-8.5 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                      size="sm"
+                      onClick={() => handleDeleteExpense(selectedExpense.id)}
+                      className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl gap-1.5 cursor-pointer"
                     >
-                      <X className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>{isBangla ? "ভাউচার মুছে ফেলুন" : "Delete Expense"}</span>
                     </Button>
-                  </div>
-                </div>
-
-                {/* Amount Highlight Card */}
-                <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
-                      {isBangla ? "ব্যয়কৃত মোট পরিমাণ" : "TOTAL EXPENSE AMOUNT"}
-                    </p>
-                    <p className="text-3xl font-extrabold font-mono text-rose-400 tracking-tight">
-                      {isBangla
-                        ? `-৳${toBnNum(selectedExpense.amount.toLocaleString())}.০০`
-                        : `-৳${selectedExpense.amount.toLocaleString()}.00`}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{selectedExpense.branch}</span>
-                    </span>
-                    <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5">
-                      <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
-                      <span>{PAYMENT_METHOD_MAP[selectedExpense.paymentMethod]?.[isBangla ? "bn" : "en"] || selectedExpense.paymentMethod}</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Information Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  {/* Category */}
-                  <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">
-                      {isBangla ? "ব্যয়ের খাত / ক্যাটাগরি" : "Expense Category"}
-                    </p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <Tag className="h-3.5 w-3.5 text-indigo-400" />
-                      <span className="font-semibold text-foreground text-xs">
-                        {isBangla ? selectedExpense.titleBn : selectedExpense.titleEn}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Transaction Date */}
-                  <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">
-                      {isBangla ? "লেনদেনের তারিখ" : "Transaction Date"}
-                    </p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <Calendar className="h-3.5 w-3.5 text-indigo-400" />
-                      <span className="font-semibold text-foreground font-mono text-xs">
-                        {isBangla ? selectedExpense.dateBn : selectedExpense.dateEn}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Branch */}
-                  <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">
-                      {isBangla ? "ব্রাঞ্চ / শাখা" : "Branch Location"}
-                    </p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <Building2 className="h-3.5 w-3.5 text-indigo-400" />
-                      <span className="font-semibold text-foreground text-xs">
-                        {selectedExpense.branch}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Method */}
-                  <div className="p-3.5 rounded-xl border border-border/60 bg-muted/10 space-y-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">
-                      {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"}
-                    </p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      <CreditCard className="h-3.5 w-3.5 text-indigo-400" />
-                      <span className="font-semibold text-foreground capitalize text-xs">
-                        {PAYMENT_METHOD_MAP[selectedExpense.paymentMethod]?.[isBangla ? "bn" : "en"] || selectedExpense.paymentMethod}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expense Note / Description */}
-                <div className="p-4 rounded-xl border border-border/60 bg-muted/10 space-y-1.5 text-xs">
-                  <p className="text-[11px] font-medium text-muted-foreground">
-                    {isBangla ? "ভাউচার নোট / বিবরণ" : "Expense Note / Description"}
-                  </p>
-                  <p className="text-xs text-foreground leading-relaxed font-medium">
-                    {isBangla ? selectedExpense.subtitleBn : selectedExpense.subtitleEn}
-                  </p>
-                </div>
-
-                {/* Recurrence Status */}
-                <div className="p-4 rounded-xl border border-border/60 bg-muted/10 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                      <RefreshCw className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground">
-                        {isBangla ? "নিয়মিত ব্যয় স্ট্যাটাস" : "Recurrence Setting"}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {selectedExpense.isRecurring
-                          ? isBangla
-                            ? `নিয়মিত পুনরাবৃত্তিমূলক (${selectedExpense.recurringFrequency || "মাসিক"})`
-                            : `Recurring schedule (${selectedExpense.recurringFrequency || "monthly"})`
-                          : isBangla
-                          ? "এককালীন ব্যয় (One-time)"
-                          : "One-time expense"}
-                      </p>
-                    </div>
-                  </div>
-                  {selectedExpense.isRecurring && (
-                    <span className="px-2.5 py-0.5 rounded-md text-[10.5px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
-                      {isBangla ? "সক্রিয়" : "ACTIVE"}
-                    </span>
-                  )}
-                </div>
-
-                {/* Attachment Document */}
-                {selectedExpense.attachmentName ? (
-                  <div className="p-4 rounded-xl border border-border/60 bg-muted/10 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-2.5 rounded-xl bg-card border border-border">
-                        <Paperclip className="h-4 w-4 text-indigo-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate text-xs">
-                          {selectedExpense.attachmentName}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {isBangla ? "সংযুক্ত রসিদ / ভাউচার ফাইল" : "Attached Receipt Voucher File"}
-                        </p>
-                      </div>
-                    </div>
 
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: isBangla ? "ডকুমেন্ট ডাউনলোড হচ্ছে" : "Downloading Document",
-                          description: selectedExpense.attachmentName || undefined,
-                        })
-                      }
-                      className="h-8.5 text-xs rounded-xl shrink-0 gap-1.5"
+                      onClick={() => setSelectedExpense(null)}
+                      className="text-xs rounded-xl px-5 h-8.5 cursor-pointer"
                     >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>{isBangla ? "ডাউনলোড" : "Download"}</span>
+                      {isBangla ? "বন্ধ করুন" : "Close"}
                     </Button>
                   </div>
-                ) : (
-                  <div className="p-4 rounded-xl border border-dashed border-border/60 bg-muted/5 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2.5 text-muted-foreground">
-                      <Paperclip className="h-4 w-4" />
-                      <span>{isBangla ? "কোন ডকুমেন্ট সংযুক্ত নেই" : "No document attached"}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Panel Footer Actions */}
-                <div className="pt-4 border-t border-border/80 flex items-center justify-between mt-auto">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteExpense(selectedExpense.id)}
-                    className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl gap-1.5 cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>{isBangla ? "ভাউচার মুছে ফেলুন" : "Delete Expense"}</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedExpense(null)}
-                    className="text-xs rounded-xl px-5 h-8.5 cursor-pointer"
-                  >
-                    {isBangla ? "বন্ধ করুন" : "Close"}
-                  </Button>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
 
@@ -2515,19 +2289,25 @@ const UTILITY_TYPES = [
               <Button
                 type="button"
                 onClick={handleSaveCategoryModal}
-                disabled={isCreatingCategory}
+                disabled={isCreatingCategory || isUpdatingCategory}
                 className="text-xs h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold flex items-center gap-1.5"
               >
-                {isCreatingCategory ? (
+                {isCreatingCategory || isUpdatingCategory ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : editingCategory ? (
+                  <Save className="h-3.5 w-3.5" />
                 ) : (
                   <Plus className="h-3.5 w-3.5" />
                 )}
                 <span>
-                  {isCreatingCategory
+                  {isCreatingCategory || isUpdatingCategory
                     ? isBangla
                       ? "সংরক্ষণ হচ্ছে..."
                       : "Saving..."
+                    : editingCategory
+                    ? isBangla
+                      ? "আপডেট করুন"
+                      : "Update Category"
                     : isBangla
                     ? "সংরক্ষণ করুন"
                     : "Save Category"}
@@ -2543,37 +2323,55 @@ const UTILITY_TYPES = [
             <DialogHeader>
               <DialogTitle className="text-base font-bold text-foreground">
                 {isBangla
-                  ? `সকল ব্যয় ক্যাটাগরি (${toBnNum(categories.length)}টি)`
-                  : `All Expense Categories (${categories.length})`}
+                  ? `সকল ব্যয় ক্যাটাগরি (${toBnNum(expenseCategories.length)}টি)`
+                  : `All Expense Categories (${expenseCategories.length})`}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-2">
-              {categories.map((c) => {
-                const Icon = c.icon;
+              {expenseCategories.map((c: any) => {
+                const Icon = getCategoryIcon(c.icon || c.name);
+                const color = c.color || "#F59E0B";
                 return (
                   <div
                     key={c.id}
                     className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/10"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={cn("p-2 rounded-lg border", c.bgColor, c.borderColor)}>
+                      <div
+                        className="p-2 rounded-lg border shrink-0"
+                        style={{
+                          backgroundColor: `${color}15`,
+                          borderColor: `${color}30`,
+                          color: color,
+                        }}
+                      >
                         <Icon className="h-4 w-4" />
                       </div>
                       <div>
                         <p className="text-xs font-bold text-foreground">
-                          {isBangla ? c.nameBn : c.nameEn}
+                          {isBangla ? (c.nameBn || c.name) : (c.name || c.nameBn)}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs font-bold">
-                        {isBangla
-                          ? `৳${toBnNum(c.amount.toLocaleString())}.০০`
-                          : `৳${c.amount.toLocaleString()}.00`}
-                      </span>
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleDeleteCategory(c.id)}
-                        className="text-muted-foreground hover:text-rose-400 p-1 cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          setIsViewAllCategoriesOpen(false);
+                          handleOpenEditCategory(c);
+                        }}
+                        className="p-1.5 text-muted-foreground hover:text-foreground rounded transition-colors cursor-pointer"
+                        title={isBangla ? "সম্পাদনা" : "Edit"}
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsViewAllCategoriesOpen(false);
+                          handlePromptDeleteCategory(c);
+                        }}
+                        className="p-1.5 text-muted-foreground hover:text-rose-400 rounded transition-colors cursor-pointer"
                         title={isBangla ? "মুছে ফেলুন" : "Delete"}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -2583,6 +2381,53 @@ const UTILITY_TYPES = [
                 );
               })}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Category Confirmation Dialog */}
+        <Dialog open={isDeleteCategoryOpen} onOpenChange={setIsDeleteCategoryOpen}>
+          <DialogContent className="sm:max-w-md bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-foreground">
+                {isBangla ? "ক্যাটাগরি মুছে ফেলার নিশ্চিতকরণ" : "Confirm Delete Category"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-2 text-xs text-muted-foreground">
+              {isBangla
+                ? `আপনি কি নিশ্চিত যে "${categoryToDelete?.nameBn || categoryToDelete?.name}" ক্যাটাগরি মুছে ফেলতে চান?`
+                : `Are you sure you want to delete the category "${categoryToDelete?.name || categoryToDelete?.nameBn}"?`}
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteCategoryOpen(false);
+                  setCategoryToDelete(null);
+                }}
+                className="text-xs h-9 rounded-xl"
+              >
+                {isBangla ? "বাতিল" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleConfirmDeleteCategory}
+                disabled={isDeletingCategory}
+                className="text-xs h-9 rounded-xl font-semibold flex items-center gap-1.5"
+              >
+                {isDeletingCategory && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>
+                  {isDeletingCategory
+                    ? isBangla
+                      ? "মুছে ফেলা হচ্ছে..."
+                      : "Deleting..."
+                    : isBangla
+                    ? "মুছে ফেলুন"
+                    : "Delete"}
+                </span>
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

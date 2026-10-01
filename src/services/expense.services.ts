@@ -24,7 +24,17 @@ export const getExpenseCategories = async () => {
 }
 
 export const createExpenseCategories = async (category: any) =>{
-    const res = await client.post('/api/expenses/categories/', category);
+    const res = await client.post('/api/expenses/categories', category);
+    return res.data;
+}
+
+export const updateExpenseCategory = async ({ id, data }: { id: string; data: any }) => {
+    const res = await client.patch(`/api/expenses/categories/${id}`, data);
+    return res.data;
+}
+
+export const deleteExpenseCategory = async (id: string) => {
+    const res = await client.delete(`/api/expenses/categories/${id}`);
     return res.data;
 }
 
