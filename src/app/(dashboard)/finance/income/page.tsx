@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { BackButton } from "@/components/common";
 import { useToast } from "@/hooks/use-toast";
-import { useBranchStore } from "@/stores/branchStore";
 import {
   Calendar,
   Download,
@@ -30,6 +29,8 @@ import {
   useCreateIncomeCategory,
   useDeleteIncomeCategory,
   useGetIncomeCateogories,
+  useGetIncomes,
+  useGetIncomeSummary,
   useUpdateIncomeCategory,
 } from "@/hooks/api/useFinance";
 import {
@@ -41,25 +42,29 @@ import {
   IncomeCategoriesCard,
   IncomeModals,
 } from "@/components/finance/income";
+import { useGetBranches } from "@/hooks/api/useBranches";
+import { cn } from "@/lib/utils";
 
 export default function IncomePageContent() {
   const { isBangla } = useAppTranslation();
   const { toast } = useToast();
-  const { branches } = useBranchStore();
-
+  const { data: branches } = useGetBranches();
+  
   // API hooks
   const { data: incomeCategories, isLoading: loadingCategories } =
     useGetIncomeCateogories();
+  const { data: incomesData } = useGetIncomes();
   const { mutate: createCategory, isPending: isCreatingCategory } =
     useCreateIncomeCategory();
   const { mutate: updateCategory, isPending: isUpdatingCategory } =
     useUpdateIncomeCategory();
   const { mutate: deleteCategory, isPending: isDeletingCategory } =
     useDeleteIncomeCategory();
-
-  // Incomes State
+  const {data: incomeSum} = useGetIncomeSummary()
+  // Incomes State (fallback or local)
   const [incomes, setIncomes] = useState<IncomeRecord[]>(INITIAL_INCOME_RECORDS);
   const [dateRange, setDateRange] = useState("Jul 23, 2026 - Aug 22, 2026");
+
 
   // Modals State
   // 1. Add Category
@@ -227,6 +232,7 @@ export default function IncomePageContent() {
     });
   };
 
+
   return (
     <TooltipProvider>
       <div className="space-y-6 mx-auto pb-24 text-foreground">
@@ -340,7 +346,7 @@ export default function IncomePageContent() {
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "আজকের মোট আয়" : "Total Today"}</span>
+                <span>{isBangla ? "আজকের মোট আয়" : incomeSum?.today?.label || "Today's Income"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -351,11 +357,22 @@ export default function IncomePageContent() {
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
-                {isBangla ? `৳${toBnNum("18,500.00")}` : "৳18,500.00"}
+                {isBangla
+                  ? `৳${toBnNum((incomeSum?.today?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(incomeSum?.today?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গতকালের চেয়ে +১৫.৪%" : "vs yesterday +15.4%"}</span>
-                <span>↑</span>
+              <p
+                className={cn(
+                  "text-[11px] font-semibold flex items-center gap-1",
+                  (incomeSum?.today?.change ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"
+                )}
+              >
+                <span>
+                  {isBangla
+                    ? `${incomeSum?.today?.changeLabel === "vs Yesterday" ? "গতকালের চেয়ে" : incomeSum?.today?.changeLabel || "গতকালের চেয়ে"} ${(incomeSum?.today?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.today?.change ?? 0)}%`
+                    : `${incomeSum?.today?.changeLabel || "vs Yesterday"} ${(incomeSum?.today?.change ?? 0) >= 0 ? "+" : ""}${incomeSum?.today?.change ?? 0}%`}
+                </span>
+                <span>{(incomeSum?.today?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
             </div>
 
@@ -377,7 +394,7 @@ export default function IncomePageContent() {
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই মাসের মোট আয়" : "Total This Month"}</span>
+                <span>{isBangla ? "এই মাসের মোট আয়" : incomeSum?.thisMonth?.label || "This Month"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
@@ -388,11 +405,22 @@ export default function IncomePageContent() {
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
-                {isBangla ? `৳${toBnNum("184,200.00")}` : "৳184,200.00"}
+                {isBangla
+                  ? `৳${toBnNum((incomeSum?.thisMonth?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(incomeSum?.thisMonth?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গত মাসের চেয়ে +২২.৮%" : "vs last month +22.8%"}</span>
-                <span>↑</span>
+              <p
+                className={cn(
+                  "text-[11px] font-semibold flex items-center gap-1",
+                  (incomeSum?.thisMonth?.change ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"
+                )}
+              >
+                <span>
+                  {isBangla
+                    ? `${incomeSum?.thisMonth?.changeLabel === "vs Last Month" ? "গত মাসের চেয়ে" : incomeSum?.thisMonth?.changeLabel || "গত মাসের চেয়ে"} ${(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.thisMonth?.change ?? 0)}%`
+                    : `${incomeSum?.thisMonth?.changeLabel || "vs Last Month"} ${(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${incomeSum?.thisMonth?.change ?? 0}%`}
+                </span>
+                <span>{(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
             </div>
 
@@ -404,7 +432,7 @@ export default function IncomePageContent() {
             <div className="absolute inset-0 bg-gradient-to-tr from-sky-500/5 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* Card 3: Total This Year */}
+          {/* Card 3: Total This Year / All Time */}
           <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-purple-500/40 transition-all">
             <div className="flex items-start justify-between">
               <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
@@ -414,22 +442,28 @@ export default function IncomePageContent() {
 
             <div className="mt-3 space-y-1 z-10">
               <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই বছরের মোট আয়" : "Total This Year"}</span>
+                <span>{isBangla ? "সর্বমোট আয়" : incomeSum?.allTime?.label || "Total Income"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isBangla ? "২০২৬ সালের সর্বমোট আয়" : "Total revenue recorded in 2026"}
+                    {isBangla ? "সর্বমোট আদায়কৃত আয়" : "All-time total income revenue"}
                   </TooltipContent>
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
-                {isBangla ? `৳${toBnNum("1,842,500.00")}` : "৳1,842,500.00"}
+                {isBangla
+                  ? `৳${toBnNum((incomeSum?.allTime?.total ?? 0).toLocaleString())}.০০`
+                  : `৳${(incomeSum?.allTime?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গত বছরের চেয়ে +৩৪.২%" : "vs last year +34.2%"}</span>
-                <span>↑</span>
+              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono">
+                <span>
+                  {isBangla
+                    ? `গড়: ৳${toBnNum((incomeSum?.allTime?.avgIncome ?? 0).toLocaleString())}`
+                    : `Avg: ৳${(incomeSum?.allTime?.avgIncome ?? 0).toLocaleString()}`}
+                </span>
+                <span>•</span>
               </p>
             </div>
 
@@ -441,7 +475,7 @@ export default function IncomePageContent() {
             <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* Card 4: Total Entries */}
+          {/* Card 4: Total Entries / Count */}
           <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/40 transition-all">
             <div className="flex items-start justify-between">
               <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
@@ -462,10 +496,16 @@ export default function IncomePageContent() {
                 </Tooltip>
               </div>
               <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
-                {isBangla ? toBnNum("245") : "245"}
+                {isBangla
+                  ? toBnNum(incomeSum?.allTime?.count ?? 0)
+                  : (incomeSum?.allTime?.count ?? 0)}
               </p>
               <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>{isBangla ? "গত মাসে +১৮টি" : "vs last month +18"}</span>
+                <span>
+                  {isBangla
+                    ? `এই মাসে +${toBnNum(incomeSum?.thisMonth?.count ?? 0)}টি`
+                    : `This month: +${incomeSum?.thisMonth?.count ?? 0}`}
+                </span>
                 <span>↑</span>
               </p>
             </div>
@@ -498,7 +538,7 @@ export default function IncomePageContent() {
             <IncomeCategoriesCard
               incomeCategories={incomeCategories}
               loadingCategories={loadingCategories}
-              incomes={incomes}
+              incomes={incomesData || incomes}
               onOpenAddCategory={handleOpenAddCategory}
               onOpenEditCategory={handleOpenEditCategory}
               onPromptDeleteCategory={handlePromptDeleteCategory}
@@ -512,11 +552,12 @@ export default function IncomePageContent() {
             4. BOTTOM SECTION: INCOME RECORDS LIST & SPLIT VOUCHER DETAILS VIEW
            ========================================================================= */}
         <IncomeRecords
-          incomes={incomes}
+          incomes={incomesData || incomes}
           incomeCategories={incomeCategories}
           onDeleteIncome={handleDeleteIncome}
           isBangla={isBangla}
         />
+
 
         {/* =========================================================================
             5. MODALS & DIALOGS (Add, Edit, View All & Delete Confirmation)

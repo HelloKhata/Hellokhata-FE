@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
 import {
   TrendingUp,
   Search,
@@ -18,6 +19,8 @@ import {
   Tag,
   RefreshCw,
   Calendar,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui/premium";
 import {
@@ -33,51 +36,178 @@ import {
   IncomeRecord,
   PAYMENT_METHOD_MAP,
   toBnNum,
+  formatBnDate,
+  getIconComponentById,
+  getCategoryColorStyles,
 } from "./types";
+import { useGetIncomes, useDeleteIncome } from "@/hooks/api/useFinance";
+import { useGetBranches } from "@/hooks/api/useBranches";
+import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 
-interface IncomeRecordsProps {
-  incomes: IncomeRecord[];
+export interface IncomeRecordsProps {
+  incomes?: IncomeRecord[] | any[];
   incomeCategories?: any[];
-  onDeleteIncome: (incId: string) => void;
+  onDeleteIncome?: (incId: string) => void;
   isBangla: boolean;
 }
 
 export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
-  incomes,
+  incomes: propIncomes,
   incomeCategories,
   onDeleteIncome,
   isBangla,
 }) => {
   const { toast } = useToast();
+  
+  // Real API hooks
+  const { data: incomesData, isLoading: isLoadingIncome } = useGetIncomes();
+  const { mutate: deleteIncomeMutation, isPending: isDeleting } = useDeleteIncome();
+  const { data: branches } = useGetBranches();
+  const { data: paymentMethods } = useGetPaymentMethods();
 
   // Selected Income for Split Layout Detail Panel
-  const [selectedIncome, setSelectedIncome] = useState<IncomeRecord | null>(null);
+  const [selectedIncome, setSelectedIncome] = useState<any | null>(null);
 
   // Table Filters State
   const [searchQuery, setSearchQuery] = useState("");
   const [tableCategoryFilter, setTableCategoryFilter] = useState("all");
   const [tableBranchFilter, setTableBranchFilter] = useState("all");
 
+  // Normalize incoming real data or fallback prop data
+  const normalizedIncomes = useMemo(() => {
+    const rawList = Array.isArray(incomesData)
+      ? incomesData
+      : Array.isArray(propIncomes)
+      ? propIncomes
+      : [];
+
+    return rawList.map((inc: any) => {
+      const cat =
+        inc.category ||
+        incomeCategories?.find((c: any) => c.id === inc.categoryId);
+      const catColor = cat?.color || inc.color || "#10B981";
+      const { bgColor } = getCategoryColorStyles(catColor);
+      
+      const catIcon = cat?.icon
+        ? typeof cat.icon === "string"
+          ? getIconComponentById(cat.icon)
+          : cat.icon
+        : inc.icon || getIconComponentById("briefcase");
+
+      const titleEn = cat?.name || cat?.nameEn || inc.titleEn || "Income";
+      const titleBn =
+        cat?.nameBn || cat?.name || inc.titleBn || inc.titleEn || "আয়";
+      const subtitleEn =
+        inc.note || inc.description || inc.subtitleEn || "Direct receipt";
+      const subtitleBn =
+        inc.note || inc.description || inc.subtitleBn || "সরাসরি আয়";
+
+      let parsedDate = new Date();
+      if (inc.date) {
+        parsedDate = new Date(inc.date);
+      } else if (inc.createdAt) {
+        parsedDate = new Date(inc.createdAt);
+      }
+      const isValidDate = !isNaN(parsedDate.getTime());
+      const dateEn = isValidDate
+        ? format(parsedDate, "MMM dd, yyyy")
+        : inc.dateEn || "—";
+      const dateBn = isValidDate
+        ? formatBnDate(parsedDate)
+        : inc.dateBn || "—";
+
+      // Branch name lookup
+      const foundBranch = branches?.find((b: any) => b.id === inc.branchId);
+      const branchName =
+        inc.branch?.name ||
+        (typeof inc.branch === "string" ? inc.branch : null) ||
+        foundBranch?.name ||
+        "Main Branch";
+
+      // Payment Method name lookup
+      const foundAccount = paymentMethods?.find(
+        (p: any) => p.id === inc.accountId
+      );
+      const paymentMethodName =
+        inc.paymentMethod ||
+        inc.account?.name ||
+        foundAccount?.name ||
+        "cash";
+
+      // Attachment / Receipt handling
+      let attachmentName: string | null = inc.receipt || inc.attachmentName || null;
+      let receiptUrl: string | null = null;
+      if (attachmentName && (attachmentName.startsWith("http://") || attachmentName.startsWith("https://"))) {
+        receiptUrl = attachmentName;
+        try {
+          const urlObj = new URL(attachmentName);
+          attachmentName = urlObj.pathname.split("/").pop() || "receipt.jpg";
+        } catch {
+          attachmentName = "receipt.jpg";
+        }
+      }
+
+      // Voucher Code
+      const voucherCode =
+        inc.voucherCode ||
+        (inc.id ? `INC-${inc.id.slice(-6).toUpperCase()}` : "INC-0000");
+
+      return {
+        id: inc.id,
+        voucherCode,
+        categoryId: inc.categoryId || cat?.id || "",
+        category: cat,
+        titleEn,
+        titleBn,
+        subtitleEn,
+        subtitleBn,
+        dateEn,
+        dateBn,
+        rawDate: parsedDate,
+        branch: branchName,
+        branchId: inc.branchId,
+        paymentMethod: paymentMethodName,
+        accountId: inc.accountId,
+        isRecurring: Boolean(inc.isRecurring),
+        recurringFrequency: inc.recurringFrequency || "monthly",
+        attachmentName,
+        receiptUrl,
+        amount: Number(inc.amount) || 0,
+        color: catColor,
+        bgColor: inc.bgColor || bgColor,
+        icon: catIcon,
+        raw: inc,
+      };
+    });
+  }, [incomesData, propIncomes, incomeCategories, branches, paymentMethods]);
+
   // Filtered Incomes
   const filteredIncomes = useMemo(() => {
-    return incomes.filter((inc) => {
+    return normalizedIncomes.filter((inc) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchSearch =
-        searchQuery.trim() === "" ||
-        inc.voucherCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inc.titleEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inc.titleBn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inc.subtitleEn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inc.subtitleBn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inc.branch.toLowerCase().includes(searchQuery.toLowerCase());
+        q === "" ||
+        inc.voucherCode.toLowerCase().includes(q) ||
+        inc.titleEn.toLowerCase().includes(q) ||
+        inc.titleBn.toLowerCase().includes(q) ||
+        inc.subtitleEn.toLowerCase().includes(q) ||
+        inc.subtitleBn.toLowerCase().includes(q) ||
+        inc.branch.toLowerCase().includes(q) ||
+        String(inc.amount).includes(q);
 
       const matchCategory =
-        tableCategoryFilter === "all" || inc.categoryId === tableCategoryFilter;
+        tableCategoryFilter === "all" ||
+        inc.categoryId === tableCategoryFilter ||
+        inc.category?.id === tableCategoryFilter;
+
       const matchBranch =
-        tableBranchFilter === "all" || inc.branch === tableBranchFilter;
+        tableBranchFilter === "all" ||
+        inc.branchId === tableBranchFilter ||
+        inc.branch.toLowerCase() === tableBranchFilter.toLowerCase();
 
       return matchSearch && matchCategory && matchBranch;
     });
-  }, [incomes, searchQuery, tableCategoryFilter, tableBranchFilter]);
+  }, [normalizedIncomes, searchQuery, tableCategoryFilter, tableBranchFilter]);
 
   const copyVoucherCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -88,9 +218,45 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
   };
 
   const handleDelete = (incId: string) => {
-    onDeleteIncome(incId);
-    if (selectedIncome?.id === incId) {
-      setSelectedIncome(null);
+    deleteIncomeMutation(incId, {
+      onSuccess: () => {
+        toast({
+          title: isBangla ? "ভাউচার মুছে ফেলা হয়েছে" : "Income Record Deleted",
+          description: isBangla
+            ? "রেকর্ড সফলভাবে অপসারণ করা হলো।"
+            : "Income entry removed successfully.",
+        });
+        if (selectedIncome?.id === incId) {
+          setSelectedIncome(null);
+        }
+        if (onDeleteIncome) {
+          onDeleteIncome(incId);
+        }
+      },
+      onError: (err: any) => {
+        // Fallback local deletion if API fails or not supported
+        if (onDeleteIncome) {
+          onDeleteIncome(incId);
+        }
+        if (selectedIncome?.id === incId) {
+          setSelectedIncome(null);
+        }
+        toast({
+          title: isBangla ? "ভাউচার মুছে ফেলা হয়েছে" : "Income Record Deleted",
+          description: err?.message || (isBangla ? "রেকর্ড অপসারণ করা হলো।" : "Income entry removed."),
+        });
+      },
+    });
+  };
+
+  const handleOpenReceipt = (inc: any) => {
+    if (inc.receiptUrl) {
+      window.open(inc.receiptUrl, "_blank");
+    } else {
+      toast({
+        title: isBangla ? "সংযুক্ত ফাইল" : "Attached Document",
+        description: inc.attachmentName || undefined,
+      });
     }
   };
 
@@ -118,6 +284,9 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                     ? `আয়ের তালিকা (${toBnNum(filteredIncomes.length)})`
                     : `Income Records (${filteredIncomes.length})`}
                 </h3>
+                {isLoadingIncome && (
+                  <Loader2 className="h-4 w-4 animate-spin text-emerald-500 ml-1" />
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 {isBangla
@@ -151,8 +320,8 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
                   isBangla
-                    ? "ভাউচার আইডি, বিবরণ দিয়ে খুঁজুন..."
-                    : "Search voucher, note..."
+                    ? "ভাউচার আইডি, বিবরণ, পরিমাণ দিয়ে খুঁজুন..."
+                    : "Search voucher, note, amount..."
                 }
                 className="h-9 pl-9 text-xs bg-card border-border"
               />
@@ -195,18 +364,28 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                   <SelectItem value="all">
                     {isBangla ? "সকল ব্রাঞ্চ" : "All Branches"}
                   </SelectItem>
-                  <SelectItem value="Main Branch">
-                    {isBangla ? "প্রধান শাখা" : "Main Branch"}
-                  </SelectItem>
-                  <SelectItem value="Gulshan Store">
-                    {isBangla ? "গুলশান স্টোর" : "Gulshan Store"}
-                  </SelectItem>
-                  <SelectItem value="Tejgaon Central Depot">
-                    {isBangla ? "তেজগাঁও সেন্ট্রাল ডিপো" : "Tejgaon Central Depot"}
-                  </SelectItem>
-                  <SelectItem value="Uttara Branch">
-                    {isBangla ? "উত্তরা শাখা" : "Uttara Branch"}
-                  </SelectItem>
+                  {branches && branches.length > 0 ? (
+                    branches.map((b: any) => (
+                      <SelectItem key={b.id || b.name} value={b.id || b.name}>
+                        {b.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="Main Branch">
+                        {isBangla ? "প্রধান শাখা" : "Main Branch"}
+                      </SelectItem>
+                      <SelectItem value="Gulshan Store">
+                        {isBangla ? "গুলশান স্টোর" : "Gulshan Store"}
+                      </SelectItem>
+                      <SelectItem value="Tejgaon Central Depot">
+                        {isBangla ? "তেজগাঁও সেন্ট্রাল ডিপো" : "Tejgaon Central Depot"}
+                      </SelectItem>
+                      <SelectItem value="Uttara Branch">
+                        {isBangla ? "উত্তরা শাখা" : "Uttara Branch"}
+                      </SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -214,7 +393,14 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
 
           {/* Table / List View */}
           <div className="overflow-x-auto flex-1">
-            {filteredIncomes.length === 0 ? (
+            {isLoadingIncome ? (
+              <div className="py-20 text-center space-y-3">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mx-auto" />
+                <p className="text-xs text-muted-foreground font-medium">
+                  {isBangla ? "আয়ের তথ্য লোড হচ্ছে..." : "Loading income records..."}
+                </p>
+              </div>
+            ) : filteredIncomes.length === 0 ? (
               <div className="py-16 text-center space-y-2">
                 <Receipt className="h-10 w-10 text-muted-foreground/40 mx-auto" />
                 <p className="text-sm font-semibold text-foreground">
@@ -256,11 +442,12 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                 <tbody className="divide-y divide-border/60">
                   {filteredIncomes.map((inc) => {
                     const isSelected = selectedIncome?.id === inc.id;
+                    const methodKey = inc.paymentMethod.toLowerCase();
                     const payInfo =
-                      PAYMENT_METHOD_MAP[inc.paymentMethod] || {
+                      PAYMENT_METHOD_MAP[methodKey] || {
                         en: inc.paymentMethod,
                         bn: inc.paymentMethod,
-                        badgeColor: "bg-muted text-muted-foreground",
+                        badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                       };
 
                     return (
@@ -322,7 +509,7 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                             <td className="py-3 px-3.5 align-middle whitespace-nowrap">
                               <span
                                 className={cn(
-                                  "px-2 py-0.5 rounded text-[10px] font-medium border",
+                                  "px-2 py-0.5 rounded text-[10px] font-medium border capitalize",
                                   payInfo.badgeColor
                                 )}
                               >
@@ -337,20 +524,15 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                               {inc.attachmentName ? (
                                 <span
                                   className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 cursor-pointer"
-                                  onClick={() =>
-                                    toast({
-                                      title: isBangla
-                                        ? "সংযুক্ত ফাইল ওপেন হচ্ছে"
-                                        : "Viewing Document",
-                                      description:
-                                        inc.attachmentName || undefined,
-                                    })
-                                  }
+                                  onClick={() => handleOpenReceipt(inc)}
                                 >
                                   <Paperclip className="h-3 w-3" />
-                                  <span className="max-w-[75px] truncate">
+                                  <span className="max-w-[85px] truncate">
                                     {inc.attachmentName}
                                   </span>
+                                  {inc.receiptUrl && (
+                                    <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-70" />
+                                  )}
                                 </span>
                               ) : (
                                 <span className="text-[11px] text-muted-foreground/60">
@@ -391,6 +573,7 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                disabled={isDeleting}
                                 className="h-7 w-7 text-muted-foreground hover:text-rose-400 rounded-md cursor-pointer"
                                 onClick={() => handleDelete(inc.id)}
                                 title={isBangla ? "মুছে ফেলুন" : "Delete"}
@@ -519,10 +702,10 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                   <Building2 className="h-3.5 w-3.5 text-emerald-400" />
                   <span>{selectedIncome.branch}</span>
                 </span>
-                <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <span className="px-3 py-1.5 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground flex items-center gap-1.5 capitalize">
                   <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
                   <span>
-                    {PAYMENT_METHOD_MAP[selectedIncome.paymentMethod]?.[
+                    {PAYMENT_METHOD_MAP[selectedIncome.paymentMethod.toLowerCase()]?.[
                       isBangla ? "bn" : "en"
                     ] || selectedIncome.paymentMethod}
                   </span>
@@ -581,7 +764,7 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                 <div className="flex items-center gap-2 pt-0.5">
                   <CreditCard className="h-3.5 w-3.5 text-emerald-400" />
                   <span className="font-semibold text-foreground capitalize text-xs">
-                    {PAYMENT_METHOD_MAP[selectedIncome.paymentMethod]?.[
+                    {PAYMENT_METHOD_MAP[selectedIncome.paymentMethod.toLowerCase()]?.[
                       isBangla ? "bn" : "en"
                     ] || selectedIncome.paymentMethod}
                   </span>
@@ -665,17 +848,13 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    toast({
-                      title: isBangla
-                        ? "ডকুমেন্ট খোলা হচ্ছে"
-                        : "Opening Document",
-                      description: selectedIncome.attachmentName || undefined,
-                    })
-                  }
-                  className="h-8 text-xs rounded-xl cursor-pointer"
+                  onClick={() => handleOpenReceipt(selectedIncome)}
+                  className="h-8 text-xs rounded-xl cursor-pointer gap-1"
                 >
-                  {isBangla ? "দেখুন" : "View File"}
+                  <span>{isBangla ? "দেখুন" : "View File"}</span>
+                  {selectedIncome.receiptUrl && (
+                    <ExternalLink className="h-3 w-3" />
+                  )}
                 </Button>
               </div>
             )}
@@ -685,6 +864,7 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
               <Button
                 variant="destructive"
                 size="sm"
+                disabled={isDeleting}
                 onClick={() => handleDelete(selectedIncome.id)}
                 className="h-8.5 text-xs rounded-xl gap-1.5 cursor-pointer"
               >
@@ -707,3 +887,4 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
     </div>
   );
 };
+

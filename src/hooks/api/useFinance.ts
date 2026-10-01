@@ -1,4 +1,4 @@
-import { createIncome, createIncomeCategory, deleteIncomeCategory, getIncomeCategories, getTransactions, updateIncomeCategory } from "@/services/finance.services"
+import { createIncome, createIncomeCategory, deleteIncome, deleteIncomeCategory, getIncomeCategories, getIncomes, getIncomeSummary, getTransactions, updateIncomeCategory } from "@/services/finance.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useGetTransactions = () =>{
@@ -60,7 +60,34 @@ export const useCreateIncome = () =>{
     return useMutation({
         mutationFn: createIncome,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['transactions'] })
+            queryClient.invalidateQueries({ queryKey: ['incomes'] })
         }
+    })
+};
+
+export const useGetIncomes = () => {
+    return useQuery({ 
+        queryKey: ['incomes'],
+        queryFn: getIncomes,
+        select: (data) => data.data
+    })
+};
+
+export const useDeleteIncome = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: deleteIncome,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['incomes'] })
+        }
+    })
+};
+
+
+export const useGetIncomeSummary = () =>{
+    return useQuery({
+        queryKey:['income-summary'],
+        queryFn: getIncomeSummary,
+        select: (data) => data.data
     })
 }

@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format } from "date-fns";
 import {
   Calendar,
-  Plus,
   Save,
   Loader2,
   Upload,
   Camera,
-  RefreshCw,
-  ShoppingBag,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui/premium";
 import { Label } from "@/components/ui/label";
@@ -27,16 +24,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
-  IncomeRecord,
   formatBnDate,
-  toBnNum,
-  getIconComponentById,
-  getCategoryColorStyles,
 } from "./types";
 import { useCreateIncome } from "@/hooks/api/useFinance";
+import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 
 interface RecordNewIncomeProps {
   incomeCategories?: any[];
@@ -54,17 +47,19 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
   const { toast } = useToast();
 
   // api mutation
-  
-  const {mutate: createIncom,isPending:cretingIncome} = useCreateIncome();
-
+  const {mutate: createIncome,isPending:cretingIncome} = useCreateIncome();
+  const {data:paymentMethods }= useGetPaymentMethods()
   // Internal Form State
   const [amount, setAmount] = useState("");
   const [entryDate, setEntryDate] = useState<Date>(new Date(2026, 7, 22));
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [selectedBranch, setSelectedBranch] = useState(
-    branches[0]?.name || "Main Branch"
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState({
+    id:branches[0]?.id,
+    name:branches[0]?.name
+  }
   );
+  
   const [incomeNote, setIncomeNote] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
@@ -72,7 +67,14 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
     new Date(2026, 8, 22)
   );
   const [attachmentName, setAttachmentName] = useState<string | null>(null);
-  // Form Submit
+
+
+  useEffect(()=>{
+    if(branches.length > 0){
+       setSelectedBranch({id:branches[0]?.id,name:branches[0]?.name})
+    }
+  },[branches])
+  // Form Submit 
   const handleSaveIncome = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || parseFloat(amount) <= 0) {
@@ -86,26 +88,25 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
       return;
     }
 
-    const newIncome = {
+    const newIncome = { 
     amount:parseFloat(amount),
     date:entryDate,
-    paymentMethod,
-    branchId:selectedBranch,
-    incomeNote,
-    isRecurring,
-    recurringFrequency,
-    recurringDueDate,
-    attachmentName,
+    accountId:paymentMethod,
+    branchId:selectedBranch.id,
+    note:incomeNote,
+    receipt:attachmentName,
+    categoryId:selectedCategoryId,
    }
 
-   createIncom(newIncome,{onSuccess:()=>{
+   createIncome(newIncome,{
+    onSuccess:()=>{
     toast({
       title: isBangla ? "সফল হয়েছে" : "Success",
       description: isBangla
         ? "নতুন আয় সফলভাবে সংরক্ষণ করা হয়েছে।"
         : "New income saved successfully.",
-      variant: "success",
-    });
+      variant: "default",
+    });   
     handleCancelForm();
    }})
   };
@@ -250,35 +251,20 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
             {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"}{" "}
             <span className="text-destructive">*</span>
           </Label>
-          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+          <Select required value={paymentMethod} onValueChange={setPaymentMethod}>
             <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
               <SelectValue
                 placeholder={
-                  isBangla ? "পদ্ধতি নির্বাচন করুন" : "Select Payment Method"
+                  isBangla ? "পেমেন্ট পদ্ধতি নির্বাচন করুন" : "Select Payment Method"
                 }
               />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
-              <SelectItem value="cash">
-                {isBangla ? "ক্যাশ / নগদ টাকা" : "Cash in Hand"}
-              </SelectItem>
-              <SelectItem value="bank">
-                {isBangla ? "ব্যাংক ট্রান্সফার" : "Bank Transfer"}
-              </SelectItem>
-              <SelectItem value="bkash">
-                {isBangla
-                  ? "বিকাশ মার্চেন্ট / পার্সোনাল"
-                  : "bKash Merchant / Personal"}
-              </SelectItem>
-              <SelectItem value="nagad">
-                {isBangla ? "নগদ ওয়ালেট" : "Nagad Wallet"}
-              </SelectItem>
-              <SelectItem value="card">
-                {isBangla ? "ক্রেডিট / ডেবিট কার্ড" : "Credit / Debit Card"}
-              </SelectItem>
-              <SelectItem value="cheque">
-                {isBangla ? "চেক" : "Cheque"}
-              </SelectItem>
+              {
+                paymentMethods?.map((item: any) => <SelectItem key={item.id} value={item.id}>
+                  {item.name}
+                </SelectItem>)
+              }
             </SelectContent>
           </Select>
         </div>
@@ -292,17 +278,17 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
             {isBangla ? "ব্রাঞ্চ / শাখা" : "Branch"}{" "}
             <span className="text-destructive">*</span>
           </Label>
-          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+          <Select value={selectedBranch.id} onValueChange={(v)=>setSelectedBranch({id:v,name:branches?.find((b)=>b.id==v)?.name || ""})}>
             <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
               <SelectValue placeholder="Select Branch" />
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               {branches.length > 0 ? (
                 branches.map((b) => (
-                  <SelectItem key={b.id || b.name} value={b.name}>
+                  <SelectItem key={b.id || b.name} value={b.id as string}>
                     {b.name}
                   </SelectItem>
-                ))
+                )) 
               ) : (
                 <>
                   <SelectItem value="Main Branch">
@@ -345,7 +331,7 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
       </div>
 
       {/* Row 4: Recurring Income Toggle Banner */}
-      <div className="rounded-xl border border-border/70 bg-muted/15 p-3.5 flex items-center justify-between">
+      {/* <div className="rounded-xl border border-border/70 bg-muted/15 p-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
             <RefreshCw className="h-4 w-4" />
@@ -366,7 +352,7 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
           onCheckedChange={setIsRecurring}
           className="cursor-pointer"
         />
-      </div>
+      </div> */}
 
       {/* If Recurring is ON -> Extra options */}
       {isRecurring && (
