@@ -29,4 +29,20 @@ export const deleteIncomeCategory = async(id:string) =>{
 export const createIncome = async(data:any) =>{
     const res = await client.post('/api/incomes',data)
     return res.data;
+};
+
+
+export const getIncomes = async (data?: any) => {
+    const res = await client.get('/api/incomes')
+    return res.data;
+}
+
+export const deleteIncome = async (id: string) => {
+    const res = await client.delete(`/api/incomes/${id}`)
+    return res.data;
+}
+
+export const getIncomeSummary = async () => {
+    const res = await client.get('/api/incomes/summary')
+    return res.data;
 }

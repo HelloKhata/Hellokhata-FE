@@ -22,7 +22,7 @@ import {
 interface IncomeCategoriesCardProps {
   incomeCategories?: any[];
   loadingCategories?: boolean;
-  incomes: IncomeRecord[];
+  incomes?: IncomeRecord[] | any[];
   onOpenAddCategory: () => void;
   onOpenEditCategory: (cat: any) => void;
   onPromptDeleteCategory: (cat: any) => void;
@@ -33,7 +33,7 @@ interface IncomeCategoriesCardProps {
 export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
   incomeCategories = [],
   loadingCategories,
-  incomes,
+  incomes = [],
   onOpenAddCategory,
   onOpenEditCategory,
   onPromptDeleteCategory,
@@ -42,14 +42,14 @@ export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
 }) => {
   // Chart Data calculation
   const totalAmount = useMemo(() => {
-    return incomes.reduce((sum, inc) => sum + (inc.amount || 0), 0);
+    return (incomes || []).reduce((sum, inc) => sum + (Number(inc.amount) || 0), 0);
   }, [incomes]);
 
   const overviewChartData = useMemo(() => {
-    if (incomes.length === 0) {
+    if (!incomes || incomes.length === 0) {
       return [
         {
-          name: "Direct Income",
+          name: isBangla ? "আয়ের হিসাব" : "Direct Income",
           value: 100,
           color: "#10b981",
           percentage: 100,
@@ -59,15 +59,22 @@ export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
 
     const map = new Map<string, { name: string; value: number; color: string }>();
 
-    incomes.forEach((inc) => {
-      const existing = map.get(inc.categoryId);
+    incomes.forEach((inc: any) => {
+      const catId = inc.categoryId || inc.category?.id || "other";
+      const catName = isBangla
+        ? inc.category?.nameBn || inc.titleBn || inc.category?.name || "আয়"
+        : inc.category?.name || inc.titleEn || "Income";
+      const catColor = inc.category?.color || inc.color || "#10b981";
+      const val = Number(inc.amount) || 0;
+
+      const existing = map.get(catId);
       if (existing) {
-        existing.value += inc.amount;
+        existing.value += val;
       } else {
-        map.set(inc.categoryId, {
-          name: isBangla ? inc.titleBn : inc.titleEn,
-          value: inc.amount,
-          color: inc.color || "#10b981",
+        map.set(catId, {
+          name: catName,
+          value: val,
+          color: catColor,
         });
       }
     });
@@ -81,6 +88,7 @@ export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
       percentage: total > 0 ? Math.round((c.value / total) * 100) : 0,
     }));
   }, [incomes, isBangla]);
+
 
   return (
     <div className="space-y-6">
@@ -113,7 +121,7 @@ export const IncomeCategoriesCard: React.FC<IncomeCategoriesCardProps> = ({
               {isBangla ? "কোনো ক্যাটাগরি যোগ করা হয়নি" : "No categories added yet"}
             </div>
           ) : (
-            incomeCategories.slice(0, 5).map((cat: any) => {
+            incomeCategories.slice(0, 3).map((cat: any) => {
               const { bgColor, borderColor } = getCategoryColorStyles(
                 cat.color || "#10b981"
               );
