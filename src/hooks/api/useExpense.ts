@@ -1,5 +1,17 @@
-import { createExpense, createExpenseCategories, deleteExpense, getExpenseById, getExpenseCategories, getExpenses, getExpenseSummary, updateExpense, uploadExpenseImage } from "@/services/expense.services"
-import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  createExpense,
+  createExpenseCategories,
+  deleteExpense,
+  deleteExpenseCategory,
+  getExpenseById,
+  getExpenseCategories,
+  getExpenses,
+  getExpenseSummary,
+  updateExpense,
+  updateExpenseCategory,
+  uploadExpenseImage,
+} from "@/services/expense.services"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 
 export const useExpenseSummary = () => {
@@ -30,6 +42,30 @@ export const useCreateExpenseCategories = () => {
     mutationFn: createExpenseCategories,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenseCategories'] });
+    },
+  });
+};
+
+export const useUpdateExpenseCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateExpenseCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenseCategories'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenseSummary'] });
+    },
+  });
+};
+
+export const useDeleteExpenseCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteExpenseCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenseCategories'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenseSummary'] });
     },
   });
 };
