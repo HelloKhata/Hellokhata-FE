@@ -3,7 +3,10 @@ import {
   type GenericChatEvent,
   type GenericChatState,
 } from "../types/ai-integration/generic-chat.state";
-import type { PublicUserRequest } from "../types/ai-integration/generic-tool.contract";
+import type {
+  JsonObject,
+  PublicUserRequest,
+} from "../types/ai-integration/generic-tool.contract";
 import {
   V2TransportError,
   type V2Result,
@@ -52,6 +55,7 @@ export function createV2StateClient(
   async function perform(
     key: string,
     work: (signal: AbortSignal) => Promise<V2Result>,
+    acceptEditedPending = false,
   ) {
     const generation = ++attempt;
     controller?.abort();
@@ -59,7 +63,19 @@ export function createV2StateClient(
     const signal = controller.signal;
     try {
       const result = await work(signal);
-      if (generation === attempt && !signal.aborted) deliver(result, key);
+      if (generation === attempt && !signal.aborted) {
+        // Editing returns a new pending version. Enter recovery before accepting
+        // it; the shared state contract intentionally forbids pending responses
+        // from resolving an uncertain CONFIRM directly.
+        if (
+          acceptEditedPending &&
+          result.status === 200 &&
+          result.data.kind === "PENDING_ACTION" &&
+          state.kind === "CONFIRMING"
+        )
+          dispatch({ kind: "FAIL", requestKey: key, code: "ACTION_REFRESH" });
+        deliver(result, key);
+      }
     } catch (error) {
       if (generation === attempt && !signal.aborted && active(key))
         dispatch({
@@ -70,8 +86,55 @@ export function createV2StateClient(
         });
     }
   }
+  async function reviewCommand(
+    command: "EDIT" | "REJECT",
+    idempotencyKey: string,
+    argumentsValue?: JsonObject,
+  ) {
+    if (state.kind !== "ACTION_REVIEW")
+      throw new Error("ACTION_REVIEW_REQUIRED");
+    const action = state.action;
+    const key = uuid();
+    // CONFIRMING is the shared in-flight action fence, not permission to execute.
+    // Only the actual command sent below decides EDIT/REJECT/CONFIRM on the ERP.
+    dispatch({
+      kind: "CONFIRM",
+      requestKey: key,
+      actionId: action.actionId,
+      expectedVersion: action.version,
+      nowMs: Date.now(),
+    });
+    if (!active(key)) throw new Error("ACTION_TRANSITION_REJECTED");
+    recovery = { requestKey: key, actionId: action.actionId };
+    await perform(
+      key,
+      async (signal) => {
+        const result = await transport.command(
+          {
+            contractVersion: "2.0.0",
+            actionId: action.actionId,
+            expectedVersion: action.version,
+            idempotencyKey,
+            ...(command === "EDIT"
+              ? { command: "EDIT" as const, arguments: argumentsValue! }
+              : { command: "REJECT" as const }),
+          },
+          signal,
+        );
+        // A 204 confirms rejection but has no state payload. GET is read-only;
+        // never repeat the mutation when its outcome is uncertain.
+        return result.status === 204
+          ? transport.recoverAction(action.actionId, signal)
+          : result;
+      },
+      command === "EDIT",
+    );
+  }
   return {
     getState: () => state,
+    edit: (argumentsValue: JsonObject, idempotencyKey: string) =>
+      reviewCommand("EDIT", idempotencyKey, argumentsValue),
+    reject: (idempotencyKey: string) => reviewCommand("REJECT", idempotencyKey),
     /** Transcription alone never dispatches a text request. */
     dispatch,
     cancel: () => {
