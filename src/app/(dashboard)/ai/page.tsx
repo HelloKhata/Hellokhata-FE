@@ -2,6 +2,7 @@
 // Enterprise-grade chat interface with proper layout
 
 'use client';
+import { V2InvoiceChat } from "@/components/ai/V2InvoiceChat";
 
 import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, Badge, Button, Divider } from '@/components/ui/premium';
@@ -44,6 +45,9 @@ interface Message {
 }
 
 export default function AIPage() {
+  return process.env.NEXT_PUBLIC_AI_V2_ENABLED === "true" ? <V2InvoiceChat /> : <LegacyAIPage />;
+}
+function LegacyAIPage() {
   const { t, isBangla } = useAppTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');

@@ -2,6 +2,7 @@
 // Voice-first experience with waveform animation and live transcription
 
 'use client';
+import { V2AssistantEntry } from "./V2AssistantEntry";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +45,11 @@ interface VoiceResult {
 }
 
 export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
+  if (process.env.NEXT_PUBLIC_AI_V2_ENABLED === "true")
+    return <V2AssistantEntry open={isOpen} onClose={onClose} />;
+  return <LegacyVoiceModal isOpen={isOpen} onClose={onClose} />;
+}
+function LegacyVoiceModal({ isOpen, onClose }: VoiceModalProps) {
   const { isBangla } = useAppTranslation();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);

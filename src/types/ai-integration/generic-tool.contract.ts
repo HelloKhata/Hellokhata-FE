@@ -139,7 +139,12 @@ export type PublicChatResponse = {
   requestId: string;
   conversationId: string;
 } & (
-  | { kind: 'ANSWER'; text: string; evidenceToolCallIds: string[] }
+  | {
+      kind: 'ANSWER';
+      text: string;
+      evidenceToolCallIds: string[];
+      reports?: ReportPresentation[];
+    }
   | {
       kind: 'CLARIFICATION';
       clarificationId: string;
@@ -156,6 +161,30 @@ export interface TranscriptResponse {
   transcriptId: string;
   transcript: string;
   language: string;
+}
+/** ERP-authored presentation of verified READ results, never model-generated.
+ * Row identifiers are data, not authority or executable frontend URLs. */
+export interface ReportPresentation {
+  /** ERP-authored query for explicit pagination; never an execution command. */
+  query?: { name: string; arguments: JsonObject };
+  toolCallId: string;
+  title: string;
+  description: string;
+  timeZone: string;
+  startDate: string | null;
+  endDate: string | null;
+  generatedAtMs: number;
+  columns: {
+    key: string;
+    label: string;
+    format: 'text' | 'number' | 'money' | 'date';
+  }[];
+  rows: JsonObject[];
+  totals: JsonObject;
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  hasMore: boolean;
 }
 // Compiler must enforce draft-07 without coercion/defaults/property removal or
 // remote schema loading. Schema validation is necessary, never authorization.

@@ -82,6 +82,35 @@ const answer = {
   text: str(10000),
   evidenceToolCallIds: { ...list(uuid, 128), uniqueItems: true },
 };
+const reportProperties = {
+  query: obj({ name: toolName, arguments: jsonObject }),
+  toolCallId: uuid,
+  title: str(240),
+  description: str(1000),
+  timeZone: str(64),
+  startDate: { anyOf: [str(10), { type: 'null' }] },
+  endDate: { anyOf: [str(10), { type: 'null' }] },
+  generatedAtMs: timestamp,
+  columns: list(
+    obj({
+      key: str(64),
+      label: str(120),
+      format: { enum: ['text', 'number', 'money', 'date'] },
+    }),
+    20,
+    1,
+  ),
+  rows: list(jsonObject, 20),
+  totals: jsonObject,
+  page: integer(1, 1000),
+  pageSize: integer(1, 20),
+  totalRecords: integer(0, Number.MAX_SAFE_INTEGER),
+  hasMore: { type: 'boolean' },
+};
+const report = obj(
+  reportProperties,
+  Object.keys(reportProperties).filter((key) => key !== 'query'),
+);
 const clarification = {
   kind: literal('CLARIFICATION'),
   clarificationId: uuid,
@@ -232,12 +261,23 @@ export const genericToolSchemas = {
   ),
   publicResponse: root({
     oneOf: [
-      obj({
-        contractVersion: version,
-        requestId: uuid,
-        conversationId: uuid,
-        ...answer,
-      }),
+      obj(
+        {
+          contractVersion: version,
+          requestId: uuid,
+          conversationId: uuid,
+          ...answer,
+          reports: list(report, 4),
+        },
+        [
+          'contractVersion',
+          'requestId',
+          'conversationId',
+          'kind',
+          'text',
+          'evidenceToolCallIds',
+        ],
+      ),
       obj({
         contractVersion: version,
         requestId: uuid,
@@ -374,8 +414,33 @@ export function createGenericContractValidator(compile: SchemaCompiler) {
         );
       return parsed;
     },
-    publicResponse: (value: unknown) =>
-      parse<PublicChatResponse>('publicResponse', value),
+    publicResponse: (value: unknown) => {
+      const parsed = parse<PublicChatResponse>('publicResponse', value);
+      if (parsed.kind === 'ANSWER' && parsed.reports) {
+        const seen = new Set<string>();
+        for (const item of parsed.reports) {
+          if (
+            seen.has(item.toolCallId) ||
+            !parsed.evidenceToolCallIds.includes(item.toolCallId)
+          )
+            throw new GenericContractViolation('REPORT_EVIDENCE_MISMATCH');
+          seen.add(item.toolCallId);
+          if (
+            item.rows.length > item.pageSize ||
+            item.rows.length > item.totalRecords ||
+            new Set(item.columns.map((column) => column.key)).size !==
+              item.columns.length
+          )
+            throw new GenericContractViolation('REPORT_PRESENTATION_MISMATCH');
+          try {
+            new Intl.DateTimeFormat('en', { timeZone: item.timeZone });
+          } catch {
+            throw new GenericContractViolation('INVALID_TIME_ZONE');
+          }
+        }
+      }
+      return parsed;
+    },
     transcript: (value: unknown) =>
       parse<TranscriptResponse>('transcript', value),
     actionCommand: (action: PendingAction, value: unknown, nowMs: number) => {

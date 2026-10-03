@@ -2,12 +2,13 @@ import type { SchemaCompiler } from "../types/ai-integration/generic-tool.contra
 import { useSessionStore } from "../stores/sessionStore";
 import { useBranchStore } from "../stores/branchStore";
 import { createV2Transport } from "./ai-v2.transport";
+import { ERP_API_BASE_URL } from "@/lib/api-url";
 
-/** Phase 6 supplies the reviewed browser compiler and wires the chat UI.
- * Existing v1 callers continue using ai.services.ts unchanged. */
+/** Phase 5 supplies the browser compiler and gated invoice vertical slice.
+ * Phase 6 unifies entry points; existing v1 callers remain unchanged. */
 export function createErpV2Transport(compile: SchemaCompiler) {
   return createV2Transport({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "/api",
+    baseUrl: ERP_API_BASE_URL,
     compile,
     headers: () => {
       const session = useSessionStore.getState();

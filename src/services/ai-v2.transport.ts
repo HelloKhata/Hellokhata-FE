@@ -8,6 +8,7 @@ import {
   createGenericContractValidator,
   genericToolSchemas,
 } from "../types/ai-integration/generic-tool.schema";
+import { fetchWithSessionRefresh } from "./ai-v2.auth";
 
 export type V2Result =
   | { status: 200; data: PublicChatResponse }
@@ -58,7 +59,7 @@ export function createV2Transport(options: V2TransportOptions) {
   ): Promise<V2Result> {
     let response: Response;
     try {
-      response = await fetcher(
+      response = await fetchWithSessionRefresh(
         options.baseUrl.replace(/\/$/, "") + "/ai/v2/" + path,
         {
           method,
@@ -68,6 +69,7 @@ export function createV2Transport(options: V2TransportOptions) {
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
           signal,
         },
+        fetcher,
       );
     } catch {
       throw new V2TransportError(
@@ -190,6 +192,13 @@ export function createV2Transport(options: V2TransportOptions) {
     },
     recoverRequest: (requestId: string, signal?: AbortSignal) =>
       call("requests/" + id(requestId), "GET", undefined, signal),
+    recoverClientRequest: (clientRequestId: string, signal?: AbortSignal) =>
+      call(
+        "requests/by-client/" + id(clientRequestId),
+        "GET",
+        undefined,
+        signal,
+      ),
     recoverAction: (actionId: string, signal?: AbortSignal) =>
       call("actions/" + id(actionId), "GET", undefined, signal),
     command: (command: ActionCommand, signal?: AbortSignal) => {
