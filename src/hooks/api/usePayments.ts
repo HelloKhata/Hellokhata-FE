@@ -60,9 +60,6 @@ export const useGetOpeningBalance = (id:string) =>{
 };
 
 
-
-
-
 // adjustment balance
 export const useGetAdjustBalance = (id:string) =>{
     return useQuery({

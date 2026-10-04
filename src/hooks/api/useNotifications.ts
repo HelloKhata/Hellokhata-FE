@@ -20,8 +20,6 @@ export const useReadAllNotifications = () => {
     })
 }
 
-
-
 export const useMarkAsReadNotification  = () =>{
       const queryClient = useQueryClient();
 

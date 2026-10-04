@@ -38,4 +38,4 @@ export const getAdjustBalance = async (id: string) => {
     const res = await client.get(`/api/parties/adjustments/${id}`)
     return res.data
 };
-
+
