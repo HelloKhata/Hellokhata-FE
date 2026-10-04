@@ -47,6 +47,7 @@ export function V2InvoiceChat() {
   const contextRef = useRef(context);
   contextRef.current = context;
   const requestContext = useRef<string | undefined>(undefined);
+  const restoredContext = useRef<string | undefined>(undefined);
   const [submittedContext, setSubmittedContext] = useState<string | undefined>(
     undefined,
   );
@@ -162,6 +163,7 @@ export function V2InvoiceChat() {
     const clock = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       mounted.current = false;
+      restoredContext.current = undefined;
       sequence.current++;
       clearInterval(clock);
       audioAbort.current?.abort();
@@ -196,6 +198,11 @@ export function V2InvoiceChat() {
       setDraftJson("");
       setResponseDetails("");
     }
+    // Restore only on mount/context entry, not on every state transition.
+    // Otherwise saving a new request aborts its POST and starts GET recovery
+    // before the ERP has finished processing it.
+    if (restoredContext.current === context) return;
+    restoredContext.current = context;
     const saved = loadRecovery(context);
     if (!saved || !clientRef.current) return;
     requestContext.current = context;
