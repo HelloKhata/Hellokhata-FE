@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FinancePageHeader } from '@/components/finance/FinancePageHeader';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -27,83 +28,50 @@ import {
   History,
   Info,
   User,
+  Bell,
+  Loader2,
 } from 'lucide-react';
+import { useParties, usePartyLedger } from '@/hooks/api/useParties';
+import { AddPaymentOutModal } from '@/components/parties/AddPaymentOutModal';
+import { AddReminderModal } from '@/components/parties/AddReminderModal';
+import { PayoutHistory, PayoutLog } from '@/components/finance/payables/PayoutHistory';
 
-interface SupplierDue {
+export interface SupplierParty {
   id: string;
   name: string;
-  nameBn: string;
-  totalDue: number;
-  lastPaymentDate: string;
-  phone: string;
-  status: 'normal' | 'warning' | 'critical';
-  ledger: Array<{
+  nameBn?: string;
+  phone?: string;
+  type?: string;
+  openingBalance?: number;
+  currentBalance?: number;
+  totalDue?: number;
+  lastPaymentDate?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  category?: string | null;
+  balanceDirection?: 'receive' | 'pay' | string;
+  currentBalanceDirection?: 'receive' | 'pay' | string;
+  status?: 'normal' | 'warning' | 'critical';
+  ledger?: Array<{
     date: string;
     ref: string;
     desc: string;
-    descBn: string;
+    descBn?: string;
     debit: number;  // decreases due (our payments)
     credit: number; // increases due (our purchases)
   }>;
 }
 
-interface PayoutLog {
-  id: string;
-  date: string;
-  supplierName: string;
-  supplierNameBn: string;
-  amount: number;
-  discount: number;
-  method: string;
-  methodBn: string;
-  ref: string;
-}
 
 export default function FinancePayablesPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  // State Management: Supplier Outstanding Balances
-  const [suppliers, setSuppliers] = useState<SupplierDue[]>([
-    {
-      id: 'SUP-001',
-      name: 'Apex Distributers',
-      nameBn: 'এপেক্স ডিস্ট্রিবিউটর',
-      totalDue: 180000,
-      lastPaymentDate: '2026-08-01',
-      phone: '+8801722334455',
-      status: 'normal',
-      ledger: [
-        { date: '2026-07-12', ref: 'INV-AP-492', desc: 'Credit purchase of leather batches', descBn: 'বাকিতে চামড়া সরবরাহ', debit: 0, credit: 280000 },
-        { date: '2026-08-01', ref: 'PAY-AP-101', desc: 'Vendor partial payment payout', descBn: 'সরবরাহকারী আংশিক বিল পরিশোধ', debit: 100000, credit: 0 },
-      ],
-    },
-    {
-      id: 'SUP-002',
-      name: 'Bata Wholesale Hub',
-      nameBn: 'বাটা পাইকারি হাব',
-      totalDue: 142300,
-      lastPaymentDate: '2026-07-25',
-      phone: '+8801822334455',
-      status: 'normal',
-      ledger: [
-        { date: '2026-07-15', ref: 'INV-BT-902', desc: 'Wholesale footwear stock delivery', descBn: 'বাকিতে জুতো স্টক সরবরাহ', debit: 0, credit: 192300 },
-        { date: '2026-07-25', ref: 'PAY-BT-094', desc: 'Bata invoice settlement payment', descBn: 'বাটা ইনভয়েস বিল পরিশোধ', debit: 50000, credit: 0 },
-      ],
-    },
-    {
-      id: 'SUP-003',
-      name: 'National Leather Co.',
-      nameBn: 'ন্যাশনাল লেদার কোং',
-      totalDue: 90000,
-      lastPaymentDate: '2026-06-10',
-      phone: '+8801922334455',
-      status: 'critical',
-      ledger: [
-        { date: '2026-06-10', ref: 'INV-NL-231', desc: 'Raw synthetic chemicals delivery', descBn: 'বাকিতে সিন্থেটিক রাসায়নিক সরবরাহ', debit: 0, credit: 90000 },
-      ],
-    },
-  ]);
+  // API State: Fetch suppliers with payable balance
+  const { data: suppliers = [], isLoading: isLoadingSuppliers } = useParties({
+    type: 'supplier',
+    balanceType: 'payable',
+  });
 
   // State Management: Payout Log List
   const [payoutLogs, setPayoutLogs] = useState<PayoutLog[]>([
@@ -122,13 +90,8 @@ export default function FinancePayablesPage() {
   const [isPayOpen, setIsPayOpen] = useState(false);
   const [isNewDueOpen, setIsNewDueOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
   const [selectedSupId, setSelectedSupId] = useState('');
-
-  // Form Fields: Record Payout
-  const [formAmount, setFormAmount] = useState('');
-  const [formDiscount, setFormDiscount] = useState('0');
-  const [formMethod, setFormMethod] = useState('Bank Transfer');
-  const [formDesc, setFormDesc] = useState('');
 
   // Form Fields: New Bill Due
   const [newSupName, setNewSupName] = useState('');
@@ -139,12 +102,47 @@ export default function FinancePayablesPage() {
 
   const [alertMessage, setAlertMessage] = useState('');
 
-  const selectedSupplier = suppliers.find((s) => s.id === selectedSupId);
+  // Selected supplier for modals
+  const selectedSupplier: SupplierParty | null = useMemo(() => {
+    if (!Array.isArray(suppliers)) return null;
+    return suppliers.find((s: any) => s.id === selectedSupId) || null;
+  }, [suppliers, selectedSupId]);
 
-  // Totals
-  const totalPayables = suppliers.reduce((acc, s) => acc + s.totalDue, 0);
-  const criticalCount = suppliers.filter((s) => s.status === 'critical' && s.totalDue > 0).length;
-  const warningCount = suppliers.filter((s) => s.status === 'warning' && s.totalDue > 0).length;
+  // Party ledger query when ledger dialog is open
+  const { data: partyLedgerData, isLoading: isLedgerLoading } = usePartyLedger(
+    selectedSupId,
+    undefined,
+    { enabled: isLedgerOpen && !!selectedSupId }
+  );
+
+  const ledgerEntries = useMemo(() => {
+    if (partyLedgerData?.data?.transactions) return partyLedgerData.data.transactions;
+    if (partyLedgerData?.data?.ledger) return partyLedgerData.data.ledger;
+    if (selectedSupplier?.ledger) return selectedSupplier.ledger;
+    return [];
+  }, [partyLedgerData, selectedSupplier]);
+
+  // Totals calculation
+  const totalPayables = useMemo(() => {
+    if (!Array.isArray(suppliers)) return 0;
+    return suppliers.reduce((acc: number, s: any) => acc + (s.currentBalance ?? s.totalDue ?? 0), 0);
+  }, [suppliers]);
+
+  const criticalCount = useMemo(() => {
+    if (!Array.isArray(suppliers)) return 0;
+    return suppliers.filter((s: any) => {
+      const due = s.currentBalance ?? s.totalDue ?? 0;
+      return (s.status === 'critical' || due > 150000) && due > 0;
+    }).length;
+  }, [suppliers]);
+
+  const warningCount = useMemo(() => {
+    if (!Array.isArray(suppliers)) return 0;
+    return suppliers.filter((s: any) => {
+      const due = s.currentBalance ?? s.totalDue ?? 0;
+      return (s.status === 'warning' || (due > 80000 && due <= 150000)) && due > 0;
+    }).length;
+  }, [suppliers]);
 
   const handleOpenPay = (id: string) => {
     setSelectedSupId(id);
@@ -156,74 +154,9 @@ export default function FinancePayablesPage() {
     setIsLedgerOpen(true);
   };
 
-  const handleRecordPayout = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSupplier) return;
-
-    const amountNum = parseFloat(formAmount) || 0;
-    const discountNum = parseFloat(formDiscount) || 0;
-    const totalReduction = amountNum + discountNum;
-
-    if (amountNum <= 0) return;
-
-    if (selectedSupplier.totalDue < totalReduction) {
-      alert(isBangla ? 'ভুল এন্ট্রি! পরিশোধ পরিমাণ সরবরাহকারীর বকেয়া থেকে বেশি।' : 'Incorrect entry! Payout amount exceeds supplier outstanding balance.');
-      return;
-    }
-
-    const payoutRef = `PAY-SUP-${(payoutLogs.length + 100).toString()}`;
-    const today = new Date().toISOString().split('T')[0];
-
-    // Update Supplier list state
-    setSuppliers(
-      suppliers.map((s) => {
-        if (s.id === selectedSupplier.id) {
-          const updatedDue = Math.max(0, s.totalDue - totalReduction);
-          return {
-            ...s,
-            totalDue: updatedDue,
-            lastPaymentDate: today,
-            status: updatedDue > 150000 ? 'critical' : updatedDue > 80000 ? 'warning' : 'normal',
-            ledger: [
-              ...s.ledger,
-              {
-                date: today,
-                ref: payoutRef,
-                desc: formDesc || 'Vendor invoice settlement payout',
-                descBn: formDesc || 'সরবরাহকারী বিল পরিশোধ সম্পন্ন',
-                debit: totalReduction,
-                credit: 0,
-              },
-            ],
-          };
-        }
-        return s;
-      })
-    );
-
-    // Append to Payout history state
-    const newLog: PayoutLog = {
-      id: payoutRef,
-      date: today,
-      supplierName: selectedSupplier.name,
-      supplierNameBn: selectedSupplier.nameBn,
-      amount: amountNum,
-      discount: discountNum,
-      method: formMethod,
-      methodBn: isBangla ? (formMethod === 'Cash' ? 'নগদ টাকা' : formMethod === 'Bank Transfer' ? 'ব্যাংক স্থানান্তর' : 'মোবাইল ওয়ালেট') : formMethod,
-      ref: formDesc || 'Invoice Settlement',
-    };
-
-    setPayoutLogs([newLog, ...payoutLogs]);
-    setIsPayOpen(false);
-
-    // Reset Form
-    setFormAmount('');
-    setFormDiscount('0');
-    setFormDesc('');
-
-    setAlertMessage(isBangla ? 'সরবরাহকারী পেমেন্ট আউট সফলভাবে সম্পন্ন হয়েছে!' : 'Vendor payout payment saved successfully!');
-    setTimeout(() => setAlertMessage(''), 4000);
+  const handleOpenReminder = (id: string) => {
+    setSelectedSupId(id);
+    setIsReminderOpen(true);
   };
 
   const handleRecordCreditPurchase = (e: React.FormEvent) => {
@@ -231,60 +164,6 @@ export default function FinancePayablesPage() {
     const amountNum = parseFloat(newSupAmount) || 0;
 
     if (!newSupName.trim() || amountNum <= 0) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const invoiceRef = newSupInv || `INV-SUP-${(Math.floor(Math.random() * 900) + 100)}`;
-
-    const existingSup = suppliers.find((s) => s.name.toLowerCase() === newSupName.toLowerCase());
-
-    if (existingSup) {
-      setSuppliers(
-        suppliers.map((s) => {
-          if (s.id === existingSup.id) {
-            const updatedDue = s.totalDue + amountNum;
-            return {
-              ...s,
-              totalDue: updatedDue,
-              status: updatedDue > 150000 ? 'critical' : updatedDue > 80000 ? 'warning' : 'normal',
-              ledger: [
-                ...s.ledger,
-                {
-                  date: today,
-                  ref: invoiceRef,
-                  desc: `Credit Purchase (${newSupTerm})`,
-                  descBn: `বাকিতে ক্রয় (${newSupTerm})`,
-                  debit: 0,
-                  credit: amountNum,
-                },
-              ],
-            };
-          }
-          return s;
-        })
-      );
-    } else {
-      const newSupId = `SUP-${(suppliers.length + 1).toString().padStart(3, '0')}`;
-      const newSupObj: SupplierDue = {
-        id: newSupId,
-        name: newSupName,
-        nameBn: newSupName,
-        totalDue: amountNum,
-        lastPaymentDate: 'N/A',
-        phone: newSupPhone || '+8801700000000',
-        status: amountNum > 150000 ? 'critical' : amountNum > 80000 ? 'warning' : 'normal',
-        ledger: [
-          {
-            date: today,
-            ref: invoiceRef,
-            desc: `Initial Credit Purchase (${newSupTerm})`,
-            descBn: `প্রারম্ভিক বাকিতে ক্রয় (${newSupTerm})`,
-            debit: 0,
-            credit: amountNum,
-          },
-        ],
-      };
-      setSuppliers([newSupObj, ...suppliers]);
-    }
 
     setIsNewDueOpen(false);
 
@@ -298,30 +177,30 @@ export default function FinancePayablesPage() {
     setTimeout(() => setAlertMessage(''), 4000);
   };
 
-  const handleSchedule = (sup: SupplierDue) => {
-    const name = isBangla ? sup.nameBn : sup.name;
-    setAlertMessage(
-      isBangla
-        ? `${name} এর বকেয়া পরিশোধ করার জন্য পেমেন্ট গেটওয়েতে সিডিউল করা হয়েছে!`
-        : `Configured automated payout scheduler for ${name} (${formatCurrency(sup.totalDue)}) successfully!`
-    );
-    setTimeout(() => setAlertMessage(''), 4000);
-  };
-
   // Filter & Search Logic
-  const filteredSuppliers = suppliers.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.nameBn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.phone.includes(searchTerm) ||
-      s.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSuppliers = useMemo(() => {
+    if (!Array.isArray(suppliers)) return [];
+    return suppliers.filter((s: any) => {
+      const due = s.currentBalance ?? s.totalDue ?? 0;
+      const supStatus = s.status || (due > 150000 ? 'critical' : due > 80000 ? 'warning' : 'normal');
+      const name = s.name || '';
+      const nameBn = s.nameBn || '';
+      const phone = s.phone || '';
+      const id = s.id || '';
 
-    const matchesRisk =
-      riskFilter === 'all' ||
-      s.status === riskFilter;
+      const matchesSearch =
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        nameBn.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        phone.includes(searchTerm) ||
+        id.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch && matchesRisk;
-  });
+      const matchesRisk =
+        riskFilter === 'all' ||
+        supStatus === riskFilter;
+
+      return matchesSearch && matchesRisk;
+    });
+  }, [suppliers, searchTerm, riskFilter]);
 
   return (
     <div className="space-y-6">
@@ -333,6 +212,8 @@ export default function FinancePayablesPage() {
           description="Manage supplier invoice balances, schedule payouts, and record payment confirmations."
           descriptionBn="সরবরাহকারীদের বকেয়া বিল পর্যবেক্ষণ করুন, মূল্য পরিশোধ এন্ট্রি দিন এবং পেমেন্ট সিডিউল করুন।"
           icon={FileText}
+          showBackButton={true}
+          backHref="/finance/overview"
         />
         <div className="flex gap-2 shrink-0">
           <Button onClick={() => setIsNewDueOpen(true)} className="gap-1.5 text-xs h-9">
@@ -460,74 +341,94 @@ export default function FinancePayablesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/10">
-                  {filteredSuppliers.length === 0 ? (
+                  {isLoadingSuppliers ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={idx} className="border-b border-border/10">
+                        <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-32" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="p-3"><Skeleton className="h-5 w-16 rounded-md" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                        <td className="p-3 text-center"><Skeleton className="h-7 w-28 mx-auto" /></td>
+                      </tr>
+                    ))
+                  ) : filteredSuppliers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-6 text-center text-muted-foreground font-semibold">
                         {isBangla ? 'কোনো বকেয়া সরবরাহকারী পাওয়া যায়নি।' : 'No supplier outstanding balances found.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredSuppliers.map((sup) => (
-                      <tr key={sup.id} className="hover:bg-muted/5">
-                        <td className="p-3 font-mono text-muted-foreground">{sup.id}</td>
-                        <td className="p-3 font-bold text-foreground">
-                          {isBangla ? sup.nameBn : sup.name}
-                        </td>
-                        <td className="p-3 font-mono text-muted-foreground">{sup.phone}</td>
-                        <td className="p-3 font-mono text-muted-foreground">{sup.lastPaymentDate}</td>
-                        <td className="p-3">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[9px] py-0.5 px-2 rounded-md border-transparent font-bold capitalize',
-                              sup.status === 'normal' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500',
-                              sup.status === 'warning' && 'bg-amber-500/10 text-amber-600 dark:text-amber-500',
-                              sup.status === 'critical' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                            )}
-                          >
-                            {sup.status === 'normal' && (isBangla ? 'স্বাভাবিক' : 'Normal')}
-                            {sup.status === 'warning' && (isBangla ? 'ঝুঁকিপূর্ণ' : 'Warning')}
-                            {sup.status === 'critical' && (isBangla ? 'উচ্চ ঝুঁকি' : 'Critical')}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-foreground text-sm">
-                          {sup.totalDue > 0 ? formatCurrency(sup.totalDue) : '—'}
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              size="sm"
+                    filteredSuppliers.map((sup: any) => {
+                      const dueAmount = sup.currentBalance ?? sup.totalDue ?? 0;
+                      const supStatus = sup.status || (dueAmount > 150000 ? 'critical' : dueAmount > 80000 ? 'warning' : 'normal');
+                      const displayDate = sup.lastPaymentDate || (sup.createdAt ? new Date(sup.createdAt).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
+
+                      return (
+                        <tr key={sup.id} className="hover:bg-muted/5">
+                          <td className="p-3 font-mono text-muted-foreground text-[11px] truncate max-w-[120px]" title={sup.id}>
+                            {sup.id}
+                          </td>
+                          <td className="p-3 font-bold text-foreground">
+                            {isBangla && sup.nameBn ? sup.nameBn : sup.name}
+                          </td>
+                          <td className="p-3 font-mono text-muted-foreground">{sup.phone || '—'}</td>
+                          <td className="p-3 font-mono text-muted-foreground">{displayDate}</td>
+                          <td className="p-3">
+                            <Badge
                               variant="outline"
-                              onClick={() => handleOpenPay(sup.id)}
-                              disabled={sup.totalDue === 0}
-                              className="h-7 text-[10px] px-2 gap-1 border-rose-500/20 hover:bg-rose-500/10 text-rose-500 dark:text-rose-400"
+                              className={cn(
+                                'text-[9px] py-0.5 px-2 rounded-md border-transparent font-bold capitalize',
+                                supStatus === 'normal' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500',
+                                supStatus === 'warning' && 'bg-amber-500/10 text-amber-600 dark:text-amber-500',
+                                supStatus === 'critical' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                              )}
                             >
-                              <CreditCard className="h-3 w-3" />
-                              <span>{isBangla ? 'পেমেন্ট প্রদান' : 'Pay Vendor'}</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenLedger(sup.id)}
-                              className="h-7 text-[10px] px-2 gap-1"
-                            >
-                              <FileText className="h-3 w-3" />
-                              <span>{isBangla ? 'খতিয়ান' : 'Ledger'}</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleSchedule(sup)}
-                              disabled={sup.totalDue === 0}
-                              className="h-7 text-[10px] px-2 text-primary hover:bg-primary/10 gap-1"
-                            >
-                              <CalendarDays className="h-3 w-3" />
-                              <span>{isBangla ? 'সিডিউল' : 'Schedule'}</span>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {supStatus === 'normal' && (isBangla ? 'স্বাভাবিক' : 'Normal')}
+                              {supStatus === 'warning' && (isBangla ? 'ঝুঁকিপূর্ণ' : 'Warning')}
+                              {supStatus === 'critical' && (isBangla ? 'উচ্চ ঝুঁকি' : 'Critical')}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-right font-mono font-bold text-foreground text-sm">
+                            {dueAmount > 0 ? formatCurrency(dueAmount) : '—'}
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenPay(sup.id)}
+                                disabled={dueAmount === 0}
+                                className="h-7 text-[10px] px-2 gap-1 border-rose-500/20 hover:bg-rose-500/10 text-rose-500 dark:text-rose-400"
+                              >
+                                <CreditCard className="h-3 w-3" />
+                                <span>{isBangla ? 'পেমেন্ট প্রদান' : 'Pay Vendor'}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenLedger(sup.id)}
+                                className="h-7 text-[10px] px-2 gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                <span>{isBangla ? 'খতিয়ান' : 'Ledger'}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleOpenReminder(sup.id)}
+                                disabled={dueAmount === 0}
+                                className="h-7 text-[10px] px-2 text-primary hover:bg-primary/10 gap-1"
+                              >
+                                <Bell className="h-3 w-3" />
+                                <span>{isBangla ? 'রিমাইন্ডার' : 'Reminder'}</span>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -537,128 +438,16 @@ export default function FinancePayablesPage() {
 
         {/* Tab 2: Payout Logs */}
         {activeTab === 'logs' && (
-          <Card className="border-border/50 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border/30 font-bold text-muted-foreground">
-                    <th className="p-3">{isBangla ? 'ভাউচার আইডি' : 'Payout Ref'}</th>
-                    <th className="p-3">{isBangla ? 'তারিখ' : 'Date'}</th>
-                    <th className="p-3">{isBangla ? 'সরবরাহকারী' : 'Supplier'}</th>
-                    <th className="p-3">{isBangla ? 'পেমেন্ট পদ্ধতি' : 'Method'}</th>
-                    <th className="p-3">{isBangla ? 'নোট' : 'Remarks'}</th>
-                    <th className="p-3 text-right">{isBangla ? 'প্রাপ্ত ডিসকাউন্ট' : 'Discount Recd'}</th>
-                    <th className="p-3 text-right">{isBangla ? 'মোট পরিশোধিত পরিমাণ' : 'Payout Net'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/10">
-                  {payoutLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-muted/5">
-                      <td className="p-3 font-mono font-bold text-primary">{log.id}</td>
-                      <td className="p-3 font-mono text-muted-foreground">{log.date}</td>
-                      <td className="p-3 font-semibold text-foreground">{isBangla ? log.supplierNameBn : log.supplierName}</td>
-                      <td className="p-3 text-muted-foreground">{isBangla ? log.methodBn : log.method}</td>
-                      <td className="p-3 text-muted-foreground">{log.ref}</td>
-                      <td className="p-3 text-right font-mono text-emerald-600 dark:text-emerald-500">
-                        {log.discount > 0 ? formatCurrency(log.discount) : '—'}
-                      </td>
-                      <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
-                        {formatCurrency(log.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          <PayoutHistory logs={payoutLogs} />
         )}
       </div>
 
-      {/* 5. Pay Supplier (Payment Voucher) Dialog Popup */}
-      <Dialog open={isPayOpen} onOpenChange={setIsPayOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <form onSubmit={handleRecordPayout} className="space-y-4">
-            <DialogHeader className="border-b pb-2">
-              <DialogTitle className="text-base font-bold flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-rose-600" />
-                <span>{isBangla ? 'সরবরাহকারী বিল পরিশোধ ভাউচার' : 'Record Supplier Payout'}</span>
-              </DialogTitle>
-            </DialogHeader>
-
-            {selectedSupplier && (
-              <div className="bg-muted/40 p-2.5 rounded-lg text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBangla ? 'সরবরাহকারী:' : 'Vendor:'}</span>
-                  <span className="font-bold text-foreground">{isBangla ? selectedSupplier.nameBn : selectedSupplier.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBangla ? 'বর্তমান বকেয়া (Outstanding):' : 'Current Outstanding:'}</span>
-                  <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">{formatCurrency(selectedSupplier.totalDue)}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-muted-foreground">{isBangla ? 'পরিশোধের পরিমাণ' : 'Payout Amount'}</label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    required
-                    className="font-mono h-9"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-muted-foreground">{isBangla ? 'প্রাপ্ত ডিসকাউন্ট' : 'Discount Recd'}</label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={formDiscount}
-                    onChange={(e) => setFormDiscount(e.target.value)}
-                    className="font-mono h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-muted-foreground">{isBangla ? 'উৎস তহবিল পদ্ধতি' : 'Source Cash/Bank Method'}</label>
-                <select
-                  value={formMethod}
-                  onChange={(e) => setFormMethod(e.target.value)}
-                  className="w-full h-9 rounded-lg border bg-background px-3 text-xs focus:outline-none"
-                >
-                  <option value="Bank Transfer">{isBangla ? 'ব্যাংক স্থানান্তর (Operating Account)' : 'Bank Transfer'}</option>
-                  <option value="Cash">{isBangla ? 'ক্যাশ অন হ্যান্ড (Cash Box)' : 'Cash Box'}</option>
-                  <option value="Mobile Wallet">{isBangla ? 'মোবাইল ওয়ালেট (bKash/Nagad)' : 'Mobile Wallet'}</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-muted-foreground">{isBangla ? 'বিবরণ / ন্যারেশন' : 'Memo / Remarks'}</label>
-                <Input
-                  placeholder={isBangla ? 'যেমন: চেক নাম্বার বা বিলের রেফারেন্স...' : 'e.g. Cleared bill invoice INV-AP-492'}
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="border-t pt-3">
-              <Button type="button" variant="outline" onClick={() => setIsPayOpen(false)} className="text-xs h-9">
-                {isBangla ? 'বাতিল' : 'Cancel'}
-              </Button>
-              <Button type="submit" className="text-xs h-9">
-                {isBangla ? 'পরিশোধ সংরক্ষণ করুন' : 'Submit Payment Voucher'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* 5. Pay Supplier (Payment Out) Modal */}
+      <AddPaymentOutModal
+        isOpen={isPayOpen}
+        onClose={() => setIsPayOpen(false)}
+        defaultPartyId={selectedSupId}
+      />
 
       {/* 6. Record New Bill Dialog Popup */}
       <Dialog open={isNewDueOpen} onOpenChange={setIsNewDueOpen}>
@@ -760,42 +549,62 @@ export default function FinancePayablesPage() {
               <div className="grid grid-cols-2 gap-4 bg-muted/40 p-3 rounded-lg text-xs font-semibold">
                 <div>
                   <span className="text-muted-foreground block">{isBangla ? 'সরবরাহকারী:' : 'Supplier Name:'}</span>
-                  <span className="text-sm font-bold text-foreground block mt-0.5">{isBangla ? selectedSupplier.nameBn : selectedSupplier.name}</span>
+                  <span className="text-sm font-bold text-foreground block mt-0.5">
+                    {isBangla && selectedSupplier.nameBn ? selectedSupplier.nameBn : selectedSupplier.name}
+                  </span>
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground block">{isBangla ? 'মোট বকেয়া পাওনা (Outstanding):' : 'Total Outstanding Balance:'}</span>
-                  <span className="text-sm font-bold text-rose-600 dark:text-rose-400 block mt-0.5 font-mono">{formatCurrency(selectedSupplier.totalDue)}</span>
+                  <span className="text-sm font-bold text-rose-600 dark:text-rose-400 block mt-0.5 font-mono">
+                    {formatCurrency(selectedSupplier.currentBalance ?? selectedSupplier.totalDue ?? 0)}
+                  </span>
                 </div>
               </div>
 
               {/* Entries list table */}
               <div className="border border-border/50 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
-                <table className="w-full text-left text-[11px] border-collapse font-mono">
-                  <thead>
-                    <tr className="bg-muted/50 border-b border-border/25 font-bold text-muted-foreground">
-                      <th className="p-2.5">{isBangla ? 'তারিখ' : 'Date'}</th>
-                      <th className="p-2.5">{isBangla ? 'রেফারেন্স' : 'Voucher Ref'}</th>
-                      <th className="p-2.5">{isBangla ? 'বিবরণ' : 'Description'}</th>
-                      <th className="p-2.5 text-right">{isBangla ? 'ডেবিট (-)' : 'Debit (-)'}</th>
-                      <th className="p-2.5 text-right">{isBangla ? 'ক্রেডিট (+)' : 'Credit (+)'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/20">
-                    {selectedSupplier.ledger.map((entry, idx) => (
-                      <tr key={idx} className="hover:bg-muted/5">
-                        <td className="p-2.5 text-muted-foreground">{entry.date}</td>
-                        <td className="p-2.5 text-primary font-bold">{entry.ref}</td>
-                        <td className="p-2.5 text-foreground truncate max-w-[150px]">{isBangla ? entry.descBn : entry.desc}</td>
-                        <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-500">
-                          {entry.debit > 0 ? formatCurrency(entry.debit) : '—'}
-                        </td>
-                        <td className="p-2.5 text-right text-rose-600 dark:text-rose-400">
-                          {entry.credit > 0 ? formatCurrency(entry.credit) : '—'}
-                        </td>
+                {isLedgerLoading ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="text-xs">{isBangla ? 'খতিয়ান লোড হচ্ছে...' : 'Loading ledger...'}</span>
+                  </div>
+                ) : ledgerEntries.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    {isBangla ? 'কোনো খতিয়ান রেকর্ড পাওয়া যায়নি।' : 'No ledger records found for this supplier.'}
+                  </div>
+                ) : (
+                  <table className="w-full text-left text-[11px] border-collapse font-mono">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border/25 font-bold text-muted-foreground">
+                        <th className="p-2.5">{isBangla ? 'তারিখ' : 'Date'}</th>
+                        <th className="p-2.5">{isBangla ? 'রেফারেন্স' : 'Voucher Ref'}</th>
+                        <th className="p-2.5">{isBangla ? 'বিবরণ' : 'Description'}</th>
+                        <th className="p-2.5 text-right">{isBangla ? 'ডেবিট (-)' : 'Debit (-)'}</th>
+                        <th className="p-2.5 text-right">{isBangla ? 'ক্রেডিট (+)' : 'Credit (+)'}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {ledgerEntries.map((entry: any, idx: number) => {
+                        const entryDate = entry.date ? new Date(entry.date).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                        return (
+                          <tr key={idx} className="hover:bg-muted/5">
+                            <td className="p-2.5 text-muted-foreground">{entryDate}</td>
+                            <td className="p-2.5 text-primary font-bold">{entry.ref || entry.referenceNo || entry.invoiceNo || '—'}</td>
+                            <td className="p-2.5 text-foreground truncate max-w-[150px]">
+                              {isBangla && entry.descBn ? entry.descBn : (entry.desc || entry.narration || entry.description || '—')}
+                            </td>
+                            <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-500">
+                              {entry.debit > 0 ? formatCurrency(entry.debit) : '—'}
+                            </td>
+                            <td className="p-2.5 text-right text-rose-600 dark:text-rose-400">
+                              {entry.credit > 0 ? formatCurrency(entry.credit) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           ) : (
@@ -811,6 +620,13 @@ export default function FinancePayablesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 8. Add Reminder Modal */}
+      <AddReminderModal
+        isOpen={isReminderOpen}
+        onClose={() => setIsReminderOpen(false)}
+        partyId={selectedSupId}
+      />
     </div>
   );
 }

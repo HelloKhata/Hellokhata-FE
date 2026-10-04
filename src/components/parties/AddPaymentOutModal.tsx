@@ -46,8 +46,7 @@ export function AddPaymentOutModal({
   defaultPartyId,
 }: AddPaymentOutModalProps) {
   const { isBangla } = useAppTranslation();
-  const { data: partiesData } = useParties();
-  const parties = partiesData?.data || [];
+  const { data: parties = [], isLoading:isLoadingParties } = useParties();
 
   const [referenceNumber, setReferenceNumber] = useState("");
   const [date, setDate] = useState<Date>(new Date());

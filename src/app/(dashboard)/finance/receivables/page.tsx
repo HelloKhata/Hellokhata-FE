@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FinancePageHeader } from '@/components/finance/FinancePageHeader';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -25,125 +26,73 @@ import {
   CheckCircle2,
   FileText,
   User,
-  ArrowRight,
-  TrendingDown,
   History,
-  Info,
-  Calendar,
+  Loader2,
 } from 'lucide-react';
+import { useParties, usePartyLedger } from '@/hooks/api/useParties';
+import { AddPaymentInModal } from '@/components/parties/AddPaymentInModal';
+import { AddReminderModal } from '@/components/parties/AddReminderModal';
+import { CollectionHistory, CollectionLog } from '@/components/finance/receivables/CollectionHistory';
 
-interface CustomerDue {
+export interface CustomerParty {
   id: string;
   name: string;
-  nameBn: string;
-  totalDue: number;
-  lastPaymentDate: string;
-  phone: string;
-  status: 'normal' | 'warning' | 'critical';
-  ledger: Array<{
+  nameBn?: string;
+  phone?: string;
+  type?: string;
+  openingBalance?: number;
+  currentBalance?: number;
+  totalDue?: number;
+  lastPaymentDate?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  category?: string | null;
+  balanceDirection?: 'receive' | 'pay' | string;
+  currentBalanceDirection?: 'receive' | 'pay' | string;
+  status?: 'normal' | 'warning' | 'critical';
+  ledger?: Array<{
     date: string;
     ref: string;
     desc: string;
-    descBn: string;
-    debit: number;  // increases due
-    credit: number; // decreases due
+    descBn?: string;
+    debit: number;
+    credit: number;
   }>;
 }
 
-interface CollectionLog {
-  id: string;
-  date: string;
-  customerName: string;
-  customerNameBn: string;
-  amount: number;
-  discount: number;
-  method: string;
-  methodBn: string;
-  ref: string;
-}
+
 
 export default function FinanceReceivablesPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  // State Management: Active Customers
-  const [customers, setCustomers] = useState<CustomerDue[]>([
-    {
-      id: 'CUST-001',
-      name: 'M/S Rahman & Sons',
-      nameBn: 'মেসার্স রহমান এন্ড সন্স',
-      totalDue: 245000,
-      lastPaymentDate: '2026-08-01',
-      phone: '+8801711223344',
-      status: 'warning',
-      ledger: [
-        { date: '2026-07-10', ref: 'INV-2026-089', desc: 'Credit purchase of materials', descBn: 'কাঁচামাল বাকিতে ক্রয়', debit: 345000, credit: 0 },
-        { date: '2026-08-01', ref: 'REC-2026-102', desc: 'Partial payment clearance', descBn: 'আংশিক মূল্য পরিশোধ', debit: 0, credit: 100000 },
-      ],
-    },
-    {
-      id: 'CUST-002',
-      name: 'Jamuna Traders',
-      nameBn: 'যমুনা ট্রেডার্স',
-      totalDue: 189200,
-      lastPaymentDate: '2026-07-28',
-      phone: '+8801811223344',
-      status: 'normal',
-      ledger: [
-        { date: '2026-07-15', ref: 'INV-2026-095', desc: 'Inventory credit delivery', descBn: 'বাকিতে ইনভেন্টরি সরবরাহ', debit: 239200, credit: 0 },
-        { date: '2026-07-28', ref: 'REC-2026-099', desc: 'Rebate collection payment', descBn: 'মূল্য পরিশোধ প্রাপ্তি', debit: 0, credit: 50000 },
-      ],
-    },
-    {
-      id: 'CUST-003',
-      name: 'Desh Enterprise',
-      nameBn: 'দেশ এন্টারপ্রাইজ',
-      totalDue: 120000,
-      lastPaymentDate: '2026-06-15',
-      phone: '+8801911223344',
-      status: 'critical',
-      ledger: [
-        { date: '2026-06-15', ref: 'INV-2026-042', desc: 'Bulk raw product sales', descBn: 'পাইকারি কাঁচামাল বিক্রয়', debit: 120000, credit: 0 },
-      ],
-    },
-    {
-      id: 'CUST-004',
-      name: 'Al-Madina Stores',
-      nameBn: 'আল-মদিনা স্টোরস',
-      totalDue: 80000,
-      lastPaymentDate: '2026-08-04',
-      phone: '+8801511223344',
-      status: 'normal',
-      ledger: [
-        { date: '2026-07-20', ref: 'INV-2026-110', desc: 'Credit wholesale delivery', descBn: 'বাকিতে পাইকারি মাল সরবরাহ', debit: 80000, credit: 0 },
-      ],
-    },
-  ]);
+  // API State: Fetch customers with receivable balance
+  const { data: customers = [], isLoading: isLoadingCustomers } = useParties({
+    type: 'customer',
+    balanceType: 'receivable',
+  });
 
-  // State Management: Collection Log List
+  console.log(customers)
+  // State Management: Collection Log List 
   const [collectionLogs, setCollectionLogs] = useState<CollectionLog[]>([
     { id: 'REC-2026-102', date: '2026-08-01', customerName: 'M/S Rahman & Sons', customerNameBn: 'মেসার্স রহমান এন্ড সন্স', amount: 100000, discount: 5000, method: 'Bank Transfer', methodBn: 'ব্যাংক স্থানান্তর', ref: 'Bank Transfer Receipt' },
     { id: 'REC-2026-099', date: '2026-07-28', customerName: 'Jamuna Traders', customerNameBn: 'যমুনা ট্রেডার্স', amount: 50000, discount: 0, method: 'Cash', methodBn: 'নগদ টাকা', ref: 'Counter Receipt' },
   ]);
 
+  
   // UI Active Tab: 'dues' or 'logs'
   const [activeTab, setActiveTab] = useState<'dues' | 'logs'>('dues');
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
-
+ 
   // Dialog States
   const [isCollectOpen, setIsCollectOpen] = useState(false);
   const [isNewDueOpen, setIsNewDueOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
   const [selectedCustId, setSelectedCustId] = useState('');
-
-  // Form Fields: Payout Collection
-  const [formAmount, setFormAmount] = useState('');
-  const [formDiscount, setFormDiscount] = useState('0');
-  const [formMethod, setFormMethod] = useState('Bank Transfer');
-  const [formDesc, setFormDesc] = useState('');
 
   // Form Fields: Log Credit Due
   const [newCustName, setNewCustName] = useState('');
@@ -154,19 +103,55 @@ export default function FinanceReceivablesPage() {
 
   const [alertMessage, setAlertMessage] = useState('');
 
-  const selectedCustomer = customers.find((c) => c.id === selectedCustId);
+  // Selected customer for modals
+  const selectedCustomer: CustomerParty | null = useMemo(() => {
+    if (!Array.isArray(customers)) return null;
+    return customers.find((c: any) => c.id === selectedCustId) || null;
+  }, [customers, selectedCustId]);
 
-  // Totals
-  const totalReceivables = customers.reduce((acc, c) => acc + c.totalDue, 0);
-  const criticalCount = customers.filter((c) => c.status === 'critical' && c.totalDue > 0).length;
-  const warningCount = customers.filter((c) => c.status === 'warning' && c.totalDue > 0).length;
+  // Party ledger query when ledger dialog is open
+  const { data: partyLedgerData, isLoading: isLedgerLoading } = usePartyLedger(
+    selectedCustId,
+    undefined,
+    { enabled: isLedgerOpen && !!selectedCustId }
+  );
 
-  const handleSendReminder = (cust: CustomerDue) => {
-    const name = isBangla ? cust.nameBn : cust.name;
+  const ledgerEntries = useMemo(() => {
+    if (partyLedgerData?.data?.transactions) return partyLedgerData.data.transactions;
+    if (partyLedgerData?.data?.ledger) return partyLedgerData.data.ledger;
+    if (selectedCustomer?.ledger) return selectedCustomer.ledger;
+    return [];
+  }, [partyLedgerData, selectedCustomer]);
+
+  // Totals & Risk Stats calculation
+  const totalReceivables = useMemo(() => {
+    if (!Array.isArray(customers)) return 0;
+    return customers.reduce((acc: number, c: any) => acc + (c.currentBalance ?? c.totalDue ?? 0), 0);
+  }, [customers]);
+
+  const criticalCount = useMemo(() => {
+    if (!Array.isArray(customers)) return 0;
+    return customers.filter((c: any) => {
+      const due = c.currentBalance ?? c.totalDue ?? 0;
+      return (c.status === 'critical' || due > 150000) && due > 0;
+    }).length;
+  }, [customers]);
+
+  const warningCount = useMemo(() => {
+    if (!Array.isArray(customers)) return 0;
+    return customers.filter((c: any) => {
+      const due = c.currentBalance ?? c.totalDue ?? 0;
+      return (c.status === 'warning' || (due > 80000 && due <= 150000)) && due > 0;
+    }).length;
+  }, [customers]);
+
+  const handleSendReminder = (cust: CustomerParty) => {
+    const name = isBangla && cust.nameBn ? cust.nameBn : cust.name;
+    const dueAmount = cust.currentBalance ?? cust.totalDue ?? 0;
     setAlertMessage(
       isBangla
-        ? `${name} কে ${formatCurrency(cust.totalDue)} বকেয়া পরিশোধের জন্য এসএমএস রিমাইন্ডার পাঠানো হয়েছে!`
-        : `SMS payment alert for ${formatCurrency(cust.totalDue)} sent to ${name} (${cust.phone}) successfully!`
+        ? `${name} কে ${formatCurrency(dueAmount)} বকেয়া পরিশোধের জন্য এসএমএস রিমাইন্ডার পাঠানো হয়েছে!`
+        : `SMS payment alert for ${formatCurrency(dueAmount)} sent to ${name} (${cust.phone || 'N/A'}) successfully!`
     );
     setTimeout(() => setAlertMessage(''), 4000);
   };
@@ -181,74 +166,9 @@ export default function FinanceReceivablesPage() {
     setIsLedgerOpen(true);
   };
 
-  const handleRecordCollection = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCustomer) return;
-
-    const amountNum = parseFloat(formAmount) || 0;
-    const discountNum = parseFloat(formDiscount) || 0;
-    const totalReduction = amountNum + discountNum;
-
-    if (amountNum <= 0) return;
-
-    if (selectedCustomer.totalDue < totalReduction) {
-      alert(isBangla ? 'ভুল এন্ট্রি! পরিশোধ পরিমাণ গ্রাহকের বকেয়া থেকে বেশি।' : 'Incorrect entry! Collection amount exceeds client outstanding balance.');
-      return;
-    }
-
-    const receiptRef = `REC-2026-${(collectionLogs.length + 100).toString()}`;
-    const today = new Date().toISOString().split('T')[0];
-
-    // Update Customer list state
-    setCustomers(
-      customers.map((c) => {
-        if (c.id === selectedCustomer.id) {
-          const updatedDue = Math.max(0, c.totalDue - totalReduction);
-          return {
-            ...c,
-            totalDue: updatedDue,
-            lastPaymentDate: today,
-            status: updatedDue > 150000 ? 'critical' : updatedDue > 80000 ? 'warning' : 'normal',
-            ledger: [
-              ...c.ledger,
-              {
-                date: today,
-                ref: receiptRef,
-                desc: formDesc || 'Due payment collection received',
-                descBn: formDesc || 'বকেয়া বিল আদায় সম্পন্ন',
-                debit: 0,
-                credit: totalReduction,
-              },
-            ],
-          };
-        }
-        return c;
-      })
-    );
-
-    // Append to Collection history state
-    const newLog: CollectionLog = {
-      id: receiptRef,
-      date: today,
-      customerName: selectedCustomer.name,
-      customerNameBn: selectedCustomer.nameBn,
-      amount: amountNum,
-      discount: discountNum,
-      method: formMethod,
-      methodBn: isBangla ? (formMethod === 'Cash' ? 'নগদ টাকা' : formMethod === 'Bank Transfer' ? 'ব্যাংক স্থানান্তর' : 'মোবাইল ওয়ালেট') : formMethod,
-      ref: formDesc || 'Invoice Clearance payment',
-    };
-
-    setCollectionLogs([newLog, ...collectionLogs]);
-    setIsCollectOpen(false);
-
-    // Reset Form
-    setFormAmount('');
-    setFormDiscount('0');
-    setFormDesc('');
-
-    setAlertMessage(isBangla ? 'বকেয়া পেমেন্ট আদায় সফলভাবে রেকর্ড করা হয়েছে!' : 'Payment collection receipt saved successfully!');
-    setTimeout(() => setAlertMessage(''), 4000);
+  const handleOpenReminder = (id: string) => {
+    setSelectedCustId(id);
+    setIsReminderOpen(true);
   };
 
   const handleRecordCreditSale = (e: React.FormEvent) => {
@@ -256,61 +176,6 @@ export default function FinanceReceivablesPage() {
     const amountNum = parseFloat(newCustAmount) || 0;
 
     if (!newCustName.trim() || amountNum <= 0) return;
-
-    const today = new Date().toISOString().split('T')[0];
-    const invoiceRef = newCustInv || `INV-2026-${(Math.floor(Math.random() * 900) + 100)}`;
-
-    // Check if customer already exists, otherwise add new
-    const existingCust = customers.find((c) => c.name.toLowerCase() === newCustName.toLowerCase());
-
-    if (existingCust) {
-      setCustomers(
-        customers.map((c) => {
-          if (c.id === existingCust.id) {
-            const updatedDue = c.totalDue + amountNum;
-            return {
-              ...c,
-              totalDue: updatedDue,
-              status: updatedDue > 150000 ? 'critical' : updatedDue > 80000 ? 'warning' : 'normal',
-              ledger: [
-                ...c.ledger,
-                {
-                  date: today,
-                  ref: invoiceRef,
-                  desc: `Credit Sale (${newCustTerm})`,
-                  descBn: `বাকিতে বিক্রি (${newCustTerm})`,
-                  debit: amountNum,
-                  credit: 0,
-                },
-              ],
-            };
-          }
-          return c;
-        })
-      );
-    } else {
-      const newCustId = `CUST-${(customers.length + 1).toString().padStart(3, '0')}`;
-      const newCustObj: CustomerDue = {
-        id: newCustId,
-        name: newCustName,
-        nameBn: newCustName,
-        totalDue: amountNum,
-        lastPaymentDate: 'N/A',
-        phone: newCustPhone || '+8801700000000',
-        status: amountNum > 150000 ? 'critical' : amountNum > 80000 ? 'warning' : 'normal',
-        ledger: [
-          {
-            date: today,
-            ref: invoiceRef,
-            desc: `Initial Credit Sale (${newCustTerm})`,
-            descBn: `প্রারম্ভিক বাকিতে বিক্রি (${newCustTerm})`,
-            debit: amountNum,
-            credit: 0,
-          },
-        ],
-      };
-      setCustomers([newCustObj, ...customers]);
-    }
 
     setIsNewDueOpen(false);
 
@@ -325,19 +190,29 @@ export default function FinanceReceivablesPage() {
   };
 
   // Filter & Search Logic
-  const filteredCustomers = customers.filter((c) => {
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.nameBn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.phone.includes(searchTerm) ||
-      c.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCustomers = useMemo(() => {
+    if (!Array.isArray(customers)) return [];
+    return customers.filter((c: any) => {
+      const due = c.currentBalance ?? c.totalDue ?? 0;
+      const custStatus = c.status || (due > 150000 ? 'critical' : due > 80000 ? 'warning' : 'normal');
+      const name = c.name || '';
+      const nameBn = c.nameBn || '';
+      const phone = c.phone || '';
+      const id = c.id || '';
 
-    const matchesRisk =
-      riskFilter === 'all' ||
-      c.status === riskFilter;
+      const matchesSearch =
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        nameBn.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        phone.includes(searchTerm) ||
+        id.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesSearch && matchesRisk;
-  });
+      const matchesRisk =
+        riskFilter === 'all' ||
+        custStatus === riskFilter;
+
+      return matchesSearch && matchesRisk;
+    });
+  }, [customers, searchTerm, riskFilter]);
 
   return (
     <div className="space-y-6">
@@ -349,6 +224,8 @@ export default function FinanceReceivablesPage() {
           description="Record customer due payments, register credit invoices, and manage payment reminders."
           descriptionBn="গ্রাহকদের বকেয়া পর্যবেক্ষণ করুন, পরিশোধ আদায় রেকর্ড করুন এবং পেমেন্ট রিমাইন্ডার পাঠান।"
           icon={HandCoins}
+          showBackButton={true}
+          backHref="/finance/overview"
         />
         <div className="flex gap-2 shrink-0">
           <Button onClick={() => setIsNewDueOpen(true)} className="gap-1.5 text-xs h-9">
@@ -476,74 +353,94 @@ export default function FinanceReceivablesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/10">
-                  {filteredCustomers.length === 0 ? (
+                  {isLoadingCustomers ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={idx} className="border-b border-border/10">
+                        <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-32" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="p-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="p-3"><Skeleton className="h-5 w-16 rounded-md" /></td>
+                        <td className="p-3 text-right"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                        <td className="p-3 text-center"><Skeleton className="h-7 w-28 mx-auto" /></td>
+                      </tr>
+                    ))
+                  ) : filteredCustomers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-6 text-center text-muted-foreground font-semibold">
                         {isBangla ? 'কোনো বকেয়া কাস্টমার পাওয়া যায়নি।' : 'No customer outstanding balances found.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredCustomers.map((cust) => (
-                      <tr key={cust.id} className="hover:bg-muted/5">
-                        <td className="p-3 font-mono text-muted-foreground">{cust.id}</td>
-                        <td className="p-3 font-bold text-foreground">
-                          {isBangla ? cust.nameBn : cust.name}
-                        </td>
-                        <td className="p-3 font-mono text-muted-foreground">{cust.phone}</td>
-                        <td className="p-3 font-mono text-muted-foreground">{cust.lastPaymentDate}</td>
-                        <td className="p-3">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[9px] py-0.5 px-2 rounded-md border-transparent font-bold capitalize',
-                              cust.status === 'normal' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500',
-                              cust.status === 'warning' && 'bg-amber-500/10 text-amber-600 dark:text-amber-500',
-                              cust.status === 'critical' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                            )}
-                          >
-                            {cust.status === 'normal' && (isBangla ? 'স্বাভাবিক' : 'Normal')}
-                            {cust.status === 'warning' && (isBangla ? 'ঝুঁকিপূর্ণ' : 'Warning')}
-                            {cust.status === 'critical' && (isBangla ? 'উচ্চ ঝুঁকি' : 'Critical')}
-                          </Badge>
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-foreground text-sm">
-                          {cust.totalDue > 0 ? formatCurrency(cust.totalDue) : '—'}
-                        </td>
-                        <td className="p-3 text-center">
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              size="sm"
+                    filteredCustomers.map((cust: any) => {
+                      const dueAmount = cust.currentBalance ?? cust.totalDue ?? 0;
+                      const custStatus = cust.status || (dueAmount > 150000 ? 'critical' : dueAmount > 80000 ? 'warning' : 'normal');
+                      const displayDate = cust.lastPaymentDate || (cust.createdAt ? new Date(cust.createdAt).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—');
+
+                      return (
+                        <tr key={cust.id} className="hover:bg-muted/5">
+                          <td className="p-3 font-mono text-muted-foreground text-[11px] truncate max-w-[120px]" title={cust.id}>
+                            {cust.id}
+                          </td>
+                          <td className="p-3 font-bold text-foreground">
+                            {isBangla && cust.nameBn ? cust.nameBn : cust.name}
+                          </td>
+                          <td className="p-3 font-mono text-muted-foreground">{cust.phone || '—'}</td>
+                          <td className="p-3 font-mono text-muted-foreground">{displayDate}</td>
+                          <td className="p-3">
+                            <Badge
                               variant="outline"
-                              onClick={() => handleOpenCollect(cust.id)}
-                              disabled={cust.totalDue === 0}
-                              className="h-7 text-[10px] px-2 gap-1 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500"
+                              className={cn(
+                                'text-[9px] py-0.5 px-2 rounded-md border-transparent font-bold capitalize',
+                                custStatus === 'normal' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500',
+                                custStatus === 'warning' && 'bg-amber-500/10 text-amber-600 dark:text-amber-500',
+                                custStatus === 'critical' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                              )}
                             >
-                              <Coins className="h-3 w-3" />
-                              <span>{isBangla ? 'টাকা সংগ্রহ' : 'Collect'}</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenLedger(cust.id)}
-                              className="h-7 text-[10px] px-2 gap-1"
-                            >
-                              <FileText className="h-3 w-3" />
-                              <span>{isBangla ? 'খতিয়ান' : 'Ledger'}</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleSendReminder(cust)}
-                              disabled={cust.totalDue === 0}
-                              className="h-7 text-[10px] px-2 text-primary hover:bg-primary/10 gap-1"
-                            >
-                              <Bell className="h-3 w-3" />
-                              <span>{isBangla ? 'রিমাইন্ডার' : 'Remind'}</span>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {custStatus === 'normal' && (isBangla ? 'স্বাভাবিক' : 'Normal')}
+                              {custStatus === 'warning' && (isBangla ? 'ঝুঁকিপূর্ণ' : 'Warning')}
+                              {custStatus === 'critical' && (isBangla ? 'উচ্চ ঝুঁকি' : 'Critical')}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-right font-mono font-bold text-foreground text-sm">
+                            {dueAmount > 0 ? formatCurrency(dueAmount) : '—'}
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex justify-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenCollect(cust.id)}
+                                disabled={dueAmount === 0}
+                                className="h-7 text-[10px] px-2 gap-1 border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500"
+                              >
+                                <Coins className="h-3 w-3" />
+                                <span>{isBangla ? 'টাকা সংগ্রহ' : 'Collect'}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenLedger(cust.id)}
+                                className="h-7 text-[10px] px-2 gap-1"
+                              >
+                                <FileText className="h-3 w-3" />
+                                <span>{isBangla ? 'খতিয়ান' : 'Ledger'}</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleOpenReminder(cust.id)}
+                                disabled={dueAmount === 0}
+                                className="h-7 text-[10px] px-2 text-primary hover:bg-primary/10 gap-1"
+                              >
+                                <Bell className="h-3 w-3" />
+                                <span>{isBangla ? 'রিমাইন্ডার' : 'Reminder'}</span>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -553,128 +450,16 @@ export default function FinanceReceivablesPage() {
 
         {/* Tab 2: Historical Collection Logs */}
         {activeTab === 'logs' && (
-          <Card className="border-border/50 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-muted/40 border-b border-border/30 font-bold text-muted-foreground">
-                    <th className="p-3">{isBangla ? 'রিসিট নম্বর' : 'Receipt Ref'}</th>
-                    <th className="p-3">{isBangla ? 'তারিখ' : 'Date'}</th>
-                    <th className="p-3">{isBangla ? 'গ্রাহক' : 'Customer'}</th>
-                    <th className="p-3">{isBangla ? 'পেমেন্ট পদ্ধতি' : 'Method'}</th>
-                    <th className="p-3">{isBangla ? 'নোট' : 'Remarks'}</th>
-                    <th className="p-3 text-right">{isBangla ? 'ডিসকাউন্ট/ছাড়' : 'Write-off Discount'}</th>
-                    <th className="p-3 text-right">{isBangla ? 'মোট সংগৃহীত পরিমাণ' : 'Collected Net'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/10">
-                  {collectionLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-muted/5">
-                      <td className="p-3 font-mono font-bold text-primary">{log.id}</td>
-                      <td className="p-3 font-mono text-muted-foreground">{log.date}</td>
-                      <td className="p-3 font-semibold text-foreground">{isBangla ? log.customerNameBn : log.customerName}</td>
-                      <td className="p-3 text-muted-foreground">{isBangla ? log.methodBn : log.method}</td>
-                      <td className="p-3 text-muted-foreground">{log.ref}</td>
-                      <td className="p-3 text-right font-mono text-rose-500">
-                        {log.discount > 0 ? formatCurrency(log.discount) : '—'}
-                      </td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-500">
-                        {formatCurrency(log.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+          <CollectionHistory logs={collectionLogs} />
         )}
       </div>
 
-      {/* 5. Collect Payment (Receipt Voucher) Dialog Popup */}
-      <Dialog open={isCollectOpen} onOpenChange={setIsCollectOpen}>
-        <DialogContent className="sm:max-w-[450px]">
-          <form onSubmit={handleRecordCollection} className="space-y-4">
-            <DialogHeader className="border-b pb-2">
-              <DialogTitle className="text-base font-bold flex items-center gap-2">
-                <Coins className="h-5 w-5 text-emerald-600" />
-                <span>{isBangla ? 'বকেয়া অর্থ সংগ্রহ ভাউচার' : 'Record Customer Collection'}</span>
-              </DialogTitle>
-            </DialogHeader>
-
-            {selectedCustomer && (
-              <div className="bg-muted/40 p-2.5 rounded-lg text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBangla ? 'গ্রাহক:' : 'Client:'}</span>
-                  <span className="font-bold text-foreground">{isBangla ? selectedCustomer.nameBn : selectedCustomer.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{isBangla ? 'বর্তমান বকেয়া (Outstanding):' : 'Current Outstanding:'}</span>
-                  <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">{formatCurrency(selectedCustomer.totalDue)}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-muted-foreground">{isBangla ? 'আদায়কৃত অর্থ' : 'Net Received'}</label>
-                  <Input
-                    type="number"
-                    placeholder="0.00"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    required
-                    className="font-mono h-9"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-muted-foreground">{isBangla ? 'ছাড়/ডিসকাউন্ট' : 'Discount Allowed'}</label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={formDiscount}
-                    onChange={(e) => setFormDiscount(e.target.value)}
-                    className="font-mono h-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-muted-foreground">{isBangla ? 'জমা হিসাব পদ্ধতি' : 'Deposit Account/Method'}</label>
-                <select
-                  value={formMethod}
-                  onChange={(e) => setFormMethod(e.target.value)}
-                  className="w-full h-9 rounded-lg border bg-background px-3 text-xs focus:outline-none"
-                >
-                  <option value="Bank Transfer">{isBangla ? 'ব্যাংক স্থানান্তর (Operating Account)' : 'Bank Transfer'}</option>
-                  <option value="Cash">{isBangla ? 'ক্যাশ অন হ্যান্ড (Cash Box)' : 'Cash Box'}</option>
-                  <option value="Mobile Wallet">{isBangla ? 'মোবাইল ওয়ালেট (bKash/Nagad)' : 'Mobile Wallet'}</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-muted-foreground">{isBangla ? 'বিবরণ / ন্যারেশন' : 'Memo / Narration'}</label>
-                <Input
-                  placeholder={isBangla ? 'যেমন: চেক নাম্বার বা চালানের রেফারেন্স...' : 'e.g. Cleared credit delivery INV-089'}
-                  value={formDesc}
-                  onChange={(e) => setFormDesc(e.target.value)}
-                  className="h-9"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="border-t pt-3">
-              <Button type="button" variant="outline" onClick={() => setIsCollectOpen(false)} className="text-xs h-9">
-                {isBangla ? 'বাতিল' : 'Cancel'}
-              </Button>
-              <Button type="submit" className="text-xs h-9">
-                {isBangla ? 'কালেকশন সংরক্ষণ' : 'Submit Receipt Voucher'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* 5. Collect Payment (Payment In) Modal */}
+      <AddPaymentInModal
+        isOpen={isCollectOpen}
+        onClose={() => setIsCollectOpen(false)}
+        defaultPartyId={selectedCustId}
+      />
 
       {/* 6. Record New Credit Sale / Invoice Dialog Popup */}
       <Dialog open={isNewDueOpen} onOpenChange={setIsNewDueOpen}>
@@ -776,42 +561,62 @@ export default function FinanceReceivablesPage() {
               <div className="grid grid-cols-2 gap-4 bg-muted/40 p-3 rounded-lg text-xs font-semibold">
                 <div>
                   <span className="text-muted-foreground block">{isBangla ? 'গ্রাহক:' : 'Customer Name:'}</span>
-                  <span className="text-sm font-bold text-foreground block mt-0.5">{isBangla ? selectedCustomer.nameBn : selectedCustomer.name}</span>
+                  <span className="text-sm font-bold text-foreground block mt-0.5">
+                    {isBangla && selectedCustomer.nameBn ? selectedCustomer.nameBn : selectedCustomer.name}
+                  </span>
                 </div>
                 <div className="text-right">
                   <span className="text-muted-foreground block">{isBangla ? 'মোট বকেয়া পাওনা:' : 'Total Outstanding Balance:'}</span>
-                  <span className="text-sm font-bold text-rose-600 dark:text-rose-400 block mt-0.5 font-mono">{formatCurrency(selectedCustomer.totalDue)}</span>
+                  <span className="text-sm font-bold text-rose-600 dark:text-rose-400 block mt-0.5 font-mono">
+                    {formatCurrency(selectedCustomer.currentBalance ?? selectedCustomer.totalDue ?? 0)}
+                  </span>
                 </div>
               </div>
 
               {/* Entries list table */}
               <div className="border border-border/50 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
-                <table className="w-full text-left text-[11px] border-collapse font-mono">
-                  <thead>
-                    <tr className="bg-muted/50 border-b border-border/25 font-bold text-muted-foreground">
-                      <th className="p-2.5">{isBangla ? 'তারিখ' : 'Date'}</th>
-                      <th className="p-2.5">{isBangla ? 'রেফারেন্স' : 'Voucher Ref'}</th>
-                      <th className="p-2.5">{isBangla ? 'বিবরণ' : 'Description'}</th>
-                      <th className="p-2.5 text-right">{isBangla ? 'ডেবিট (+)' : 'Debit (+)'}</th>
-                      <th className="p-2.5 text-right">{isBangla ? 'ক্রেডিট (-)' : 'Credit (-)'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/20">
-                    {selectedCustomer.ledger.map((entry, idx) => (
-                      <tr key={idx} className="hover:bg-muted/5">
-                        <td className="p-2.5 text-muted-foreground">{entry.date}</td>
-                        <td className="p-2.5 text-primary font-bold">{entry.ref}</td>
-                        <td className="p-2.5 text-foreground truncate max-w-[150px]">{isBangla ? entry.descBn : entry.desc}</td>
-                        <td className="p-2.5 text-right text-rose-600 dark:text-rose-400">
-                          {entry.debit > 0 ? formatCurrency(entry.debit) : '—'}
-                        </td>
-                        <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-500">
-                          {entry.credit > 0 ? formatCurrency(entry.credit) : '—'}
-                        </td>
+                {isLedgerLoading ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="text-xs">{isBangla ? 'খতিয়ান লোড হচ্ছে...' : 'Loading ledger...'}</span>
+                  </div>
+                ) : ledgerEntries.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-muted-foreground">
+                    {isBangla ? 'কোনো খতিয়ান রেকর্ড পাওয়া যায়নি।' : 'No ledger records found for this customer.'}
+                  </div>
+                ) : (
+                  <table className="w-full text-left text-[11px] border-collapse font-mono">
+                    <thead>
+                      <tr className="bg-muted/50 border-b border-border/25 font-bold text-muted-foreground">
+                        <th className="p-2.5">{isBangla ? 'তারিখ' : 'Date'}</th>
+                        <th className="p-2.5">{isBangla ? 'রেফারেন্স' : 'Voucher Ref'}</th>
+                        <th className="p-2.5">{isBangla ? 'বিবরণ' : 'Description'}</th>
+                        <th className="p-2.5 text-right">{isBangla ? 'ডেবিট (+)' : 'Debit (+)'}</th>
+                        <th className="p-2.5 text-right">{isBangla ? 'ক্রেডিট (-)' : 'Credit (-)'}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                      {ledgerEntries.map((entry: any, idx: number) => {
+                        const entryDate = entry.date ? new Date(entry.date).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+                        return (
+                          <tr key={idx} className="hover:bg-muted/5">
+                            <td className="p-2.5 text-muted-foreground">{entryDate}</td>
+                            <td className="p-2.5 text-primary font-bold">{entry.ref || entry.referenceNo || entry.invoiceNo || '—'}</td>
+                            <td className="p-2.5 text-foreground truncate max-w-[150px]">
+                              {isBangla && entry.descBn ? entry.descBn : (entry.desc || entry.narration || entry.description || '—')}
+                            </td>
+                            <td className="p-2.5 text-right text-rose-600 dark:text-rose-400">
+                              {entry.debit > 0 ? formatCurrency(entry.debit) : '—'}
+                            </td>
+                            <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-500">
+                              {entry.credit > 0 ? formatCurrency(entry.credit) : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           ) : (
@@ -827,6 +632,13 @@ export default function FinanceReceivablesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 8. Add Reminder Modal */}
+      <AddReminderModal
+        isOpen={isReminderOpen}
+        onClose={() => setIsReminderOpen(false)}
+        partyId={selectedCustId}
+      />
     </div>
   );
 }

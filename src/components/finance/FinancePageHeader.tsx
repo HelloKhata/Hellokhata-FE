@@ -12,6 +12,8 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { LucideIcon } from 'lucide-react';
 
+import { BackButton } from '@/components/common/BackButton';
+
 interface FinancePageHeaderProps {
   pageName: string;
   pageNameBn?: string;
@@ -21,6 +23,9 @@ interface FinancePageHeaderProps {
   parentName?: string;
   parentNameBn?: string;
   parentHref?: string;
+  showBackButton?: boolean;
+  backHref?: string;
+  children?: React.ReactNode;
 }
 
 export function FinancePageHeader({
@@ -32,6 +37,9 @@ export function FinancePageHeader({
   parentName = 'Finance & Accounting',
   parentNameBn = 'অর্থায়ন ও হিসাববিজ্ঞান',
   parentHref,
+  showBackButton = false,
+  backHref,
+  children,
 }: FinancePageHeaderProps) {
   const { isBangla } = useAppTranslation();
   
@@ -41,52 +49,24 @@ export function FinancePageHeader({
 
   return (
     <div className="space-y-4 mb-6">
-      {/* <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/" className="text-muted-foreground hover:text-foreground">
-              {isBangla ? 'ড্যাশবোর্ড' : 'Dashboard'}
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          {displayParentName && (
-            <>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                {parentHref ? (
-                  <BreadcrumbLink href={parentHref} className="text-muted-foreground hover:text-foreground">
-                    {displayParentName}
-                  </BreadcrumbLink>
-                ) : (
-                  <span className="text-muted-foreground">
-                    {displayParentName}
-                  </span>
-                )}
-              </BreadcrumbItem>
-            </>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
+          {showBackButton && <BackButton className="mt-0.5 sm:mt-1 shrink-0" fallbackHref={backHref} />}
+          {Icon && (
+            <div className="hidden sm:flex h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-indigo-subtle items-center justify-center shrink-0">
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            </div>
           )}
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage className="font-medium text-foreground max-w-[200px] truncate">
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               {displayName}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb> */}
-      
-      <div className="flex items-start gap-4">
-        {Icon && (
-          <div className="h-12 w-12 rounded-xl bg-indigo-subtle flex items-center justify-center shrink-0">
-            <Icon className="h-6 w-6 text-primary" />
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {displayDescription}
+            </p>
           </div>
-        )}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {displayName}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {displayDescription}
-          </p>
         </div>
+        {children && <div>{children}</div>}
       </div>
     </div>
   );

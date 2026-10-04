@@ -1,16 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FinancePageHeader } from '@/components/finance/FinancePageHeader';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ArrowLeftRight,
   Plus,
   Coins,
   Building2,
@@ -20,93 +30,62 @@ import {
   AlertCircle,
   CheckCircle2,
   Search,
+  Loader2,
 } from 'lucide-react';
-
-interface TransactionRecord {
-  id: string;
-  date: string;
-  type: 'deposit' | 'withdrawal';
-  typeBn: string;
-  desc: string;
-  descBn: string;
-  account: string;
-  accountBn: string;
-  amount: number;
-  branch: string;
-}
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  useCreateDeposit,
+  useCreateWithdrawal,
+  useDeleteTransaction,
+  useGetDepositsAndWithdrawls,
+  useGetDepositWithdrawlsSum,
+  useGetPaymentMethods,
+} from '@/hooks/api/usePaymentMethod';
+import { toast } from 'sonner';
 
 export default function DepositWithdrawalPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  // State Management: Account Balances
-  const [balances, setBalances] = useState({
-    cashBox: 456800,
-    dbblBank: 1287500,
-    sonaliBank: 60000,
-    bkashWallet: 85000,
-  });
-
-  // State Management: Transactions List
-  const [transactions, setTransactions] = useState<TransactionRecord[]>([
-    {
-      id: 'TXN-003',
-      date: '2026-08-05',
-      type: 'deposit',
-      typeBn: 'জমা (Deposit)',
-      desc: 'Owner capital cash deposit into Sonali Bank',
-      descBn: 'সোনালী ব্যাংক হিসাবে মালিকের মূলধন নগদ জমা',
-      account: 'sonaliBank',
-      accountBn: 'সোনালী ব্যাংক পিএলসি',
-      amount: 60000,
-      branch: 'Dhaka',
-    },
-    {
-      id: 'TXN-002',
-      date: '2026-08-04',
-      type: 'withdrawal',
-      typeBn: 'উত্তোলন (Withdrawal)',
-      desc: 'ATM Cash Withdrawal for counter cash vault',
-      descBn: 'কাউন্টার নগদ ভল্টের জন্য এটিএম ক্যাশ উত্তোলন',
-      account: 'dbblBank',
-      accountBn: 'ডাচ-বাংলা ব্যাংক (DBBL)',
-      amount: 30000,
-      branch: 'Dhaka',
-    },
-    {
-      id: 'TXN-001',
-      date: '2026-08-02',
-      type: 'deposit',
-      typeBn: 'জমা (Deposit)',
-      desc: 'Direct client deposit to DBBL account',
-      descBn: 'ডিবিবিএল ব্যাংক অ্যাকাউন্টে সরাসরি গ্রাহক জমা',
-      account: 'dbblBank',
-      accountBn: 'ডাচ-বাংলা ব্যাংক (DBBL)',
-      amount: 150000,
-      branch: 'Dhaka',
-    },
-  ]);
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<('deposit' | 'withdrawal') | "">("");
+  const [filterAccount, setFilterAccount] = useState<string>('all');
 
   // Form Fields
   const [formType, setFormType] = useState<'deposit' | 'withdrawal'>('deposit');
-  const [formAccount, setFormAccount] = useState<keyof typeof balances>('dbblBank');
+  const [formAccount, setFormAccount] = useState<string>('');
   const [formAmount, setFormAmount] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Filter States
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'deposit' | 'withdrawal'>('all');
-  const [filterAccount, setFilterAccount] = useState<string>('all');
+  // Delete Confirmation State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Account Names helper
-  const accountLabels: Record<keyof typeof balances, { en: string; bn: string }> = {
-    cashBox: { en: 'Cash Box / Vault', bn: 'নগদ ক্যাশ বক্স / ভল্ট' },
-    dbblBank: { en: 'Dutch-Bangla Bank (DBBL)', bn: 'ডাচ-বাংলা ব্যাংক (DBBL)' },
-    sonaliBank: { en: 'Sonali Bank PLC', bn: 'সোনালী ব্যাংক পিএলসি' },
-    bkashWallet: { en: 'bKash Merchant Wallet', bn: 'বিকাশ মার্চেন্ট ওয়ালেট' },
-  };
+
+  // API Calls
+  const { data: accounts = [], isLoading: isLoadingAccounts } = useGetPaymentMethods();
+  const { data: transactionList = [], isLoading: isLoadingDepositsAndWithdrawls } = useGetDepositsAndWithdrawls({
+    search: searchTerm.trim() || undefined,
+    accountId: filterAccount !== 'all' ? (filterAccount || undefined) : undefined,
+    type: filterType || undefined,
+  });
+
+const {mutate: deleteTransaction, isPending: isDeletingTransaction} = useDeleteTransaction();
+  const { data: summaryData, isLoading: isLoadingSummary } = useGetDepositWithdrawlsSum();
+  const { mutate: createDeposit, isPending: isCreatingDeposit } = useCreateDeposit();
+  const { mutate: createWithdrawal, isPending: isCreatingWithdrawal } = useCreateWithdrawal();
+
 
   const handleTypeChange = (type: 'deposit' | 'withdrawal') => {
     setFormType(type);
@@ -119,6 +98,11 @@ export default function DepositWithdrawalPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
+    if (!formAccount) {
+      setErrorMsg(isBangla ? 'অনুগ্রহ করে হিসাব নির্বাচন করুন।' : 'Please select an account.');
+      return;
+    }
+
     const amountNum = parseFloat(formAmount) || 0;
 
     if (amountNum <= 0) {
@@ -126,99 +110,58 @@ export default function DepositWithdrawalPage() {
       return;
     }
 
+    const selectedAccount = accounts?.find((acc: any) => (acc.id || acc._id) === formAccount);
+    const currentBalance = selectedAccount
+      ? selectedAccount.balance ?? selectedAccount.currentBalance ?? selectedAccount.openingBalance ?? 0
+      : 0;
+
     if (formType === 'withdrawal') {
-      if (balances[formAccount] < amountNum) {
+      if (selectedAccount && currentBalance < amountNum) {
         setErrorMsg(
           isBangla
-            ? `অপর্যাপ্ত ব্যালেন্স! নির্বাচিত হিসাবে সর্বোচ্চ ${formatCurrency(balances[formAccount])} আছে।`
-            : `Insufficient funds! Selected account only has ${formatCurrency(balances[formAccount])} available.`
+            ? `অপর্যাপ্ত ব্যালেন্স! নির্বাচিত হিসাবে সর্বোচ্চ ${formatCurrency(currentBalance)} আছে।`
+            : `Insufficient funds! Selected account only has ${formatCurrency(currentBalance)} available.`
         );
         return;
       }
-
-      setBalances((prev) => ({
-        ...prev,
-        [formAccount]: prev[formAccount] - amountNum,
-      }));
-    } else {
-      // Deposit adds amount to selected account
-      setBalances((prev) => ({
-        ...prev,
-        [formAccount]: prev[formAccount] + amountNum,
-      }));
     }
 
-    // Generate reference code
-    const newRef = `TXN-${(transactions.length + 1).toString().padStart(3, '0')}`;
-
-    const newTransaction: TransactionRecord = {
-      id: newRef,
-      date: new Date().toISOString().split('T')[0],
-      type: formType,
-      typeBn: formType === 'deposit' ? (isBangla ? 'জমা' : 'Deposit') : (isBangla ? 'উত্তোলন' : 'Withdrawal'),
-      desc: formDesc || `${formType === 'deposit' ? 'Deposit to' : 'Withdrawal from'} ${accountLabels[formAccount].en}`,
-      descBn: formDesc || `${accountLabels[formAccount].bn} এ ${formType === 'deposit' ? 'জমা' : 'উত্তোলন'}`,
-      account: formAccount,
-      accountBn: accountLabels[formAccount].bn,
+    const payload = {
+      accountId: formAccount,
       amount: amountNum,
-      branch: 'Dhaka',
+      narration: formDesc,
     };
 
-    setTransactions([newTransaction, ...transactions]);
-    setSuccessMsg(
-      formType === 'deposit'
-        ? (isBangla ? 'টাকা সফলভাবে জমা করা হয়েছে!' : 'Deposit recorded successfully!')
-        : (isBangla ? 'টাকা সফলভাবে উত্তোলন করা হয়েছে!' : 'Withdrawal processed successfully!')
-    );
-
-    // Reset Form
-    setFormAmount('');
-    setFormDesc('');
-  };
-
-  const handleDeleteTransaction = (record: TransactionRecord) => {
-    const acc = record.account as keyof typeof balances;
-
-    if (record.type === 'withdrawal') {
-      // Reverse withdrawal: add back amount
-      setBalances((prev) => ({
-        ...prev,
-        [acc]: prev[acc] + record.amount,
-      }));
+    if (formType === 'deposit') {
+      createDeposit(payload, {
+        onSuccess: () => {
+          setSuccessMsg(isBangla ? 'জমা সফলভাবে রেকর্ড করা হয়েছে।' : 'Deposit recorded successfully.');
+          setFormAmount('');
+          setFormDesc('');
+        }
+      });
     } else {
-      // Reverse deposit: subtract amount
-      setBalances((prev) => ({
-        ...prev,
-        [acc]: prev[acc] - record.amount,
-      }));
+      createWithdrawal(payload, {
+        onSuccess: () => {
+          setSuccessMsg(isBangla ? 'উত্তোলন সফলভাবে রেকর্ড করা হয়েছে।' : 'Withdrawal recorded successfully.');
+          setFormAmount('');
+          setFormDesc('');
+        }
+      });
     }
-
-    setTransactions(transactions.filter((t) => t.id !== record.id));
-    setSuccessMsg(isBangla ? 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে এবং ব্যালেন্স সমন্বয় করা হয়েছে।' : 'Transaction deleted and balance adjusted successfully.');
   };
 
-  // Filter & Search logic
-  const filteredTransactions = transactions.filter((t) => {
-    if (filterType !== 'all' && t.type !== filterType) {
-      return false;
-    }
-    if (filterAccount !== 'all' && t.account !== filterAccount) {
-      return false;
-    }
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      const matchId = t.id.toLowerCase().includes(q);
-      const matchDesc = t.desc.toLowerCase().includes(q) || t.descBn.toLowerCase().includes(q);
-      const matchAcc =
-        (accountLabels[t.account as keyof typeof balances]?.en || '').toLowerCase().includes(q) ||
-        (accountLabels[t.account as keyof typeof balances]?.bn || '').toLowerCase().includes(q);
-      const matchDate = t.date.includes(q);
-      if (!matchId && !matchDesc && !matchAcc && !matchDate) {
-        return false;
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmId) return;
+    deleteTransaction(deleteConfirmId, {
+      onSuccess: (data: any) => {
+        toast.success(
+          data?.message || (isBangla ? 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে।' : 'Transaction deleted successfully.')
+        );
+        setDeleteConfirmId(null);
       }
-    }
-    return true;
-  });
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -229,86 +172,119 @@ export default function DepositWithdrawalPage() {
         description="Record direct deposits and withdrawals for bank accounts, cash vaults, and digital wallets."
         descriptionBn="ক্যাশ বক্স, ব্যাংক অ্যাকাউন্ট এবং ডিজিটাল ওয়ালেটের জন্য সরাসরি জমা ও উত্তোলন পরিচালনা করুন।"
         icon={formType === 'deposit' ? ArrowDownLeft : ArrowUpRight}
+        showBackButton={true}
+        backHref="/finance/overview"
       />
 
-      {/* 2. Colorful Bank Cards Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Cash Box Card */}
-        <div className="rounded-2xl p-5 bg-gradient-to-br from-[#78350f] via-[#92400e] to-[#d97706] text-white shadow-lg shadow-amber-950/20 border border-amber-500/30 flex flex-col justify-between min-h-[115px] relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-amber-200/80">
-                {isBangla ? 'নগদ ক্যাশ বক্স / ভল্ট' : 'Cash Box (Vault)'}
-              </p>
-              <h3 className="text-2xl font-bold font-mono text-white mt-1">
-                {formatCurrency(balances.cashBox)}
-              </h3>
+      {/* 2. Overview Metric Cards: 2 cards in a row on mobile, slim compact height */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        {isLoadingSummary ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4 bg-card/80 border border-border/50 shadow-sm flex flex-col justify-between min-h-[72px] sm:min-h-[105px] animate-pulse"
+            >
+              <div className="flex items-start justify-between gap-1.5">
+                <div className="space-y-1 sm:space-y-1.5 flex-1">
+                  <Skeleton className="h-2.5 sm:h-3 w-14 sm:w-20 rounded bg-muted/60" />
+                  <Skeleton className="h-3.5 sm:h-6 w-16 sm:w-28 rounded bg-muted/60" />
+                </div>
+                <Skeleton className="h-5 w-5 sm:h-8 sm:w-8 rounded-md sm:rounded-lg shrink-0 bg-muted/60" />
+              </div>
+              <Skeleton className="h-2 sm:h-2.5 w-12 sm:w-24 rounded mt-1 bg-muted/60" />
             </div>
-            <div className="h-9 w-9 rounded-xl bg-white/15 text-amber-200 flex items-center justify-center shrink-0">
-              <Coins className="h-5 w-5" />
+          ))
+        ) : (
+          <>
+            {/* Card 1: Total Fund */}
+            <div className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4 bg-gradient-to-br from-[#1e3a8a] via-[#1d4ed8] to-[#3b82f6] text-white shadow-sm sm:shadow-md shadow-blue-950/20 border border-blue-500/30 flex flex-col justify-between min-h-[72px] sm:min-h-[105px] relative overflow-hidden group">
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-blue-200/90 truncate">
+                    {isBangla ? 'সর্বমোট তহবিল' : 'Total Fund'}
+                  </p>
+                  <h3 className="text-xs sm:text-lg md:text-xl font-bold font-mono text-white mt-0.5 sm:mt-1 truncate leading-tight">
+                    {formatCurrency(summaryData?.totalLiquidity ?? 0)}
+                  </h3>
+                </div>
+                <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-md sm:rounded-lg bg-white/15 text-blue-100 flex items-center justify-center shrink-0">
+                  <Landmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-white/75 font-mono mt-0.5 sm:mt-1 uppercase truncate block">
+                {isBangla
+                  ? `${summaryData?.totalAccounts ?? accounts?.length ?? 0}টি অ্যাকাউন্ট`
+                  : `${summaryData?.totalAccounts ?? accounts?.length ?? 0} Accounts`}
+              </span>
             </div>
-          </div>
-          <span className="text-[10px] text-white/60 font-mono mt-2">CASH IN HAND</span>
-        </div>
 
-        {/* Dutch-Bangla Bank Card */}
-        <div className="rounded-2xl p-5 bg-gradient-to-br from-[#1e3a8a] via-[#1d4ed8] to-[#3b82f6] text-white shadow-lg shadow-blue-950/20 border border-blue-500/30 flex flex-col justify-between min-h-[115px] relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200/80">
-                {isBangla ? 'ডাচ-বাংলা ব্যাংক (DBBL)' : 'Dutch-Bangla Bank'}
-              </p>
-              <h3 className="text-2xl font-bold font-mono text-white mt-1">
-                {formatCurrency(balances.dbblBank)}
-              </h3>
+            {/* Card 2: Total Withdrawals */}
+            <div className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4 bg-gradient-to-br from-[#881337] via-[#9f1239] to-[#e11d48] text-white shadow-sm sm:shadow-md shadow-rose-950/20 border border-rose-500/30 flex flex-col justify-between min-h-[72px] sm:min-h-[105px] relative overflow-hidden group">
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-rose-200/90 truncate">
+                    {isBangla ? 'মোট উত্তোলন' : 'Total Withdrawals'}
+                  </p>
+                  <h3 className="text-xs sm:text-lg md:text-xl font-bold font-mono text-white mt-0.5 sm:mt-1 truncate leading-tight">
+                    {formatCurrency(summaryData?.totalWithdrawal ?? 0)}
+                  </h3>
+                </div>
+                <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-md sm:rounded-lg bg-white/15 text-rose-100 flex items-center justify-center shrink-0">
+                  <ArrowUpRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-white/75 font-mono mt-0.5 sm:mt-1 uppercase truncate block">
+                {summaryData?.withdrawalCount ?? 0} {isBangla ? 'টি উত্তোলন' : 'Withdrawals'}
+              </span>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-white/15 text-blue-200 flex items-center justify-center shrink-0">
-              <Landmark className="h-5 w-5" />
-            </div>
-          </div>
-          <span className="text-[10px] text-white/60 font-mono mt-2">BANK ACC: 190.120.***</span>
-        </div>
 
-        {/* Sonali Bank Card */}
-        <div className="rounded-2xl p-5 bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#059669] text-white shadow-lg shadow-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between min-h-[115px] relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-200/80">
-                {isBangla ? 'সোনালী ব্যাংক পিএলসি' : 'Sonali Bank PLC'}
-              </p>
-              <h3 className="text-2xl font-bold font-mono text-white mt-1">
-                {formatCurrency(balances.sonaliBank)}
-              </h3>
+            {/* Card 3: Total Deposit */}
+            <div className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4 bg-gradient-to-br from-[#064e3b] via-[#065f46] to-[#059669] text-white shadow-sm sm:shadow-md shadow-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between min-h-[72px] sm:min-h-[105px] relative overflow-hidden group">
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-emerald-200/90 truncate">
+                    {isBangla ? 'মোট জমা' : 'Total Deposit'}
+                  </p>
+                  <h3 className="text-xs sm:text-lg md:text-xl font-bold font-mono text-white mt-0.5 sm:mt-1 truncate leading-tight">
+                    {formatCurrency(summaryData?.totalDeposit ?? 0)}
+                  </h3>
+                </div>
+                <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-md sm:rounded-lg bg-white/15 text-emerald-100 flex items-center justify-center shrink-0">
+                  <ArrowDownLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-white/75 font-mono mt-0.5 sm:mt-1 uppercase truncate block">
+                {summaryData?.depositCount ?? 0} {isBangla ? 'টি জমা' : 'Deposits'}
+              </span>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-white/15 text-emerald-200 flex items-center justify-center shrink-0">
-              <Building2 className="h-5 w-5" />
-            </div>
-          </div>
-          <span className="text-[10px] text-white/60 font-mono mt-2">BANK ACC: 0019.890.***</span>
-        </div>
 
-        {/* bKash Wallet Card */}
-        <div className="rounded-2xl p-5 bg-gradient-to-br from-[#831843] via-[#9d174d] to-[#ec4899] text-white shadow-lg shadow-pink-950/20 border border-pink-500/30 flex flex-col justify-between min-h-[115px] relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-pink-200/80">
-                {isBangla ? 'বিকাশ মার্চেন্ট ওয়ালেট' : 'bKash Merchant'}
-              </p>
-              <h3 className="text-2xl font-bold font-mono text-white mt-1">
-                {formatCurrency(balances.bkashWallet)}
-              </h3>
+            {/* Card 4: Deposit Count & Withdrawals Count */}
+            <div className="rounded-xl sm:rounded-2xl p-2.5 sm:p-4 bg-gradient-to-br from-[#78350f] via-[#92400e] to-[#d97706] text-white shadow-sm sm:shadow-md shadow-amber-950/20 border border-amber-500/30 flex flex-col justify-between min-h-[72px] sm:min-h-[105px] relative overflow-hidden group">
+              <div className="flex items-start justify-between gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-amber-200/90 truncate">
+                    {isBangla ? 'মোট লেনদেন' : 'Total Txn'}
+                  </p>
+                  <h3 className="text-xs sm:text-lg md:text-xl font-bold font-mono text-white mt-0.5 sm:mt-1 truncate leading-tight">
+                    {(summaryData?.depositCount ?? 0) + (summaryData?.withdrawalCount ?? 0)}
+                  </h3>
+                </div>
+                <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-md sm:rounded-lg bg-white/15 text-amber-100 flex items-center justify-center shrink-0">
+                  <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-white/75 font-mono mt-0.5 sm:mt-1 uppercase truncate block">
+                {isBangla
+                  ? `জমা: ${summaryData?.depositCount ?? 0} | উত্তোলন: ${summaryData?.withdrawalCount ?? 0}`
+                  : `In: ${summaryData?.depositCount ?? 0} | Out: ${summaryData?.withdrawalCount ?? 0}`}
+              </span>
             </div>
-            <div className="h-9 w-9 rounded-xl bg-white/15 text-pink-200 flex items-center justify-center shrink-0">
-              <Wallet className="h-5 w-5" />
-            </div>
-          </div>
-          <span className="text-[10px] text-white/60 font-mono mt-2">WALLET: +880 1711***</span>
-        </div>
+          </>
+        )}
       </div>
 
       {/* 3. Main Workspace Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Left Side: Logger Form */}
         <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden h-fit">
           <div className="px-5 py-3.5 border-b border-border/30 bg-muted/15 flex items-center justify-between">
@@ -316,14 +292,17 @@ export default function DepositWithdrawalPage() {
               <Plus className="h-4 w-4 text-primary" />
               <span>
                 {formType === 'deposit'
-                  ? (isBangla ? 'জমা রেকর্ড করুন' : 'Record Deposit')
-                  : (isBangla ? 'উত্তোলন রেকর্ড করুন' : 'Record Withdrawal')}
+                  ? isBangla
+                    ? 'জমা রেকর্ড করুন'
+                    : 'Record Deposit'
+                  : isBangla
+                  ? 'উত্তোলন রেকর্ড করুন'
+                  : 'Record Withdrawal'}
               </span>
             </h3>
           </div>
           <div className="p-4 sm:p-5">
             <form onSubmit={handleRecordTransaction} className="space-y-4">
-              
               {/* Type Tab Selectors: 2 options only (Deposit & Withdrawal) */}
               <div className="grid grid-cols-2 gap-1 p-1 bg-muted rounded-xl text-center text-xs">
                 <button
@@ -368,32 +347,68 @@ export default function DepositWithdrawalPage() {
                 </div>
               )}
 
-              {/* Selected Account: Only 1 account selected */}
+              {/* Selected Account: Populate from accounts (useGetPaymentMethods) */}
               <div className="space-y-1.5 text-xs">
-                <label className="font-semibold text-muted-foreground">
+                <Label className="font-semibold text-muted-foreground">
                   {formType === 'deposit'
-                    ? (isBangla ? 'জমার হিসাব নির্বাচন করুন' : 'Select Deposit Account')
-                    : (isBangla ? 'উত্তোলনের হিসাব নির্বাচন করুন' : 'Select Withdrawal Account')}
-                </label>
-                <select
+                    ? isBangla
+                      ? 'জমার হিসাব নির্বাচন করুন'
+                      : 'Select Deposit Account'
+                    : isBangla
+                    ? 'উত্তোলনের হিসাব নির্বাচন করুন'
+                    : 'Select Withdrawal Account'}
+                </Label>
+                <Select
                   value={formAccount}
-                  onChange={(e) => setFormAccount(e.target.value as any)}
-                  className="w-full h-9.5 rounded-lg border bg-background px-3 text-xs focus:outline-none cursor-pointer"
+                  onValueChange={(val) => setFormAccount(val)}
+                  disabled={isLoadingAccounts}
+                  required
                 >
-                  {Object.keys(balances).map((accKey) => (
-                    <option key={accKey} value={accKey}>
-                      {isBangla ? accountLabels[accKey as keyof typeof balances].bn : accountLabels[accKey as keyof typeof balances].en} ({formatCurrency(balances[accKey as keyof typeof balances])})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-9.5 rounded-lg border bg-background px-3 text-xs focus:outline-none cursor-pointer">
+                    <SelectValue
+                      placeholder={
+                        isLoadingAccounts
+                          ? isBangla
+                            ? 'লোড হচ্ছে...'
+                            : 'Loading accounts...'
+                          : !accounts || accounts.length === 0
+                          ? isBangla
+                            ? 'কোনো হিসাব পাওয়া যায়নি'
+                            : 'No accounts found'
+                          : isBangla
+                          ? 'হিসাব নির্বাচন করুন'
+                          : 'Select an account'
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    {accounts?.map((acc: any) => {
+                      const accId = acc.id || acc._id;
+                      const accBalance = acc.balance ?? acc.currentBalance ?? acc.openingBalance ?? 0;
+                      const accName = acc.name || acc.bankName || acc.provider || (isBangla ? 'অ্যাকাউন্ট' : 'Account');
+                      const accNumber = acc.accountNumber ? ` (${acc.accountNumber})` : '';
+                      return (
+                        <SelectItem key={accId} value={accId} className="text-xs cursor-pointer">
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            <span>{accName}{accNumber}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Amount (Single full-width input without fee) */}
               <div className="space-y-1.5 text-xs">
                 <label className="font-semibold text-muted-foreground">
                   {formType === 'deposit'
-                    ? (isBangla ? 'জমার পরিমাণ (৳)' : 'Deposit Amount (৳)')
-                    : (isBangla ? 'উত্তোলনের পরিমাণ (৳)' : 'Withdrawal Amount (৳)')}
+                    ? isBangla
+                      ? 'জমার পরিমাণ (৳)'
+                      : 'Deposit Amount (৳)'
+                    : isBangla
+                    ? 'উত্তোলনের পরিমাণ (৳)'
+                    : 'Withdrawal Amount (৳)'}
                 </label>
                 <Input
                   type="number"
@@ -409,12 +424,18 @@ export default function DepositWithdrawalPage() {
 
               {/* Description Narration */}
               <div className="space-y-1.5 text-xs">
-                <label className="font-semibold text-muted-foreground">{isBangla ? 'লেনদেনের বিবরণ (Memo)' : 'Narration / Description'}</label>
+                <label className="font-semibold text-muted-foreground">
+                  {isBangla ? 'লেনদেনের বিবরণ (Memo)' : 'Narration / Description'}
+                </label>
                 <Input
                   placeholder={
                     formType === 'deposit'
-                      ? (isBangla ? 'যেমন: গ্রাহক থেকে সরাসরি ক্যাশ জমা...' : 'e.g. Cash deposit from customer...')
-                      : (isBangla ? 'যেমন: অফিস খরচের জন্য উত্তোলন...' : 'e.g. Withdrawal for operational expenses...')
+                      ? isBangla
+                        ? 'যেমন: গ্রাহক থেকে সরাসরি ক্যাশ জমা...'
+                        : 'e.g. Cash deposit from customer...'
+                      : isBangla
+                      ? 'যেমন: অফিস খরচের জন্য উত্তোলন...'
+                      : 'e.g. Withdrawal for operational expenses...'
                   }
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
@@ -424,16 +445,21 @@ export default function DepositWithdrawalPage() {
 
               <Button
                 type="submit"
+                disabled={isCreatingDeposit || isCreatingWithdrawal}
                 className={cn(
-                  'w-full text-xs h-10 font-bold cursor-pointer transition-all',
+                  'w-full text-xs h-10 font-bold cursor-pointer transition-all flex items-center justify-center gap-2',
                   formType === 'deposit'
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     : 'bg-rose-600 hover:bg-rose-700 text-white'
                 )}
               >
-                {formType === 'deposit'
-                  ? (isBangla ? 'জমা নিশ্চিত করুন' : 'Confirm Deposit')
-                  : (isBangla ? 'উত্তোলন নিশ্চিত করুন' : 'Confirm Withdrawal')}
+                {isCreatingDeposit || isCreatingWithdrawal ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : formType === 'deposit' ? (
+                  isBangla ? 'জমা নিশ্চিত করুন' : 'Confirm Deposit'
+                ) : (
+                  isBangla ? 'উত্তোলন নিশ্চিত করুন' : 'Confirm Withdrawal'
+                )}
               </Button>
             </form>
           </div>
@@ -460,10 +486,10 @@ export default function DepositWithdrawalPage() {
               {/* Type Filter */}
               <select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
+                onChange={(e) => setFilterType(e.target.value as 'deposit' | 'withdrawal'| "")}
                 className="h-9 rounded-xl border border-border/60 bg-background px-3 text-xs focus:outline-none cursor-pointer"
               >
-                <option value="all">{isBangla ? 'সকল ধরন' : 'All Types'}</option>
+                <option value="">{isBangla ? 'সকল ধরন' : 'All Types'}</option>
                 <option value="deposit">{isBangla ? 'জমা' : 'Deposits Only'}</option>
                 <option value="withdrawal">{isBangla ? 'উত্তোলন' : 'Withdrawals Only'}</option>
               </select>
@@ -475,11 +501,15 @@ export default function DepositWithdrawalPage() {
                 className="h-9 rounded-xl border border-border/60 bg-background px-3 text-xs focus:outline-none cursor-pointer max-w-[160px] truncate"
               >
                 <option value="all">{isBangla ? 'সকল হিসাব' : 'All Accounts'}</option>
-                {Object.keys(balances).map((accKey) => (
-                  <option key={accKey} value={accKey}>
-                    {isBangla ? accountLabels[accKey as keyof typeof balances].bn : accountLabels[accKey as keyof typeof balances].en}
-                  </option>
-                ))}
+                {accounts?.map((acc: any) => {
+                  const accId = acc.id || acc._id;
+                  const accName = acc.name || acc.bankName || acc.provider || (isBangla ? 'অ্যাকাউন্ট' : 'Account');
+                  return (
+                    <option key={accId} value={accId}>
+                      {accName}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -498,72 +528,139 @@ export default function DepositWithdrawalPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/10">
-                  {filteredTransactions.length === 0 ? (
+                  {isLoadingDepositsAndWithdrawls ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground font-semibold">
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span>{isBangla ? 'লোড হচ্ছে...' : 'Loading transactions...'}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : transactionList.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-muted-foreground font-semibold">
                         {isBangla ? 'কোনো লেনদেন এন্ট্রি পাওয়া যায়নি।' : 'No transactions found.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredTransactions.map((t) => (
-                      <tr key={t.id} className="hover:bg-muted/5">
-                        <td className="p-3 font-mono text-muted-foreground">{t.date}</td>
-                        <td className="p-3 font-mono font-bold text-primary">{t.id}</td>
-                        <td className="p-3">
-                          <Badge
-                            variant="secondary"
+                    transactionList.map((t: any) => {
+                      const tId = t.id || t._id;
+                      const isDeposit = t.type === 'deposit';
+                      const accObj = accounts?.find(
+                        (a: any) => (a.id || a._id) === (t.accountId || t.account?._id || t.account?.id || t.account)
+                      );
+                      const accDisplayName =
+                        accObj?.name ||
+                        accObj?.bankName ||
+                        t.account?.name ||
+                        (typeof t.account === 'string' ? t.account : 'N/A');
+                      const displayDate =
+                        t.createdAt || t.date
+                          ? new Date(t.createdAt || t.date).toLocaleDateString(isBangla ? 'bn-BD' : 'en-US', {
+                              dateStyle: 'medium',
+                            })
+                          : '-';
+
+                      return (
+                        <tr key={tId} className="hover:bg-muted/5">
+                          <td className="p-3 font-mono text-muted-foreground">{displayDate}</td>
+                          <td className="p-3 font-mono font-bold text-primary truncate max-w-[120px]">
+                            {t.reference || t.refCode || tId?.slice(-6) || '-'}
+                          </td>
+                          <td className="p-3">
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                'text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit',
+                                isDeposit
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                  : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              )}
+                            >
+                              {isDeposit ? (
+                                <ArrowDownLeft className="h-3 w-3" />
+                              ) : (
+                                <ArrowUpRight className="h-3 w-3" />
+                              )}
+                              {isBangla ? (isDeposit ? 'জমা' : 'উত্তোলন') : isDeposit ? 'Deposit' : 'Withdrawal'}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-semibold text-foreground">{accDisplayName}</td>
+                          <td
                             className={cn(
-                              'text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 w-fit',
-                              t.type === 'deposit'
-                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              'p-3 text-right font-mono font-bold',
+                              isDeposit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                             )}
                           >
-                            {t.type === 'deposit' ? (
-                              <ArrowDownLeft className="h-3 w-3" />
-                            ) : (
-                              <ArrowUpRight className="h-3 w-3" />
-                            )}
-                            {isBangla
-                              ? t.type === 'deposit' ? 'জমা' : 'উত্তোলন'
-                              : t.type === 'deposit' ? 'Deposit' : 'Withdrawal'}
-                          </Badge>
-                        </td>
-                        <td className="p-3 font-semibold text-foreground">
-                          {isBangla
-                            ? accountLabels[t.account as keyof typeof balances]?.bn
-                            : accountLabels[t.account as keyof typeof balances]?.en}
-                        </td>
-                        <td
-                          className={cn(
-                            'p-3 text-right font-mono font-bold',
-                            t.type === 'deposit'
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-rose-600 dark:text-rose-400'
-                          )}
-                        >
-                          {t.type === 'deposit' ? '+' : '-'}{formatCurrency(t.amount)}
-                        </td>
-                        <td className="p-3 text-center">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteTransaction(t)}
-                            className="h-7 w-7 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                            {isDeposit ? '+' : '-'}
+                            {formatCurrency(t.amount || 0)}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setDeleteConfirmId(t.id || t._id)}
+                              className="h-7 w-7 text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
           </Card>
         </div>
-
       </div>
+
+      {/* Delete Confirmation Alert Dialog */}
+      <AlertDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+      >
+        <AlertDialogContent className="rounded-2xl border border-border/80 bg-card shadow-xl max-w-[350px] md:max-w-[460]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-rose-500" />
+              <span>{isBangla ? 'লেনদেন মুছে ফেলার নিশ্চিতকরণ' : 'Confirm Delete Transaction'}</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground mt-2">
+              {isBangla
+                ? 'আপনি কি নিশ্চিত যে আপনি এই লেনদেন রেকর্ডটি মুছে ফেলতে চান? এই ক্রিয়াটি ফিরিয়ে আনা যাবে না।'
+                : 'Are you sure you want to delete this transaction record? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 flex gap-2 sm:justify-end">
+            <AlertDialogCancel
+              disabled={isDeletingTransaction}
+              className="h-9 px-4 text-xs rounded-xl cursor-pointer"
+            >
+              {isBangla ? 'বাতিল' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeletingTransaction}
+              className="h-9 px-4 text-xs bg-rose-600 hover:bg-rose-700 text-white rounded-xl cursor-pointer font-bold flex items-center gap-1.5"
+            >
+              {isDeletingTransaction ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{isBangla ? 'মুছে ফেলা হচ্ছে...' : 'Deleting...'}</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>{isBangla ? 'মুছে ফেলুন' : 'Delete'}</span>
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
