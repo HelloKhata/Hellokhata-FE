@@ -239,14 +239,15 @@ export function MobileBottomNav() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col max-h-[85vh] w-full max-w-[100vw] overflow-x-hidden box-border md:hidden"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col max-h-[85vh] w-full max-w-full overflow-x-hidden box-border md:hidden"
               style={{
                 position: 'fixed',
                 bottom: 0,
                 left: 0,
                 right: 0,
                 width: '100%',
-                maxWidth: '100vw',
+                maxWidth: '100%',
+                zIndex: 50,
                 boxSizing: 'border-box',
                 paddingBottom: 'env(safe-area-inset-bottom, 0px)',
               }}
@@ -415,16 +416,18 @@ export function MobileBottomNav() {
       {/* ========================================================================= */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 w-full max-w-[100vw] z-40 md:hidden bg-[#0B0F19] border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
+        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden bg-[#0B0F19] border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
         style={{
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           width: '100%',
-          maxWidth: '100vw',
-          zIndex: 40,
+          maxWidth: '100%',
+          zIndex: 50,
           transform: 'translateZ(0)',
+          WebkitTransform: 'translateZ(0)',
+          touchAction: 'manipulation',
           boxSizing: 'border-box',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}

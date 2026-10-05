@@ -20,13 +20,11 @@ import {
   FileText,
   Search,
   Plus,
-  Coins,
   CalendarDays,
   CheckCircle2,
   AlertTriangle,
   CreditCard,
   History,
-  Info,
   User,
   Bell,
   Loader2,
@@ -438,7 +436,7 @@ export default function FinancePayablesPage() {
 
         {/* Tab 2: Payout Logs */}
         {activeTab === 'logs' && (
-          <PayoutHistory logs={payoutLogs} />
+          <PayoutHistory />
         )}
       </div>
 

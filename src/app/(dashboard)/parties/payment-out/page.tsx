@@ -42,8 +42,7 @@ export default function PaymentOutPage() {
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
 
   // Fetch payment list from API
-  const { data: paymentResponse, isLoading, isError } = useGetPaymentList("paid");
-  const transactions = paymentResponse?.data?.data ?? paymentResponse?.data ?? [];
+  const { data: transactions = [], isLoading, isError } = useGetPaymentList("paid");
 
   // Helper to format date
   const formatDate = (dateStr: string) => {

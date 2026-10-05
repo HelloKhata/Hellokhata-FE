@@ -60,8 +60,6 @@ export interface CustomerParty {
   }>;
 }
 
-
-
 export default function FinanceReceivablesPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
@@ -450,7 +448,7 @@ export default function FinanceReceivablesPage() {
 
         {/* Tab 2: Historical Collection Logs */}
         {activeTab === 'logs' && (
-          <CollectionHistory logs={collectionLogs} />
+          <CollectionHistory />
         )}
       </div>
 

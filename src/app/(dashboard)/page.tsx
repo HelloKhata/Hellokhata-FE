@@ -176,23 +176,23 @@ function KPICard({label,labelBn,value,change,prefix='',color,icon,href,isBangla,
   const c = KPI_COL[color] || KPI_COL.slate;
   const fmt = (v:number) => new Intl.NumberFormat(isBangla?'bn-BD':'en-US').format(v);
   return (
-    <Link href={href}>
+    <Link href={href} className="min-w-0 w-full block">
       <motion.div
         initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} whileHover={{y:-2}}
-        className="relative rounded-2xl border p-4 cursor-pointer overflow-hidden transition-all duration-200"
+        className="relative rounded-2xl border p-3 sm:p-4 cursor-pointer overflow-hidden transition-all duration-200 min-w-0 w-full"
         style={{background:'var(--card)',borderColor:'var(--border)'}}
       >
         <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{background:'linear-gradient(90deg,'+c.text+',transparent)'}}/>
-        <div className="flex items-start justify-between mb-3">
-          <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{background:c.bg}}>
-            <span style={{color:c.text}} className="[&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <div className="h-6.5 w-6.5 sm:h-7 sm:w-7 rounded-xl flex items-center justify-center shrink-0" style={{background:c.bg}}>
+            <span style={{color:c.text}} className="[&>svg]:h-3 sm:[&>svg]:h-3.5 [&>svg]:w-3 sm:[&>svg]:w-3.5">{icon}</span>
           </div>
           <Sparkline positive={pos}/>
         </div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">{isBangla?labelBn:label}</p>
-        <p className="text-2xl font-bold text-foreground font-mono mb-2">{hide?'':prefix+fmt(n)}</p>
-        <div className={cn('flex items-center gap-1 text-xs font-semibold',pos?'text-emerald-500':'text-rose-500')}>
-          {pos?<TrendingUp className="h-3 w-3"/>:<TrendingDown className="h-3 w-3"/>}
+        <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 truncate">{isBangla?labelBn:label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-foreground font-mono mb-1.5 sm:mb-2 truncate">{hide?'':prefix+fmt(n)}</p>
+        <div className={cn('flex items-center gap-1 text-[11px] sm:text-xs font-semibold shrink-0',pos?'text-emerald-500':'text-rose-500')}>
+          {pos?<TrendingUp className="h-3 w-3 shrink-0"/>:<TrendingDown className="h-3 w-3 shrink-0"/>}
           {pos?'+':''}{change.toFixed(1)}%
         </div>
       </motion.div>
@@ -207,14 +207,14 @@ function HealthPill({ind,isBangla}:{ind:typeof MOCK_HEALTH.indicators[0];isBangl
   const Icon = IconMap[ind.icon]||Circle;
   const isUp = ind.trendVal.startsWith('+');
   return (
-    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-border/40 hover:border-border bg-muted/20 transition-all text-center">
-      <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{background:ind.color+'15'}}>
-        <Icon className="h-3.5 w-3.5" style={{color:ind.color}}/>
+    <div className="flex flex-col items-center gap-1 sm:gap-1.5 p-2 sm:p-3 rounded-2xl border border-border/40 hover:border-border bg-muted/20 transition-all text-center min-w-0 w-full overflow-hidden">
+      <div className="h-6.5 w-6.5 sm:h-7 sm:w-7 rounded-xl flex items-center justify-center shrink-0" style={{background:ind.color+'15'}}>
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" style={{color:ind.color}}/>
       </div>
-      <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-tight">{isBangla?ind.labelBn:ind.label}</p>
-      <p className={cn('text-[11px] font-bold',tc)}>{isBangla?ind.statusBn:ind.status}</p>
-      <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-        {isUp?<TrendingUp className="h-2.5 w-2.5 text-emerald-500"/>:<TrendingDown className="h-2.5 w-2.5 text-rose-500"/>}
+      <p className="text-[8.5px] sm:text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-tight truncate w-full">{isBangla?ind.labelBn:ind.label}</p>
+      <p className={cn('text-[10px] sm:text-[11px] font-bold truncate w-full',tc)}>{isBangla?ind.statusBn:ind.status}</p>
+      <div className="flex items-center gap-0.5 text-[8.5px] sm:text-[9px] text-muted-foreground shrink-0">
+        {isUp?<TrendingUp className="h-2.5 w-2.5 text-emerald-500 shrink-0"/>:<TrendingDown className="h-2.5 w-2.5 text-rose-500 shrink-0"/>}
         {ind.trendVal}
       </div>
     </div>
@@ -315,47 +315,70 @@ export default function DashboardPage() {
     <div className="min-h-screen space-y-6 pb-12">
 
       {/* S1: COMMAND HEADER */}
-      <div className="flex items-center gap-4 rounded-2xl border px-5 py-3" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-        <div className="relative shrink-0">
-          <button onClick={()=>setBranchOpen(v=>!v)} className="flex items-center gap-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors">
-            <Building2 className="h-4 w-4 text-muted-foreground"/>
-            {branch}
-            <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform',branchOpen&&'rotate-180')}/>
-          </button>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"/>
-            {isBangla?'সিঙ্ক:':'Sync:'} {lastSync}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl border p-3.5 sm:px-5 sm:py-3 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
+        <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+          {/* Branch dropdown */}
+          <div className="relative shrink-0">
+            <button onClick={()=>setBranchOpen(v=>!v)} className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-foreground hover:text-primary transition-colors">
+              <Building2 className="h-4 w-4 text-muted-foreground"/>
+              {branch}
+              <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform',branchOpen&&'rotate-180')}/>
+            </button>
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"/>
+              {isBangla?'সিঙ্ক:':'Sync:'} {lastSync}
+            </div>
+            <AnimatePresence>
+              {branchOpen && (
+                <motion.div initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:6}}
+                  className="absolute top-full left-0 mt-1 z-50 rounded-xl border border-border shadow-xl overflow-hidden min-w-[140px]"
+                  style={{background:'var(--card)'}}>
+                  {BRANCHES.map(b=>(
+                    <button key={b} onClick={()=>{setBranch(b);setBranchOpen(false);}}
+                      className={cn('w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors',branch===b?'text-primary font-bold':'text-foreground')}>
+                      {b}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <AnimatePresence>
-            {branchOpen && (
-              <motion.div initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:6}}
-                className="absolute top-full left-0 mt-1 z-50 rounded-xl border border-border shadow-xl overflow-hidden min-w-[140px]"
-                style={{background:'var(--card)'}}>
-                {BRANCHES.map(b=>(
-                  <button key={b} onClick={()=>{setBranch(b);setBranchOpen(false);}}
-                    className={cn('w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors',branch===b?'text-primary font-bold':'text-foreground')}>
-                    {b}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+          {/* Action buttons on mobile (compact top row) */}
+          <div className="flex sm:hidden items-center gap-1 shrink-0">
+            <button onClick={()=>setHide(v=>!v)} className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+              {hide?<Eye className="h-3.5 w-3.5"/>:<EyeOff className="h-3.5 w-3.5"/>}
+            </button>
+            <button onClick={async()=>{setRefreshing(true);await new Promise(r=>setTimeout(r,700));setRefreshing(false);}}
+              className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+              <RefreshCw className={cn('h-3.5 w-3.5',refreshing&&'animate-spin')}/>
+            </button>
+            <Link href="/notifications" className="relative h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+              <Bell className="h-3.5 w-3.5"/>
+              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-rose-500 border border-card"/>
+            </Link>
+            <Link href="/settings" className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+              <Settings className="h-3.5 w-3.5"/>
+            </Link>
+          </div>
         </div>
 
-        <form onSubmit={handleAI} className="flex-1">
-          <div className="flex items-center gap-2.5 rounded-xl px-4 py-2 border border-border bg-muted/40 hover:border-primary/30 focus-within:border-primary/40 focus-within:bg-card transition-all">
+        {/* AI Input Form */}
+        <form onSubmit={handleAI} className="flex-1 w-full min-w-0">
+          <div className="flex items-center gap-2 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-border bg-muted/40 hover:border-primary/30 focus-within:border-primary/40 focus-within:bg-card transition-all w-full min-w-0">
             <Sparkles className="h-4 w-4 text-primary shrink-0"/>
             <input ref={aiRef} type="text" value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)}
               placeholder={AI_PROMPTS[promptIdx]}
-              className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 outline-none"/>
+              className="flex-1 bg-transparent text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"/>
             <kbd className="hidden sm:block text-[10px] text-muted-foreground/40 border border-border/40 rounded px-1.5 py-0.5">/</kbd>
-            <button type="submit" className="h-6 w-6 rounded-lg flex items-center justify-center text-primary hover:bg-primary/10 transition-colors">
+            <button type="submit" className="h-6 w-6 rounded-lg flex items-center justify-center text-primary hover:bg-primary/10 transition-colors shrink-0">
               <Send className="h-3 w-3"/>
             </button>
           </div>
         </form>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Action buttons on desktop */}
+        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
           <button onClick={()=>setHide(v=>!v)} className="h-8 w-8 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
             {hide?<Eye className="h-4 w-4"/>:<EyeOff className="h-4 w-4"/>}
           </button>
@@ -374,11 +397,11 @@ export default function DashboardPage() {
       </div>
 
       {/* S2: BUSINESS HEALTH CENTER */}
-      <div className="rounded-2xl border p-5" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-        <div className="flex flex-col lg:flex-row items-start gap-6">
-          <div className="flex items-center gap-5 shrink-0">
-            <div className="relative">
-              <svg width="88" height="88" viewBox="0 0 88 88">
+      <div className="rounded-2xl border p-4 sm:p-5 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
+        <div className="flex flex-col lg:flex-row items-start gap-4 sm:gap-6 w-full min-w-0">
+          <div className="flex items-center gap-4 sm:gap-5 shrink-0 w-full sm:w-auto">
+            <div className="relative shrink-0">
+              <svg width="80" height="80" viewBox="0 0 88 88" className="sm:w-[88px] sm:h-[88px]">
                 <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(79,91,255,0.1)" strokeWidth="7"/>
                 <motion.circle cx="44" cy="44" r="36" fill="none" stroke="url(#hg)" strokeWidth="7" strokeLinecap="round"
                   strokeDasharray={2*Math.PI*36}
@@ -392,37 +415,37 @@ export default function DashboardPage() {
                 </defs>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-foreground">{MOCK_HEALTH.score}</span>
-                <span className="text-xs text-muted-foreground">/100</span>
+                <span className="text-lg sm:text-xl font-bold text-foreground">{MOCK_HEALTH.score}</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">/100</span>
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-bold text-foreground">{isBangla?'ব্যবসার স্বাস্থ্য':'Business Health'}</span>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">A · {isBangla?'উন্নতি':'Improving'}</span>
+            <div className="min-w-0 flex-1 sm:flex-initial">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="text-xs sm:text-sm font-bold text-foreground">{isBangla?'ব্যবসার স্বাস্থ্য':'Business Health'}</span>
+                <span className="text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">A · {isBangla?'উন্নতি':'Improving'}</span>
               </div>
-              <p className="text-xs text-muted-foreground max-w-[200px] leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-muted-foreground max-w-[200px] leading-relaxed">
                 {isBangla?'সামগ্রিক অবস্থা ভালো। পাওনা সংগ্রহে মনোযোগ দিন।':'Overall strong. Focus on receivables.'}
               </p>
-              <Link href="/reports/health-score" className="inline-flex items-center gap-1 text-xs text-primary font-semibold mt-1.5 hover:underline">
+              <Link href="/reports/health-score" className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-primary font-semibold mt-1.5 hover:underline">
                 {isBangla?'বিশ্লেষণ':'Full Analysis'} <ChevronRight className="h-3 w-3"/>
               </Link>
             </div>
           </div>
           <div className="hidden lg:block w-px self-stretch bg-border/40"/>
-          <div className="flex-1 grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+          <div className="flex-1 grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5 w-full min-w-0">
             {MOCK_HEALTH.indicators.map(ind=><HealthPill key={ind.key} ind={ind} isBangla={isBangla}/>)}
           </div>
         </div>
       </div>
 
       {/* S3: KPI GRID */}
-      <div>
+      <div className="w-full max-w-full">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{isBangla?'মূল পরিসংখ্যান':'Key Metrics'}</p>
-          <p className="text-xs text-muted-foreground">{isBangla?'আজকের তথ্য':"Today's data"} · {lastSync}</p>
+          <p className="text-[11px] sm:text-xs text-muted-foreground">{isBangla?'আজকের তথ্য':"Today's data"} · {lastSync}</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-3 w-full min-w-0">
           <KPICard label="Today's Sales"   labelBn="আজকের বিক্রি"    value={MOCK_STATS.todaySales}     change={MOCK_STATS.todaySalesChange}   prefix="৳" color="emerald" icon={<ShoppingCart/>} href="/sales"                isBangla={isBangla} hide={hide}/>
           <KPICard label="Today's Profit"  labelBn="আজকের লাভ"       value={MOCK_STATS.todayProfit}    change={MOCK_STATS.todayProfitChange}  prefix="৳" color="blue"    icon={<TrendingUp/>}    href="/reports/dashboard"    isBangla={isBangla} hide={hide}/>
           <KPICard label="Cash Balance"    labelBn="নগদ ব্যালেন্স"    value={23}                   change={MOCK_STATS.cashChange}         prefix="৳" color="violet"  icon={<Wallet/>}        href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
@@ -501,14 +524,14 @@ export default function DashboardPage() {
 
       {/* S5: BUSINESS INTELLIGENCE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 rounded-2xl border p-5" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 rounded-2xl border p-4 sm:p-5 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h3 className="text-sm font-bold text-foreground">{isBangla?'ব্যবসার কার্যক্ষমতা':'Business Performance'}</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <div className="flex gap-0.5 bg-muted rounded-xl p-0.5">
                 {(['sales','profit','expenses'] as const).map(m=>(
                   <button key={m} onClick={()=>setMetric(m)}
-                    className={cn('px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',metric===m?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
+                    className={cn('px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',metric===m?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
                     {m==='sales'?(isBangla?'বিক্রি':'Sales'):m==='profit'?(isBangla?'লাভ':'Profit'):(isBangla?'খরচ':'Exp')}
                   </button>
                 ))}
@@ -516,32 +539,32 @@ export default function DashboardPage() {
               <div className="flex gap-0.5 bg-muted rounded-xl p-0.5">
                 {(['week','month'] as const).map(r=>(
                   <button key={r} onClick={()=>setRange(r)}
-                    className={cn('px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',range===r?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
+                    className={cn('px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',range===r?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
                     {r==='week'?(isBangla?'সপ্তাহ':'Week'):(isBangla?'মাস':'Month')}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 mb-4 px-1 py-1 border-b border-border/20 pb-3">
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#4F5BFF]"/>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4 px-1 py-1 border-b border-border/20 pb-3">
+            <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1.5">
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-[#4F5BFF] shrink-0"/>
                 {isBangla ? 'বিক্রি' : 'Sales'}: <span className="font-bold text-foreground font-mono">৳{fmt(totalSales)}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#10b981]"/>
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-[#10b981] shrink-0"/>
                 {isBangla ? 'লাভ' : 'Profit'}: <span className="font-bold text-emerald-500 font-mono">৳{fmt(totalProfit)}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#ef4444]"/>
+              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-[#ef4444] shrink-0"/>
                 {isBangla ? 'খরচ' : 'Expenses'}: <span className="font-bold text-rose-500 font-mono">৳{fmt(totalExpenses)}</span>
               </div>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
               {[{l:isBangla?'সর্বোচ্চ':'Peak',v:chartPeak},{l:isBangla?'গড়':'Avg',v:chartAvg}].map(p=>(
-                <div key={p.l} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full" style={{background:chartColor}}/>
+                <div key={p.l} className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{background:chartColor}}/>
                   {p.l}: <span className="font-bold text-foreground font-mono">৳{fmt(p.v)}</span>
                 </div>
               ))}

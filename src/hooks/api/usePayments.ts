@@ -45,7 +45,9 @@ export const useGetPaymentList = (type?: 'received' | 'paid') => {
         queryKey: ["payment", type],
         queryFn: () => getPaymentList(type),
         enabled: !!type,
-    })
+        select: data => data.data
+    });
+    
 }       
 
 
