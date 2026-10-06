@@ -317,12 +317,12 @@ export const navGroups: NavItem[] = [
     labelBn: "রিপোর্ট",
     icon: BarChart3,
     submenu: [
-      {
-        page: "/reports/dashboard",
-        icon: BarChart3,
-        labelKey: "Dashboard",
-        labelBn: "ড্যাশবোর্ড",
-      },
+      // {
+      //   page: "/reports/dashboard",
+      //   icon: BarChart3,
+      //   labelKey: "Dashboard",
+      //   labelBn: "ড্যাশবোর্ড",
+      // },
       {
         page: "/reports/sales",
         icon: ShoppingCart,

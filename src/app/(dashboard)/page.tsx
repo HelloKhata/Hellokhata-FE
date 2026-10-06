@@ -1,733 +1,1198 @@
-'use client';
-// HelloKhata — Business Command Center
-// Award-winning Dashboard · Stripe × Linear × Notion aesthetic
+// Hello Khata OS - Reports Dashboard Page
+// হ্যালো খাতা - রিপোর্টস ড্যাশবোর্ড পেজ
+// Recreated with premium aesthetics, HelloKhata color palette, and interactive widgets
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
-} from 'recharts';
-import { useAppTranslation } from '@/hooks/useAppTranslation';
-import { cn } from '@/lib/utils';
-import {
-  Bell, Settings, RefreshCw, ChevronRight, ChevronDown,
-  TrendingUp, TrendingDown, Wallet, Package, ShoppingCart, Receipt,
-  ArrowDownLeft, ArrowUpRight, Sparkles, AlertCircle, Landmark,
-  Building2, Target, FileText, Send, UserPlus, Box, Repeat2, Bot,
-  Clock, AlertTriangle, Zap, CreditCard, Eye, EyeOff, Circle,
+  TrendingUp,
+  Receipt,
+  ShoppingCart,
+  Package,
+  Calendar,
+  Building2,
+  ChevronDown,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  FileText,
+  FileSpreadsheet,
+  BarChart3,
+  Landmark,
+  Home,
+  Check,
+  ChevronRight,
 } from 'lucide-react';
-// ── MOCK DATA ──────────────────────────────────────────────
-const MOCK_STATS = {
-  todaySales: 42750,      todaySalesChange: 18.4,
-  todayProfit: 12300,     todayProfitChange: 6.2,
-  cashBalance: 75500,     cashChange: -3.1,
-  bankBalance: 1432500,   bankChange: 12.8,
-  receivables: 285000,    receivablesChange: -4.5,
-  payables: 98000,        payablesChange: 2.1,
-  inventoryValue: 645000, inventoryChange: 1.8,
-  pendingOrders: 14,      ordersChange: -21.4,
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
+import { useBranchStore } from '@/stores/branchStore';
+import { cn } from '@/lib/utils';
+
+const STATIC_BRANCHES = [
+  { id: 'main', name: 'Main Branch', code: 'MAIN', isDefault: true, isActive: true },
+  { id: 'branch-2', name: 'Dhanmondi Branch', code: 'DHN', isDefault: false, isActive: true },
+  { id: 'branch-3', name: 'Uttara Outlet', code: 'UTT', isDefault: false, isActive: true },
+];
+
+// ==========================================
+// MOCK DATA & CONSTANTS
+// ==========================================
+
+type PerformanceTab = 'revenue' | 'profit' | 'expense';
+type PerformancePeriod = 'weekly' | 'monthly' | 'yearly';
+type DateRangeOption = '7d' | '30d' | 'this_month' | 'last_month' | 'this_year';
+
+const dateRangeLabels: Record<DateRangeOption, { en: string; bn: string; rangeTextEn: string; rangeTextBn: string }> = {
+  '7d': { en: 'Last 7 Days', bn: 'গত ৭ দিন', rangeTextEn: 'May 11 – May 18, 2025', rangeTextBn: '১১ মে – ১৮ মে, ২০২৫' },
+  '30d': { en: 'Last 30 Days', bn: 'গত ৩০ দিন', rangeTextEn: 'Apr 18 – May 18, 2025', rangeTextBn: '১৮ এপ্রিল – ১৮ মে, ২০২৫' },
+  'this_month': { en: 'This Month', bn: 'চলতি মাস', rangeTextEn: 'May 01 – May 31, 2025', rangeTextBn: '০১ মে – ৩১ মে, ২০২৫' },
+  'last_month': { en: 'Last Month', bn: 'গত মাস', rangeTextEn: 'Apr 01 – Apr 30, 2025', rangeTextBn: '০১ এপ্রিল – ৩০ এপ্রিল, ২০২৫' },
+  'this_year': { en: 'This Year', bn: 'চলতি বছর', rangeTextEn: 'Jan 01 – Dec 31, 2025', rangeTextBn: '০১ জানু – ৩১ ডিসে, ২০২৫' },
 };
 
-const MOCK_HEALTH = {
-  score: 84,
-  indicators: [
-    { key:'cashflow',   label:'Cash Flow',     labelBn:'নগদ প্রবাহ',    status:'Excellent',  statusBn:'চমৎকার',         trendVal:'+8%',  color:'#10b981', icon:'wallet'   },
-    { key:'inventory',  label:'Inventory',     labelBn:'ইনভেন্টরি',     status:'Healthy',    statusBn:'সুস্থ',           trendVal:'+2%',  color:'#3b82f6', icon:'box'      },
-    { key:'sales',      label:'Sales Growth',  labelBn:'বিক্রি বৃদ্ধি',  status:'Strong',     statusBn:'শক্তিশালী',      trendVal:'+18%', color:'#8b5cf6', icon:'trending' },
-    { key:'margin',     label:'Profit Margin', labelBn:'লাভ মার্জিন',   status:'Good',       statusBn:'ভালো',            trendVal:'+3%',  color:'#f59e0b', icon:'target'   },
-    { key:'receivable', label:'Receivables',   labelBn:'পাওনা',          status:'Attention',  statusBn:'মনোযোগ প্রয়োজন', trendVal:'+12%', color:'#ef4444', icon:'users'    },
-    { key:'expenses',   label:'Expenses',      labelBn:'খরচ',            status:'Controlled', statusBn:'নিয়ন্ত্রিত',    trendVal:'-2%',  color:'#06b6d4', icon:'receipt'  },
+// Financial Performance Time-Series Data
+const performanceData: Record<PerformancePeriod, { date: string; dateBn: string; revenue: number; profit: number; expense: number }[]> = {
+  weekly: [
+    { date: 'May 11', dateBn: '১১ মে', revenue: 65000, profit: 42000, expense: 23000 },
+    { date: 'May 12', dateBn: '১২ মে', revenue: 98000, profit: 62000, expense: 36000 },
+    { date: 'May 13', dateBn: '১৩ মে', revenue: 84000, profit: 54000, expense: 30000 },
+    { date: 'May 14', dateBn: '১৪ মে', revenue: 155000, profit: 105000, expense: 50000 },
+    { date: 'May 15', dateBn: '১৫ মে', revenue: 120000, profit: 82000, expense: 38000 },
+    { date: 'May 16', dateBn: '১৬ মে', revenue: 165000, profit: 115000, expense: 50000 },
+    { date: 'May 17', dateBn: '১৭ মে', revenue: 248500, profit: 172300, expense: 76200 },
+    { date: 'May 18', dateBn: '১৮ মে', revenue: 210000, profit: 145000, expense: 65000 },
+  ],
+  monthly: [
+    { date: 'Jan', dateBn: 'জানু', revenue: 420000, profit: 270000, expense: 150000 },
+    { date: 'Feb', dateBn: 'ফেব্রু', revenue: 510000, profit: 340000, expense: 170000 },
+    { date: 'Mar', dateBn: 'মার্চ', revenue: 480000, profit: 310000, expense: 170000 },
+    { date: 'Apr', dateBn: 'এপ্রিল', revenue: 620000, profit: 410000, expense: 210000 },
+    { date: 'May', dateBn: 'মে', revenue: 780000, profit: 520000, expense: 260000 },
+    { date: 'Jun', dateBn: 'জুন', revenue: 710000, profit: 480000, expense: 230000 },
+    { date: 'Jul', dateBn: 'জুলাই', revenue: 850000, profit: 590000, expense: 260000 },
+    { date: 'Aug', dateBn: 'আগস্ট', revenue: 920000, profit: 640000, expense: 280000 },
+  ],
+  yearly: [
+    { date: '2021', dateBn: '২০২১', revenue: 4500000, profit: 2900000, expense: 1600000 },
+    { date: '2022', dateBn: '২০২২', revenue: 6200000, profit: 4100000, expense: 2100000 },
+    { date: '2023', dateBn: '২০২৩', revenue: 8400000, profit: 5600000, expense: 2800000 },
+    { date: '2024', dateBn: '২০২৪', revenue: 11500000, profit: 7800000, expense: 3700000 },
+    { date: '2025 (YTD)', dateBn: '২০২৫', revenue: 14200000, profit: 9800000, expense: 4400000 },
   ],
 };
 
-const buildChart = () => Array.from({ length: 14 }, (_, i) => {
-  const d = new Date(); d.setDate(d.getDate() - (13 - i));
-  const s = [28,32,29,35,31,38,42,36,44,40,47,43,51,42.75].map(v=>v*1000);
-  const p = [7.2,8.8,7.5,9.6,8.2,10.5,11.8,9.7,12.2,11,13.4,11.9,14.6,12.3].map(v=>v*1000);
-  return {
-    date:   d.toLocaleDateString('en-US',{month:'short',day:'numeric'}),
-    dateBn: d.toLocaleDateString('bn-BD',{month:'short',day:'numeric'}),
-    sales: s[i], profit: p[i], expenses: s[i]-p[i],
-  };
-});
-
-const MOCK_ALERTS = [
-  {id:'a1',priority:'high',  icon:'alert',   count:3,label:'Overdue Receivables',     labelBn:'মেয়াদোত্তীর্ণ পাওনা',   detail:'35,000 overdue',   detailBn:'৩৫,০০০ বকেয়া',      href:'/finance/receivables',  status:'critical'},
-  {id:'a2',priority:'high',  icon:'pkg',     count:5,label:'Low Stock Items',         labelBn:'কম মজুদ পণ্য',            detail:'Reorder needed',   detailBn:'পুনঃঅর্ডার প্রয়োজন',href:'/inventory',            status:'critical'},
-  {id:'a3',priority:'medium',icon:'bank',    count:2,label:'Bank Reconciliation',     labelBn:'ব্যাংক সমন্বয়',          detail:'DBBL + Sonali',    detailBn:'DBBL + সোনালী',      href:'/finance/bank-wallets', status:'warning' },
-  {id:'a4',priority:'medium',icon:'vat',     count:1,label:'VAT Return Due',          labelBn:'ভ্যাট রিটার্ন বকেয়া',   detail:'Due Aug 15, 2026', detailBn:'১৫ আগস্ট, ২০২৬',    href:'/finance/settings',     status:'warning' },
-  {id:'a5',priority:'low',   icon:'purchase',count:4,label:'Pending Purchase Orders', labelBn:'অপেক্ষমান ক্রয় আদেশ',   detail:'68,200 pending',   detailBn:'৬৮,২০০ অপেক্ষমান',  href:'/purchases',            status:'info'    },
-  {id:'a6',priority:'low',   icon:'hrm',     count:7,label:'Attendance Not Marked',   labelBn:'উপস্থিতি চিহ্নিত নয়',   detail:'Today attendance', detailBn:'আজকের উপস্থিতি',    href:'/hrm/attendance',       status:'info'    },
+// Sales by Category Data
+const salesCategoryData = [
+  { name: 'Medicine', nameBn: 'ঔষধ', value: 42, color: '#0FBF9F', amount: '৳1,04,370' },
+  { name: 'Grocery', nameBn: 'মুদিখানা', value: 28, color: '#3B82F6', amount: '৳69,580' },
+  { name: 'Cosmetics', nameBn: 'প্রসাধন সামগ্রী', value: 18, color: '#F59E0B', amount: '৳44,730' },
+  { name: 'Others', nameBn: 'অন্যান্য', value: 12, color: '#8B5CF6', amount: '৳29,820' },
 ];
 
-const MOCK_TIMELINE = [
-  {id:'t1',time:'10:42',type:'sale',    ref:'INV-5542',party:'Rahman Traders',  amount:6500, flow:'in' },
-  {id:'t2',time:'09:48',type:'payment', ref:'RCP-1891',party:'ABC Distributors',amount:18000,flow:'in' },
-  {id:'t3',time:'09:15',type:'purchase',ref:'PO-0892', party:'Karim Brothers',  amount:12400,flow:'out'},
-  {id:'t4',time:'09:02',type:'expense', ref:'EXP-0341',party:'DESCO',           amount:2350, flow:'out'},
-  {id:'t5',time:'08:30',type:'sale',    ref:'INV-5541',party:'Nova Pharma',     amount:9200, flow:'in' },
-  {id:'t6',time:'08:15',type:'payment', ref:'RCP-1890',party:'Dhaka Traders',   amount:45000,flow:'in' },
-  {id:'t7',time:'Yest.',type:'sale',    ref:'INV-5540',party:'Metro Store',     amount:14800,flow:'in' },
-  {id:'t8',time:'Yest.',type:'expense', ref:'EXP-0340',party:'Fuel Station',    amount:1800, flow:'out'},
+// Expense Breakdown Data
+const expenseBreakdownData = [
+  { name: 'Purchase', nameBn: 'ক্রয়/সোর্সিং', value: 40, color: '#0FBF9F', amount: '৳30,480' },
+  { name: 'Utilities', nameBn: 'ইউটিলিটি ও বিল', value: 20, color: '#3B82F6', amount: '৳15,240' },
+  { name: 'Salary', nameBn: 'বেতন ও ভাতা', value: 18, color: '#F59E0B', amount: '৳13,716' },
+  { name: 'Others', nameBn: 'অন্যান্য খরচ', value: 22, color: '#8B5CF6', amount: '৳16,764' },
 ];
 
-const AI_INSIGHTS = [
-  {id:'i1',impact:'positive',text:'Sales up 18% vs last week. Medicine category leads.',textBn:'বিক্রি ১৮% বৃদ্ধি। মেডিসিন ক্যাটাগরি শীর্ষে।',           action:'View',      href:'/reports/sales'       },
-  {id:'i2',impact:'alert',   text:'3 customers overdue totaling 35,000.',             textBn:'৩ জন গ্রাহকের মোট ৳৩৫,০০০ মেয়াদোত্তীর্ণ।',           action:'Follow Up', href:'/finance/receivables' },
-  {id:'i3',impact:'neutral', text:'Profit margin improved to 28.7% this week.',       textBn:'এই সপ্তাহে লাভ মার্জিন ২৮.৭%-এ উন্নীত হয়েছে।',        action:'Details',   href:'/reports/dashboard'  },
-  {id:'i4',impact:'positive',text:'Cash flow positive. 1.5M liquid assets.',          textBn:'নগদ প্রবাহ ইতিবাচক। ৳১৫ লক্ষ তরল সম্পদ।',              action:'Manage',    href:'/finance/bank-wallets'},
-  {id:'i5',impact:'alert',   text:'5 inventory items below reorder level.',           textBn:'৫টি পণ্য পুনঃঅর্ডার সীমার নিচে।',                       action:'Reorder',   href:'/inventory'           },
+// Top Selling Products
+const topSellingProducts = [
+  { id: 1, name: 'Paracetamol 500mg', nameBn: 'প্যারাসিটামল ৫০০ মি.গ্রা.', percentage: 18, sales: '৳44,730', units: '890 pcs' },
+  { id: 2, name: 'ORS (Oral Rehydration Salts)', nameBn: 'ওআরএস স্যালাইন', percentage: 14, sales: '৳34,790', units: '1,240 pcs' },
+  { id: 3, name: 'Cough Syrup 100ml', nameBn: 'কাফ সিরাপ ১০০ মিলি', percentage: 12, sales: '৳29,820', units: '420 pcs' },
+  { id: 4, name: 'Vitamin C 500mg', nameBn: 'ভিটামিন সি ৫০০ মি.গ্রা.', percentage: 10, sales: '৳24,850', units: '650 pcs' },
+  { id: 5, name: 'Face Mask (Pack of 50)', nameBn: 'ফেস মাস্ক (৫০ প্যাক)', percentage: 8, sales: '৳19,880', units: '310 pcs' },
 ];
 
-const AI_PROMPTS = [
-  'Show today sales breakdown','Who owes me money?','Low stock items',
-  'Generate VAT report','Cash flow this month','Show payroll summary',
+// Recent Generated Reports
+const recentReportsList = [
+  {
+    id: 'rep-01',
+    name: 'Sales Report – May 2025',
+    nameBn: 'বিক্রয় রিপোর্ট – মে ২০২৫',
+    type: 'Sales',
+    typeBn: 'বিক্রয়',
+    badgeVariant: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    date: 'May 18, 2025 10:24 AM',
+    dateBn: '১৮ মে, ২০২৫ ১০:২৪ পূর্বাহ্ণ',
+    path: '/reports/sales',
+  },
+  {
+    id: 'rep-02',
+    name: 'Expense Report – May 2025',
+    nameBn: 'ব্যয় রিপোর্ট – মে ২০২৫',
+    type: 'Expense',
+    typeBn: 'ব্যয়',
+    badgeVariant: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    date: 'May 17, 2025 09:50 PM',
+    dateBn: '১৭ মে, ২০২৫ ০৯:৫০ অপরাহ্ণ',
+    path: '/reports/finance/income',
+  },
+  {
+    id: 'rep-03',
+    name: 'Inventory Report – May 2025',
+    nameBn: 'ইনভেন্টরি রিপোর্ট – মে ২০২৫',
+    type: 'Inventory',
+    typeBn: 'ইনভেন্টরি',
+    badgeVariant: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    date: 'May 16, 2025 08:42 PM',
+    dateBn: '১৬ মে, ২০২৫ ০৮:৪২ অপরাহ্ণ',
+    path: '/reports/inventory',
+  },
 ];
 
-const QUICK_ACTIONS = [
-  {label:'New Sale',        labelBn:'নতুন বিক্রি',     href:'/sales/new',                  Icon:ShoppingCart, color:'emerald'},
-  {label:'Receive Payment', labelBn:'পেমেন্ট গ্রহণ',   href:'/finance/receivables',        Icon:ArrowDownLeft,color:'blue'   },
-  {label:'New Purchase',    labelBn:'নতুন ক্রয়',       href:'/purchases/new',              Icon:Package,      color:'violet' },
-  {label:'Record Expense',  labelBn:'খরচ রেকর্ড',      href:'/expenses/new',               Icon:Receipt,      color:'rose'   },
-  {label:'Transfer Money',  labelBn:'অর্থ স্থানান্তর', href:'/finance/deposit-withdrawal', Icon:Repeat2,      color:'amber'  },
-  {label:'Add Customer',    labelBn:'গ্রাহক যুক্ত',    href:'/parties/new?type=customer',  Icon:UserPlus,     color:'cyan'   },
-  {label:'Add Product',     labelBn:'পণ্য যুক্ত',      href:'/inventory/new',              Icon:Box,          color:'indigo' },
-  {label:'AI Assistant',    labelBn:'AI সহকারী',       href:'/ai',                         Icon:Bot,          color:'fuchsia'},
+// Quick Reports Links
+const quickReports = [
+  {
+    id: 'profit-loss',
+    title: 'Profit & Loss',
+    titleBn: 'লাভ ও ক্ষতি',
+    subtitle: 'Business performance',
+    subtitleBn: 'ব্যবসায়িক পারফরম্যান্স',
+    icon: Landmark,
+    iconColor: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+    path: '/reports/profit-loss',
+  },
+  {
+    id: 'balance-sheet',
+    title: 'Balance Sheet',
+    titleBn: 'ব্যালেন্স শীট',
+    subtitle: 'Financial position',
+    subtitleBn: 'আর্থিক অবস্থান',
+    icon: FileSpreadsheet,
+    iconColor: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+    path: '/reports/finance',
+  },
+  {
+    id: 'cash-flow',
+    title: 'Cash Flow',
+    titleBn: 'ক্যাশ ফ্লো',
+    subtitle: 'Liquidity movement',
+    subtitleBn: 'নগদ অর্থের প্রবাহ',
+    icon: Landmark,
+    iconColor: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
+    path: '/reports/finance/cash-book',
+  },
+  {
+    id: 'sales-report',
+    title: 'Sales Report',
+    titleBn: 'বিক্রয় রিপোর্ট',
+    subtitle: 'Product wise sales',
+    subtitleBn: 'পণ্যভিত্তিক বিক্রয়',
+    icon: BarChart3,
+    iconColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    path: '/reports/sales',
+  },
+  {
+    id: 'expense-report',
+    title: 'Expense Report',
+    titleBn: 'ব্যয় রিপোর্ট',
+    subtitle: 'Category wise spend',
+    subtitleBn: 'খাতভিত্তিক খরচ',
+    icon: Receipt,
+    iconColor: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
+    path: '/reports/finance/income',
+  },
+  {
+    id: 'inventory-report',
+    title: 'Inventory Report',
+    titleBn: 'ইনভেন্টরি রিপোর্ট',
+    subtitle: 'Stock summary',
+    subtitleBn: 'স্টকের সামগ্রিক বিবরণ',
+    icon: Package,
+    iconColor: 'text-orange-500 bg-orange-500/10 border-orange-500/20',
+    path: '/reports/inventory',
+  },
 ];
 
-const BRANCHES = ['Dhaka HQ','Chattogram','Sylhet','Rajshahi','Khulna'];
+// Mini Sparkline SVG for Top Metric Cards
+function MiniSparkline({
+  data,
+  color,
+  gradientId,
+}: {
+  data: number[];
+  color: string;
+  gradientId: string;
+}) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const width = 84;
+  const height = 32;
 
-// ── COLOR MAP
-const KPI_COL: Record<string,{bg:string;text:string}> = {
-  emerald:{bg:'rgba(16,185,129,0.08)', text:'#10b981'},
-  blue:   {bg:'rgba(59,130,246,0.08)', text:'#3b82f6'},
-  violet: {bg:'rgba(139,92,246,0.08)',text:'#8b5cf6'},
-  amber:  {bg:'rgba(245,158,11,0.08)',text:'#f59e0b'},
-  rose:   {bg:'rgba(239,68,68,0.08)', text:'#ef4444'},
-  cyan:   {bg:'rgba(6,182,212,0.08)', text:'#06b6d4'},
-  slate:  {bg:'rgba(100,116,139,0.08)',text:'#64748b'},
-  fuchsia:{bg:'rgba(217,70,239,0.08)',text:'#d946ef'},
-  indigo: {bg:'rgba(99,102,241,0.08)',text:'#6366f1'},
-};
-const ALERT_CLR: Record<string,string> = {critical:'#ef4444',warning:'#f59e0b',info:'#3b82f6'};
-const INSIGHT_CLR: Record<string,string> = {positive:'#10b981',alert:'#ef4444',neutral:'#3b82f6'};
-const STATUS_CLR: Record<string,string> = {
-  Excellent:'text-emerald-500',Healthy:'text-blue-500',Strong:'text-violet-500',
-  Good:'text-amber-500',Attention:'text-rose-500',Controlled:'text-cyan-500',
-};
-const TL_STYLE: Record<string,{color:string;bg:string;Icon:any;label:string;labelBn:string}> = {
-  sale:    {color:'#10b981',bg:'#10b98112',Icon:ShoppingCart,label:'Sale',    labelBn:'বিক্রি'  },
-  payment: {color:'#3b82f6',bg:'#3b82f612',Icon:CreditCard,  label:'Payment', labelBn:'পেমেন্ট'},
-  purchase:{color:'#8b5cf6',bg:'#8b5cf612',Icon:Package,     label:'Purchase',labelBn:'ক্রয়'   },
-  expense: {color:'#ef4444',bg:'#ef444412',Icon:Receipt,     label:'Expense', labelBn:'খরচ'    },
-};
+  const points = data
+    .map((val, idx) => {
+      const x = (idx / (data.length - 1)) * width;
+      const y = height - ((val - min) / range) * (height - 8) - 4;
+      return `${x},${y}`;
+    })
+    .join(' ');
 
-// ── COUNT-UP HOOK
-function useCountUp(target: number, ms = 900) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const p = Math.min((Date.now()-start)/ms, 1);
-      const e = 1 - Math.pow(1-p, 3);
-      setVal(Math.round(target*e));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, ms]);
-  return val;
-}
+  const areaPoints = `0,${height} ${points} ${width},${height}`;
 
-// ── MINI SPARKLINE
-function Sparkline({ positive }: { positive: boolean }) {
-  const data = [5,8,6,9,7,11,8,13,10,15].map(v=>({v: positive ? v : 15-v+2}));
-  const c = positive ? '#10b981' : '#ef4444';
   return (
-    <div className="h-8 w-14 opacity-60">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id={positive?'spp':'spn'} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={c} stopOpacity={0.3}/>
-              <stop offset="100%" stopColor={c} stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={c} strokeWidth={1.5} fill={positive?'url(#spp)':'url(#spn)'} dot={false}/>
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <svg width={width} height={height} className="overflow-visible shrink-0">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill={`url(#${gradientId})`} />
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
   );
 }
 
-// ── KPI CARD
-interface KPIProps {
-  label:string; labelBn:string; value:number; change:number;
-  prefix?:string; color:string; icon:React.ReactNode;
-  href:string; isBangla:boolean; hide:boolean;
-}
-function KPICard({label,labelBn,value,change,prefix='',color,icon,href,isBangla,hide}:KPIProps) {
-  const n = useCountUp(value);
-  const pos = change >= 0;
-  const c = KPI_COL[color] || KPI_COL.slate;
-  const fmt = (v:number) => new Intl.NumberFormat(isBangla?'bn-BD':'en-US').format(v);
-  return (
-    <Link href={href} className="min-w-0 w-full block">
-      <motion.div
-        initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} whileHover={{y:-2}}
-        className="relative rounded-2xl border p-3 sm:p-4 cursor-pointer overflow-hidden transition-all duration-200 min-w-0 w-full"
-        style={{background:'var(--card)',borderColor:'var(--border)'}}
-      >
-        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{background:'linear-gradient(90deg,'+c.text+',transparent)'}}/>
-        <div className="flex items-start justify-between mb-2 sm:mb-3">
-          <div className="h-6.5 w-6.5 sm:h-7 sm:w-7 rounded-xl flex items-center justify-center shrink-0" style={{background:c.bg}}>
-            <span style={{color:c.text}} className="[&>svg]:h-3 sm:[&>svg]:h-3.5 [&>svg]:w-3 sm:[&>svg]:w-3.5">{icon}</span>
-          </div>
-          <Sparkline positive={pos}/>
-        </div>
-        <p className="text-[11px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5 truncate">{isBangla?labelBn:label}</p>
-        <p className="text-xl sm:text-2xl font-bold text-foreground font-mono mb-1.5 sm:mb-2 truncate">{hide?'':prefix+fmt(n)}</p>
-        <div className={cn('flex items-center gap-1 text-[11px] sm:text-xs font-semibold shrink-0',pos?'text-emerald-500':'text-rose-500')}>
-          {pos?<TrendingUp className="h-3 w-3 shrink-0"/>:<TrendingDown className="h-3 w-3 shrink-0"/>}
-          {pos?'+':''}{change.toFixed(1)}%
-        </div>
-      </motion.div>
-    </Link>
-  );
-}
+// Custom Recharts Tooltip for Main Performance Chart
+const CustomAreaTooltip = ({ active, payload, label, isBangla, activeTab }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const rawVal = data.value;
+    const formattedVal = `৳${rawVal.toLocaleString('en-IN')}`;
 
-// ── HEALTH PILL
-function HealthPill({ind,isBangla}:{ind:typeof MOCK_HEALTH.indicators[0];isBangla:boolean}) {
-  const tc = STATUS_CLR[ind.status]||'text-muted-foreground';
-  const IconMap: Record<string,any> = {wallet:Wallet,box:Box,trending:TrendingUp,target:Target,users:UserPlus,receipt:Receipt};
-  const Icon = IconMap[ind.icon]||Circle;
-  const isUp = ind.trendVal.startsWith('+');
-  return (
-    <div className="flex flex-col items-center gap-1 sm:gap-1.5 p-2 sm:p-3 rounded-2xl border border-border/40 hover:border-border bg-muted/20 transition-all text-center min-w-0 w-full overflow-hidden">
-      <div className="h-6.5 w-6.5 sm:h-7 sm:w-7 rounded-xl flex items-center justify-center shrink-0" style={{background:ind.color+'15'}}>
-        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" style={{color:ind.color}}/>
+    let labelText = isBangla ? 'মোট আয়' : 'Total Revenue';
+    if (activeTab === 'profit') labelText = isBangla ? 'মোট লাভ' : 'Net Profit';
+    if (activeTab === 'expense') labelText = isBangla ? 'মোট ব্যয়' : 'Total Expense';
+
+    return (
+      <div className="bg-card/95 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-border/80 shadow-xl ring-1 ring-black/5 text-xs animate-in fade-in zoom-in-95 duration-150">
+        <p className="font-semibold text-foreground mb-1">{label}</p>
+        <div className="flex items-center gap-2">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: data.color || '#0FBF9F' }}
+          />
+          <span className="text-muted-foreground">{labelText}:</span>
+          <span className="font-bold text-foreground font-mono">{formattedVal}</span>
+        </div>
       </div>
-      <p className="text-[8.5px] sm:text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-tight truncate w-full">{isBangla?ind.labelBn:ind.label}</p>
-      <p className={cn('text-[10px] sm:text-[11px] font-bold truncate w-full',tc)}>{isBangla?ind.statusBn:ind.status}</p>
-      <div className="flex items-center gap-0.5 text-[8.5px] sm:text-[9px] text-muted-foreground shrink-0">
-        {isUp?<TrendingUp className="h-2.5 w-2.5 text-emerald-500 shrink-0"/>:<TrendingDown className="h-2.5 w-2.5 text-rose-500 shrink-0"/>}
-        {ind.trendVal}
-      </div>
-    </div>
-  );
-}
+    );
+  }
+  return null;
+};
 
-// ── ALERT ROW
-function AlertRow({item,isBangla}:{item:typeof MOCK_ALERTS[0];isBangla:boolean}) {
-  const clr = ALERT_CLR[item.status]||'#64748b';
-  const IconMap: Record<string,any> = {alert:AlertTriangle,pkg:Package,bank:Landmark,vat:FileText,purchase:ShoppingCart,hrm:UserPlus};
-  const Icon = IconMap[item.icon]||AlertCircle;
-  return (
-    <Link href={item.href}>
-      <motion.div whileHover={{x:3}} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/40 transition-all cursor-pointer">
-        <div className="h-7 w-7 rounded-xl flex items-center justify-center shrink-0" style={{background:clr+'12'}}>
-          <Icon className="h-3.5 w-3.5" style={{color:clr}}/>
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{background:clr}}>{item.count}</span>
-            <p className="text-[11px] font-semibold text-foreground truncate">{isBangla?item.labelBn:item.label}</p>
-          </div>
-          <p className="text-[10px] text-muted-foreground">{isBangla?item.detailBn:item.detail}</p>
-        </div>
-        <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0 transition-colors"/>
-      </motion.div>
-    </Link>
-  );
-}
+// ==========================================
+// MAIN COMPONENT
+// ==========================================
 
-// ── INSIGHT ROW
-function InsightRow({item,isBangla}:{item:typeof AI_INSIGHTS[0];isBangla:boolean}) {
-  const clr = INSIGHT_CLR[item.impact];
-  return (
-    <div className="flex items-start gap-2.5 py-2.5 border-b border-border/25 last:border-0">
-      <span className="h-1.5 w-1.5 rounded-full mt-1.5 shrink-0" style={{background:clr}}/>
-      <p className="flex-1 text-[11px] text-foreground/80 leading-relaxed">{isBangla?item.textBn:item.text}</p>
-      <Link href={item.href} className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-lg hover:bg-muted transition-all" style={{color:clr}}>{item.action}</Link>
-    </div>
-  );
-}
-
-// ── TIMELINE ROW (REPLACED BY TABLE)
-
-// ══════════════════════════════════════════════════════════
-// MAIN DASHBOARD PAGE
-// ══════════════════════════════════════════════════════════
-export default function DashboardPage() {
+export default function ReportsDashboardPage() {
   const router = useRouter();
-  const { isBangla } = useAppTranslation();
+  const { t, isBangla } = useAppTranslation();
+  const { currentBranchId, setCurrentBranch, viewAllBranches, setViewAllBranches } = useBranchStore();
+  const branches = STATIC_BRANCHES;
 
-  const [aiPrompt,   setAiPrompt]   = useState('');
-  const [promptIdx,  setPromptIdx]  = useState(0);
-  const [branch,     setBranch]     = useState('Dhaka HQ');
-  const [branchOpen, setBranchOpen] = useState(false);
-  const [metric,     setMetric]     = useState<'sales'|'profit'|'expenses'>('sales');
-  const [range,      setRange]      = useState<'week'|'month'>('week');
-  const [hide,       setHide]       = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [hoverQA,    setHoverQA]    = useState<string|null>(null);
-  const aiRef = useRef<HTMLInputElement>(null);
-  const CHART_DATA = buildChart();
+  // State
+  const [dateRange, setDateRange] = useState<DateRangeOption>('7d');
+  const [activePerformanceTab, setActivePerformanceTab] = useState<PerformanceTab>('revenue');
+  const [performancePeriod, setPerformancePeriod] = useState<PerformancePeriod>('weekly');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const id = setInterval(() => setPromptIdx(i => (i+1) % AI_PROMPTS.length), 2800);
-    return () => clearInterval(id);
+    setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.key === '/' && !['INPUT','TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
-        e.preventDefault(); aiRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, []);
+  const currentBranch = useMemo(() => {
+    return branches?.find((b) => b.id === currentBranchId);
+  }, [branches, currentBranchId]);
 
-  const handleAI = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiPrompt.trim()) return;
-    router.push('/ai?q=' + encodeURIComponent(aiPrompt));
+  // Active chart color based on active tab
+  const activeTabColor = useMemo(() => {
+    switch (activePerformanceTab) {
+      case 'profit':
+        return '#0FBF9F'; // Emerald
+      case 'expense':
+        return '#F43F5E'; // Rose
+      case 'revenue':
+      default:
+        return '#0FBF9F'; // Primary Emerald
+    }
+  }, [activePerformanceTab]);
+
+  const currentPerformanceSeries = useMemo(() => {
+    return performanceData[performancePeriod] || performanceData.weekly;
+  }, [performancePeriod]);
+
+  // Open AI modal or trigger AI assistant
+  const handleOpenAiAssistant = () => {
+    const event = new CustomEvent('openVoiceModal');
+    window.dispatchEvent(event);
   };
 
-  const fmt = useCallback((v:number) => new Intl.NumberFormat(isBangla?'bn-BD':'en-US').format(v), [isBangla]);
-
-  const chartData = CHART_DATA.slice(range==='week'?-7:-14).map(d=>({...d,date:isBangla?d.dateBn:d.date}));
-  const chartColor = metric==='sales'?'#4F5BFF':metric==='profit'?'#10b981':'#ef4444';
-  const chartName  = metric==='sales'?(isBangla?'বিক্রি':'Sales'):metric==='profit'?(isBangla?'লাভ':'Profit'):(isBangla?'খরচ':'Expenses');
-  const chartPeak  = Math.max(...chartData.map(d=>d[metric]));
-  const chartAvg   = Math.round(chartData.reduce((s,d)=>s+d[metric],0)/chartData.length);
-  const totalSales = chartData.reduce((sum, d) => sum + d.sales, 0);
-  const totalProfit = chartData.reduce((sum, d) => sum + d.profit, 0);
-  const totalExpenses = chartData.reduce((sum, d) => sum + d.expenses, 0);
-  const lastSync   = new Date().toLocaleTimeString(isBangla?'bn-BD':'en-US',{hour:'2-digit',minute:'2-digit'});
-
   return (
-    <div className="min-h-screen space-y-6 pb-12">
+    <div className="min-h-screen bg-background/50 text-foreground pb-12 space-y-6">
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER & BREADCRUMBS ROW                                           */}
+      {/* ========================================================================= */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+        {/* Left Title & Breadcrumbs */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
+            <BarChart3 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                {isBangla ? 'ড্যাশবোর্ড' : 'Dashboard'}
+              </h1>
 
-      {/* S1: COMMAND HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl border p-3.5 sm:px-5 sm:py-3 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-        <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-          {/* Branch dropdown */}
-          <div className="relative shrink-0">
-            <button onClick={()=>setBranchOpen(v=>!v)} className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-foreground hover:text-primary transition-colors">
-              <Building2 className="h-4 w-4 text-muted-foreground"/>
-              {branch}
-              <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform',branchOpen&&'rotate-180')}/>
-            </button>
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"/>
-              {isBangla?'সিঙ্ক:':'Sync:'} {lastSync}
             </div>
-            <AnimatePresence>
-              {branchOpen && (
-                <motion.div initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} exit={{opacity:0,y:6}}
-                  className="absolute top-full left-0 mt-1 z-50 rounded-xl border border-border shadow-xl overflow-hidden min-w-[140px]"
-                  style={{background:'var(--card)'}}>
-                  {BRANCHES.map(b=>(
-                    <button key={b} onClick={()=>{setBranch(b);setBranchOpen(false);}}
-                      className={cn('w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors',branch===b?'text-primary font-bold':'text-foreground')}>
-                      {b}
-                    </button>
-                  ))}
-                </motion.div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              {isBangla ? 'এক নজরে ব্যবসার গুরুত্বপূর্ণ তথ্য ও বিশ্লেষণ' : 'Business insights at a glance'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Controls: Date Range Selector & Branch Selector */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Date Range Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-2"
+              >
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs sm:text-sm">
+                  {isBangla ? dateRangeLabels[dateRange].rangeTextBn : dateRangeLabels[dateRange].rangeTextEn}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl shadow-lg">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-medium px-2 py-1.5">
+                {isBangla ? 'সময়সীমা নির্বাচন করুন' : 'Select Time Range'}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border" />
+              {(Object.keys(dateRangeLabels) as DateRangeOption[]).map((key) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setDateRange(key)}
+                  className={cn(
+                    'cursor-pointer text-xs font-medium px-2.5 py-2 rounded-lg flex items-center justify-between',
+                    dateRange === key ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground hover:bg-muted/50'
+                  )}
+                >
+                  <span>{isBangla ? dateRangeLabels[key].bn : dateRangeLabels[key].en}</span>
+                  {dateRange === key && <Check className="w-4 h-4 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Branch Switcher Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-2"
+              >
+                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-xs sm:text-sm">
+                  {viewAllBranches
+                    ? (isBangla ? 'সব শাখা' : 'All Branches')
+                    : (currentBranch?.nameBn || currentBranch?.name || (isBangla ? 'ঢাকা শাখা' : 'Dhaka Branch'))}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl shadow-lg">
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-medium px-2 py-1.5">
+                {isBangla ? 'শাখা ফিল্টার' : 'Branch Filter'}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-border" />
+              <DropdownMenuItem
+                onClick={() => setViewAllBranches(true)}
+                className={cn(
+                  'cursor-pointer text-xs font-medium px-2.5 py-2 rounded-lg flex items-center justify-between',
+                  viewAllBranches ? 'bg-emerald-500/10 text-emerald-600 font-semibold' : 'text-foreground hover:bg-muted/50'
+                )}
+              >
+                <span>{isBangla ? 'সব শাখা' : 'All Branches'}</span>
+                {viewAllBranches && <Check className="w-4 h-4 text-emerald-600" />}
+              </DropdownMenuItem>
+              {branches && branches.length > 0 ? (
+                branches.map((b) => (
+                  <DropdownMenuItem
+                    key={b.id}
+                    onClick={() => {
+                      setCurrentBranch(b.id);
+                      setViewAllBranches(false);
+                    }}
+                    className={cn(
+                      'cursor-pointer text-xs font-medium px-2.5 py-2 rounded-lg flex items-center justify-between',
+                      !viewAllBranches && currentBranchId === b.id
+                        ? 'bg-emerald-500/10 text-emerald-600 font-semibold'
+                        : 'text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    <span>{b.nameBn || b.name}</span>
+                    {!viewAllBranches && currentBranchId === b.id && <Check className="w-4 h-4 text-emerald-600" />}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => setViewAllBranches(false)}
+                  className="cursor-pointer text-xs font-medium px-2.5 py-2 rounded-lg text-foreground hover:bg-muted/50"
+                >
+                  <span>{isBangla ? 'ঢাকা প্রধান শাখা' : 'Dhaka Main Branch'}</span>
+                </DropdownMenuItem>
               )}
-            </AnimatePresence>
-          </div>
-
-          {/* Action buttons on mobile (compact top row) */}
-          <div className="flex sm:hidden items-center gap-1 shrink-0">
-            <button onClick={()=>setHide(v=>!v)} className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-              {hide?<Eye className="h-3.5 w-3.5"/>:<EyeOff className="h-3.5 w-3.5"/>}
-            </button>
-            <button onClick={async()=>{setRefreshing(true);await new Promise(r=>setTimeout(r,700));setRefreshing(false);}}
-              className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-              <RefreshCw className={cn('h-3.5 w-3.5',refreshing&&'animate-spin')}/>
-            </button>
-            <Link href="/notifications" className="relative h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-              <Bell className="h-3.5 w-3.5"/>
-              <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-rose-500 border border-card"/>
-            </Link>
-            <Link href="/settings" className="h-7.5 w-7.5 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-              <Settings className="h-3.5 w-3.5"/>
-            </Link>
-          </div>
-        </div>
-
-        {/* AI Input Form */}
-        <form onSubmit={handleAI} className="flex-1 w-full min-w-0">
-          <div className="flex items-center gap-2 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-border bg-muted/40 hover:border-primary/30 focus-within:border-primary/40 focus-within:bg-card transition-all w-full min-w-0">
-            <Sparkles className="h-4 w-4 text-primary shrink-0"/>
-            <input ref={aiRef} type="text" value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)}
-              placeholder={AI_PROMPTS[promptIdx]}
-              className="flex-1 bg-transparent text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"/>
-            <kbd className="hidden sm:block text-[10px] text-muted-foreground/40 border border-border/40 rounded px-1.5 py-0.5">/</kbd>
-            <button type="submit" className="h-6 w-6 rounded-lg flex items-center justify-center text-primary hover:bg-primary/10 transition-colors shrink-0">
-              <Send className="h-3 w-3"/>
-            </button>
-          </div>
-        </form>
-
-        {/* Action buttons on desktop */}
-        <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-          <button onClick={()=>setHide(v=>!v)} className="h-8 w-8 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-            {hide?<Eye className="h-4 w-4"/>:<EyeOff className="h-4 w-4"/>}
-          </button>
-          <button onClick={async()=>{setRefreshing(true);await new Promise(r=>setTimeout(r,700));setRefreshing(false);}}
-            className="h-8 w-8 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-            <RefreshCw className={cn('h-4 w-4',refreshing&&'animate-spin')}/>
-          </button>
-          <Link href="/notifications" className="relative h-8 w-8 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-            <Bell className="h-4 w-4"/>
-            <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-rose-500 border border-card"/>
-          </Link>
-          <Link href="/settings" className="h-8 w-8 rounded-xl flex items-center justify-center border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
-            <Settings className="h-4 w-4"/>
-          </Link>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* S2: BUSINESS HEALTH CENTER */}
-      <div className="rounded-2xl border p-4 sm:p-5 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-        <div className="flex flex-col lg:flex-row items-start gap-4 sm:gap-6 w-full min-w-0">
-          <div className="flex items-center gap-4 sm:gap-5 shrink-0 w-full sm:w-auto">
-            <div className="relative shrink-0">
-              <svg width="80" height="80" viewBox="0 0 88 88" className="sm:w-[88px] sm:h-[88px]">
-                <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(79,91,255,0.1)" strokeWidth="7"/>
-                <motion.circle cx="44" cy="44" r="36" fill="none" stroke="url(#hg)" strokeWidth="7" strokeLinecap="round"
-                  strokeDasharray={2*Math.PI*36}
-                  initial={{strokeDashoffset:2*Math.PI*36}}
-                  animate={{strokeDashoffset:2*Math.PI*36*(1-MOCK_HEALTH.score/100)}}
-                  transition={{duration:1.2,ease:'easeOut'}} transform="rotate(-90 44 44)"/>
-                <defs>
-                  <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#4F5BFF"/><stop offset="100%" stopColor="#10b981"/>
-                  </linearGradient>
-                </defs>
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg sm:text-xl font-bold text-foreground">{MOCK_HEALTH.score}</span>
-                <span className="text-[10px] sm:text-xs text-muted-foreground">/100</span>
+      {/* ========================================================================= */}
+      {/* 2. TOP KPI SUMMARY METRIC CARDS (4 Columns)                                */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Revenue Card */}
+        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-emerald-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'মোট আয়' : 'Total Revenue'}</p>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
+                  {isBangla ? '৳২,৪৮,৫০০' : '৳2,48,500'}
+                </h3>
               </div>
             </div>
-            <div className="min-w-0 flex-1 sm:flex-initial">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="text-xs sm:text-sm font-bold text-foreground">{isBangla?'ব্যবসার স্বাস্থ্য':'Business Health'}</span>
-                <span className="text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">A · {isBangla?'উন্নতি':'Improving'}</span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-muted-foreground max-w-[200px] leading-relaxed">
-                {isBangla?'সামগ্রিক অবস্থা ভালো। পাওনা সংগ্রহে মনোযোগ দিন।':'Overall strong. Focus on receivables.'}
-              </p>
-              <Link href="/reports/health-score" className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-primary font-semibold mt-1.5 hover:underline">
-                {isBangla?'বিশ্লেষণ':'Full Analysis'} <ChevronRight className="h-3 w-3"/>
-              </Link>
-            </div>
           </div>
-          <div className="hidden lg:block w-px self-stretch bg-border/40"/>
-          <div className="flex-1 grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5 w-full min-w-0">
-            {MOCK_HEALTH.indicators.map(ind=><HealthPill key={ind.key} ind={ind} isBangla={isBangla}/>)}
-          </div>
-        </div>
-      </div>
-
-      {/* S3: KPI GRID */}
-      <div className="w-full max-w-full">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{isBangla?'মূল পরিসংখ্যান':'Key Metrics'}</p>
-          <p className="text-[11px] sm:text-xs text-muted-foreground">{isBangla?'আজকের তথ্য':"Today's data"} · {lastSync}</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2.5 sm:gap-3 w-full min-w-0">
-          <KPICard label="Today's Sales"   labelBn="আজকের বিক্রি"    value={MOCK_STATS.todaySales}     change={MOCK_STATS.todaySalesChange}   prefix="৳" color="emerald" icon={<ShoppingCart/>} href="/sales"                isBangla={isBangla} hide={hide}/>
-          <KPICard label="Today's Profit"  labelBn="আজকের লাভ"       value={MOCK_STATS.todayProfit}    change={MOCK_STATS.todayProfitChange}  prefix="৳" color="blue"    icon={<TrendingUp/>}    href="/reports/dashboard"    isBangla={isBangla} hide={hide}/>
-          <KPICard label="Cash Balance"    labelBn="নগদ ব্যালেন্স"    value={23}                   change={MOCK_STATS.cashChange}         prefix="৳" color="violet"  icon={<Wallet/>}        href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
-          <KPICard label="Bank Balance"    labelBn="ব্যাংক ব্যালেন্স" value={234}                   change={MOCK_STATS.bankChange}         prefix="৳" color="cyan"    icon={<Landmark/>}      href="/finance/bank-wallets" isBangla={isBangla} hide={hide}/>
-          <KPICard label="Receivables"     labelBn="পাওনা"             value={MOCK_STATS.receivables}    change={MOCK_STATS.receivablesChange}  prefix="৳" color="amber"   icon={<ArrowDownLeft/>} href="/finance/receivables"  isBangla={isBangla} hide={hide}/>
-          <KPICard label="Payables"        labelBn="দেনা"              value={MOCK_STATS.payables}       change={MOCK_STATS.payablesChange}     prefix="৳" color="rose"    icon={<ArrowUpRight/>}  href="/finance/payables"     isBangla={isBangla} hide={hide}/>
-          <KPICard label="Inventory Value" labelBn="স্টক মূল্য"        value={MOCK_STATS.inventoryValue} change={MOCK_STATS.inventoryChange}    prefix="৳" color="slate"   icon={<Package/>}       href="/inventory"            isBangla={isBangla} hide={hide}/>
-        </div>
-      </div>
-
-      {/* S4: WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Quick Actions */}
-        <div className="rounded-2xl border overflow-hidden" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <div className="px-5 py-3 border-b border-border/40">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Zap className="h-3.5 w-3.5 text-primary"/>{isBangla?'দ্রুত কার্যক্রম':'Quick Actions'}
-            </h3>
-          </div>
-          <div className="grid grid-cols-4 gap-1 p-2">
-            {QUICK_ACTIONS.map(a=>{
-              const c = KPI_COL[a.color]||KPI_COL.slate;
-              const active = hoverQA===a.label;
-              return (
-                <Link key={a.label} href={a.href}>
-                  <motion.div whileHover={{scale:1.04}} whileTap={{scale:0.96}}
-                    className="flex flex-col items-center gap-2 p-3 rounded-xl cursor-pointer transition-all"
-                    onMouseEnter={()=>setHoverQA(a.label)} onMouseLeave={()=>setHoverQA(null)}
-                    style={{background:active?c.bg:'transparent'}}>
-                    <div className="h-9 w-9 rounded-2xl flex items-center justify-center transition-all" style={{background:active?c.text:c.bg}}>
-                      <a.Icon className="h-4 w-4 transition-colors" style={{color:active?'#fff':c.text}}/>
-                    </div>
-                    <p className="text-[10px] font-semibold text-center leading-tight text-muted-foreground">{isBangla?a.labelBn:a.label}</p>
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Action Required */}
-        <div className="rounded-2xl border overflow-hidden" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <div className="px-5 py-3 border-b border-border/40 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500"/>{isBangla?'পদক্ষেপ প্রয়োজন':'Action Required'}
-            </h3>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500">
-              {MOCK_ALERTS.filter(a=>a.priority==='high').length} {isBangla?'জরুরি':'urgent'}
+          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              <span>+ 12.4%</span>
+              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
             </span>
-          </div>
-          <div className="p-2 space-y-0.5">
-            {MOCK_ALERTS.map(item=><AlertRow key={item.id} item={item} isBangla={isBangla}/>)}
+            <MiniSparkline data={[40, 52, 48, 65, 58, 80, 95]} color="#0FBF9F" gradientId="grad-revenue" />
           </div>
         </div>
 
-        {/* AI Brief */}
-        <div className="rounded-2xl border overflow-hidden flex flex-col" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <div className="px-5 py-3 border-b border-border/40 flex items-center justify-between">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 text-primary"/>{isBangla?'AI বিশ্লেষণ':'AI Daily Brief'}
-            </h3>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(79,91,255,0.1)',color:'#4F5BFF'}}>
-              <Bot className="h-2.5 w-2.5"/>AI
+        {/* Total Expense Card */}
+        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-rose-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center">
+                <Receipt className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'মোট ব্যয়' : 'Total Expense'}</p>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
+                  {isBangla ? '৳৭৬,২০০' : '৳76,200'}
+                </h3>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
+              <span>- 6.7%</span>
+              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
             </span>
+            <MiniSparkline data={[70, 65, 55, 60, 50, 48, 42]} color="#F43F5E" gradientId="grad-expense" />
           </div>
-          <div className="flex-1 px-4 pt-1 pb-2">
-            {AI_INSIGHTS.map(item=><InsightRow key={item.id} item={item} isBangla={isBangla}/>)}
+        </div>
+
+        {/* Net Profit Card */}
+        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-teal-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'নিট লাভ' : 'Net Profit'}</p>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
+                  {isBangla ? '৳১,৭২,৩০০' : '৳1,72,300'}
+                </h3>
+              </div>
+            </div>
           </div>
-          <div className="px-4 pb-4">
-            <Link href="/ai" className="flex items-center justify-center gap-2 w-full h-8 rounded-xl text-xs font-bold border border-border hover:bg-muted transition-all text-muted-foreground hover:text-foreground">
-              <Bot className="h-3.5 w-3.5"/>{isBangla?'AI সহকারী':'Open AI Assistant'}
-            </Link>
+          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-600 dark:text-teal-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
+              <span>+ 18.6%</span>
+              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            </span>
+            <MiniSparkline data={[30, 42, 38, 55, 62, 75, 88]} color="#14B8A6" gradientId="grad-profit" />
+          </div>
+        </div>
+
+        {/* Sales Orders Card */}
+        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-blue-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'বিক্রয় অর্ডার' : 'Sales Orders'}</p>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
+                  {isBangla ? '৩৪২' : '342'}
+                </h3>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+              <span>+ 14.2%</span>
+              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            </span>
+            <MiniSparkline data={[45, 48, 55, 62, 58, 70, 85]} color="#3B82F6" gradientId="grad-orders" />
           </div>
         </div>
       </div>
 
-      {/* S5: BUSINESS INTELLIGENCE */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 rounded-2xl border p-4 sm:p-5 w-full max-w-full box-border" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <h3 className="text-sm font-bold text-foreground">{isBangla?'ব্যবসার কার্যক্ষমতা':'Business Performance'}</h3>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex gap-0.5 bg-muted rounded-xl p-0.5">
-                {(['sales','profit','expenses'] as const).map(m=>(
-                  <button key={m} onClick={()=>setMetric(m)}
-                    className={cn('px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',metric===m?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
-                    {m==='sales'?(isBangla?'বিক্রি':'Sales'):m==='profit'?(isBangla?'লাভ':'Profit'):(isBangla?'খরচ':'Exp')}
-                  </button>
-                ))}
+      {/* ========================================================================= */}
+      {/* 3. MIDDLE SECTION: Performance Area Chart, Donut Category, Quick Reports  */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: Financial Performance Area Chart (Spans 5 cols on lg, 5 cols on xl) */}
+        <div className="lg:col-span-5 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            {/* Card Header & Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-foreground tracking-tight">
+                  {isBangla ? 'আর্থিক পারফরম্যান্স' : 'Financial Performance'}
+                </h2>
               </div>
-              <div className="flex gap-0.5 bg-muted rounded-xl p-0.5">
-                {(['week','month'] as const).map(r=>(
-                  <button key={r} onClick={()=>setRange(r)}
-                    className={cn('px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all',range===r?'bg-card text-foreground shadow-sm':'text-muted-foreground hover:text-foreground')}>
-                    {r==='week'?(isBangla?'সপ্তাহ':'Week'):(isBangla?'মাস':'Month')}
+              <div className="flex items-center gap-2">
+                {/* Metric Tabs */}
+                <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs">
+                  <button
+                    onClick={() => setActivePerformanceTab('revenue')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md font-medium transition-all',
+                      activePerformanceTab === 'revenue'
+                        ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {isBangla ? 'আয়' : 'Revenue'}
                   </button>
-                ))}
+                  <button
+                    onClick={() => setActivePerformanceTab('profit')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md font-medium transition-all',
+                      activePerformanceTab === 'profit'
+                        ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {isBangla ? 'লাভ' : 'Profit'}
+                  </button>
+                  <button
+                    onClick={() => setActivePerformanceTab('expense')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md font-medium transition-all',
+                      activePerformanceTab === 'expense'
+                        ? 'bg-card text-rose-600 dark:text-rose-400 shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {isBangla ? 'ব্যয়' : 'Expense'}
+                  </button>
+                </div>
+
+                {/* Period Switcher Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted/70 rounded-lg border border-border flex items-center gap-1 transition-colors">
+                      <span className="capitalize">{isBangla ? (performancePeriod === 'weekly' ? 'সাপ্তাহিক' : performancePeriod === 'monthly' ? 'মাসিক' : 'বার্ষিক') : performancePeriod}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-32 bg-card border-border rounded-xl">
+                    <DropdownMenuItem onClick={() => setPerformancePeriod('weekly')} className="text-xs cursor-pointer">
+                      {isBangla ? 'সাপ্তাহিক' : 'Weekly'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPerformancePeriod('monthly')} className="text-xs cursor-pointer">
+                      {isBangla ? 'মাসিক' : 'Monthly'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPerformancePeriod('yearly')} className="text-xs cursor-pointer">
+                      {isBangla ? 'বার্ষিক' : 'Yearly'}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
+            </div>
+
+            {/* Performance Chart Area */}
+            <div className="h-64 w-full relative pt-2">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={currentPerformanceSeries}
+                    margin={{ top: 20, right: 10, left: -15, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="performanceAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={activeTabColor} stopOpacity={0.4} />
+                        <stop offset="60%" stopColor={activeTabColor} stopOpacity={0.12} />
+                        <stop offset="100%" stopColor={activeTabColor} stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.6} />
+                    <XAxis
+                      dataKey={isBangla ? 'dateBn' : 'date'}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                      dy={8}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                      tickFormatter={(val) => {
+                        if (val >= 100000) return `৳${(val / 100000).toFixed(1)}L`;
+                        if (val >= 1000) return `৳${(val / 1000).toFixed(0)}k`;
+                        return `৳${val}`;
+                      }}
+                    />
+                    <Tooltip
+                      content={<CustomAreaTooltip isBangla={isBangla} activeTab={activePerformanceTab} />}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey={activePerformanceTab}
+                      stroke={activeTabColor}
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#performanceAreaGrad)"
+                      activeDot={{
+                        r: 6,
+                        fill: activeTabColor,
+                        stroke: '#FFFFFF',
+                        strokeWidth: 2,
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4 px-1 py-1 border-b border-border/20 pb-3">
-            <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#4F5BFF] shrink-0"/>
-                {isBangla ? 'বিক্রি' : 'Sales'}: <span className="font-bold text-foreground font-mono">৳{fmt(totalSales)}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#10b981] shrink-0"/>
-                {isBangla ? 'লাভ' : 'Profit'}: <span className="font-bold text-emerald-500 font-mono">৳{fmt(totalProfit)}</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-[#ef4444] shrink-0"/>
-                {isBangla ? 'খরচ' : 'Expenses'}: <span className="font-bold text-rose-500 font-mono">৳{fmt(totalExpenses)}</span>
+
+          {/* Chart Footer Link */}
+          <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/50 text-xs">
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>{isBangla ? '↑ ১২.৪% পূর্বের সময়ের তুলনায়' : '↑ 12.4% vs previous period'}</span>
+            </span>
+            <Link
+              href="/reports/finance"
+              className="text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 font-medium inline-flex items-center gap-1 transition-colors group"
+            >
+              <span>{isBangla ? 'বিস্তারিত রিপোর্ট দেখুন' : 'View Detailed Report'}</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Center: Sales by Category Donut Chart (Spans 4 cols on lg) */}
+        <div className="lg:col-span-4 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-base font-bold text-foreground tracking-tight">
+                {isBangla ? 'ক্যাটাগরি অনুযায়ী বিক্রয়' : 'Sales by Category'}
+              </h2>
+            </div>
+
+            {/* Donut Chart with Center Text */}
+            <div className="h-44 w-full relative flex items-center justify-center my-1">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={salesCategoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {salesCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(val: any, name: any, item: any) => [
+                        `${val}% (${item.payload.amount})`,
+                        isBangla ? item.payload.nameBn : name,
+                      ]}
+                      contentStyle={{
+                        backgroundColor: 'var(--card)',
+                        borderColor: 'var(--border)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+              {/* Center Text Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span className="text-lg font-bold text-foreground font-mono leading-tight">
+                  {isBangla ? '৳২.৪৮L' : '৳2.48L'}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {isBangla ? 'মোট বিক্রয়' : 'Total Sales'}
+                </span>
               </div>
             </div>
-            <div className="flex gap-3 sm:gap-4">
-              {[{l:isBangla?'সর্বোচ্চ':'Peak',v:chartPeak},{l:isBangla?'গড়':'Avg',v:chartAvg}].map(p=>(
-                <div key={p.l} className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground">
-                  <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{background:chartColor}}/>
-                  {p.l}: <span className="font-bold text-foreground font-mono">৳{fmt(p.v)}</span>
+
+            {/* Category Breakdown Legend */}
+            <div className="space-y-2 mt-3 pt-3 border-t border-border/50">
+              {salesCategoryData.map((cat) => (
+                <div key={cat.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="text-foreground font-medium">{isBangla ? cat.nameBn : cat.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground font-mono text-[11px]">{cat.amount}</span>
+                    <span className="font-semibold text-foreground font-mono w-8 text-right">{cat.value}%</span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="h-[190px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{top:4,right:4,bottom:0,left:0}}>
-                <defs>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4F5BFF" stopOpacity={0.12}/>
-                    <stop offset="100%" stopColor="#4F5BFF" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.15}/>
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="expensesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.10}/>
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false}/>
-                <XAxis dataKey="date" fontSize={9} stroke="#6B7A8D" tickLine={false} axisLine={false}/>
-                <YAxis fontSize={9} stroke="#6B7A8D" tickLine={false} axisLine={false} tickFormatter={v=>''+Math.round(v/1000)+'k'} width={28}/>
-                <Tooltip
-                  contentStyle={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:'12px',fontSize:'11px'}}
-                  labelStyle={{color:'var(--foreground)',fontWeight:600}}
-                  formatter={(v:number, name:string)=>['৳'+fmt(v), name]}
-                />
-                
-                {/* Sales series */}
-                <Area type="monotone" dataKey="sales" name={isBangla ? 'বিক্রি' : 'Sales'}
-                  stroke="#4F5BFF" strokeWidth={metric === 'sales' ? 2.5 : 1.2} strokeOpacity={metric === 'sales' ? 1 : 0.35}
-                  fill={metric === 'sales' ? 'url(#salesGrad)' : 'none'}
-                  dot={metric === 'sales' ? { r: 3, fill: '#4F5BFF', strokeWidth: 0 } : false}
-                  activeDot={{ r: 5, stroke: '#fff', strokeWidth: 1.5, fill: '#4F5BFF' }}/>
-
-                {/* Profit series */}
-                <Area type="monotone" dataKey="profit" name={isBangla ? 'লাভ' : 'Profit'}
-                  stroke="#10b981" strokeWidth={metric === 'profit' ? 2.5 : 1.2} strokeOpacity={metric === 'profit' ? 1 : 0.35}
-                  fill={metric === 'profit' ? 'url(#profitGrad)' : 'none'}
-                  dot={metric === 'profit' ? { r: 3, fill: '#10b981', strokeWidth: 0 } : false}
-                  activeDot={{ r: 5, stroke: '#fff', strokeWidth: 1.5, fill: '#10b981' }}/>
-
-                {/* Expenses series */}
-                <Area type="monotone" dataKey="expenses" name={isBangla ? 'খরচ' : 'Expenses'}
-                  stroke="#ef4444" strokeWidth={metric === 'expenses' ? 2.5 : 1.2} strokeOpacity={metric === 'expenses' ? 1 : 0.35}
-                  fill={metric === 'expenses' ? 'url(#expensesGrad)' : 'none'}
-                  dot={metric === 'expenses' ? { r: 3, fill: '#ef4444', strokeWidth: 0 } : false}
-                  activeDot={{ r: 5, stroke: '#fff', strokeWidth: 1.5, fill: '#ef4444' }}/>
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
         </div>
 
-        <div className="rounded-2xl border p-5 flex flex-col" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-          <h3 className="text-sm font-bold text-foreground mb-4">{isBangla?'নগদ প্রবাহ':'Cash Flow'}</h3>
-          <div className="flex flex-col items-center mb-4">
-            <div className="relative">
-              <svg width="110" height="110" viewBox="0 0 110 110">
-                <circle cx="55" cy="55" r="44" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="11"/>
-                <motion.circle cx="55" cy="55" r="44" fill="none" stroke="#10b981" strokeWidth="11" strokeLinecap="round"
-                  strokeDasharray={2*Math.PI*44} initial={{strokeDashoffset:2*Math.PI*44}}
-                  animate={{strokeDashoffset:2*Math.PI*44*0.38}} transition={{duration:1,ease:'easeOut',delay:0.1}}
-                  transform="rotate(-90 55 55)"/>
-                <motion.circle cx="55" cy="55" r="44" fill="none" stroke="#ef4444" strokeWidth="11" strokeLinecap="round"
-                  strokeDasharray={2*Math.PI*44} initial={{strokeDashoffset:2*Math.PI*44}}
-                  animate={{strokeDashoffset:2*Math.PI*44*0.62}} transition={{duration:1,ease:'easeOut',delay:0.3}}
-                  transform="rotate(37 55 55)"/>
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-[9px] text-muted-foreground">{isBangla?'নিট':'Net'}</p>
-                <p className="text-base font-bold text-emerald-500">+৳{fmt(73400)}</p>
+        {/* Right: Quick Reports Navigation Hub (Spans 3 cols on lg) */}
+        <div className="lg:col-span-3 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Zap className="w-4 h-4" />
               </div>
+              <h2 className="text-base font-bold text-foreground tracking-tight">
+                {isBangla ? 'কুইক রিপোর্টস' : 'Quick Reports'}
+              </h2>
             </div>
-            <div className="flex gap-4 mt-2 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500"/> {isBangla?'আয়':'In'}</span>
-              <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-rose-500"/> {isBangla?'ব্যয়':'Out'}</span>
-            </div>
-          </div>
-          <div className="space-y-2.5 flex-1">
-            {[
-              {l:isBangla?'আয়':'Cash In',       v:195400,Icon:ArrowDownLeft,c:'#10b981'},
-              {l:isBangla?'ব্যয়':'Cash Out',     v:122000,Icon:ArrowUpRight, c:'#ef4444'},
-              {l:isBangla?'নগদে':'Cash in Hand', v:324,Icon:Wallet,      c:'#3b82f6'},
-              {l:isBangla?'ব্যাংকে':'Bank',      v:546,Icon:Landmark,    c:'#8b5cf6'},
-            ].map(r=>(
-              <div key={r.l} className="flex items-center justify-between py-2 border-b border-border/25 last:border-0">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-lg flex items-center justify-center" style={{background:r.c+'12'}}>
-                    <r.Icon className="h-3 w-3" style={{color:r.c}}/>
-                  </div>
-                  <span className="text-sm text-muted-foreground">{r.l}</span>
-                </div>
-                <span className="text-sm font-bold text-foreground font-mono">{hide?'':fmt(r.v)}</span>
-              </div>
-            ))}
-          </div>
-          <Link href="/finance/bank-wallets" className="flex items-center justify-center gap-1 text-sm font-semibold text-primary hover:underline mt-3">
-            {isBangla?'বিস্তারিত':'View Report'} <ChevronRight className="h-3 w-3"/>
-          </Link>
-        </div>
-      </div>
 
-      {/* S6: TIMELINE */}
-      <div className="rounded-2xl border overflow-hidden" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
-          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Clock className="h-3.5 w-3.5 text-primary"/>{isBangla?'সাম্প্রতিক কার্যক্রম':'Recent Activity'}
-          </h3>
-          <Link href="/reports/dashboard" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-            {isBangla?'সব দেখুন':'View All'} <ChevronRight className="h-3 w-3"/>
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border/40 bg-muted/20">
-                <th className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{isBangla ? 'ধরণ' : 'Type'}</th>
-                <th className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{isBangla ? 'রেফারেন্স' : 'Ref'}</th>
-                <th className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">{isBangla ? 'গ্রাহক/পার্টি' : 'Party'}</th>
-                <th className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">{isBangla ? 'পরিমাণ' : 'Amount'}</th>
-                <th className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground text-right">{isBangla ? 'সময়' : 'Time'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/20">
-              {MOCK_TIMELINE.map((item) => {
-                const s = TL_STYLE[item.type] || TL_STYLE.sale;
+            <div className="space-y-1.5">
+              {quickReports.map((report) => {
+                const IconComp = report.icon;
                 return (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors text-sm">
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-lg flex items-center justify-center shrink-0" style={{background:s.bg}}>
-                          <s.Icon className="h-3 w-3" style={{color:s.color}}/>
-                        </div>
-                        <span className="font-bold uppercase tracking-wide text-[10px]" style={{color:s.color}}>
-                          {isBangla ? s.labelBn : s.label}
-                        </span>
+                  <Link
+                    key={report.id}
+                    href={report.path}
+                    className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted/60 border border-transparent hover:border-border/80 transition-all duration-150 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'w-8 h-8 rounded-lg flex items-center justify-center border shrink-0',
+                          report.iconColor
+                        )}
+                      >
+                        <IconComp className="w-4 h-4" />
                       </div>
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap font-mono text-muted-foreground text-xs">
-                      {item.ref}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap font-semibold text-foreground truncate max-w-[150px]">
-                      {item.party}
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-right font-mono font-bold">
-                      <span className={item.flow === 'in' ? 'text-emerald-500' : 'text-rose-500'}>
-                        {item.flow === 'in' ? '+' : '-'}৳{fmt(item.amount)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 whitespace-nowrap text-right text-muted-foreground text-xs">
-                      {item.time}
-                    </td>
-                  </tr>
+                      <div>
+                        <h4 className="text-xs font-semibold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {isBangla ? report.titleBn : report.title}
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          {isBangla ? report.subtitleBn : report.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                  </Link>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* ========================================================================= */}
+      {/* 4. BOTTOM GRID: Top Selling, Expense Breakdown, Stock, Health, AI & Recent */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+        {/* Card 1: Top Selling Products (Spans 4 cols on lg) */}
+        <div className="lg:col-span-4 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🏆</span>
+                <h3 className="text-sm font-bold text-foreground tracking-tight">
+                  {isBangla ? 'শীর্ষ বিক্রীত পণ্য' : 'Top Selling Products'}
+                </h3>
+              </div>
+              <Link
+                href="/reports/sales"
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                {isBangla ? 'সব দেখুন' : 'View All'}
+              </Link>
+            </div>
+
+            <div className="space-y-3.5">
+              {topSellingProducts.map((prod) => (
+                <div key={prod.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground truncate max-w-[180px]">
+                      {prod.id}. {isBangla ? prod.nameBn : prod.name}
+                    </span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
+                      {prod.percentage}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${prod.percentage * 4}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Expense Breakdown (Spans 4 cols on lg) */}
+        <div className="lg:col-span-4 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Receipt className="w-4 h-4 text-rose-500" />
+              <h3 className="text-sm font-bold text-foreground tracking-tight">
+                {isBangla ? 'ব্যয়ের বিভাজন' : 'Expense Breakdown'}
+              </h3>
+            </div>
+
+            {/* Expense Donut Chart */}
+            <div className="h-36 w-full relative flex items-center justify-center my-1">
+              {mounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={expenseBreakdownData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={48}
+                      outerRadius={65}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {expenseBreakdownData.map((entry, index) => (
+                        <Cell key={`exp-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(val: any, name: any, item: any) => [
+                        `${val}% (${item.payload.amount})`,
+                        isBangla ? item.payload.nameBn : name,
+                      ]}
+                      contentStyle={{
+                        backgroundColor: 'var(--card)',
+                        borderColor: 'var(--border)',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+              {/* Center Text Overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span className="text-base font-bold text-foreground font-mono leading-tight">
+                  {isBangla ? '৳৭৬,২০০' : '৳76,200'}
+                </span>
+                <span className="text-[9px] text-muted-foreground font-medium">
+                  {isBangla ? 'মোট ব্যয়' : 'Total Expense'}
+                </span>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-border/50">
+              {expenseBreakdownData.map((item) => (
+                <div key={item.name} className="flex items-center justify-between text-[11px] p-1 rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-muted-foreground truncate">{isBangla ? item.nameBn : item.name}</span>
+                  </div>
+                  <span className="font-bold text-foreground font-mono">{item.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Stock Status & Business Health (Spans 4 cols on lg) */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          {/* Stock Status Box */}
+          <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="w-4 h-4 text-amber-500" />
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                {isBangla ? 'স্টক অবস্থা' : 'Stock Status'}
+              </h3>
+            </div>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  {isBangla ? 'লো স্টক' : 'Low Stock'}
+                </span>
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-bold px-2 py-0.5 text-xs">
+                  {isBangla ? '৬' : '6'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                  {isBangla ? 'আউট অফ স্টক' : 'Out of Stock'}
+                </span>
+                <Badge variant="outline" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-bold px-2 py-0.5 text-xs">
+                  {isBangla ? '২' : '2'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                <span className="text-muted-foreground">{isBangla ? 'মোট পণ্য আইটেম' : 'Total Products'}</span>
+                <span className="font-bold text-foreground font-mono">{isBangla ? '১,২৪৮' : '1,248'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{isBangla ? 'বর্তমান স্টক মূল্য' : 'Stock Value'}</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">{isBangla ? '৳৪,৩২,০০০' : '৳4,32,000'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Health Gauge */}
+          <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-rose-500 text-sm">❤️</span>
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  {isBangla ? 'ব্যবসায়িক স্বাস্থ্য' : 'Business Health'}
+                </h3>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Radial Circle */}
+              <div className="relative w-16 h-16 rounded-full border-4 border-emerald-500/20 flex items-center justify-center shrink-0">
+                <div className="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin-slow" />
+                <div className="text-center">
+                  <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono block leading-none">
+                    92
+                  </span>
+                  <span className="text-[8px] text-muted-foreground block">/100</span>
+                </div>
+              </div>
+              {/* Health checklist items */}
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[11px]">
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isBangla ? 'বিক্রয় প্রবৃদ্ধি' : 'Sales Growth'}</span>
+                </div>
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isBangla ? 'লাভজনকতা' : 'Profitability'}</span>
+                </div>
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isBangla ? 'ক্যাশ ফ্লো' : 'Cash Flow'}</span>
+                </div>
+                <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isBangla ? 'কম ঝুঁকি' : 'Low Risk'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Recent Generated Reports Table (Spans 7 cols on lg) */}
+        <div className="lg:col-span-7 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-sm font-bold text-foreground tracking-tight">
+                  {isBangla ? 'সাম্প্রতিক রিপোর্টসমূহ' : 'Recent Reports'}
+                </h3>
+              </div>
+              <Link
+                href="/reports/sales"
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                {isBangla ? 'সব দেখুন' : 'View All'}
+              </Link>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border/60 text-muted-foreground font-semibold">
+                    <th className="pb-2.5 font-medium">{isBangla ? 'রিপোর্টের নাম' : 'Report Name'}</th>
+                    <th className="pb-2.5 font-medium">{isBangla ? 'ধরন' : 'Type'}</th>
+                    <th className="pb-2.5 font-medium">{isBangla ? 'জেনারেট সময়' : 'Generated On'}</th>
+                    <th className="pb-2.5 font-medium text-right">{isBangla ? 'অ্যাকশন' : 'Action'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {recentReportsList.map((row) => (
+                    <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 font-medium text-foreground">
+                        {isBangla ? row.nameBn : row.name}
+                      </td>
+                      <td className="py-3">
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[10px] font-semibold px-2 py-0.5', row.badgeVariant)}
+                        >
+                          {isBangla ? row.typeBn : row.type}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-muted-foreground text-[11px] font-mono">
+                        {isBangla ? row.dateBn : row.date}
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="h-6 px-2.5 text-[11px] rounded-lg border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+                        >
+                          <Link href={row.path}>
+                            {isBangla ? 'দেখুন' : 'View'}
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 5: AI Insights Card (Spans 5 cols on lg) */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-card via-card to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5 shadow-xs flex flex-col justify-between relative overflow-hidden">
+          <div>
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-bold text-foreground tracking-tight flex items-center gap-1.5">
+                <span>{isBangla ? 'এআই ইনসাইটস' : 'AI Insights'}</span>
+                <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  Smart AI
+                </span>
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              {/* Insight 1: Sales */}
+              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/40 border border-border/50">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground">
+                    {isBangla ? 'বিক্রয় বৃদ্ধি পেয়েছে ১৮%' : 'Sales increased by 18%'}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {isBangla ? 'গত সপ্তাহের তুলনায় বিক্রয় সর্বোচ্চ পর্যায়ে পৌঁছেছে।' : 'Compared to last week, sales reached a strong peak.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Insight 2: Low Stock */}
+              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/40 border border-border/50">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground">
+                    {isBangla ? '৬টি পণ্যের স্টক কম রয়েছে' : '6 products are low in stock'}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {isBangla ? 'স্টকআউট এড়াতে দ্রুত রিস্টক অর্ডার দেওয়ার পরামর্শ।' : 'Reorder recommended to avoid impending stockouts.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Insight 3: Profit Margin */}
+              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/40 border border-border/50">
+                <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <Info className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-foreground">
+                    {isBangla ? 'প্রফিট মার্জিন ১২% বৃদ্ধি' : 'Profit margin is 12% higher'}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {isBangla ? 'কার্যকর ব্যয় নিয়ন্ত্রণের ফলে মার্জিন সন্তোষজনক।' : 'Effective operational expense control resulted in high performance.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI CTA Button */}
+          <div className="mt-4 pt-3 border-t border-border/50">
+            <Button
+              onClick={handleOpenAiAssistant}
+              className="w-full h-9 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500 font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isBangla ? 'হ্যালো খাতা এআই-কে জিজ্ঞাসা করুন' : 'Ask HelloKhata AI'}</span>
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
