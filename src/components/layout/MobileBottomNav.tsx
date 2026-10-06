@@ -1,7 +1,3 @@
-// Hello Khata OS - Mobile Bottom Navigation
-// Unified Two-Layer Navigation + "ALL" Modules & Pages Drawer Slider
-// Page-specific colorful circular icon buttons matching reference design
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -239,21 +235,24 @@ export function MobileBottomNav() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col max-h-[85vh] w-full max-w-[100vw] overflow-x-hidden box-border md:hidden"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col h-[94vh] max-h-[94vh] w-full max-w-full overflow-x-hidden box-border md:hidden"
               style={{
                 position: 'fixed',
                 bottom: 0,
                 left: 0,
                 right: 0,
+                height: '94vh',
+                maxHeight: '94vh',
                 width: '100%',
-                maxWidth: '100vw',
+                maxWidth: '100%',
+                zIndex: 50,
                 boxSizing: 'border-box',
                 paddingBottom: 'env(safe-area-inset-bottom, 0px)',
               }}
             >
               {/* Header & Search */}
-              <div className="p-4 pb-3 border-b border-border/60 shrink-0 w-full max-w-full box-border">
-                <div className="w-12 h-1 rounded-full bg-muted/60 mx-auto mb-3" />
+              <div className="p-4 pb-3 border-b border-border/60 shrink-0 w-full max-w-full box-border bg-[#0E131F]">
+                <div className="w-12 h-1 rounded-full bg-muted/60 mx-auto mb-3 cursor-pointer" onClick={() => setIsAllOpen(false)} />
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary">
@@ -271,7 +270,7 @@ export function MobileBottomNav() {
                   <button
                     type="button"
                     onClick={() => setIsAllOpen(false)}
-                    className="p-1.5 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    className="p-1.5 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -300,7 +299,7 @@ export function MobileBottomNav() {
               </div>
 
               {/* Grouped Modules & Pages (4-Column Circular Icon Buttons) */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-5 scrollbar-thin w-full max-w-full box-border">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-12 space-y-5 scrollbar-thin w-full max-w-full box-border">
                 {filteredGroups.map((group) => {
                   const GroupIcon = group.icon;
                   const groupTitle = isBangla ? group.labelBn : group.labelKey;
@@ -333,11 +332,11 @@ export function MobileBottomNav() {
                             const theme = getPageTheme(sub.page);
 
                             return (
-                              <button
+                              <Link
                                 key={sub.page}
-                                type="button"
-                                onClick={() => handleNavigate(sub.page)}
-                                className="min-w-0 w-full flex flex-col items-center justify-center text-center group focus:outline-none"
+                                href={sub.page}
+                                onClick={() => setIsAllOpen(false)}
+                                className="min-w-0 w-full flex flex-col items-center justify-center text-center group focus:outline-none cursor-pointer"
                               >
                                 {/* Circular Icon Container */}
                                 <div
@@ -360,7 +359,7 @@ export function MobileBottomNav() {
                                 >
                                   {subTitle}
                                 </span>
-                              </button>
+                              </Link>
                             );
                           })}
                         </div>
@@ -370,13 +369,15 @@ export function MobileBottomNav() {
                           style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}
                         >
                           {(() => {
-                            const theme = getPageTheme(group.page || '/');
-                            const isActive = pathname === group.page;
+                            const targetPage = group.page || '/';
+                            const theme = getPageTheme(targetPage);
+                            const isActive = pathname === targetPage;
                             return (
-                              <button
-                                type="button"
-                                onClick={() => handleNavigate(group.page || '/')}
-                                className="min-w-0 w-full flex flex-col items-center justify-center text-center group focus:outline-none"
+                              <Link
+                                key={targetPage}
+                                href={targetPage}
+                                onClick={() => setIsAllOpen(false)}
+                                className="min-w-0 w-full flex flex-col items-center justify-center text-center group focus:outline-none cursor-pointer"
                               >
                                 <div
                                   className={cn(
@@ -396,7 +397,7 @@ export function MobileBottomNav() {
                                 >
                                   {groupTitle}
                                 </span>
-                              </button>
+                              </Link>
                             );
                           })()}
                         </div>
@@ -415,16 +416,18 @@ export function MobileBottomNav() {
       {/* ========================================================================= */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 w-full max-w-[100vw] z-40 md:hidden bg-[#0B0F19] border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
+        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden bg-[#0B0F19] border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
         style={{
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
           width: '100%',
-          maxWidth: '100vw',
-          zIndex: 40,
+          maxWidth: '100%',
+          zIndex: 50,
           transform: 'translateZ(0)',
+          WebkitTransform: 'translateZ(0)',
+          touchAction: 'manipulation',
           boxSizing: 'border-box',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}

@@ -11,10 +11,11 @@ export const createPaymentOut = (data: any) => {
 }
 
 
-export const getPaymentList = (type?: 'received' | 'paid') => {
-    return client.get('/api/payments', { params: { type } })
+export const getPaymentList = async (type?: 'received' | 'paid') => {
+    const res =  await client.get('/api/payments', { params: { type } });
+    return res.data
 }
-
+ 
 export const getPaymentById = async (id: string) => {
     const res = await client.get(`/api/payments/${id}`);
     return res.data;

@@ -34,7 +34,7 @@ interface HeaderProps {
 export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
 
   const { user, logout } = useSessionStore();
-  const { setMobileMenuOpen, unreadNotifications } = useUiStore();
+  const { setMobileMenuOpen, unreadNotifications, sidebarCollapsed } = useUiStore();
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: notificationsData } = useNotifications();
   
@@ -126,12 +126,14 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
   return (
     <header 
       className={cn(
-        "sticky top-0 z-30",
-        "flex h-16 items-center gap-3 px-4 md:px-6",
-        "transition-all duration-200",
+        "fixed top-0 right-0 z-30",
+        "left-0 md:left-64",
+        sidebarCollapsed && "md:left-16",
+        "hidden md:flex h-16 items-center gap-3 px-4 md:px-6",
+        "transition-all duration-300 ease-smooth",
         scrolled 
           ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-sm" 
-          : "bg-background border-b border-border-subtle"
+          : "bg-background/90 backdrop-blur-md border-b border-border-subtle"
       )}
     >
       {/* Mobile Menu Button */}

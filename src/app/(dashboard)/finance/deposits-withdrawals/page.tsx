@@ -47,7 +47,7 @@ import {
   useCreateWithdrawal,
   useDeleteTransaction,
   useGetDepositsAndWithdrawls,
-  useGetDepositWithdrawlsSum,
+  useGetPaymentMethodStatus,
   useGetPaymentMethods,
 } from '@/hooks/api/usePaymentMethod';
 import { toast } from 'sonner';
@@ -82,7 +82,7 @@ export default function DepositWithdrawalPage() {
   });
 
 const {mutate: deleteTransaction, isPending: isDeletingTransaction} = useDeleteTransaction();
-  const { data: summaryData, isLoading: isLoadingSummary } = useGetDepositWithdrawlsSum();
+  const { data: summaryData, isLoading: isLoadingSummary } = useGetPaymentMethodStatus();
   const { mutate: createDeposit, isPending: isCreatingDeposit } = useCreateDeposit();
   const { mutate: createWithdrawal, isPending: isCreatingWithdrawal } = useCreateWithdrawal();
 

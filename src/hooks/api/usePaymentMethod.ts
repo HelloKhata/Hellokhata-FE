@@ -1,5 +1,5 @@
 
-import { createPaymentMethod, getPaymentMethods, getDepositsAndWithdrawls, createDeposit, createWithdrawal, getDepositWithdrawlsSum, deleteTransaction } from "@/services/paymentMethodServices";
+import { createPaymentMethod, getPaymentMethods, getDepositsAndWithdrawls, createDeposit, createWithdrawal, deleteTransaction, getPaymentMethodStatus } from "@/services/paymentMethodServices";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useCreatePaymentMethod = () =>{
@@ -20,7 +20,15 @@ export const useGetPaymentMethods = () =>{
         select: data => data.data
     })
 };
-
+ 
+// status
+export const useGetPaymentMethodStatus = ()=>{
+    return useQuery({
+        queryKey: ['deposit-withdrawls-sum'],
+        queryFn: getPaymentMethodStatus,
+        select: data => data.data
+    })
+};
 
 
 // deposits and withdrawls
@@ -30,7 +38,8 @@ export const useGetDepositsAndWithdrawls = (params?: { search?: string; accountI
         queryFn: () => getDepositsAndWithdrawls(params),
         select: data => data.data
     })
-} 
+};
+
 export const useCreateDeposit = () =>{
     const queryClient = useQueryClient();
     return useMutation({
@@ -54,15 +63,6 @@ export const useCreateWithdrawal = () =>{
         }
     });
 };
-
-export const useGetDepositWithdrawlsSum = ()=>{
-    return useQuery({
-        queryKey: ['deposit-withdrawls-sum'],
-        queryFn: getDepositWithdrawlsSum,
-        select: data => data.data
-    })
-};
-
 
 export const useDeleteTransaction = () => {
     const queryClient = useQueryClient();

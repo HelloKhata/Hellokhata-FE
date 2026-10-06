@@ -98,7 +98,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Header />
 
         {/* Main Content with bottom padding on mobile to accommodate 2-layer MobileBottomNav */}
-        <main className="p-4 md:p-6 lg:p-8 pb-32 md:pb-8 animate-fade-in min-h-[calc(100vh-4rem)]">
+        <main className="md:mt-16 p-4 md:p-6 lg:p-8 pb-32 md:pb-8 animate-fade-in min-h-[calc(100vh-4rem)]">
           {children}
         </main>
 
@@ -109,4 +109,3 @@ export function AppLayout({ children }: AppLayoutProps) {
     </>
   );
 }
-
