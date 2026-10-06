@@ -1,11 +1,11 @@
 import { createIncome, createIncomeCategory, deleteIncome, deleteIncomeCategory, getIncomeCategories, getIncomes, getIncomeSummary, getTransactions, updateIncomeCategory } from "@/services/finance.services"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-export const useGetTransactions = () =>{
+export const useGetTransactions = (filters?: any) =>{
     return useQuery({
-        queryKey:['transactions'],
-        queryFn: () =>   getTransactions(),
-        select: (data) => data.data
+        queryKey:['transactions', filters],
+        queryFn: () =>   getTransactions(filters),
+        // select: data => data.data
     })
 };
 
