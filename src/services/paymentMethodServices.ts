@@ -10,6 +10,13 @@ export const getPaymentMethods = async () => {
     return res.data
 };
 
+// status
+export const getPaymentMethodStatus = async() =>{
+    const res = await client.get('/api/payment-methods/stats')
+    return res.data
+};
+
+
 // deposits and withdrawls
 export const getDepositsAndWithdrawls = async (params?: { search?: string; accountId?: string; type?: string }) => {
     const res = await client.get('/api/payment-methods/deposit-withdraw', { params })
@@ -23,11 +30,6 @@ export const createDeposit = async (data: any) => {
 
 export const createWithdrawal = async (data: any) => {
     const res = await client.post('/api/payment-methods/withdraw', data)
-    return res.data
-};
-
-export const getDepositWithdrawlsSum = async() =>{
-    const res = await client.get('/api/payment-methods/stats')
     return res.data
 };
 
