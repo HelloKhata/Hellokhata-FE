@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { BackButton } from '@/components/common';
@@ -239,8 +239,9 @@ export default function FinanceBankWalletsPage() {
   const {data: stats, isLoading:isLoadingStats} = useGetPaymentMethodStatus();
   const {data: accounts, isLoading:isLoadingAccounts} = useGetPaymentMethods();
 
-  const { data: rawTransactions, isLoading: isLoadingTransactions } = useGetTransactions();
-  const transactions = Array.isArray(rawTransactions) ? rawTransactions : ((rawTransactions as any)?.data || []);
+  const { data: transactionsData, isLoading: isLoadingTransactions } = useGetTransactions({limit:6});
+  
+  const transactions = transactionsData?.data || []
 
   // UI State
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
@@ -554,9 +555,8 @@ export default function FinanceBankWalletsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* left: Quick Transfer & Add Account Panels ─────────────────────────── */}
         <div className="space-y-6">
-          {/* Quick Transfer Card */}
-          <div className="rounded-2xl border border-slate-800/80 bg-[#121624] p-5 shadow-lg space-y-4">
-            {/* Header */}
+          {/* <div className="rounded-2xl border border-slate-800/80 bg-[#121624] p-5 shadow-lg space-y-4">
+          
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-sm">
@@ -578,10 +578,8 @@ export default function FinanceBankWalletsPage() {
               </button>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleQuickTransfer} className="space-y-3.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* From Account */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium text-slate-300 block">
                     {isBangla ? 'উৎস অ্যাকাউন্ট' : 'From Account'}
@@ -610,7 +608,6 @@ export default function FinanceBankWalletsPage() {
                   </div>
                 </div>
 
-                {/* To Account */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-medium text-slate-300 block">
                     {isBangla ? 'গন্তব্য অ্যাকাউন্ট' : 'To Account'}
@@ -645,7 +642,6 @@ export default function FinanceBankWalletsPage() {
                 </div>
               </div>
 
-              {/* Amount (৳) */}
               <div className="space-y-1.5">
                 <label className="text-[11px] font-medium text-slate-300 block">
                   {isBangla ? 'পরিমাণ (৳)' : 'Amount (৳)'}
@@ -661,7 +657,6 @@ export default function FinanceBankWalletsPage() {
                 />
               </div>
 
-              {/* Transfer Now Button */}
               <button
                 type="submit"
                 disabled={isTransferring}
@@ -680,7 +675,7 @@ export default function FinanceBankWalletsPage() {
                 )}
               </button>
             </form>
-          </div>
+          </div> */}
 
           {/* Add Account Panel */}
           <div
@@ -871,7 +866,7 @@ export default function FinanceBankWalletsPage() {
             </AnimatePresence>
           </div>
         </div>
-      </div>
+        </div>
         {/* Right: Virtual Card Carousel */}
         <div className="xl:col-span-2 space-y-4">
           {/* Filter pills */}
@@ -946,19 +941,11 @@ export default function FinanceBankWalletsPage() {
             style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}
           >
             <div className="flex items-center justify-between px-5 py-3 border-b border-border/30">
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <History className="h-4 w-4 text-primary" />
-                  {isBangla ? 'সাম্প্রতিক কার্যকলাপ' : 'Recent Activity'}
-                </h3>
-                <span className="text-[11px] text-muted-foreground">{transactions.length} {isBangla ? 'টি এন্ট্রি' : 'entries'}</span>
-              </div>
-              <Link
-                href="/finance/transactions"
-                className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
-              >
-                {isBangla ? 'আরও দেখুন' : 'See More'}
-              </Link>
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                {isBangla ? 'সাম্প্রতিক কার্যকলাপ' : 'Recent Activity'}
+              </h3>
+              <span className="text-[11px] text-muted-foreground">{transactions.length} {isBangla ? 'টি এন্ট্রি' : 'entries'}</span>
             </div>
             
             <div className="divide-y divide-border/30 flex-1">
@@ -1007,7 +994,16 @@ export default function FinanceBankWalletsPage() {
                 </div>
               )}
             </div>
-            
+          </div>
+
+          {/* "More" button */}
+          <div className="flex justify-end mt-2">
+            <Link
+              href="/finance/transactions"
+              className="text-xs font-bold text-primary hover:text-primary/80 transition-colors underline"
+            >
+              {isBangla ? 'আরও দেখুন' : 'See More'}
+            </Link>
           </div>
         </div>
 

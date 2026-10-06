@@ -1,14 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,8 +21,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { useGetTransactions } from '@/hooks/api/useFinance';
+import { useGetBranches } from '@/hooks/api/useBranches';
+import { PaginationHelper } from '@/components/shared/PaginationHelper';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeftRight,
@@ -42,11 +44,13 @@ import {
   FileText,
   Eye,
   Loader2,
-  TrendingUp,
-  TrendingDown,
   Scale,
   Calendar,
+  Banknote,
+  Landmark,
+  Wallet,
 } from 'lucide-react';
+import { useGetPaymentMethodStatus } from '@/hooks/api/usePaymentMethod';
 
 export interface Transaction {
   id: string;
@@ -72,21 +76,45 @@ export default function FinanceTransactionsPage() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
 
-  // API Hook
-  const { data: rawTransactions, isLoading, isError, refetch, isFetching } = useGetTransactions();
-
-  const transactionsList: Transaction[] = useMemo(() => {
-    if (!rawTransactions) return [];
-    if (Array.isArray(rawTransactions)) return rawTransactions;
-    if (Array.isArray((rawTransactions as any).data)) return (rawTransactions as any).data;
-    return [];
-  }, [rawTransactions]);
-
   // State Management
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedMethod, setSelectedMethod] = useState('all');
   const [selectedFlow, setSelectedFlow] = useState('all');
+  const [selectedBranch, setSelectedBranch] = useState('all');
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // API Hooks
+  const { data: branches } = useGetBranches();
+  const {data:stats,isLoading:isLoadingStats}=useGetPaymentMethodStatus();
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
+  const { data: responseData, isLoading, isError, refetch, isFetching } = useGetTransactions({
+    search: debouncedSearch || undefined,
+    type: selectedType === 'all' ? undefined : selectedType,
+    flow: selectedFlow === 'all' ? undefined : selectedFlow,
+    branchId: selectedBranch === 'all' ? undefined : selectedBranch,
+    page: currentPage,
+    limit: itemsPerPage,
+  });
+
+  const transactionsList = responseData?.data || [];
+  const meta = responseData?.meta || { totalPages: 1, total: 0, totalIn: 0, totalOut: 0, netFlow: 0 };
+  const totalPages = meta.totalPages || 1;
+
+  // const {data:stats, isLoading:isLoadingStats}=();
+
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedType, selectedMethod, selectedFlow, selectedBranch]);
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [activeTransaction, setActiveTransaction] = useState<Transaction | null>(null);
@@ -108,57 +136,12 @@ export default function FinanceTransactionsPage() {
     }
   };
 
-  // Filtering transactions
-  const filteredTransactions = useMemo(() => {
-    return transactionsList.filter((t) => {
-      const q = searchTerm.toLowerCase().trim();
-      const matchesSearch =
-        !q ||
-        t.id?.toLowerCase().includes(q) ||
-        t.title?.toLowerCase().includes(q) ||
-        t.description?.toLowerCase().includes(q) ||
-        t.categoryName?.toLowerCase().includes(q) ||
-        t.partyName?.toLowerCase().includes(q) ||
-        t.mode?.toLowerCase().includes(q) ||
-        t.transactionType?.toLowerCase().includes(q);
-
-      const matchesType =
-        selectedType === 'all' ||
-        t.transactionType?.toUpperCase() === selectedType.toUpperCase();
-
-      const matchesMethod =
-        selectedMethod === 'all' ||
-        t.mode?.toLowerCase().includes(selectedMethod.toLowerCase());
-
-      const matchesFlow =
-        selectedFlow === 'all' ||
-        t.flow?.toUpperCase() === selectedFlow.toUpperCase();
-
-      return matchesSearch && matchesType && matchesMethod && matchesFlow;
-    });
-  }, [transactionsList, searchTerm, selectedType, selectedMethod, selectedFlow]);
-
-  // Totals calculations
-  const totalInflows = useMemo(() => {
-    return transactionsList
-      .filter((t) => t.flow === 'IN' || ['INCOME', 'SALES', 'DEPOSIT'].includes(t.transactionType?.toUpperCase()))
-      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
-  }, [transactionsList]);
-
-  const totalOutflows = useMemo(() => {
-    return transactionsList
-      .filter((t) => t.flow === 'OUT' || ['EXPENSE', 'WITHDRAWAL', 'TRANSFER', 'LOAN'].includes(t.transactionType?.toUpperCase()))
-      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
-  }, [transactionsList]);
-
-  const netBalance = totalInflows - totalOutflows;
-  const totalCount = filteredTransactions.length;
-
-  const activeFiltersCount =
-    (searchTerm ? 1 : 0) +
-    (selectedType !== 'all' ? 1 : 0) +
-    (selectedMethod !== 'all' ? 1 : 0) +
-    (selectedFlow !== 'all' ? 1 : 0);
+  // Stats from API
+  const totalLiquid = stats.totalLiquidity ?? 0;
+  const totalCash = stats.cashLiquidity ?? 0;
+  const totalBank = stats.bankLiquidity ?? 0;
+  const totalWallet = stats.walletLiquidity ?? 0;
+  const activeAccounts = stats.totalAccounts ?? 0;
 
   const handleExport = (type: string) => {
     alert(isBangla ? `${type} এক্সপোর্ট সিমুলেশন সম্পন্ন!` : `${type} export simulation completed!`);
@@ -224,135 +207,157 @@ export default function FinanceTransactionsPage() {
         </div>
       </div>
 
-      {/* 2. Dynamic Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'মোট লেনদেন' : 'Total Transactions'}</p>
-              <h3 className="text-xl font-bold text-foreground mt-1 font-mono">{totalCount}</h3>
-            </div>
-            <div className="h-9 w-9 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
-              <ArrowLeftRight className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{isBangla ? 'মোট জমা (ইনফ্লো)' : 'Total Inflows'}</p>
-              <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 font-mono">{formatCurrency(totalInflows)}</h3>
-            </div>
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <Coins className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{isBangla ? 'মোট খরচ (আউটফ্লো)' : 'Total Outflows'}</p>
-              <h3 className="text-xl font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono">{formatCurrency(totalOutflows)}</h3>
-            </div>
-            <div className="h-9 w-9 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
-              <FileClock className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 bg-gradient-to-br from-card to-primary/[0.01]">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-primary">{isBangla ? 'নেট ব্যালেন্স' : 'Net Balance'}</p>
-              <h3 className={cn(
-                'text-xl font-bold mt-1 font-mono',
-                netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-              )}>
-                {formatCurrency(netBalance)}
-              </h3>
-            </div>
-            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Scale className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 3. Toolbar Search & Filters */}
-      <div className="border border-border/30 rounded-xl overflow-hidden bg-card/40 p-1 flex flex-col sm:flex-row gap-1 items-center justify-between">
-        {/* Left Side: Search Box */}
-        <div className="relative w-full sm:w-60 shrink-0">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-          <Input
-            placeholder={isBangla ? 'লেনদেন খুঁজুন (আইডি, নাম, পার্টি)...' : 'Search (ID, name, party)...'}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-7 h-7 text-[11px] bg-background/50 rounded-lg border-border/20 focus-visible:ring-primary/20"
-          />
+      {/* 2. Dynamic Summary Cards (Liquidity Overview) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">
+        {/* Total */}
+        <div className="rounded-2xl p-5 border bg-emerald-500/10 border-emerald-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-1 relative z-10">
+            {isBangla ? 'সর্বমোট তারল্য' : 'Total Liquidity'}
+          </p>
+          <div className="relative z-10 min-h-[36px] flex items-center">
+            {isLoading ? (
+              <div className="h-8 w-32 bg-emerald-500/20 animate-pulse rounded" />
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono truncate">
+                {formatCurrency(totalLiquid)}
+              </p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {activeAccounts} {isBangla ? 'টি অ্যাকাউন্ট' : 'accounts active'}
+          </p>
         </div>
 
-        {/* Right Side: Grouped Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-1 justify-end w-full sm:w-auto">
-          {/* Flow Select */}
-          <select
-            value={selectedFlow}
-            onChange={(e) => setSelectedFlow(e.target.value)}
-            className="h-7 rounded-lg border border-border/30 bg-background/50 px-1.5 text-[11px] shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer text-muted-foreground font-medium"
-          >
-            <option value="all">{isBangla ? 'সব ফ্লো' : 'All Flows'}</option>
-            <option value="IN">{isBangla ? 'ইনফ্লো (IN)' : 'Inflow (IN)'}</option>
-            <option value="OUT">{isBangla ? 'আউটফ্লো (OUT)' : 'Outflow (OUT)'}</option>
-          </select>
+        {/* Cash Vault */}
+        <div className="rounded-2xl p-5 border bg-amber-500/10 border-amber-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1 flex items-center gap-1 relative z-10">
+            <Banknote className="h-3 w-3" />
+            {isBangla ? 'ক্যাশ ভল্ট' : 'Cash Vault'}
+          </p>
+          <div className="relative z-10 min-h-[32px] flex items-center">
+            {isLoading ? (
+              <div className="h-7 w-28 bg-amber-500/20 animate-pulse rounded" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground font-mono truncate">
+                {formatCurrency(totalCash)}
+              </p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {isBangla ? 'নগদ তহবিল' : 'Physical Cash'}
+          </p>
+        </div>
 
-          {/* Type Select */}
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="h-7 rounded-lg border border-border/30 bg-background/50 px-1.5 text-[11px] shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer text-muted-foreground font-medium"
-          >
-            <option value="all">{isBangla ? 'সব ধরণের লেনদেন' : 'All Types'}</option>
-            <option value="EXPENSE">{isBangla ? 'ব্যয় (Expense)' : 'Expense'}</option>
-            <option value="INCOME">{isBangla ? 'আয় (Income)' : 'Income'}</option>
-            <option value="SALES">{isBangla ? 'বিক্রয় (Sales)' : 'Sales'}</option>
-            <option value="PURCHASE">{isBangla ? 'ক্রয় (Purchase)' : 'Purchase'}</option>
-            <option value="DEPOSIT">{isBangla ? 'জমা (Deposit)' : 'Deposit'}</option>
-            <option value="WITHDRAWAL">{isBangla ? 'উত্তোলন (Withdrawal)' : 'Withdrawal'}</option>
-            <option value="TRANSFER">{isBangla ? 'স্থানান্তর (Transfer)' : 'Transfer'}</option>
-            <option value="LOAN">{isBangla ? 'ঋণ (Loan)' : 'Loan'}</option>
-          </select>
+        {/* Bank */}
+        <div className="rounded-2xl p-5 border bg-blue-500/10 border-blue-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-1 flex items-center gap-1 relative z-10">
+            <Landmark className="h-3 w-3" />
+            {isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
+          </p>
+          <div className="relative z-10 min-h-[32px] flex items-center">
+            {isLoading ? (
+              <div className="h-7 w-28 bg-blue-500/20 animate-pulse rounded" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground font-mono truncate">
+                {formatCurrency(totalBank)}
+              </p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {isBangla ? 'ব্যাংক হিসাব' : 'Bank Accounts'}
+          </p>
+        </div>
 
-          {/* Method Select */}
-          <select
-            value={selectedMethod}
-            onChange={(e) => setSelectedMethod(e.target.value)}
-            className="h-7 rounded-lg border border-border/30 bg-background/50 px-1.5 text-[11px] shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer text-muted-foreground font-medium"
-          >
-            <option value="all">{isBangla ? 'সব পেমেন্ট পদ্ধতি' : 'All Methods'}</option>
-            <option value="cash">{isBangla ? 'নগদ (Cash)' : 'Cash'}</option>
-            <option value="bank">{isBangla ? 'ব্যাংক (Bank)' : 'Bank'}</option>
-            <option value="card">{isBangla ? 'কার্ড (Card)' : 'Card'}</option>
-            <option value="bkash">bKash</option>
-            <option value="nagad">Nagad</option>
-          </select>
+        {/* Wallet */}
+        <div className="rounded-2xl p-5 border bg-pink-500/10 border-pink-500/20 shadow-xs relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-[10px] font-bold uppercase tracking-widest text-pink-500 mb-1 flex items-center gap-1 relative z-10">
+            <Wallet className="h-3 w-3" />
+            {isBangla ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance'}
+          </p>
+          <div className="relative z-10 min-h-[32px] flex items-center">
+            {isLoading ? (
+              <div className="h-7 w-28 bg-pink-500/20 animate-pulse rounded" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground font-mono truncate">
+                {formatCurrency(totalWallet)}
+              </p>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
+            {isBangla ? 'মোবাইল ব্যাংকিং' : 'Mobile Banking'}
+          </p>
+        </div>
+      </div>
 
-          {/* Reset filters action */}
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedType('all');
-                setSelectedMethod('all');
-                setSelectedFlow('all');
-              }}
-              className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 text-[11px] h-7 px-1.5 shrink-0 transition-colors"
-            >
-              {isBangla ? 'রিসেট' : 'Reset'}
-            </Button>
-          )}
+      {/* 3. Filters Bar */}
+      <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground shrink-0" />
+            <Input
+              placeholder={
+                isBangla
+                  ? "লেনদেন খুঁজুন (আইডি, নাম, পার্টি)..."
+                  : "Search (ID, name, party)..."
+              }
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+             <SelectTrigger className="w-full md:w-[140px]">
+               <SelectValue placeholder={isBangla ? "শাখা" : "Branch"} />
+             </SelectTrigger>
+             <SelectContent>
+                <SelectItem value="all">{isBangla ? "সব শাখা" : "All Branches"}</SelectItem>
+                {branches?.map((b: any) => (
+                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+             </SelectContent>
+          </Select>
+
+          <Select value={selectedFlow} onValueChange={setSelectedFlow}>
+             <SelectTrigger className="w-full md:w-[140px]">
+               <SelectValue placeholder={isBangla ? "ফ্লো" : "Flow"} />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">{isBangla ? "সব ফ্লো" : "All Flows"}</SelectItem>
+               <SelectItem value="IN">{isBangla ? 'ইনফ্লো (IN)' : 'Inflow (IN)'}</SelectItem>
+               <SelectItem value="OUT">{isBangla ? 'আউটফ্লো (OUT)' : 'Outflow (OUT)'}</SelectItem>
+             </SelectContent>
+          </Select>
+
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-full md:w-[160px]">
+              <SelectValue placeholder={isBangla ? "ধরণ" : "Type"} />
+            </SelectTrigger>
+            <SelectContent>
+               <SelectItem value="all">{isBangla ? 'সব ধরণ' : 'All Types'}</SelectItem>
+               <SelectItem value="INCOME">{isBangla ? 'আয় (Income)' : 'Income'}</SelectItem>
+               <SelectItem value="EXPENSE">{isBangla ? 'ব্যয় (Expense)' : 'Expense'}</SelectItem>
+               <SelectItem value="PAYMENT">{isBangla ? 'পেমেন্ট (Payment)' : 'Payment'}</SelectItem>
+               <SelectItem value="PAYMENT_IN">{isBangla ? 'পেমেন্ট গ্রহণ (Payment In)' : 'Payment In'}</SelectItem>
+               <SelectItem value="PAYMENT_OUT">{isBangla ? 'পেমেন্ট প্রদান (Payment Out)' : 'Payment Out'}</SelectItem>
+               <SelectItem value="SALE">{isBangla ? 'বিক্রয় (Sale)' : 'Sale'}</SelectItem>
+               <SelectItem value="PURCHASE">{isBangla ? 'ক্রয় (Purchase)' : 'Purchase'}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <button
+            type="button"
+            className="flex items-center gap-2 border border-input rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted shrink-0 cursor-pointer h-10"
+          >
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="whitespace-nowrap">
+              {isBangla ? "তারিখ" : "Date"}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -398,15 +403,15 @@ export default function FinanceTransactionsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filteredTransactions.length === 0 ? (
+              ) : transactionsList.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="h-64 text-center text-muted-foreground font-semibold">
                     {isBangla ? 'কোনো লেনদেন এন্ট্রি পাওয়া যায়নি।' : 'No financial transaction records found.'}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTransactions.map((txn) => {
-                  const isInflow = txn.flow === 'IN' || ['INCOME', 'SALES', 'DEPOSIT'].includes(txn.transactionType?.toUpperCase());
+                transactionsList.map((txn) => {
+                  const isInflow = txn.flow === 'IN' || ['INCOME', 'SALE', 'PAYMENT_IN'].includes(txn.transactionType?.toUpperCase());
                   const accountName = txn.categoryName || txn.title || txn.accountId || '-';
                   const description = txn.description || txn.title || '-';
                   const party = txn.partyName || txn.reference || '-';
@@ -465,6 +470,17 @@ export default function FinanceTransactionsPage() {
             </TableBody>
           </Table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-border">
+            <PaginationHelper
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              isBangla={isBangla}
+            />
+          </div>
+        )}
       </Card>
 
       {/* 5. Transaction Details dialog popup */}
@@ -542,7 +558,7 @@ export default function FinanceTransactionsPage() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{isBangla ? 'মোট পরিমাণ' : 'TOTAL AMOUNT'}</p>
                 <p className={cn(
                   'text-base font-bold font-mono',
-                  activeTransaction.flow === 'IN' || ['INCOME', 'SALES', 'DEPOSIT'].includes(activeTransaction.transactionType?.toUpperCase())
+                  activeTransaction.flow === 'IN' || ['INCOME', 'SALE', 'PAYMENT_IN'].includes(activeTransaction.transactionType?.toUpperCase())
                     ? 'text-emerald-600 dark:text-emerald-500'
                     : 'text-rose-600 dark:text-rose-400'
                 )}>
