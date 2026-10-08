@@ -276,7 +276,7 @@ export function Sidebar() {
           ))}
 
           {/* Logout */}
-          <button
+          {/* <button
             onClick={logout}
             className={cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium w-full',
@@ -286,7 +286,7 @@ export function Sidebar() {
           >
             <LogOut className="h-5 w-5" />
             {!sidebarCollapsed && <span>{isBangla ? 'লগআউট' : 'Logout'}</span>}
-          </button>
+          </button> */}
         </div>
       </aside>
     </TooltipProvider>
