@@ -36,6 +36,7 @@ import {
   BadgeDollarSign,
   UserCheck,
   FileSpreadsheet,
+  Crown,
 } from "lucide-react";
 
 export interface SubnavItem {
@@ -388,17 +389,25 @@ export const navGroups: NavItem[] = [
 ];
 
 export const bottomNavItems = [
-  {
-    page: "/ai",
-    icon: Sparkles,
-    labelKey: "AI",
-    labelBn: "AI সহায়ক",
-    isPro: true,
-  },
+  // {
+  //   page: "/ai",
+  //   icon: Sparkles,
+  //   labelKey: "AI",
+  //   labelBn: "AI সহায়ক",
+  //   isPro: true,
+  // },
   {
     page: "/settings",
     icon: Settings,
     labelKey: "Settings",
     labelBn: "সেটিংস",
   },
+  {
+    page: "/plans",
+    icon: Crown,
+    labelKey: "Upgrade Plans",
+    labelBn: "আপগ্রেড প্ল্যান",
+    isPro: true,
+  },
 ];
+ 
