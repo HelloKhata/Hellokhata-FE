@@ -92,7 +92,7 @@ export function Sidebar() {
         </div>
 
         {/* Business Name */}
-        {!sidebarCollapsed && business && (
+        {/* {!sidebarCollapsed && business && (
           <div className="px-4 py-3 border-b border-border-subtle bg-muted/20">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-indigo-subtle flex items-center justify-center">
@@ -102,11 +102,11 @@ export function Sidebar() {
                 <p className="text-sm font-medium text-foreground truncate">
                   { business.name}
                 </p>
-                {/* <p className="text-xs text-muted-foreground">{business.phone}</p> */}
+                <p className="text-xs text-muted-foreground">{business.phone}</p>
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Main Navigation */}
         <ScrollArea className="flex-1 px-3 py-4 scrollbar-premium overflow-y-auto">
