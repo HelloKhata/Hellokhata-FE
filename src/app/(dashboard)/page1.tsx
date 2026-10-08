@@ -19,6 +19,7 @@ import {
   Building2, Target, FileText, Send, UserPlus, Box, Repeat2, Bot,
   Clock, AlertTriangle, Zap, CreditCard, Eye, EyeOff, Circle,
 } from 'lucide-react';
+
 // ── MOCK DATA ──────────────────────────────────────────────
 const MOCK_STATS = {
   todaySales: 42750,      todaySalesChange: 18.4,
