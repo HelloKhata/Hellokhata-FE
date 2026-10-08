@@ -137,11 +137,11 @@ export default function FinanceTransactionsPage() {
   };
 
   // Stats from API
-  const totalLiquid = stats.totalLiquidity ?? 0;
-  const totalCash = stats.cashLiquidity ?? 0;
-  const totalBank = stats.bankLiquidity ?? 0;
-  const totalWallet = stats.walletLiquidity ?? 0;
-  const activeAccounts = stats.totalAccounts ?? 0;
+  const totalLiquid = stats?.data?.totalLiquidity ?? 0;
+  const totalCash = stats?.data?.cashLiquidity ?? 0;
+  const totalBank = stats?.data?.bankLiquidity ?? 0;
+  const totalWallet = stats?.data?.walletLiquidity ?? 0;
+  const activeAccounts = stats?.data?.totalAccounts ?? 0;
 
   const handleExport = (type: string) => {
     alert(isBangla ? `${type} এক্সপোর্ট সিমুলেশন সম্পন্ন!` : `${type} export simulation completed!`);

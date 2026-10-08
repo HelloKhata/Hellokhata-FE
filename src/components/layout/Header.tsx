@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/premium';
-import { useSessionStore } from '@/stores/sessionStore';
+import { useBusiness, useSessionStore } from '@/stores/sessionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useMarkAsReadNotification, useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
@@ -35,6 +35,8 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
 
   const { user, logout } = useSessionStore();
   const { setMobileMenuOpen, unreadNotifications, sidebarCollapsed } = useUiStore();
+  const business = useBusiness()
+
   const { t, isBangla, changeLanguage } = useAppTranslation();
   const { data: notificationsData } = useNotifications();
   
@@ -154,10 +156,12 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
       /> */}
 
       {/* Branch Switcher - Show on desktop */}
-      <div className="hidden md:block">
+      {/* <div className="hidden md:block">
         <BranchSwitcher compact />
-      </div>
-
+      </div> */}
+      <div className="hidden md:block">
+        {business?business.name:""}
+      </div>  
       {/* Search Bar / Command Palette Trigger - Takes remaining space */}
       <div className="flex-1 flex justify-center md:justify-start">
         <button

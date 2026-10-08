@@ -1,14 +1,6 @@
 'use client';
 
 import React from 'react';
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { LucideIcon } from 'lucide-react';
 
@@ -32,20 +24,16 @@ export function FinancePageHeader({
   pageName,
   pageNameBn,
   description,
-  descriptionBn,
+  descriptionBn, 
   icon: Icon,
-  parentName = 'Finance & Accounting',
-  parentNameBn = 'অর্থায়ন ও হিসাববিজ্ঞান',
-  parentHref,
   showBackButton = false,
   backHref,
   children,
 }: FinancePageHeaderProps) {
   const { isBangla } = useAppTranslation();
-  
+
   const displayName = isBangla && pageNameBn ? pageNameBn : pageName;
   const displayDescription = isBangla && descriptionBn ? descriptionBn : description;
-  const displayParentName = isBangla && parentNameBn ? parentNameBn : parentName;
 
   return (
     <div className="space-y-4 mb-6">

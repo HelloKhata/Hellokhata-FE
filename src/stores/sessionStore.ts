@@ -101,12 +101,6 @@ interface SessionState {
   refreshSession: () => Promise<void>;
 }
 
-// ─── Plan → Feature Flags ─────────────────────────────────────────────────────
-// 🟢 FREE        – ৳0:   Hook tier. AI 3/day, no export, no health score, no analytics.
-// 🔵 STARTER     – ৳199: Micro shop. AI 15/day, CSV export, dead stock alert.
-// 🟣 GROWTH      – ৳499: Growing SME. AI 50/day, forecasting, priority support.
-// 🔴 INTELLIGENCE– ৳999: Serious business. Unlimited AI, API access, dedicated support.
-
 const getDefaultFeatures = (plan: PlanType): FeatureFlags => {
   switch (plan) {
     case 'intelligence':
