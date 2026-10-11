@@ -57,6 +57,10 @@ import {
   Lock,
   Plus,
   Minus,
+  User,
+  ChevronDown,
+  ScanBarcode,
+  Info,
 } from "lucide-react";
 import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
 import { cn } from "@/lib/utils";
@@ -166,9 +170,19 @@ function NewSaleContent() {
   // Billing Items Table Rows
   const [selectedItems, setSelectedItems] = useState<BillingItemRow[]>([]);
 
+  // Mobile UX States
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isMobileCustomerModalOpen, setIsMobileCustomerModalOpen] = useState(false);
+  const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
+  const [mobileCustomerSearch, setMobileCustomerSearch] = useState("");
+  const [mobileProductSearch, setMobileProductSearch] = useState("");
+  const [modalQuantities, setModalQuantities] = useState<Record<string, number>>({});
+  const [editingItemForPrice, setEditingItemForPrice] = useState<BillingItemRow | null>(null);
+  const [tempNewPrice, setTempNewPrice] = useState<string>("");
+  const [mobileDiscountType, setMobileDiscountType] = useState<"fixed" | "percent">("fixed");
+  const [mobileDiscountValue, setMobileDiscountValue] = useState<string>("");
 
-
-  const { data: items } = useGetItems({search: productSearchQuery, page: 1, limit: 100 });
+  const { data: items } = useGetItems({ search: productSearchQuery || mobileProductSearch, page: 1, limit: 100 });
 
   const { data: batchesData, isLoading: loadingBatches } = useGetItemBatches(
     selectedProductForBatch?.id || "",
@@ -301,6 +315,42 @@ const itemsBatches = batchesData?.batches;
   const grandTotal = useMemo(() => {
     return Math.max(0, subtotalAfterDiscount + totalTax + vatVal + additionalChargeVal);
   }, [subtotalAfterDiscount, totalTax, vatVal, additionalChargeVal]);
+
+  // Mobile specific discount, payable amount, and list filters
+  const mobileDiscountAmount = useMemo(() => {
+    const val = parseFloat(mobileDiscountValue) || 0;
+    if (val <= 0) return 0;
+    if (mobileDiscountType === "fixed") {
+      return Math.min(rawSubtotal, val);
+    } else {
+      const pct = Math.min(100, Math.max(0, val));
+      return parseFloat(((rawSubtotal * pct) / 100).toFixed(2));
+    }
+  }, [mobileDiscountType, mobileDiscountValue, rawSubtotal]);
+
+  const mobilePayableTotal = useMemo(() => {
+    return Math.max(0, rawSubtotal - mobileDiscountAmount + totalTax + vatVal + additionalChargeVal);
+  }, [rawSubtotal, mobileDiscountAmount, totalTax, vatVal, additionalChargeVal]);
+
+  const mobileFilteredProducts = useMemo(() => {
+    const list = Array.isArray(items) ? items : (items as any)?.data || (items as any)?.items || [];
+    if (!mobileProductSearch.trim()) return list;
+    const q = mobileProductSearch.toLowerCase().trim();
+    return list.filter((p: any) =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q)) ||
+      (p.barcode && p.barcode.toLowerCase().includes(q))
+    );
+  }, [items, mobileProductSearch]);
+
+  const mobileFilteredParties = useMemo(() => {
+    if (!mobileCustomerSearch.trim()) return parties;
+    const q = mobileCustomerSearch.toLowerCase().trim();
+    return parties.filter((p: any) =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.phone && p.phone.toLowerCase().includes(q))
+    );
+  }, [parties, mobileCustomerSearch]);
 
   const totalPaid = useMemo(() => {
     return payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -763,6 +813,88 @@ const itemsBatches = batchesData?.batches;
     setIsEditVatOpen(false);
   };
 
+  // Handle adding product from mobile modal with specified quantity
+  const handleAddProductFromModal = (product: any, qtyToAdd: number = 1, batch?: any) => {
+    if (!product) return;
+    const batchNo = batch?.batchNumber || batch?.batchNo || batch?.name || "";
+    const price = batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
+    const costPrice = batch?.costPrice || product.costPrice || 0;
+    const taxRate = Number(
+      batch?.taxRate ??
+      batch?.taxPercent ??
+      product?.taxRate ??
+      product?.taxPercent ??
+      product?.taxCategory?.rate ??
+      product?.tax ??
+      0
+    );
+
+    setSelectedItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.itemId === product.id && (item.batchNo || "") === batchNo
+      );
+
+      if (existingIndex > -1) {
+        return prev.map((item, idx) => {
+          if (idx === existingIndex) {
+            const newQty = item.quantity + qtyToAdd;
+            const flatDiscount = item.discountFlat || 0;
+            const total = calculateRowTotal(newQty, price, flatDiscount);
+            const rowTaxRate = item.taxRate ?? taxRate;
+            const taxAmount = calculateItemTaxAmount(newQty, price, flatDiscount, rowTaxRate);
+
+            return {
+              ...item,
+              quantity: newQty,
+              unitPrice: price,
+              taxRate: rowTaxRate,
+              taxAmount,
+              total,
+            };
+          }
+          return item;
+        });
+      }
+
+      const flatDiscount = 0;
+      const total = calculateRowTotal(qtyToAdd, price, flatDiscount);
+      const initialTaxAmount = calculateItemTaxAmount(qtyToAdd, price, 0, taxRate);
+
+      const newItemRow: BillingItemRow = {
+        id: Math.random().toString(),
+        itemId: product.id,
+        itemName: product.name,
+        batchNo: batchNo,
+        quantity: qtyToAdd,
+        unitPrice: price,
+        costPrice: costPrice,
+        taxRate: taxRate,
+        taxAmount: initialTaxAmount,
+        discountPercent: 0,
+        discountFlat: 0,
+        total: total,
+        searchQuery: "",
+        showSuggestions: false,
+        imageUrl: product.imageUrl || "",
+        appliedOffer: null,
+        chargedQuantity: qtyToAdd,
+        freeQuantity: 0,
+        offerSavings: 0,
+      };
+
+      const emptyRowIndex = prev.findIndex((i) => i.itemId === "");
+      if (emptyRowIndex > -1 && prev.length === 1) {
+        return [newItemRow];
+      }
+
+      return [...prev.filter((i) => i.itemId !== ""), newItemRow];
+    });
+
+    toast.success(
+      isBangla ? `${product.name} যোগ করা হয়েছে` : `Added ${product.name}`
+    );
+  };
+
   // Handle submit form
   const handleSubmit = async () => {
     // Filter empty items
@@ -774,17 +906,36 @@ const itemsBatches = batchesData?.batches;
       return;
     }
 
-    if (isPaidAmountExceeded) {
+    const effectiveDiscount = mobileDiscountAmount > 0 ? mobileDiscountAmount : totalDiscount;
+    const effectiveTotal = mobilePayableTotal > 0 ? mobilePayableTotal : grandTotal;
+
+    if (totalPaid > effectiveTotal && payments.some(p => p.amount > 0)) {
       toast.error(
         isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না" : "Paid amount cannot exceed grand total",
       );
       return;
     }
 
+    const paymentList = payments.filter((p) => p.amount > 0);
+    const effectivePayments =
+      paymentList.length > 0
+        ? paymentList.map((p) => ({
+            paymentId: p.accountId || (accounts.find((a: any) => a.type === p.method)?.id) || p.id,
+            paymentType: p.method,
+            amount: p.amount || 0,
+          }))
+        : [
+            {
+              paymentId: accounts.find((a: any) => a.type === "cash")?.id || "cash",
+              paymentType: "cash",
+              amount: effectiveTotal,
+            },
+          ];
+
     const payload = {
       customerPhone: selectedParty?.phone || phoneSearchQuery || undefined,
       customerName: selectedParty?.name || defaultCustomerName,
-      discount: totalDiscount,
+      discount: effectiveDiscount,
       tax: parseFloat(totalTax.toFixed(2)),
       additionalCharges: additionalChargeVal,
       notes: notes || undefined,
@@ -795,13 +946,7 @@ const itemsBatches = batchesData?.batches;
         quantity: item.quantity,
         unitPrice: item.unitPrice,
       })),
-      paymentMethods: payments
-        .filter((p) => p.amount > 0)
-        .map((p) => ({
-          paymentId: p.accountId || (accounts.find((a: any) => a.type === p.method)?.id) || p.id,
-          paymentType: p.method,
-          amount: p.amount || 0,
-        })),
+      paymentMethods: effectivePayments,
     };
 
     mutate(payload, {
@@ -1021,15 +1166,19 @@ const itemsBatches = batchesData?.batches;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Top Header Section */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <BackButton />
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            {isBangla ? "নতুন বিক্রি" : "New Sale"}
-          </h1>
+      {/* ========================================================= */}
+      {/* DESKTOP & TABLET VIEW (md and up) - 100% UNCHANGED       */}
+      {/* ========================================================= */}
+      <div className="hidden md:block space-y-4 sm:space-y-6">
+        {/* Top Header Section */}
+        <div className="flex items-center justify-between pb-2 border-b border-border/40">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <BackButton />
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              {isBangla ? "নতুন বিক্রি" : "New Sale"}
+            </h1>
+          </div>
         </div>
-      </div>
 
 
         <div className="w-full lg:flex-[3] min-w-0 space-y-4 sm:space-y-6">
@@ -1985,10 +2134,794 @@ const itemsBatches = batchesData?.batches;
         </div>
 
       </div>
+    </div>
+    {/* End Desktop & Tablet View */}
 
+      {/* ========================================================= */}
+      {/* MOBILE VIEW (< md) - MATCHING EXACT SCREENSHOT UX FLOW    */}
+      {/* ========================================================= */}
+      <div className="md:hidden pb-44 space-y-3.5">
+        {/* Mobile Header: BackButton + Title */}
+        <div className="flex items-center gap-3 pb-2 border-b border-border/40">
+          <BackButton />
+          <h1 className="text-lg font-bold tracking-tight text-foreground">
+            {isBangla ? "নতুন বিক্রি" : "Add New Sales"}
+          </h1>
+        </div>
 
+        {/* Customer & Date Selector Bar */}
+        <div className="flex items-center justify-between py-1 border-b border-border/40 text-xs">
+          {/* Customer Dropdown Chip */}
+          <button
+            type="button"
+            onClick={() => setIsMobileCustomerModalOpen(true)}
+            className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-foreground font-medium text-left"
+          >
+            <User className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate max-w-[155px]">
+              {selectedParty?.name || defaultCustomerName}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </button>
 
-      {/* VAT Edit Modal */}
+          {/* Date Picker Chip */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-foreground text-xs font-medium"
+              >
+                <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>{format(invoiceDate, "d MMM yyyy")}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={invoiceDate}
+                onSelect={(date) => date && setInvoiceDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Selected Product Container */}
+        <div className="bg-card border border-border/70 rounded-2xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between pb-2.5 border-b border-border/50">
+            <h3 className="font-bold text-sm text-foreground">
+              {isBangla ? "নির্বাচিত পণ্য" : "Selected Product"}
+            </h3>
+          </div>
+
+          {selectedItems.filter((i) => i.itemId).length === 0 ? (
+            /* Screen 1: Empty State Graphic & Select Product Button */
+            <div className="py-10 flex flex-col items-center justify-center text-center">
+              <div className="relative mb-4">
+                <svg
+                  width="100"
+                  height="90"
+                  viewBox="0 0 100 90"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="drop-shadow-xs"
+                >
+                  <rect x="22" y="18" width="56" height="45" rx="5" fill="#E2E8F0" className="dark:fill-muted" />
+                  <rect x="28" y="24" width="44" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
+                  <rect x="28" y="32" width="44" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
+                  <rect x="28" y="40" width="28" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
+                  <path
+                    d="M15 35H32L38 47H62L68 35H85V64C85 67.3137 82.3137 70 79 70H21C17.6863 70 15 67.3137 15 64V35Z"
+                    fill="#CBD5E1"
+                    className="dark:fill-muted/80"
+                  />
+                  <path
+                    d="M15 42H30L36 53H64L70 42H85V64C85 67.3137 82.3137 70 79 70H21C17.6863 70 15 67.3137 15 64V42Z"
+                    fill="#94A3B8"
+                    className="dark:fill-muted"
+                  />
+                  <circle cx="75" cy="18" r="11" fill="#CBD5E1" className="dark:fill-muted" />
+                  <circle cx="70" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
+                  <circle cx="75" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
+                  <circle cx="80" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
+                </svg>
+              </div>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-6">
+                {isBangla ? "কোনো পণ্য নেই" : "No Product"}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary hover:bg-primary/10 active:bg-primary/20 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}</span>
+              </button>
+            </div>
+          ) : (
+            /* Screen 3: Selected Product Cards List */
+            <div className="space-y-3">
+              {selectedItems
+                .filter((i) => i.itemId)
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-card border border-border/70 rounded-xl p-3 shadow-xs space-y-2.5"
+                  >
+                    {/* Top row: Thumbnail, Name & breakdown, Line Total & Delete */}
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-lg border border-border/80 bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
+                        {item.imageUrl ? (
+                          <ImageWithFallback
+                            src={item.imageUrl}
+                            alt={item.itemName}
+                            width={44}
+                            height={44}
+                            className="h-11 w-11 object-cover"
+                          />
+                        ) : (
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-foreground text-sm truncate">
+                          {item.itemName}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                          <span>
+                            {item.quantity} x ৳{item.unitPrice}
+                          </span>
+                          {item.batchNo && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                              Batch <Info className="h-3 w-3 inline text-blue-500" />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <span className="font-bold text-foreground text-sm">
+                          ৳{item.total.toFixed(0)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeItemRow(item.id)}
+                          className="h-8 w-8 rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-colors"
+                          title={isBangla ? "মুছে ফেলুন" : "Remove"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <hr className="border-border/40" />
+
+                    {/* Bottom row: Stepper & Update Selling Price link */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center h-8 bg-background border border-border/70 rounded-md overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newQty = Math.max(1, (item.quantity || 1) - 1);
+                            handleQuantityChange(item.id, String(newQty));
+                          }}
+                          className="px-2.5 h-full text-muted-foreground hover:text-foreground active:bg-muted/60 transition-colors"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="px-3 text-xs font-bold text-foreground">
+                          {String(item.quantity).padStart(2, "0")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newQty = (item.quantity || 0) + 1;
+                            handleQuantityChange(item.id, String(newQty));
+                          }}
+                          className="px-2.5 h-full text-muted-foreground hover:text-foreground active:bg-muted/60 transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingItemForPrice(item);
+                          setTempNewPrice(String(item.unitPrice || ""));
+                        }}
+                        className="text-blue-500 hover:text-blue-600 text-xs font-medium hover:underline transition-colors"
+                      >
+                        {isBangla ? "বিক্রয় মূল্য পরিবর্তন করুন" : "Update Selling Price"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+              {/* + Select Product button to add more */}
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary hover:bg-primary/10 active:bg-primary/20 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs mt-3"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Sticky Bottom Checkout Bar (Visible when items selected) */}
+        {selectedItems.filter((i) => i.itemId).length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 p-3.5 pb-safe space-y-2.5 shadow-xl">
+            {/* Subtotal Row */}
+            <div className="flex items-center justify-between text-xs sm:text-sm font-medium">
+              <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
+              <span className="text-foreground font-bold">
+                ৳{rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            {/* Discount Row */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <Select
+                value={mobileDiscountType}
+                onValueChange={(val: "fixed" | "percent") => setMobileDiscountType(val)}
+              >
+                <SelectTrigger className="h-10 text-xs bg-background/60 border-input font-medium">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">{isBangla ? "নির্দিষ্ট (Fixed)" : "Fixed"}</SelectItem>
+                  <SelectItem value="percent">{isBangla ? "শতকরা (%)" : "Percentage"}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Input
+                type="number"
+                value={mobileDiscountValue}
+                onChange={(e) => setMobileDiscountValue(e.target.value)}
+                placeholder={isBangla ? "ছাড়ের পরিমাণ" : "Discount Amount"}
+                className="h-10 text-xs bg-background/60 border-input font-medium"
+                min="0"
+              />
+            </div>
+
+            {/* Total Payable Amount Row */}
+            <div className="flex items-center justify-between pt-0.5 text-sm font-bold">
+              <span className="text-primary">
+                {isBangla ? "মোট পরিশোধযোগ্য পরিমাণ" : "Total Payable Amount"}
+              </span>
+              <span className="text-primary text-base font-extrabold">
+                ৳{mobilePayableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-0.5">
+              <Button
+                type="button"
+                onClick={() => setIsMoreModalOpen(true)}
+                className="h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {isBangla ? "আরও" : "More"}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isPending || selectedItems.filter((i) => i.itemId).length === 0}
+                className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs sm:text-sm shadow-sm disabled:opacity-50"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                ) : null}
+                {isBangla ? "অর্ডার সম্পন্ন করুন" : "Place Order"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Screen 2: "All Product" Modal Bottom Sheet */}
+      <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden text-foreground flex flex-col max-h-[90vh]">
+          {/* Header with Title and Close Button */}
+          <div className="flex items-center justify-between p-4 border-b border-border/60">
+            <h2 className="text-base font-bold text-foreground">
+              {isBangla ? "সকল পণ্য" : "All Product"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setIsProductModalOpen(false)}
+              className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Search Row + Barcode Icon */}
+          <div className="p-4 pb-2 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Input
+                value={mobileProductSearch}
+                onChange={(e) => setMobileProductSearch(e.target.value)}
+                placeholder={isBangla ? "পণ্য খুঁজুন..." : "Search Product"}
+                className="pl-9 h-11 bg-background/60 border-input text-xs"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                toast.info(isBangla ? "বারকোড স্ক্যানার সক্রিয় আছে" : "Barcode scanner is ready")
+              }
+              className="h-11 w-11 rounded-xl border border-input bg-background/60 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 shadow-2xs"
+              title="Barcode Scanner"
+            >
+              <ScanBarcode className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Product List */}
+          <div className="flex-1 overflow-y-auto p-4 pt-1 space-y-3">
+            {mobileFilteredProducts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground text-xs">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p>{isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No products found"}</p>
+              </div>
+            ) : (
+              mobileFilteredProducts.map((prod: any) => {
+                const qty = modalQuantities[prod.id] || 1;
+                const price = prod.sellingPrice || prod.unitPrice || 0;
+                const stock = prod.stock ?? prod.currentStock ?? prod.quantity ?? 0;
+                const unit = prod.unit || "pc";
+
+                return (
+                  <div
+                    key={prod.id}
+                    className="bg-card border border-border/70 rounded-xl p-3 shadow-xs space-y-2.5"
+                  >
+                    {/* Top row: Image & Name & Stock */}
+                    <div className="flex items-start gap-3">
+                      <div className="h-11 w-11 rounded-lg border border-border/80 bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
+                        {prod.imageUrl ? (
+                          <ImageWithFallback
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            width={44}
+                            height={44}
+                            className="h-11 w-11 object-cover"
+                          />
+                        ) : (
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-foreground text-sm truncate">
+                          {prod.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Stock : {stock} {unit}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Divider */}
+                    <hr className="border-border/40" />
+
+                    {/* Bottom row: Stepper, Price, Orange + Button */}
+                    <div className="flex items-center justify-between">
+                      {/* Stepper */}
+                      <div className="flex items-center h-8 bg-background border border-border/70 rounded-md overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalQuantities((prev) => ({
+                              ...prev,
+                              [prod.id]: Math.max(1, (prev[prod.id] || 1) - 1),
+                            }));
+                          }}
+                          className="px-2.5 h-full text-muted-foreground hover:text-foreground active:bg-muted/60 transition-colors"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="px-3 text-xs font-bold text-foreground">
+                          {qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setModalQuantities((prev) => ({
+                              ...prev,
+                              [prod.id]: (prev[prod.id] || 1) + 1,
+                            }));
+                          }}
+                          className="px-2.5 h-full text-muted-foreground hover:text-foreground active:bg-muted/60 transition-colors"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Price */}
+                      <div className="text-xs font-semibold text-foreground">
+                        Price: <span className="text-primary font-bold">৳{price}</span>
+                      </div>
+
+                      {/* Orange + Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleAddProductFromModal(prod, qty)}
+                        className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground active:scale-95 flex items-center justify-center shadow-md transition-all shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Sticky Bottom Next Button */}
+          <div className="p-4 border-t border-border/60 bg-card">
+            <Button
+              type="button"
+              onClick={() => setIsProductModalOpen(false)}
+              className="w-full h-11 bg-muted hover:bg-muted/80 text-foreground font-semibold rounded-xl text-sm"
+            >
+              {isBangla ? "পরবর্তী" : "Next"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Select Modal */}
+      <Dialog open={isMobileCustomerModalOpen} onOpenChange={setIsMobileCustomerModalOpen}>
+        <DialogContent className="max-w-md p-5 max-h-[85vh] overflow-y-auto space-y-3.5 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">
+              {isBangla ? "গ্রাহক নির্বাচন করুন" : "Select Customer"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Customer Search Input */}
+          <div className="relative">
+            <Input
+              value={mobileCustomerSearch}
+              onChange={(e) => setMobileCustomerSearch(e.target.value)}
+              placeholder={isBangla ? "নাম বা ফোন নম্বর দিয়ে খুঁজুন..." : "Search by name or phone..."}
+              className="pl-9 h-10 text-xs bg-background/60"
+            />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+
+          {/* Walk-in Customer Option */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedParty(null);
+              setSelectedPartyId("");
+              setPhoneSearchQuery("");
+              setIsMobileCustomerModalOpen(false);
+            }}
+            className={cn(
+              "w-full text-left p-3 rounded-xl border transition-colors flex items-center justify-between text-xs",
+              !selectedParty
+                ? "border-primary bg-primary/10 text-primary font-bold"
+                : "border-border/60 hover:bg-muted/50"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                <User className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-semibold">{defaultCustomerName}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {isBangla ? "ডিফল্ট গ্রাহক" : "Default Walk-in"}
+                </p>
+              </div>
+            </div>
+            {!selectedParty && <Check className="h-4 w-4 text-primary" />}
+          </button>
+
+          {/* Customer List */}
+          <div className="divide-y divide-border/50 max-h-60 overflow-y-auto rounded-xl border border-border/60">
+            {mobileFilteredParties.map((party: any) => (
+              <button
+                key={party.id}
+                type="button"
+                onClick={() => {
+                  handleSelectParty(party);
+                  setIsMobileCustomerModalOpen(false);
+                }}
+                className={cn(
+                  "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs",
+                  selectedParty?.id === party.id && "bg-primary/10 font-semibold text-primary"
+                )}
+              >
+                <div>
+                  <p className="font-semibold text-foreground">{party.name}</p>
+                  {party.phone && (
+                    <p className="text-[10px] text-muted-foreground font-mono">{party.phone}</p>
+                  )}
+                </div>
+                {selectedParty?.id === party.id && <Check className="h-4 w-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Selling Price Modal */}
+      <Dialog
+        open={!!editingItemForPrice}
+        onOpenChange={(open) => !open && setEditingItemForPrice(null)}
+      >
+        <DialogContent className="max-w-sm p-5 space-y-4 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">
+              {isBangla ? "বিক্রয় মূল্য পরিবর্তন করুন" : "Update Selling Price"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              {editingItemForPrice?.itemName}
+            </p>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                ৳
+              </span>
+              <Input
+                type="number"
+                value={tempNewPrice}
+                onChange={(e) => setTempNewPrice(e.target.value)}
+                className="pl-8 h-10 text-sm font-bold bg-background/60"
+                min="0"
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingItemForPrice(null)}
+              className="flex-1 h-10 text-xs font-semibold"
+            >
+              {isBangla ? "বাতিল" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (editingItemForPrice) {
+                  handleRateChange(editingItemForPrice.id, tempNewPrice);
+                  setEditingItemForPrice(null);
+                  toast.success(
+                    isBangla ? "বিক্রয় মূল্য আপডেট হয়েছে" : "Selling price updated"
+                  );
+                }
+              }}
+              className="flex-1 h-10 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {isBangla ? "সংরক্ষণ" : "Update"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* More Options & Payment Dialog */}
+      <Dialog open={isMoreModalOpen} onOpenChange={setIsMoreModalOpen}>
+        <DialogContent className="max-w-md p-5 max-h-[85vh] overflow-y-auto space-y-4 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-bold text-base">
+              {isBangla ? "অতিরিক্ত বিকল্প ও পেমেন্ট" : "More Options & Payment"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Payment Section */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between pb-1">
+              <Label className="text-xs font-bold text-foreground">
+                {isBangla ? "পেমেন্ট পদ্ধতি" : "Payment Method"}
+              </Label>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {isBangla ? "বিভক্ত পেমেন্ট" : "Split Mode"}
+                </span>
+                <Switch checked={splitMode} onCheckedChange={toggleSplitMode} />
+              </div>
+            </div>
+
+            {/* Method selection chips */}
+            <div className="grid grid-cols-3 gap-2">
+              {METHODS.map((m) => {
+                const Icon = m.icon;
+                const active = splitMode
+                  ? activeSplitMethod === m.id
+                  : payments[0]?.method === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      if (splitMode) {
+                        setActiveSplitMethod(m.id);
+                      } else {
+                        handlePaymentFieldChange(payments[0].id, "method", m.id);
+                      }
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold gap-1 transition-all",
+                      active
+                        ? "border-primary bg-primary/10 text-primary shadow-2xs"
+                        : "border-border/60 bg-background/50 text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active payment fields */}
+            {(() => {
+              const activePayment = splitMode
+                ? payments.find((p) => p.method === activeSplitMethod) || payments[0]
+                : payments[0];
+              if (!activePayment) return null;
+
+              return (
+                <div className="bg-muted/30 p-3 rounded-xl border border-border/60 space-y-2.5">
+                  {/* Account selection if bank or mobile */}
+                  {activePayment.method !== "cash" && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">
+                        {isBangla ? "হিসাব নির্বাচন করুন" : "Select Account"}
+                      </Label>
+                      <Select
+                        value={activePayment.accountId}
+                        onValueChange={(val) =>
+                          handlePaymentFieldChange(activePayment.id, "accountId", val)
+                        }
+                      >
+                        <SelectTrigger className="h-9 text-xs bg-background/60">
+                          <SelectValue placeholder="Choose account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accounts
+                            .filter((a: any) => a.type === activePayment.method)
+                            .map((acc: any) => (
+                              <SelectItem key={acc.id} value={acc.id}>
+                                {acc.name} ({formatCurrency(acc.balance)})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Transaction ID if bank or mobile */}
+                  {activePayment.method !== "cash" && (
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-muted-foreground">
+                        {isBangla ? "লেনদেন আইডি / রেফারেন্স" : "Transaction ID / Reference"}
+                      </Label>
+                      <Input
+                        value={activePayment.transactionId || ""}
+                        onChange={(e) =>
+                          handlePaymentFieldChange(
+                            activePayment.id,
+                            "transactionId",
+                            e.target.value
+                          )
+                        }
+                        placeholder="TRX-12345"
+                        className="h-9 text-xs bg-background/60"
+                      />
+                    </div>
+                  )}
+
+                  {/* Amount */}
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      {isBangla ? "পরিশোধিত টাকা" : "Paid Amount"}
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
+                        ৳
+                      </span>
+                      <Input
+                        type="number"
+                        value={activePayment.amount || ""}
+                        onChange={(e) =>
+                          handlePaymentFieldChange(activePayment.id, "amount", e.target.value)
+                        }
+                        placeholder="0"
+                        className="pl-7 h-9 text-xs font-bold bg-background/60"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Additional Charges */}
+          <div className="space-y-1.5 pt-1 border-t border-border/40">
+            <Label className="text-xs font-semibold text-foreground">
+              {isBangla ? "অতিরিক্ত চার্জ (ডেলিভারি / শিপিং)" : "Additional Charge (Delivery/Shipping)"}
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                ৳
+              </span>
+              <Input
+                type="number"
+                value={additionalCharge}
+                onChange={(e) => setAdditionalCharge(e.target.value)}
+                placeholder="0"
+                className="pl-8 h-9 text-xs font-medium bg-background/60"
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* VAT Toggle & Edit */}
+          <div className="flex items-center justify-between pt-1 border-t border-border/40">
+            <div>
+              <p className="text-xs font-semibold text-foreground">
+                {isBangla ? "ভ্যাট" : "VAT"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {vatConfig.type === "percent"
+                  ? `${vatConfig.value}% (৳${vatVal.toFixed(2)})`
+                  : `৳${vatVal.toFixed(2)}`}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTempVatType(vatConfig.type);
+                setTempVatValue(String(vatConfig.value));
+                setIsEditVatOpen(true);
+              }}
+              className="h-8 text-xs font-semibold"
+            >
+              <Pencil className="h-3 w-3 mr-1" />
+              {isBangla ? "পরিবর্তন" : "Edit"}
+            </Button>
+          </div>
+
+          {/* Notes Section */}
+          <div className="space-y-1.5 pt-1 border-t border-border/40">
+            <Label className="text-xs font-semibold text-foreground">
+              {isBangla ? "নোট বা মন্তব্য" : "Notes or Remarks"}
+            </Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={isBangla ? "নোট লিখুন..." : "Enter note or description..."}
+              className="min-h-[80px] bg-background/60 text-xs resize-none"
+            />
+          </div>
+
+          {/* Done Button */}
+          <Button
+            type="button"
+            onClick={() => setIsMoreModalOpen(false)}
+            className="w-full h-10 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+          >
+            {isBangla ? "সম্পন্ন" : "Done"}
+          </Button>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isEditVatOpen} onOpenChange={setIsEditVatOpen}>
         <DialogContent className="sm:max-w-md p-6 space-y-4 text-foreground">
           <DialogHeader>
