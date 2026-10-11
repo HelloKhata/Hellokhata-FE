@@ -6,7 +6,7 @@
 
 import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
-import { BackButton } from '@/components/common';
+import { BackButton, ImageWithFallback } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaginationHelper } from '@/components/shared/PaginationHelper';
@@ -45,7 +45,7 @@ import {
 import { useCurrency } from '@/hooks/useAppTranslation';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
-import type { Item } from '@/types';
+// import type { Item } from '@/types';
 import { toast } from 'sonner';
 import { ImportItemsModal } from '@/components/inventory/ImportItemsModal';
 import { ExportItemsModal } from '@/components/inventory/ExportItemsModal';
@@ -99,23 +99,23 @@ export default function InventoryPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex  sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <BackButton />
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
-                <Package className="h-7 w-7 text-primary shrink-0" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 sm:gap-2.5">
+                <Package className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" />
                 {t('inventory.title')}
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground/80 mt-1 whitespace-nowrap">
+              <p className="text-xs sm:text-sm text-muted-foreground/80 mt-0.5 sm:mt-1">
                 {isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
             <Button
               onClick={() => router.push('/inventory/new')}
-              className="shrink-0 h-10 px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-2"
+              className="shrink-0 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
             >
               <Plus className="h-4 w-4" />
               <span className="whitespace-nowrap">{t('inventory.addItem')}</span>
@@ -124,7 +124,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Premium SaaS ERP KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {statusLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <div
@@ -180,8 +180,8 @@ export default function InventoryPage() {
         </div>
 
         {/* Filters Container */}
-        <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 sm:p-5 shadow-sm space-y-3">
-          <div className="flex flex-col md:flex-row gap-3">
+        <div className="rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-3.5 sm:p-5 shadow-sm space-y-3">
+          <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70 shrink-0" />
               <Input
@@ -191,117 +191,143 @@ export default function InventoryPage() {
                 className="pl-10 h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm placeholder:text-muted-foreground/60"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-[180px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
-                <SelectValue placeholder={isBangla ? 'ক্যাটাগরি' : 'Category'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{isBangla ? 'সব ক্যাটাগরি' : 'All Categories'}</SelectItem>
-                {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {isBangla? cat.nameBn : cat.name}
+            <div className="grid grid-cols-3 md:flex md:flex-row gap-1.5 sm:gap-2.5 md:gap-3">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full md:w-[180px] h-9 md:h-10 px-2 sm:px-3 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-[11px] sm:text-xs md:text-sm truncate">
+                  <SelectValue placeholder={isBangla ? 'ক্যাটাগরি' : 'Category'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isBangla ? 'সব ক্যাটাগরি' : 'All Categories'}</SelectItem>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {isBangla? cat.nameBn : cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={stockFilter} onValueChange={setStockFilter}>
+                <SelectTrigger className="w-full md:w-[150px] h-9 md:h-10 px-2 sm:px-3 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-[11px] sm:text-xs md:text-sm truncate">
+                  <SelectValue placeholder={isBangla ? 'স্টক' : 'Stock'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{isBangla ? 'সব' : 'All'}</SelectItem>
+                  <SelectItem value="low">{isBangla ? 'স্টক কম' : 'Low Stock'}</SelectItem>
+                  <SelectItem value="out">{isBangla ? 'স্টক শেষ' : 'Out of Stock'}</SelectItem>
+                  <SelectItem value="in">{isBangla ? 'ইন স্টক' : 'In Stock'}</SelectItem>
+                </SelectContent>
+              </Select>
+             
+              {/* Sort */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-[170px] h-9 md:h-10 px-2 sm:px-3 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-[11px] sm:text-xs md:text-sm truncate">
+                  <ArrowUpDown className="h-3 w-3 mr-1 text-muted-foreground shrink-0 hidden sm:inline-block" />
+                  <SelectValue placeholder={isBangla ? 'সাজান' : 'Sort by'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">{isBangla ? 'ডিফল্ট' : 'Default'}</SelectItem>
+                  <SelectItem value="stock_asc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
+                      {isBangla ? 'স্টক কম (প্রথমে)' : 'Low Stock First'}
+                    </div>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger className="w-full md:w-[150px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
-                <SelectValue placeholder={isBangla ? 'স্টক' : 'Stock'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{isBangla ? 'সব' : 'All'}</SelectItem>
-                <SelectItem value="low">{isBangla ? 'স্টক কম' : 'Low Stock'}</SelectItem>
-                <SelectItem value="out">{isBangla ? 'স্টক শেষ' : 'Out of Stock'}</SelectItem>
-                <SelectItem value="in">{isBangla ? 'ইন স্টক' : 'In Stock'}</SelectItem>
-              </SelectContent>
-            </Select>
-           
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full md:w-[170px] h-10 rounded-xl bg-background/80 hover:bg-background border-border/60 focus:ring-2 focus:ring-primary/20 transition-all text-xs sm:text-sm">
-                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground shrink-0" />
-                <SelectValue placeholder={isBangla ? 'সাজান' : 'Sort by'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">{isBangla ? 'ডিফল্ট' : 'Default'}</SelectItem>
-                <SelectItem value="stock_asc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
-                    {isBangla ? 'স্টক কম (প্রথমে)' : 'Low Stock First'}
-                  </div>
-                </SelectItem>
-                <SelectItem value="stock_desc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Box className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                    {isBangla ? 'স্টক বেশি (প্রথমে)' : 'High Stock First'}
-                  </div>
-                </SelectItem>
-                <SelectItem value="price_asc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <TrendingUp className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {isBangla ? 'মূল্য: কম → বেশি' : 'Price: Low → High'}
-                  </div>
-                </SelectItem>
-                <SelectItem value="price_desc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <TrendingDown className="h-3.5 w-3.5 text-destructive shrink-0" />
-                    {isBangla ? 'মূল্য: বেশি → কম' : 'Price: High → Low'}
-                  </div>
-                </SelectItem>
-                <SelectItem value="cost_asc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {isBangla ? 'ক্রয়মূল্য: কম → বেশি' : 'Cost: Low → High'}
-                  </div> 
-                </SelectItem>
-                <SelectItem value="cost_desc">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Tag className="h-3.5 w-3.5 text-destructive shrink-0" />
-                    {isBangla ? 'ক্রয়মূল্য: বেশি → কম' : 'Cost: High → Low'}
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  <SelectItem value="stock_desc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <Box className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      {isBangla ? 'স্টক বেশি (প্রথমে)' : 'High Stock First'}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="price_asc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <TrendingUp className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {isBangla ? 'মূল্য: কম → বেশি' : 'Price: Low → High'}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="price_desc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <TrendingDown className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      {isBangla ? 'মূল্য: বেশি → কম' : 'Price: High → Low'}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="cost_asc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
+                      {isBangla ? 'ক্রয়মূল্য: কম → বেশি' : 'Cost: Low → High'}
+                    </div> 
+                  </SelectItem>
+                  <SelectItem value="cost_desc">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      <Tag className="h-3.5 w-3.5 text-destructive shrink-0" />
+                      {isBangla ? 'ক্রয়মূল্য: বেশি → কম' : 'Cost: High → Low'}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
         {/* Items List Container */}
-        <div className="rounded-2xl border border-border/60 bg-[#12161f] shadow-sm overflow-hidden">
-          <div className="px-6 pt-5 pb-3">
-            <h3 className="text-base font-bold text-foreground">
+        <div className="bg-transparent md:bg-[#12161f] border-0 md:border md:border-border/60 md:rounded-2xl md:shadow-sm md:overflow-hidden space-y-3 md:space-y-0">
+          <div className="px-1 sm:px-2 md:px-6 pt-1 md:pt-5 pb-1 md:pb-3 flex items-center justify-between">
+            <h3 className="text-sm sm:text-base font-bold text-foreground">
               {isBangla ? 'পণ্য তালিকা' : 'Item List'}
             </h3>
+            <span className="text-xs text-muted-foreground font-medium">
+              {totalItems} {isBangla ? 'টি পণ্য' : 'items'}
+            </span>
           </div>
 
           {itemsLoading ? (
-            <div className="p-4 space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 animate-pulse gap-4">
-                  <div className="flex items-center gap-4 flex-1">
-                    <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
-                    <div className="space-y-2 flex-1 max-w-md">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-4 w-36 rounded" />
-                        <Skeleton className="h-4 w-16 rounded-full" />
+            <div className="p-0 md:p-4 space-y-2.5 md:space-y-4">
+              {/* Desktop Skeletons */}
+              <div className="hidden md:block space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/20 animate-pulse gap-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
+                      <div className="space-y-2 flex-1 max-w-md">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-36 rounded" />
+                          <Skeleton className="h-4 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-3 w-48 rounded" />
+                        <Skeleton className="h-2 w-32 rounded-full" />
                       </div>
-                      <Skeleton className="h-3 w-48 rounded" />
-                      <Skeleton className="h-2 w-32 rounded-full" />
+                    </div>
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="space-y-1 text-right">
+                        <Skeleton className="h-4 w-16 rounded ml-auto" />
+                        <Skeleton className="h-3 w-24 rounded ml-auto" />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                        <Skeleton className="h-8 w-8 rounded-md" />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6 shrink-0">
-                    <div className="space-y-1 text-right">
-                      <Skeleton className="h-4 w-16 rounded ml-auto" />
-                      <Skeleton className="h-3 w-24 rounded ml-auto" />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-8 w-8 rounded-md" />
-                      <Skeleton className="h-8 w-8 rounded-md" />
+                ))}
+              </div>
+              {/* Mobile Skeletons - Slim Cards */}
+              <div className="md:hidden space-y-2.5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="bg-[#12161f] border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm animate-pulse space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <Skeleton className="h-11 w-11 rounded-lg shrink-0" />
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <Skeleton className="h-3.5 w-3/5 rounded" />
+                        <Skeleton className="h-2.5 w-2/5 rounded" />
+                      </div>
+                      <div className="space-y-1 text-right shrink-0">
+                        <Skeleton className="h-3.5 w-14 rounded ml-auto" />
+                        <Skeleton className="h-2.5 w-10 rounded ml-auto" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : products.length === 0 ? (
             <EmptyState
@@ -318,8 +344,8 @@ export default function InventoryPage() {
             />
           ) : (
             <div>
-              {/* Column Header Bar - Left Aligned Except Actions */}
-              <div className="flex items-center justify-between w-full px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
+              {/* Column Header Bar - Left Aligned Except Actions (Desktop only) */}
+              <div className="hidden md:flex items-center justify-between w-full px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
                 <div className="w-8 text-left shrink-0">SL.</div>
                 <div className="w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
                 <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
@@ -331,7 +357,7 @@ export default function InventoryPage() {
                 <div className="w-24 text-left shrink-0">{isBangla ? 'স্ট্যাটাস' : 'Status'}</div>
                 <div className="text-right w-28 shrink-0">{isBangla ? 'অ্যাকশন' : 'Actions'}</div>
               </div>
-              <div className="divide-y divide-border/30">
+              <div className="space-y-2.5 md:space-y-0 md:divide-y md:divide-border/30">
                 {products?.map((item, index) => (
                   <ItemRow
                     key={item.id}
@@ -347,7 +373,7 @@ export default function InventoryPage() {
               </div>
 
               {/* Pagination Bar */}
-              <div className="px-6 pb-4 bg-muted/5">
+              <div className="mt-2.5 md:mt-0 px-4 md:px-6 py-3 md:py-3.5 md:pb-4 bg-[#12161f] md:bg-muted/5 border border-border/60 md:border-0 md:border-t md:border-border/40 rounded-xl md:rounded-none overflow-x-auto">
                 <PaginationHelper
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -535,8 +561,9 @@ const ItemRow = memo(function ItemRow({
         </DialogContent>
       </Dialog>
 
+      {/* Desktop Table Row (md and up) */}
       <div
-        className="flex items-center justify-between w-full px-6 py-4 hover:bg-muted/30 transition-colors cursor-default group gap-4 border-b border-border/30"
+        className="hidden md:flex items-center justify-between w-full px-6 py-4 hover:bg-muted/30 transition-colors cursor-default group gap-4 border-b border-border/30"
         style={{ animationDelay: `${index * 30}ms` }}
         onClick={handleRowClick}
       >
@@ -687,6 +714,146 @@ const ItemRow = memo(function ItemRow({
               <p>{isBangla ? 'বিস্তারিত দেখুন' : 'View'}</p>
             </TooltipContent>
           </Tooltip>
+        </div>
+      </div>
+
+      {/* Mobile Card Layout (Small Devices: md:hidden) - Slim & Smart */}
+      <div
+        className="md:hidden bg-[#12161f] border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm hover:border-border/90 transition-all cursor-pointer space-y-2"
+        style={{ animationDelay: `${index * 30}ms` }}
+        onClick={handleRowClick}
+      >
+        {/* Main Row: Thumbnail + Product Identity & Tags + Price & Stock */}
+        <div className="flex items-center gap-2.5">
+          {/* Thumbnail */}
+          <div className="h-11 w-11 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-border/40 p-0.5 shrink-0 shadow-xs">
+            {item.imageUrl ? (
+              <ImageWithFallback
+                src={item.imageUrl}
+                alt={item.name}
+                width={44}
+                height={44}
+                fallbackSrc="/images/image.png"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <Package className="h-5 w-5 text-slate-400" />
+            )}
+          </div>
+
+          {/* Product Name, SKU & Badges */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-foreground text-xs leading-tight truncate" title={item.name}>
+              {item.name}
+            </h4>
+
+            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+              {item.barcode && (
+                <span className="text-[10px] font-mono text-muted-foreground/90 truncate max-w-[90px]">
+                  {item.barcode}
+                </span>
+              )}
+
+              <span className="text-[10px] text-muted-foreground/40">•</span>
+
+              {/* Stock Status Badge */}
+              <span
+                className={cn(
+                  "text-[10px] font-medium leading-none",
+                  stockStatus.variant === 'destructive'
+                    ? "text-rose-500"
+                    : stockStatus.variant === 'warning'
+                    ? "text-amber-400"
+                    : "text-emerald-400"
+                )}
+              >
+                {stockStatus.label}
+              </span>
+
+              {hasWholesale && (
+                <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
+                  {isBangla ? 'পাইকারি' : 'Wholesale'}
+                </span>
+              )}
+              {hasVip && (
+                <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                  VIP
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Selling Price & Stock Quantity */}
+          <div className="text-right shrink-0">
+            <p className="font-bold text-emerald-400 text-xs sm:text-sm whitespace-nowrap">
+              {formatCurrency(item.sellingPrice ?? 0)}
+            </p>
+            <p className="text-[11px] font-semibold text-foreground whitespace-nowrap mt-0.5">
+              {item.currentStock ?? 0} <span className="text-[10px] font-normal text-muted-foreground">{unit}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Secondary Slim Row: Cost & Batches / Status + Quick Actions */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/20 gap-2">
+          {/* Left: Cost price & Batch chip / Status */}
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+              {isBangla ? 'ক্রয়:' : 'Cost:'}{" "}
+              <strong className="text-slate-300 font-medium">{formatCurrency(item.costPrice ?? 0)}</strong>
+            </span>
+
+            {item.batchCount !== undefined && item.batchCount > 0 && (
+              <button
+                type="button"
+                className="py-0.5 px-1.5 text-foreground whitespace-nowrap text-[10px] font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded transition-colors cursor-pointer flex items-center gap-1"
+                onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
+              >
+                <Box className="h-2.5 w-2.5 text-muted-foreground" />
+                <span className="text-slate-200">
+                  {item.batchCount} {item.batchCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')}
+                </span>
+              </button>
+            )}
+
+            {itemStatus !== 'ACTIVE' && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
+              </span>
+            )}
+          </div>
+
+          {/* Right: Slim Action Buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center gap-1 cursor-pointer"
+              onClick={(e) => handleAction(e, onView)}
+            >
+              <Eye className="h-3 w-3" />
+              <span>{isBangla ? 'দেখুন' : 'View'}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center gap-1 cursor-pointer"
+              onClick={(e) => handleAction(e, () => router.push(`/inventory/edit/${item.id}`))}
+            >
+              <Edit className="h-3 w-3" />
+              <span>{isBangla ? 'এডিট' : 'Edit'}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer"
+              onClick={(e) => handleAction(e, () => setDeleteOpen(true))}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </div>
     </TooltipProvider>
