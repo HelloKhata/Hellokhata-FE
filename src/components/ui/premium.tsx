@@ -298,6 +298,7 @@ export interface KPICardProps {
   iconColor?: 'emerald' | 'indigo' | 'warning' | 'destructive';
   isBangla?: boolean;
   className?: string;
+  compactOnMobile?: boolean;
   onClick?: () => void;
 }
 
@@ -314,6 +315,7 @@ export function KPICard({
   iconColor = 'emerald',
   isBangla = false,
   className,
+  compactOnMobile = false,
   onClick,
 }: KPICardProps) {
   const [displayValue, setDisplayValue] = useState(0);
@@ -363,18 +365,19 @@ export function KPICard({
     <div
       className={cn(
         'relative overflow-hidden cursor-default group rounded-2xl border border-border/60 bg-gradient-to-b from-card/90 via-card/75 to-card/60 backdrop-blur-md p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-border/90 hover:-translate-y-1 transition-all duration-200',
+        compactOnMobile && 'p-3',
         className
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5 min-w-0">
+      <div className={cn('flex items-start justify-between gap-3', compactOnMobile && 'gap-2')}>
+        <div className={cn('space-y-1.5 min-w-0', compactOnMobile && 'space-y-1')}>
           <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider truncate">
             {isBangla && titleBn ? titleBn : title}
           </p>
-          <div className="flex items-baseline gap-1">
-            {prefix && <span className="text-lg font-semibold text-muted-foreground">{prefix}</span>}
-            <span className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight animate-count-up">
+          <div className="flex items-baseline gap-1 min-w-0">
+            {prefix && <span className={cn('text-lg font-semibold text-muted-foreground', compactOnMobile && 'text-sm sm:text-lg')}>{prefix}</span>}
+            <span className={cn('text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight animate-count-up', compactOnMobile && 'text-xl sm:text-3xl truncate')}>
               {typeof value === 'number' ? formatValue(displayValue) : value}
             </span>
             {suffix && <span className="text-base font-medium text-muted-foreground">{suffix}</span>}
@@ -397,6 +400,7 @@ export function KPICard({
         {icon && (
           <div className={cn(
             'h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200',
+            compactOnMobile && 'h-8 w-8',
             iconColorClasses[iconColor]
           )}>
             {icon}

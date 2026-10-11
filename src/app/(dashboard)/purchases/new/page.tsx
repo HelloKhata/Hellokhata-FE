@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { BackButton, ImageWithFallback } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -694,6 +694,258 @@ function NewPurchaseContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedSupplierId, selectedItems, payments, grandTotal, totalPaid]);
 
+  const renderItemSearchField = (wrapperClassName: string) => (
+    <div className={wrapperClassName}>
+      <div className="flex items-center justify-between h-5">
+        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
+          <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
+        </Label>
+        <button
+          type="button"
+          onClick={() => setIsAddItemModalOpen(true)}
+          className="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
+        >
+          + Add New
+        </button>
+      </div>
+      <div className="relative">
+        <Input
+          value={topProductSearchQuery}
+          onChange={(e) => {
+            setTopProductSearchQuery(e.target.value);
+            setShowTopProductSuggestions(true);
+          }}
+          onBlur={() => {
+            setTimeout(() => setShowTopProductSuggestions(false), 200);
+          }}
+          placeholder={
+            isBangla
+              ? "পণ্য সার্চ / বারকোড স্ক্যান..."
+              : "Search item / Scan Barcode..."
+          }
+          className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
+        />
+        <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+
+        {showTopProductSuggestions && (
+          <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full min-w-[280px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+            {searchItems.length === 0 ? (
+              <div className="p-3 text-center text-xs text-muted-foreground">
+                {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
+              </div>
+            ) : (
+              searchItems.map((product: any) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelectProductFromTopSearch(product);
+                  }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate text-xs">
+                        {product.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                        <span>SKU: {product.sku || "—"}</span>
+                        <span>•</span>
+                        <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-primary text-xs">
+                      {formatCurrency(product.costPrice || product.purchasePrice || 0)}
+                    </p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderDatePicker = (buttonClassName: string) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className={buttonClassName}>
+          <span className="truncate">{format(invoiceDate, "dd MMM yyyy")}</span>
+          <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="end">
+        <Calendar
+          mode="single"
+          selected={invoiceDate}
+          onSelect={(date) => date && setInvoiceDate(date)}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+
+  const renderBatchButton = (item: BillingItemRow) => (
+    <button
+      type="button"
+      data-expiry-container
+      onClick={() => {
+        setOpenExpiryRowId((prev) => (prev === item.itemId ? null : item.itemId));
+      }}
+      className={cn(
+        "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
+        openExpiryRowId === item.itemId
+          ? "bg-primary text-primary-foreground border-primary"
+          : !item.trackBatch
+            ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+      )}
+      title={
+        !item.trackBatch
+          ? isBangla ? "ব্যাচ ও মেয়াদ সেটিংস নির্বাচন করুন" : "Set batch & expiry settings"
+          : isBangla ? "ব্যাচ ও মেয়াদ সেটিংস দেখুন" : "View batch & expiry settings"
+      }
+    >
+      {!item.trackBatch ? (
+        <>
+          <Settings className="h-3 w-3" />
+          <span>{isBangla ? "সেট" : "Set"}</span>
+        </>
+      ) : (
+        <>
+          <Eye className="h-3 w-3" />
+          <span>{isBangla ? "ভিউ" : "View"}</span>
+        </>
+      )}
+    </button>
+  );
+
+  const renderBatchExpiryPanel = (item: BillingItemRow, className?: string) => (
+    <div className={cn("flex flex-wrap items-center gap-4", className)}>
+      {/* 1. Track Batch Checkbox inside Settings */}
+      <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
+        <input
+          type="checkbox"
+          checked={!!item.trackBatch}
+          onChange={(e) => {
+            const checked = e.target.checked;
+            handleRowChange(item.itemId, "trackBatch", checked);
+            if (!checked) {
+              handleRowChange(item.itemId, "trackExpiry", false);
+              handleRowChange(item.itemId, "expiryDate", undefined);
+              if (openExpiryRowId === item.itemId) {
+                setOpenExpiryRowId(null);
+              }
+            }
+          }}
+          className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
+        />
+        <span className="font-medium whitespace-nowrap">
+          {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
+        </span>
+      </label>
+
+      {/* 2. Track Expiry Checkbox inside Settings */}
+      <label
+        className={cn(
+          "flex items-center gap-1.5 select-none text-[11px] px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0",
+          !item.trackBatch
+            ? "opacity-50 cursor-not-allowed bg-muted/20 text-muted-foreground"
+            : "cursor-pointer text-foreground bg-background hover:bg-muted/60"
+        )}
+      >
+        <input
+          type="checkbox"
+          checked={!!item.trackExpiry}
+          disabled={!item.trackBatch}
+          onChange={(e) => {
+            if (!item.trackBatch) return;
+            const checked = e.target.checked;
+            handleRowChange(item.itemId, "trackExpiry", checked);
+            if (!checked) {
+              handleRowChange(item.itemId, "manufactureDate", undefined);
+              handleRowChange(item.itemId, "expiryDate", undefined);
+            }
+          }}
+          className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
+        />
+        <span className="font-medium whitespace-nowrap">
+          {isBangla ? "মেয়াদ ট্র্যাকিং" : "Track Expiry"}
+        </span>
+      </label>
+
+      {/* 4. Expiry Date Calendar */}
+      {item.trackExpiry && (
+        <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
+          <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
+            {isBangla ? "মেয়াদের তারিখ *" : "Expiry Date *"}
+          </span>
+          <Input
+            type="date"
+            value={
+              item.expiryDate
+                ? new Date(item.expiryDate).toISOString().split("T")[0]
+                : ""
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              handleRowChange(
+                item.itemId,
+                "expiryDate",
+                val ? new Date(val) : undefined
+              );
+            }}
+            className={cn(
+              "h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs",
+              !item.expiryDate && "border-amber-500/80 focus-visible:ring-amber-500"
+            )}
+          />
+        </div>
+      )}
+      {/* 3. Manufacture Date Calendar */}
+      {item.trackExpiry && (
+        <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
+          <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+            {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
+          </span>
+          <Input
+            type="date"
+            value={
+              item.manufactureDate
+                ? new Date(item.manufactureDate).toISOString().split("T")[0]
+                : ""
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              handleRowChange(
+                item.itemId,
+                "manufactureDate",
+                val ? new Date(val) : undefined
+              );
+            }}
+            className="h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs"
+          />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
@@ -726,124 +978,23 @@ function NewPurchaseContent() {
           <span className="text-sm font-semibold text-foreground">
             {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}
           </span>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden lg:flex items-center gap-2 shrink-0">
             <Label className="text-xs font-semibold text-foreground shrink-0 whitespace-nowrap">
               {isBangla ? "তারিখ:" : "Date:"}
             </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-8 w-[130px] justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5 shrink-0"
-                >
-                  <span className="truncate">{format(invoiceDate, "dd MMM yyyy")}</span>
-                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={invoiceDate}
-                  onSelect={(date) => date && setInvoiceDate(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            {renderDatePicker("h-8 w-[130px] justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5 shrink-0")}
           </div>
         </div>
 
-        {/* Single Row on Desktop, 2 Cols on Tablet, Stacked on Mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-10 gap-3 items-start">
-          {/* 1. Purchase Item (40% width on desktop) */}
-          <div className="space-y-1.5 col-span-1 sm:col-span-2 lg:col-span-4 relative">
-            <div className="flex items-center justify-between h-5">
-              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5 truncate">
-                <span className="truncate">{isBangla ? "পণ্য খুঁজুন *" : "Purchase Item *"}</span>
-              </Label>
-              <button
-                type="button"
-                onClick={() => setIsAddItemModalOpen(true)}
-                className="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1 shrink-0"
-              >
-                + Add New
-              </button>
-            </div>
-            <div className="relative">
-              <Input
-                value={topProductSearchQuery}
-                onChange={(e) => {
-                  setTopProductSearchQuery(e.target.value);
-                  setShowTopProductSuggestions(true);
-                }}
-                // onFocus={() => setShowTopProductSuggestions(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowTopProductSuggestions(false), 200);
-                }}
-                placeholder={
-                  isBangla
-                    ? "পণ্য সার্চ / বারকোড স্ক্যান..."
-                    : "Search item / Scan Barcode..."
-                }
-                className="pr-8 h-10 bg-background/50 border-input text-xs font-medium focus-visible:ring-1"
-              />
-              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-
-              {showTopProductSuggestions && (
-                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full min-w-[280px] bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                  {searchItems.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-muted-foreground">
-                      {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No items found"}
-                    </div>
-                  ) : (
-                    searchItems.map((product: any) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between gap-3 text-foreground cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSelectProductFromTopSearch(product);
-                        }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground truncate text-xs">
-                              {product.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
-                              <span>SKU: {product.sku || "—"}</span>
-                              <span>•</span>
-                              <span>Stock: {product.currentStock || 0} {product.unit?.name || product.unit || "Pcs"}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <p className="font-bold text-primary text-xs">
-                            {formatCurrency(product.costPrice || product.purchasePrice || 0)}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+        {/* Single Row on Desktop, 2 Cols on Tablet, 2 Cols on Mobile (Type & Branch share a row) */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-10 gap-3 items-start">
+          {/* 1. Purchase Item (40% width on desktop) - rendered inside Items card on mobile */}
+          <div className="hidden lg:block lg:col-span-4">
+            {renderItemSearchField("space-y-1.5 relative")}
           </div>
 
           {/* 2. Party Name / Phone (30% width on desktop) */}
-          <div className="relative space-y-1.5 col-span-1 sm:col-span-2 lg:col-span-3">
+          <div className="relative space-y-1.5 col-span-2 sm:col-span-2 lg:col-span-3 order-1 lg:order-none">
             <div className="flex items-center justify-between h-5">
               <Label className="text-xs font-semibold text-foreground truncate">
                 {isBangla ? "সরবরাহকারী *" : "Supplier Name *"}
@@ -933,8 +1084,18 @@ function NewPurchaseContent() {
             )}
           </div>
 
+          {/* Date (small devices only) */}
+          <div className="space-y-1.5 col-span-2 sm:col-span-2 lg:hidden order-2 lg:order-none">
+            <div className="flex items-center h-5">
+              <Label className="text-xs font-semibold text-foreground truncate">
+                {isBangla ? "তারিখ" : "Date"}
+              </Label>
+            </div>
+            {renderDatePicker("h-10 w-full justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-xs px-2.5")}
+          </div>
+
           {/* 3. Purchase Type */}
-          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-1">
+          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-1 order-3 lg:order-none">
             <div className="flex items-center h-5">
               <Label className="text-xs font-semibold text-foreground truncate">
                 {isBangla ? "প্রকার" : "Type"}
@@ -964,7 +1125,7 @@ function NewPurchaseContent() {
           </div>
 
           {/* 4. Branch / Warehouse (20% width on desktop) */}
-          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-2">
+          <div className="space-y-1.5 col-span-1 sm:col-span-1 lg:col-span-2 order-4 lg:order-none">
             {purchaseType === "warehouse" ? (
               <>
                 <div className="flex items-center h-5">
@@ -1056,7 +1217,12 @@ function NewPurchaseContent() {
               </span>
             </div>
 
-            <div className="overflow-x-auto border border-border/60 rounded-lg">
+            {/* Purchase Item search (small devices only) */}
+            <div className="lg:hidden">
+              {renderItemSearchField("space-y-1.5 relative")}
+            </div>
+
+            <div className="hidden lg:block overflow-x-auto border border-border/60 rounded-lg">
               <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
@@ -1143,43 +1309,7 @@ function NewPurchaseContent() {
                           {/* Track Batch Set / View Column */}
                           <td className="px-3 py-3 align-middle text-center">
                             <div className="flex items-center justify-center">
-                              {!item.trackBatch ? (
-                                <button
-                                  type="button"
-                                  data-expiry-container
-                                  onClick={() => {
-                                    setOpenExpiryRowId((prev) => (prev === item.itemId ? null : item.itemId));
-                                  }}
-                                  className={cn(
-                                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
-                                    openExpiryRowId === item.itemId
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                                  )}
-                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস নির্বাচন করুন" : "Set batch & expiry settings"}
-                                >
-                                  <Settings className="h-3 w-3" />
-                                  <span>{isBangla ? "সেট" : "Set"}</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  data-expiry-container
-                                  onClick={() => {
-                                    setOpenExpiryRowId((prev) => (prev === item.itemId ? null : item.itemId));
-                                  }}
-                                  className={cn(
-                                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-md border transition-all cursor-pointer shrink-0 shadow-2xs",
-                                    openExpiryRowId === item.itemId
-                                      ? "bg-primary text-primary-foreground border-primary"
-                                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
-                                  )}
-                                  title={isBangla ? "ব্যাচ ও মেয়াদ সেটিংস দেখুন" : "View batch & expiry settings"}
-                                >
-                                  <Eye className="h-3 w-3" />
-                                  <span>{isBangla ? "ভিউ" : "View"}</span>
-                                </button>
-                              )}
+                              {renderBatchButton(item)}
                             </div>
                           </td>
 
@@ -1252,117 +1382,7 @@ function NewPurchaseContent() {
                             className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
                           >
                             <td colSpan={9} className="px-4 py-2 text-xs">
-                              <div className="flex flex-wrap items-center gap-4 pl-7">
-                                
-
-                                {/* 1. Track Batch Checkbox inside Settings */}
-                                <label className="flex items-center gap-1.5 cursor-pointer select-none text-[11px] text-foreground bg-background hover:bg-muted/60 px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!item.trackBatch}
-                                    onChange={(e) => {
-                                      const checked = e.target.checked;
-                                      handleRowChange(item.itemId, "trackBatch", checked);
-                                      if (!checked) {
-                                        handleRowChange(item.itemId, "trackExpiry", false);
-                                        handleRowChange(item.itemId, "expiryDate", undefined);
-                                        if (openExpiryRowId === item.itemId) {
-                                          setOpenExpiryRowId(null);
-                                        }
-                                      }
-                                    }}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer"
-                                  />
-                                  <span className="font-medium whitespace-nowrap">
-                                    {isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}
-                                  </span>
-                                </label>
-
-                                {/* 2. Track Expiry Checkbox inside Settings */}
-                                <label
-                                  className={cn(
-                                    "flex items-center gap-1.5 select-none text-[11px] px-2.5 py-1 rounded-md border border-border/60 shadow-xs transition-colors shrink-0",
-                                    !item.trackBatch
-                                      ? "opacity-50 cursor-not-allowed bg-muted/20 text-muted-foreground"
-                                      : "cursor-pointer text-foreground bg-background hover:bg-muted/60"
-                                  )}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={!!item.trackExpiry}
-                                    disabled={!item.trackBatch}
-                                    onChange={(e) => {
-                                      if (!item.trackBatch) return;
-                                      const checked = e.target.checked;
-                                      handleRowChange(item.itemId, "trackExpiry", checked);
-                                      if (!checked) {
-                                        handleRowChange(item.itemId, "manufactureDate", undefined);
-                                        handleRowChange(item.itemId, "expiryDate", undefined);
-                                      }
-                                    }}
-                                    className="h-3.5 w-3.5 rounded border-input accent-primary cursor-pointer disabled:cursor-not-allowed"
-                                  />
-                                  <span className="font-medium whitespace-nowrap">
-                                    {isBangla ? "মেয়াদ ট্র্যাকিং" : "Track Expiry"}
-                                  </span>
-                                </label>
-
-
-                                {/* 4. Expiry Date Calendar */}
-                                {item.trackExpiry && (
-                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
-                                    <span className="text-[11px] font-semibold text-foreground whitespace-nowrap">
-                                      {isBangla ? "মেয়াদের তারিখ *" : "Expiry Date *"}
-                                    </span>
-                                    <Input
-                                      type="date"
-                                      value={
-                                        item.expiryDate
-                                          ? new Date(item.expiryDate).toISOString().split("T")[0]
-                                          : ""
-                                      }
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        handleRowChange(
-                                          item.itemId,
-                                          "expiryDate",
-                                          val ? new Date(val) : undefined
-                                        );
-                                      }}
-                                      className={cn(
-                                        "h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs",
-                                        !item.expiryDate && "border-amber-500/80 focus-visible:ring-amber-500"
-                                      )}
-                                    />
-                                  </div>
-                                )}
-                                {/* 3. Manufacture Date Calendar */}
-                                {item.trackExpiry && (
-                                  <div className="flex items-center gap-2 animate-in fade-in duration-150 shrink-0">
-                                    <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
-                                      {isBangla ? "উৎপাদনের তারিখ:" : "Mfg Date:"}
-                                    </span>
-                                    <Input
-                                      type="date"
-                                      value={
-                                        item.manufactureDate
-                                          ? new Date(item.manufactureDate).toISOString().split("T")[0]
-                                          : ""
-                                      }
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        handleRowChange(
-                                          item.itemId,
-                                          "manufactureDate",
-                                          val ? new Date(val) : undefined
-                                        );
-                                      }}
-                                      className="h-7 w-[135px] text-[11px] bg-background border-input px-2 py-0 cursor-pointer shadow-xs"
-                                    />
-                                  </div>
-                                )}
-
-                              </div>
+                              {renderBatchExpiryPanel(item, "pl-7")}
                             </td>
                           </tr>
                         )}
@@ -1371,6 +1391,148 @@ function NewPurchaseContent() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Items Cards */}
+            <div className="lg:hidden space-y-3">
+              {selectedItems.filter((i) => i.itemId).length === 0 ? (
+                <div className="border border-border/60 rounded-lg px-4 py-12 text-center text-muted-foreground text-xs">
+                  <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
+                    <Package className="h-5 w-5" />
+                  </div>
+                  <p className="font-semibold text-foreground text-xs mb-1">
+                    {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mx-auto">
+                    {isBangla
+                      ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই ক্রয়ে যুক্ত করুন।"
+                      : "Search or scan products from the search box above to add them to this purchase."}
+                  </p>
+                </div>
+              ) : (
+                selectedItems
+                  .filter((i) => i.itemId)
+                  .map((item, idx) => (
+                    <div
+                      key={item.itemId}
+                      className="border border-border/60 rounded-lg p-3 space-y-3 bg-background/30"
+                    >
+                      {/* Header: image, name, sku, stock, delete */}
+                      <div className="flex items-start gap-3">
+                        <span className="text-xs font-semibold text-amber-500/80 mt-0.5 shrink-0">
+                          {idx + 1}
+                        </span>
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.itemName}
+                            className="h-10 w-10 rounded object-cover border border-border/80 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                            <Image
+                              src="/images/image.png"
+                              width={40}
+                              height={40}
+                              alt="Image"
+                              className="h-6 w-6 text-muted-foreground/60"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground text-xs leading-tight break-words">
+                            {item.itemName || "—"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
+                            {item.sku && (
+                              <span className="font-mono">SKU: {item.sku}</span>
+                            )}
+                            <span>
+                              {isBangla ? "স্টক" : "Stock"}: {item.currentStock} {item.unit}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeItemRow(item.itemId)}
+                          className="text-muted-foreground hover:text-rose-500 transition-colors p-1 cursor-pointer shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* Editable fields */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            {isBangla ? "পরিমাণ *" : "Qty *"}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={item.quantity || ""}
+                            onChange={(e) => handleRowChange(item.itemId, "quantity", e.target.value)}
+                            className="h-9 text-center bg-background/50 border-input text-xs font-semibold"
+                            min="1"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            {isBangla ? "ক্রয় মূল্য / দর *" : "Rate *"}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={item.unitCost || ""}
+                            onChange={(e) => handleRowChange(item.itemId, "unitCost", e.target.value)}
+                            className="h-9 text-right bg-background/50 border-input text-xs font-semibold"
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            {isBangla ? "ট্যাক্স (%)" : "Tax (%)"}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={item.taxPercent || ""}
+                            onChange={(e) => handleRowChange(item.itemId, "taxPercent", e.target.value)}
+                            placeholder="0%"
+                            className="h-9 text-right bg-background/50 border-input text-xs"
+                            min="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-semibold text-muted-foreground">
+                            {isBangla ? "মোট" : "Amount"}
+                          </Label>
+                          <Input
+                            type="number"
+                            value={item.total || ""}
+                            onChange={(e) => handleRowChange(item.itemId, "total", e.target.value)}
+                            className="h-9 text-right bg-background/50 border-input text-xs font-bold text-primary font-mono"
+                            min="0"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Batch & expiry */}
+                      <div className="flex items-center justify-between border-t border-border/60 pt-2.5">
+                        <span className="text-[11px] font-semibold text-foreground">
+                          {isBangla ? "ব্যাচ / মেয়াদ" : "Batch / Expiry"}
+                        </span>
+                        {renderBatchButton(item)}
+                      </div>
+
+                      {openExpiryRowId === item.itemId && (
+                        <div
+                          data-expiry-container
+                          className="bg-muted/15 border border-border/50 rounded-lg p-2.5 animate-in fade-in duration-150"
+                        >
+                          {renderBatchExpiryPanel(item)}
+                        </div>
+                      )}
+                    </div>
+                  ))
+              )}
             </div>
 
             {errors.items && <p className="text-[10px] text-destructive font-medium">{errors.items}</p>}

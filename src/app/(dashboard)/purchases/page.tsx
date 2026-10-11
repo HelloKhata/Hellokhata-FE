@@ -107,7 +107,7 @@ export default function PurchasesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <KPICard
           title="Total Purchases"
           titleBn="মোট ক্রয়"
@@ -117,6 +117,7 @@ export default function PurchasesPage() {
           icon={<ShoppingCart className="h-5 w-5" />}
           iconColor="warning"
           isBangla={isBangla}
+          compactOnMobile
         />
         <KPICard
           title="This Month"
@@ -127,24 +128,27 @@ export default function PurchasesPage() {
           icon={<BarChart3 className="h-5 w-5" />}
           iconColor="indigo"
           isBangla={isBangla}
+          compactOnMobile
         />
         <KPICard
           title="Purchase Invoices"
-          titleBn="ক্রয় ইনভয়েস সংখ্যা"
+          titleBn="ক্রয় ইনভয়েস সংখ্যা"
           value={purchaseCount}
           trend={{ value: 3, isPositive: true }}
           icon={<Receipt className="h-5 w-5" />}
           iconColor="warning"
           isBangla={isBangla}
+          compactOnMobile
         />
         <KPICard
           title="Total Due Amount"
-          titleBn="মোট বকেয়া পরিমাণ"
+          titleBn="মোট বকেয়া পরিমাণ"
           value={totalDue}
           prefix="৳"
           icon={<AlertCircle className="h-5 w-5" />}
           iconColor="emerald"
           isBangla={isBangla}
+          compactOnMobile
         />
       </div>
 
@@ -164,35 +168,37 @@ export default function PurchasesPage() {
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[160px]">
-              <SelectValue placeholder={isBangla ? "স্ট্যাটাস" : "Status"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{isBangla ? "সব" : "All"}</SelectItem>
-              <SelectItem value="received">
-                {isBangla ? "গৃহীত" : "Received"}
-              </SelectItem>
-              <SelectItem value="completed">
-                {isBangla ? "সম্পন্ন" : "Completed"}
-              </SelectItem>
-              <SelectItem value="pending">
-                {isBangla ? "অপেক্ষমান" : "Pending"}
-              </SelectItem>
-              <SelectItem value="partial">
-                {isBangla ? "আংশিক" : "Partial"}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <button
-            type="button"
-            className="flex items-center gap-2 border border-input rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted shrink-0 cursor-pointer"
-          >
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="whitespace-nowrap">
-              {isBangla ? "তারিখ" : "Date"}
-            </span>
-          </button>
+          <div className="grid grid-cols-2 gap-3 md:contents">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[160px]">
+                <SelectValue placeholder={isBangla ? "স্ট্যাটাস" : "Status"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isBangla ? "সব" : "All"}</SelectItem>
+                <SelectItem value="received">
+                  {isBangla ? "গৃহীত" : "Received"}
+                </SelectItem>
+                <SelectItem value="completed">
+                  {isBangla ? "সম্পন্ন" : "Completed"}
+                </SelectItem>
+                <SelectItem value="pending">
+                  {isBangla ? "অপেক্ষমান" : "Pending"}
+                </SelectItem>
+                <SelectItem value="partial">
+                  {isBangla ? "আংশিক" : "Partial"}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              className="flex items-center justify-center gap-2 border border-input rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted shrink-0 cursor-pointer w-full md:w-auto"
+            >
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="whitespace-nowrap">
+                {isBangla ? "তারিখ" : "Date"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
