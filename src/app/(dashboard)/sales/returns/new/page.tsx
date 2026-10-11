@@ -36,17 +36,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Calendar as CalendarIcon,
-  Check,
   X,
-  ArrowLeft,
-  Users,
   Loader2,
   RotateCcw,
   FileText,
-  Banknote,
-  Smartphone,
-  CreditCard,
-  Building2,
   CheckCircle2,
   Receipt,
   Search,
@@ -412,7 +405,6 @@ function SalesReturnContent() {
               size="sm"
               onClick={() => {
                 setSelectedSaleId("");
-                setSelectedInvoiceNo("");
                 setInvoiceSearchQuery("");
                 setSelectedItems([]);
               }}
@@ -468,7 +460,6 @@ function SalesReturnContent() {
                         onMouseDown={(e) => {
                           e.preventDefault();
                           setSelectedSaleId(sale.id);
-                          setSelectedInvoiceNo(sale.invoiceNo);
                           setInvoiceSearchQuery("");
                           setShowInvoiceSuggestions(false);
                         }}
@@ -581,8 +572,8 @@ function SalesReturnContent() {
           ) : (
             <React.Fragment>
 
-          {/* Row 2: Return Items Table */}
-          <div className="border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
+          {/* Row 2: Return Items Table (Desktop / Tablet) */}
+          <div className="hidden md:block border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
             {/* Sales Billing Info Text in sm text at the top of the table */}
             {singleSaleData?.data && (
               <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium">
@@ -820,8 +811,263 @@ function SalesReturnContent() {
                 </span>
               </div>
             </div>
+          </div>
 
-            
+          {/* Row 2: Return Items Cards (Small Mobile Devices) */}
+          <div className="md:hidden space-y-3">
+            {/* Sales Billing Info Text in small devices */}
+            {singleSaleData?.data && (
+              <div className="p-3.5 bg-card border border-border rounded-xl shadow-sm space-y-2 text-xs">
+                <div className="flex items-center justify-between text-muted-foreground pb-2 border-b border-border/50">
+                  <span>{isBangla ? "তারিখ:" : "Invoice Date:"}</span>
+                  <strong className="text-foreground font-medium">
+                    {singleSaleData.data.createdAt
+                      ? format(new Date(singleSaleData.data.createdAt), "dd MMM yyyy")
+                      : "—"}
+                  </strong>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                  <div className="bg-muted/40 p-2 rounded-lg">
+                    <span className="text-[10px] text-muted-foreground block">
+                      {isBangla ? "মোট" : "Total"}
+                    </span>
+                    <span className="font-bold text-foreground text-xs">
+                      {formatCurrency(singleSaleData.data.total || 0)}
+                    </span>
+                  </div>
+                  <div className="bg-emerald-500/10 p-2 rounded-lg">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block">
+                      {isBangla ? "পরিশোধিত" : "Paid"}
+                    </span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                      {formatCurrency(
+                        singleSaleData.data.paidAmount || singleSaleData.data.paid || 0
+                      )}
+                    </span>
+                  </div>
+                  <div className="bg-rose-500/10 p-2 rounded-lg">
+                    <span className="text-[10px] text-rose-600 dark:text-rose-400 block">
+                      {isBangla ? "বাকি" : "Due"}
+                    </span>
+                    <span className="font-bold text-rose-600 dark:text-rose-400 text-xs">
+                      {formatCurrency(
+                        singleSaleData.data.dueAmount ??
+                          (singleSaleData.data.total -
+                            (singleSaleData.data.paidAmount || 0))
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Header bar with title and Select All */}
+            <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-foreground">
+                  {isBangla ? "ফেরতযোগ্য পণ্য তালিকা" : "Returnable Items"}
+                </h4>
+                <p className="text-[11px] text-muted-foreground">
+                  {selectedItems.filter((i) => i.isSelected).length} / {selectedItems.length}{" "}
+                  {isBangla ? "নির্বাচিত" : "selected"}
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isBangla ? "সব নির্বাচন" : "Select All"}
+                </span>
+                <Checkbox
+                  checked={
+                    selectedItems.length > 0 &&
+                    selectedItems.every((i) => i.isSelected)
+                  }
+                  onCheckedChange={(checked) => toggleSelectAll(!!checked)}
+                  className="h-5 w-5 border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+              </label>
+            </div>
+
+            {/* Return Item Cards List */}
+            {selectedItems.map((item) => (
+              <div
+                key={item.id}
+                className={cn(
+                  "bg-card border rounded-xl p-3.5 shadow-sm transition-all space-y-3",
+                  item.isSelected
+                    ? "border-primary/50 bg-primary/[0.02] ring-1 ring-primary/20"
+                    : "border-border opacity-85"
+                )}
+              >
+                {/* Card Header: Checkbox + Name + SKU + Line Total */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                    <div className="pt-0.5">
+                      <Checkbox
+                        checked={item.isSelected}
+                        onCheckedChange={(checked) =>
+                          toggleItemSelection(item.id, !!checked)
+                        }
+                        className="h-5 w-5 border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                    </div>
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleItemSelection(item.id)}
+                    >
+                      <h5 className="font-semibold text-foreground text-xs leading-snug line-clamp-2">
+                        {item.itemName || (isBangla ? "পণ্য নির্বাচন করুন" : "Select Product")}
+                      </h5>
+                      {item.sku && item.sku !== "—" && (
+                        <span className="inline-block text-[10px] text-muted-foreground mt-0.5 bg-muted/60 px-1.5 py-0.5 rounded">
+                          SKU: {item.sku}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-[10px] text-muted-foreground block">
+                      {isBangla ? "মোট ফেরত" : "Total Refund"}
+                    </span>
+                    <span className="font-bold text-foreground text-xs sm:text-sm">
+                      {formatCurrency(item.quantity * item.unitPrice)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Price & Sold Qty summary info */}
+                <div className="flex items-center justify-between text-xs py-1.5 px-2.5 bg-muted/30 rounded-lg border border-border/40">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground text-[11px]">
+                      {isBangla ? "বিক্রয় মূল্য:" : "Selling Price:"}
+                    </span>
+                    <span className="font-semibold text-foreground text-xs">
+                      {formatCurrency(item.unitPrice)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground text-[11px]">
+                      {isBangla ? "বিক্রয় পরিমাণ:" : "Sold Qty:"}
+                    </span>
+                    <span className="font-semibold text-foreground text-xs">
+                      {item.maxQuantity ?? item.quantity ?? 1}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Controls Grid */}
+                <div className="space-y-2.5 pt-1 border-t border-border/50">
+                  {/* Return Quantity Stepper */}
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-[11px] font-medium text-muted-foreground">
+                      {isBangla ? "ফেরত পরিমাণ *" : "Return Qty *"}
+                      {item.maxQuantity !== undefined && (
+                        <span className="text-[10px] text-muted-foreground/70 ml-1">
+                          (Max: {item.maxQuantity})
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex items-center border border-input rounded-lg bg-background/50 h-8 w-28">
+                      <button
+                        type="button"
+                        disabled={(item.quantity || 0) <= 0}
+                        onClick={() => handleQuantityChange(item.id, (item.quantity || 0) - 1)}
+                        className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        max={item.maxQuantity}
+                        value={item.quantity || 0}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        className="w-full text-center h-full bg-transparent outline-none border-none text-xs font-semibold text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        disabled={item.maxQuantity !== undefined && (item.quantity || 0) >= item.maxQuantity}
+                        onClick={() => handleQuantityChange(item.id, (item.quantity || 0) + 1)}
+                        className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/20 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Return Type & Return Reason Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">
+                        {isBangla ? "ফেরত টাইপ" : "Return Type"}
+                      </label>
+                      <Select
+                        value={item.returnType || "refund"}
+                        onValueChange={(val) => handleItemReturnTypeChange(item.id, val)}
+                      >
+                        <SelectTrigger className="h-8 text-[11px] bg-background/40 w-full border-input">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="refund" className="text-xs">
+                            {isBangla ? "রিফান্ড" : "Refund"}
+                          </SelectItem>
+                          <SelectItem value="exchange" className="text-xs">
+                            {isBangla ? "বিনিময়" : "Exchange"}
+                          </SelectItem>
+                          <SelectItem value="restock" className="text-xs">
+                            {isBangla ? "স্টকে ফেরত" : "Return to Stock"}
+                          </SelectItem>
+                          <SelectItem value="damage" className="text-xs">
+                            {isBangla ? "ড্যামেজ" : "Damaged"}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-muted-foreground">
+                        {isBangla ? "কারণ" : "Reason"}
+                      </label>
+                      <Select
+                        value={item.reason || "defective"}
+                        onValueChange={(val) => handleItemReasonChange(item.id, val)}
+                      >
+                        <SelectTrigger className="h-8 text-[11px] bg-background/40 w-full border-input">
+                          <SelectValue placeholder={isBangla ? "কারণ বলুন" : "Reason"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="defective" className="text-xs">
+                            {isBangla ? "ত্রুটিপূর্ণ / ড্যামেজ" : "Defective / Damaged"}
+                          </SelectItem>
+                          <SelectItem value="expired" className="text-xs">
+                            {isBangla ? "মেয়াদোত্তীর্ণ" : "Expired"}
+                          </SelectItem>
+                          <SelectItem value="wrong_item" className="text-xs">
+                            {isBangla ? "ভুল পণ্য" : "Wrong Item"}
+                          </SelectItem>
+                          <SelectItem value="not_satisfied" className="text-xs">
+                            {isBangla ? "গ্রাহক অসন্তুষ্ট" : "Not Satisfied"}
+                          </SelectItem>
+                          <SelectItem value="other" className="text-xs">
+                            {isBangla ? "অন্যান্য" : "Other"}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Mobile Subtotal bar */}
+            <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">
+                {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
+              </span>
+              <span className="font-bold text-foreground text-sm">
+                {formatCurrency(subtotalRefund)}
+              </span>
+            </div>
           </div>
 
           {/* Notes & Attachment Card */}
