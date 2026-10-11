@@ -1,6 +1,3 @@
-// Hello Khata OS - New Sale Page
-// হ্যালো খাতা - নতুন বিক্রি পেজ
-
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
