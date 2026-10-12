@@ -397,17 +397,18 @@ export const bottomNavItems = [
   //   isPro: true,
   // },
   {
-    page: "/settings",
-    icon: Settings,
-    labelKey: "Settings",
-    labelBn: "সেটিংস",
-  },
-  {
     page: "/plans",
     icon: Crown,
     labelKey: "Upgrade Plans",
     labelBn: "আপগ্রেড প্ল্যান",
     isPro: true,
   },
+  {
+    page: "/settings",
+    icon: Settings,
+    labelKey: "Settings",
+    labelBn: "সেটিংস",
+  },
+  
 ];
  

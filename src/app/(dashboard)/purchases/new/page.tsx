@@ -971,7 +971,7 @@ function NewPurchaseContent() {
       </PageHeader>
 
       {/* Merged Purchase Information Card */}
-      <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
+      <div className="bg-zinc-900/20 border border-border rounded-xl p  -5 space-y-5 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
           <span className="text-sm font-semibold text-foreground">
             {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}

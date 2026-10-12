@@ -8,21 +8,11 @@ import { useUiStore, useSessionStore } from '@/stores';
 import {
   User,
   Building2,
-  Users,
-  Shield,
-  Database,
-  CreditCard,
-  HelpCircle,
   Globe,
   Palette,
   LogOut,
   Lock,
   FileText,
-  Package,
-  Trash2,
-  CheckCircle,
-  Settings,
-  Printer,
   Laptop,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -45,6 +35,7 @@ export default function Layout({
     { id: 'invoice', labelEn: 'Invoice Settings', labelBn: 'ইনভয়েস সেটিংস', href: '/settings/invoice', icon: FileText },
     { id: 'branches', labelEn: 'Branch Management', labelBn: 'শাখা পরিচালনা', href: '/settings/branches', icon: Building2, isPro: true },
     { id: 'connected-devices', labelEn: 'Connected Devices', labelBn: 'সংযুক্ত ডিভাইস', href: '/settings/connected-devices', icon: Laptop, isPro: true },
+    { id: 'inventory-settings', labelEn: 'Inventory Settings', labelBn: 'ইনভেন্টরি সেটিংস', href: '/settings/inventory', icon: Laptop, isPro: true },
   ];
 
   return (
