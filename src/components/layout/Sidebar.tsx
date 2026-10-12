@@ -75,9 +75,6 @@ export function Sidebar() {
         )}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3">
-              {/* <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-emerald flex items-center justify-center">
-                <Store className="h-5 w-5 text-primary-foreground" />
-              </div> */}
               <div className="flex flex-col">
                 <Image className='w-full h-full' src="/logo.png" width={150} height={150} alt='logo' />
               </div>
@@ -91,23 +88,6 @@ export function Sidebar() {
             <ChevronLeft className={cn('h-4 w-4 transition-transform duration-200', sidebarCollapsed && 'rotate-180')} />
           </Button>
         </div>
-
-        {/* Business Name */}
-        {/* {!sidebarCollapsed && business && (
-          <div className="px-4 py-3 border-b border-border-subtle bg-muted/20">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-indigo-subtle flex items-center justify-center">
-                <Zap className="h-4 w-4 text-indigo" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  { business.name}
-                </p>
-                <p className="text-xs text-muted-foreground">{business.phone}</p>
-              </div>
-            </div>
-          </div>
-        )} */}
 
         {/* Main Navigation */}
         <ScrollArea className="flex-1 px-3 py-4 scrollbar-premium overflow-y-auto">
@@ -243,17 +223,6 @@ export function Sidebar() {
 
         {/* Bottom Navigation */}
         <div className="border-t border-border-subtle p-3 space-y-1">
-          {/* Theme Toggle Button */}
-          <div className="flex items-center w-full">
-            <ThemeToggle
-              className={cn(
-                'w-full justify-start rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer',
-                sidebarCollapsed && 'justify-center px-0'
-              )}
-              showLabel={!sidebarCollapsed}
-            />
-          </div>
-
           {bottomNavItems?.map((item, index) => (
             <div key={item.page} className="stagger-item" style={{ animationDelay: `${(navGroups.length + index) * 30}ms` }}>
               <Link href={item.page}
@@ -286,19 +255,6 @@ export function Sidebar() {
               </Link>
             </div>
           ))}
-
-          {/* Logout */}
-          {/* <button
-            onClick={logout}
-            className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium w-full',
-              'text-destructive hover:bg-destructive-subtle transition-all duration-200',
-              sidebarCollapsed && 'justify-center px-2 mt-2'
-            )}
-          >
-            <LogOut className="h-5 w-5" />
-            {!sidebarCollapsed && <span>{isBangla ? 'লগআউট' : 'Logout'}</span>}
-          </button> */}
         </div>
       </aside>
     </TooltipProvider>

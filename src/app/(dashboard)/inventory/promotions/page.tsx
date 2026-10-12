@@ -89,28 +89,28 @@ export default function PromotionsPage() {
     switch (type) {
       case 'bogo':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20">
             <Gift className="h-3.5 w-3.5" />
             Buy X Get Y (BOGO)
           </span>
         );
       case 'percentage':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20">
             <Percent className="h-3.5 w-3.5" />
             Percentage Off
           </span>
         );
       case 'flat':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
             <DollarSign className="h-3.5 w-3.5" />
             Flat Discount
           </span>
         );
       case 'bundle':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
             <Package className="h-3.5 w-3.5" />
             Bundle Price
           </span>
@@ -122,28 +122,28 @@ export default function PromotionsPage() {
     switch (status) {
       case 'active':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
             {isBangla ? 'সক্রিয়' : 'Active'}
           </span>
         );
       case 'scheduled':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20">
             <Clock className="h-3 w-3" />
             {isBangla ? 'নির্ধারিত' : 'Scheduled'}
           </span>
         );
       case 'expired':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">
             <AlertCircle className="h-3 w-3" />
             {isBangla ? 'মেয়াদোত্তীর্ণ' : 'Expired'}
           </span>
         );
       case 'inactive':
         return (
-          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
+          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20">
             <Ban className="h-3 w-3" />
             {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
           </span>
@@ -307,16 +307,16 @@ export default function PromotionsPage() {
                           <img
                             src={offer.productImage}
                             alt={offer.productName}
-                            className="h-9 w-9 rounded-lg object-cover border border-[#252e42]"
+                            className="h-9 w-9 rounded-lg object-cover border border-border dark:border-[#252e42]"
                           />
                         ) : (
-                          <div className="h-9 w-9 rounded-lg bg-[#1a2130] border border-[#252e42] flex items-center justify-center text-[#718296]">
+                          <div className="h-9 w-9 rounded-lg bg-muted dark:bg-[#1a2130] border border-border dark:border-[#252e42] flex items-center justify-center text-muted-foreground dark:text-[#718296]">
                             <Package className="h-4 w-4" />
                           </div>
                         )}
                         <div>
-                          <p className="font-semibold text-slate-100 text-sm">{offer.productName}</p>
-                          <p className="text-[11px] text-[#718296]">
+                          <p className="font-semibold text-foreground dark:text-slate-100 text-sm">{offer.productName}</p>
+                          <p className="text-[11px] text-muted-foreground dark:text-[#718296]">
                             Reg: {formatCurrency(offer.regularPrice)} • {offer.productSku || 'SKU-N/A'}
                           </p>
                         </div>
@@ -326,12 +326,12 @@ export default function PromotionsPage() {
                     {/* Batch */}
                     <td className="px-4 py-4 whitespace-nowrap">
                       {offer.batchNumber ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
                           <Layers className="h-3 w-3" />
                           {offer.batchNumber}
                         </span>
                       ) : (
-                        <span className="text-xs text-[#718296] font-medium">All Batches</span>
+                        <span className="text-xs text-muted-foreground dark:text-[#718296] font-medium">All Batches</span>
                       )}
                     </td>
 
@@ -342,15 +342,15 @@ export default function PromotionsPage() {
 
                     {/* Offer Summary */}
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <span className="font-bold text-slate-100 text-xs">
+                      <span className="font-bold text-foreground dark:text-slate-100 text-xs">
                         {formatOfferSummary(offer)}
                       </span>
                     </td>
 
                     {/* Validity */}
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-[#718296]">
+                    <td className="px-4 py-4 whitespace-nowrap text-xs text-muted-foreground dark:text-[#718296]">
                       {offer.untilSoldOut ? (
-                        <span className="text-amber-400 font-semibold">Until Sold Out</span>
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold">Until Sold Out</span>
                       ) : offer.endDate ? (
                         <span>
                           {format(new Date(offer.startDate), 'dd MMM')} - {format(new Date(offer.endDate), 'dd MMM yyyy')}
@@ -361,7 +361,7 @@ export default function PromotionsPage() {
                     </td>
 
                     {/* Branch */}
-                    <td className="px-4 py-4 whitespace-nowrap text-xs text-slate-300 font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-xs text-foreground/80 dark:text-slate-300 font-medium">
                       {offer.branchName || 'All Branches'}
                     </td>
 
@@ -377,7 +377,7 @@ export default function PromotionsPage() {
                           type="button"
                           title={isBangla ? 'সম্পাদনা করুন' : 'Edit Offer'}
                           onClick={() => router.push(`/inventory/promotions/new?id=${offer.id}`)}
-                          className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
@@ -390,8 +390,8 @@ export default function PromotionsPage() {
                           className={cn(
                             'p-1.5 rounded-md transition-colors',
                             offer.status === 'active'
-                              ? 'text-emerald-400 hover:bg-emerald-500/10'
-                              : 'text-[#718296] hover:text-white hover:bg-[#202738]'
+                              ? 'text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738]'
                           )}
                         >
                           {offer.status === 'active' ? (

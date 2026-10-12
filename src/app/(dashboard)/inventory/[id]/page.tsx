@@ -3,28 +3,16 @@
 
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ProductHeader } from "@/components/product-details/ProductHeader";
 import { ProductIdentityCard } from "@/components/product-details/ProductIdentityCard";
-import { ProductInformationCard } from "@/components/product-details/ProductInformationCard";
-import { BatchTable } from "@/components/product-details/BatchTable";
-import { BranchStockTable } from "@/components/product-details/BranchStockTable";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   mockProduct,
-  mockBatches,
-  mockBranchStocks,
-  mockBarcodes,
   Product,
 } from "@/components/product-details/mock-data";
 import {
   Loader2,
-  Package,
-  Layers,
-  Store,
-  FileText,
 } from "lucide-react";
 import { useGetSingleItem } from "@/hooks/api/useItems";
 

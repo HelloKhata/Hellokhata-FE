@@ -5,10 +5,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Boxes,
-  CheckCircle2,
   CircleDollarSign,
-  Receipt,
-  ShieldCheck,
   Sparkles,
   Tag,
   UploadCloud,
