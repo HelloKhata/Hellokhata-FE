@@ -10,3 +10,4 @@ export { BranchSwitcher, BranchBadge } from './BranchSwitcher';
 export { BackButton } from './BackButton';
 export { PageContainer, FormCard, FormSection, FormActions } from './PageContainer';
 export { default as ImageWithFallback } from './ImageWithFallback';
+export { ThemeToggle } from './ThemeToggle';

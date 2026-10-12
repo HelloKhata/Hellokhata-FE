@@ -100,6 +100,7 @@ export default function PurchaseReturnsPage() {
             ? "ফেরতকৃত ক্রয়, সাপ্লায়ার রিফান্ড এবং রিটার্ন ইতিহাস পরিচালনা করুন"
             : "Manage returned purchases, supplier refunds, and purchase return history."
         }
+        showBack
       >
         <Link href="/purchases/returns/new">
           <Button className="shrink-0">
@@ -199,12 +200,12 @@ export default function PurchaseReturnsPage() {
       </Card>
 
       {/* Purchase Returns Table */}
-      <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-100 tracking-tight">
+      <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+          <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
             {isBangla ? "পারচেজ রিটার্ন ইতিহাস" : "Purchase Return History"}
           </h2>
-          <span className="text-xs font-medium text-[#718296]">
+          <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
             {filteredReturns.length} {isBangla ? "টি রিটার্ন" : "returns total"}
           </span>
         </div>
@@ -241,7 +242,7 @@ export default function PurchaseReturnsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                  <tr className="border-b border-border dark:border-b-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                     <th className="px-4 py-3.5 whitespace-nowrap">
                       {isBangla ? "ক্রম" : "SL."}
                     </th>
@@ -277,7 +278,7 @@ export default function PurchaseReturnsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                   {filteredReturns.map((ret: any, index: number) => {
                     const statusConfig: Record<
                       string,
@@ -286,37 +287,37 @@ export default function PurchaseReturnsPage() {
                       completed: {
                         label: isBangla ? "সম্পন্ন" : "Completed",
                         color:
-                          "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                          "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20",
                       },
                       pending: {
                         label: isBangla ? "অপেক্ষমান" : "Pending",
                         color:
-                          "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                          "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20",
                       },
                       approved: {
                         label: isBangla ? "অনুমোদিত" : "Approved",
                         color:
-                          "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                          "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-500/10 dark:border-blue-500/20",
                       },
                       rejected: {
                         label: isBangla ? "বাতিল" : "Rejected",
                         color:
-                          "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                          "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-500/10 dark:border-rose-500/20",
                       },
                       refunded: {
                         label: isBangla ? "রিফান্ডেড" : "Refunded",
                         color:
-                          "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+                          "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/20",
                       },
                       processing: {
                         label: isBangla ? "প্রক্রিয়াধীন" : "Processing",
                         color:
-                          "text-orange-400 bg-orange-500/10 border-orange-500/20",
+                          "text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-400 dark:bg-orange-500/10 dark:border-orange-500/20",
                       },
                       cancelled: {
                         label: isBangla ? "বাতিল" : "Cancelled",
                         color:
-                          "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                          "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-500/10 dark:border-rose-500/20",
                       },
                     };
 
@@ -344,41 +345,41 @@ export default function PurchaseReturnsPage() {
                     return (
                       <tr
                         key={ret.id || index}
-                        className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                        className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
                         onClick={() =>
                           router.push(`/purchases/returns/${ret.id}`)
                         }
                       >
-                        <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                           {slNumber}
                         </td>
-                        <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground/80 dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                           {invoiceNo}
                         </td>
-                        <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground dark:text-slate-100 font-semibold text-sm whitespace-nowrap">
                           {supplierName}
                         </td>
-                        <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                        <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                           {returnDate}
                         </td>
-                        <td className="px-4 py-4 text-slate-200 text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground/80 dark:text-slate-200 text-xs font-medium whitespace-nowrap">
                           {itemsCount} {isBangla ? "টি" : "item(s)"}
                         </td>
-                        <td className="px-4 py-4 text-slate-300 text-xs capitalize whitespace-nowrap">
+                        <td className="px-4 py-4 text-muted-foreground dark:text-slate-300 text-xs capitalize whitespace-nowrap">
                           {refundMethod}
                         </td>
-                        <td className="px-4 py-4 font-bold text-slate-100 text-sm whitespace-nowrap">
+                        <td className="px-4 py-4 font-bold text-foreground dark:text-slate-100 text-sm whitespace-nowrap">
                           {formatCurrency(totalRefund)}
                         </td>
-                        <td className="px-4 py-4 font-bold text-emerald-400 text-sm whitespace-nowrap">
+                        <td className="px-4 py-4 font-bold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
                           {formatCurrency(receivedAmount)}
                         </td>
                         <td className="px-4 py-4 font-bold text-sm whitespace-nowrap">
                           <span
                             className={
                               dueAmount > 0
-                                ? "text-rose-400"
-                                : "text-[#718296]"
+                                ? "text-rose-600 dark:text-rose-400"
+                                : "text-muted-foreground dark:text-[#718296]"
                             }
                           >
                             {formatCurrency(dueAmount)}
@@ -400,7 +401,7 @@ export default function PurchaseReturnsPage() {
                             <button
                               type="button"
                               title={isBangla ? "রিটার্ন দেখুন" : "View Return"}
-                              className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                               onClick={() =>
                                 router.push(`/purchases/returns/${ret.id}`)
                               }
@@ -414,7 +415,7 @@ export default function PurchaseReturnsPage() {
                                   ? "রিটার্ন প্রিন্ট করুন"
                                   : "Print Return"
                               }
-                              className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 console.log("Print Return");

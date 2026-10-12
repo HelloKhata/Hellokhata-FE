@@ -22,6 +22,7 @@ import {
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { navGroups } from '@/lib/nav-config';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 // Page-specific color themes for vibrant circular icon styling
 const getPageTheme = (pageUrl: string) => {
@@ -235,7 +236,7 @@ export function MobileBottomNav() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col h-[94vh] max-h-[94vh] w-full max-w-full overflow-x-hidden box-border md:hidden"
+              className="fixed bottom-0 left-0 right-0 z-50 bg-card dark:bg-[#0E131F] border-t border-border/80 rounded-t-[26px] shadow-2xl flex flex-col h-[94vh] max-h-[94vh] w-full max-w-full overflow-x-hidden box-border md:hidden"
               style={{
                 position: 'fixed',
                 bottom: 0,
@@ -251,7 +252,7 @@ export function MobileBottomNav() {
               }}
             >
               {/* Header & Search */}
-              <div className="p-4 pb-3 border-b border-border/60 shrink-0 w-full max-w-full box-border bg-[#0E131F]">
+              <div className="p-4 pb-3 border-b border-border/60 shrink-0 w-full max-w-full box-border bg-card dark:bg-[#0E131F]">
                 <div className="w-12 h-1 rounded-full bg-muted/60 mx-auto mb-3 cursor-pointer" onClick={() => setIsAllOpen(false)} />
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -267,13 +268,16 @@ export function MobileBottomNav() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsAllOpen(false)}
-                    className="p-1.5 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <ThemeToggle className="h-8 w-8" />
+                    <button
+                      type="button"
+                      onClick={() => setIsAllOpen(false)}
+                      className="p-1.5 rounded-full bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Quick Search Bar */}
@@ -344,7 +348,7 @@ export function MobileBottomNav() {
                                     'h-12 w-12 sm:h-13 sm:w-13 rounded-full flex items-center justify-center shadow-md border transition-all duration-150',
                                     'group-active:scale-90',
                                     theme.bg,
-                                    isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-[#0E131F]'
+                                    isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background dark:ring-offset-[#0E131F]'
                                   )}
                                 >
                                   <SubIcon className={cn('h-5 w-5', theme.iconColor)} />
@@ -384,7 +388,7 @@ export function MobileBottomNav() {
                                     'h-12 w-12 sm:h-13 sm:w-13 rounded-full flex items-center justify-center shadow-md border transition-all duration-150',
                                     'group-active:scale-90',
                                     theme.bg,
-                                    isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-[#0E131F]'
+                                    isActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background dark:ring-offset-[#0E131F]'
                                   )}
                                 >
                                   <GroupIcon className={cn('h-5 w-5', theme.iconColor)} />
@@ -416,7 +420,7 @@ export function MobileBottomNav() {
       {/* ========================================================================= */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden bg-[#0B0F19] border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
+        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden bg-card/95 dark:bg-[#0B0F19] backdrop-blur-xl border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
         style={{
           position: 'fixed',
           bottom: 0,
@@ -486,9 +490,9 @@ export function MobileBottomNav() {
               className={cn(
                 'absolute -top-5.5 h-13.5 w-13.5 rounded-full flex flex-col items-center justify-center shrink-0',
                 'bg-gradient-to-br from-primary via-primary to-indigo text-white',
-                'shadow-[0_8px_20px_rgba(79,91,255,0.5)] border-[3.5px] border-[#0B0F19]',
+                'shadow-[0_8px_20px_rgba(79,91,255,0.5)] border-[3.5px] border-card dark:border-[#0B0F19]',
                 'transition-transform active:scale-90',
-                isPosActive && 'ring-2 ring-primary ring-offset-2 ring-offset-[#0B0F19]'
+                isPosActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background dark:ring-offset-[#0B0F19]'
               )}
             >
               <ShoppingCart className="h-5 w-5 text-white" />
