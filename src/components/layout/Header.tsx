@@ -21,7 +21,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useMarkAsReadNotification, useNotifications, useReadAllNotifications } from '@/hooks/api/useNotifications';
 import { cn } from '@/lib/utils';
-import { BranchSwitcher, BackButton } from '@/components/common';
+import { BranchSwitcher, BackButton, ThemeToggle } from '@/components/common';
 import { useGetMyFeatures } from '@/hooks/api/useFeaturesPlan';
 import Link from 'next/link';
 import AIChatWidget from '../AIWidget';
@@ -226,6 +226,9 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
             <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
         </button> */}
+
+        {/* Theme Toggle */}
+        <ThemeToggle className="flex" />
 
         {/* Language Toggle */}
         <Button

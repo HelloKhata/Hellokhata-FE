@@ -151,12 +151,12 @@ export default function PaymentOutPage() {
         </Card>
 
         {/* Transactions Table - Matches Sales List Design */}
-        <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-100 tracking-tight">
+        <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+            <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
               {isBangla ? "পেমেন্ট আউট ইতিহাস" : "Payment Out History"}
             </h2>
-            <span className="text-xs font-medium text-[#718296]">
+            <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
               {filteredTransactions.length} {isBangla ? "টি পেমেন্ট" : "payments total"}
             </span>
           </div>
@@ -187,7 +187,7 @@ export default function PaymentOutPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                    <tr className="border-b border-border dark:border-b-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                       <th className="px-4 py-3.5 whitespace-nowrap">
                         {isBangla ? "ক্রম" : "SL."}
                       </th>
@@ -214,44 +214,44 @@ export default function PaymentOutPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                  <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                     {filteredTransactions.map((tx: any, index: number) => {
                       const slNumber = String(index + 1).padStart(2, "0");
 
                       return (
                         <tr
                           key={tx.id}
-                          className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                          className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
                           onClick={() => setSelectedPaymentId(tx.id)}
                         >
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {slNumber}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {tx.reference || "—"}
                           </td>
-                          <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground dark:text-slate-100 font-semibold text-sm whitespace-nowrap">
                             {tx.party?.name || (isBangla ? "অজ্ঞাত পার্টি" : "Unknown Party")}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                             {formatDate(tx.createdAt)}
                           </td>
-                          <td className="px-4 py-4 text-slate-200 text-xs font-medium capitalize whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-slate-200 text-xs font-medium capitalize whitespace-nowrap">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
                               {tx.mode || "Cash"}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-rose-400 font-mono text-sm font-bold whitespace-nowrap">
+                          <td className="px-4 py-4 text-rose-600 dark:text-rose-400 font-mono text-sm font-bold whitespace-nowrap">
                             {formatCurrency(Math.abs(tx.amount || 0))}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] text-xs max-w-xs truncate whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs max-w-xs truncate whitespace-nowrap">
                             {tx.notes || "—"}
                           </td>
                           <td className="px-4 py-4 text-right whitespace-nowrap">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-[#718296] hover:text-white hover:bg-[#1f283c] cursor-pointer"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#1f283c] cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedPaymentId(tx.id);

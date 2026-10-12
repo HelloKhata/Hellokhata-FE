@@ -84,12 +84,12 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-xl shadow-black/40 backdrop-blur-xl',
-        elevated: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-2xl shadow-black/50 backdrop-blur-xl hover:border-slate-700/80 hover:-translate-y-0.5',
-        glass: 'bg-[#0d131f]/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl shadow-xl shadow-black/40',
+        default: 'border border-border dark:border-slate-800/90 rounded-2xl bg-card dark:bg-[#0d131f]/95 shadow-sm dark:shadow-xl dark:shadow-black/40 backdrop-blur-xl',
+        elevated: 'border border-border dark:border-slate-800/90 rounded-2xl bg-card dark:bg-[#0d131f]/95 shadow-md dark:shadow-2xl dark:shadow-black/50 backdrop-blur-xl hover:border-border dark:hover:border-slate-700/80 hover:-translate-y-0.5',
+        glass: 'bg-card/85 dark:bg-[#0d131f]/80 backdrop-blur-xl border border-border dark:border-slate-800/80 rounded-2xl shadow-sm dark:shadow-xl dark:shadow-black/40',
         ghost: 'bg-transparent',
-        outline: 'border border-slate-800 rounded-2xl bg-transparent',
-        glow: 'border border-slate-800/90 rounded-2xl bg-[#0d131f]/95 shadow-2xl shadow-indigo-500/10 backdrop-blur-xl',
+        outline: 'border border-border dark:border-slate-800 rounded-2xl bg-transparent',
+        glow: 'border border-border dark:border-slate-800/90 rounded-2xl bg-card dark:bg-[#0d131f]/95 shadow-md dark:shadow-2xl dark:shadow-indigo-500/10 backdrop-blur-xl',
       },
       padding: {
         none: 'p-0',
@@ -129,7 +129,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       >
         {/* Premium inner gradient overlay */}
         <div 
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none hidden dark:block"
           style={{
             background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 40%)',
             borderRadius: 'inherit'

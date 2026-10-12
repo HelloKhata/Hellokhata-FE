@@ -169,6 +169,7 @@ export default function QuotationsPage() {
         <PageHeader
           title={isBangla ? "কোটেশন" : "Quotations"}
           subtitle={isBangla ? "সকল কোটেশনের রেকর্ড" : "All quotation records"}
+          showBack
         >
           <Button
             onClick={() => router.push("/sales/quotations/new")}
@@ -268,12 +269,12 @@ export default function QuotationsPage() {
         </Card>
 
         {/* Quotations Table (Exact same as Sales List table) */}
-        <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-100 tracking-tight">
+        <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+            <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
               {isBangla ? "কোটেশন ইতিহাস" : "Quotation History"}
             </h2>
-            <span className="text-xs font-medium text-[#718296]">
+            <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
               {filteredQuotations.length}{" "}
               {isBangla ? "টি কোটেশন" : "quotations total"}
             </span>
@@ -307,7 +308,7 @@ export default function QuotationsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                    <tr className="border-b border-border dark:border-b-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                       <th className="px-4 py-3.5 whitespace-nowrap">
                         {isBangla ? "ক্রম" : "SL."}
                       </th>
@@ -337,7 +338,7 @@ export default function QuotationsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                  <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                     {filteredQuotations.map((quotation, index) => {
                       const statusConfig: Record<
                         string,
@@ -347,31 +348,31 @@ export default function QuotationsPage() {
                           label: "Draft",
                           labelBn: "খসড়া",
                           color:
-                            "text-slate-400 bg-slate-500/10 border-slate-500/20",
+                            "text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-400 dark:bg-slate-500/10 dark:border-slate-500/20",
                         },
                         sent: {
                           label: "Sent",
                           labelBn: "প্রেরিত",
                           color:
-                            "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                            "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20",
                         },
                         accepted: {
                           label: "Accepted",
                           labelBn: "গৃহীত",
                           color:
-                            "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                            "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20",
                         },
                         rejected: {
                           label: "Rejected",
                           labelBn: "প্রত্যাখ্যাত",
                           color:
-                            "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                            "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-500/10 dark:border-rose-500/20",
                         },
                         converted: {
                           label: "Converted",
                           labelBn: "রূপান্তরিত",
                           color:
-                            "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+                            "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/20",
                         },
                       };
 
@@ -385,32 +386,32 @@ export default function QuotationsPage() {
                       return (
                         <tr
                           key={quotation.id}
-                          className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                          className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
                           onClick={() => handleView(quotation)}
                         >
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {slNumber}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {quotation.quotationNo}
                           </td>
-                          <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground dark:text-slate-100 font-semibold text-sm whitespace-nowrap">
                             {quotation.partyName ||
                               (isBangla
                                 ? "সাধারণ গ্রাহক"
                                 : "Walk-in customer")}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                             {formatDate(quotation.quotationDate)}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                             {formatDate(quotation.validityDate)}
                           </td>
-                          <td className="px-4 py-4 text-slate-200 text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-slate-200 text-xs font-medium whitespace-nowrap">
                             {quotation.items?.length || 0}{" "}
                             {isBangla ? "টি" : "item(s)"}
                           </td>
-                          <td className="px-4 py-4 font-bold text-slate-100 text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 font-bold text-foreground dark:text-slate-100 text-sm whitespace-nowrap">
                             {formatCurrency(quotation.total)}
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap">
@@ -422,7 +423,7 @@ export default function QuotationsPage() {
                                 {isBangla ? status.labelBn : status.label}
                               </span>
                               {isExpired && (
-                                <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">
                                   {isBangla ? "মেয়াদ শেষ" : "Expired"}
                                 </span>
                               )}
@@ -436,7 +437,7 @@ export default function QuotationsPage() {
                               <button
                                 type="button"
                                 title={isBangla ? "দেখুন" : "View"}
-                                className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                 onClick={() => handleView(quotation)}
                               >
                                 <Eye className="h-4 w-4" />
@@ -446,7 +447,7 @@ export default function QuotationsPage() {
                                 <button
                                   type="button"
                                   title={isBangla ? "সম্পাদনা" : "Edit"}
-                                  className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                   onClick={() => handleEdit(quotation)}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -460,7 +461,7 @@ export default function QuotationsPage() {
                                       ? "বিক্রিতে রূপান্তর"
                                       : "Convert to Sale"
                                   }
-                                  className="p-1.5 rounded-md text-emerald-400 hover:text-white hover:bg-[#202738] transition-colors"
+                                  className="p-1.5 rounded-md text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                   onClick={() => handleConvert(quotation)}
                                 >
                                   <ShoppingCart className="h-4 w-4" />
@@ -470,7 +471,7 @@ export default function QuotationsPage() {
                                 <button
                                   type="button"
                                   title={isBangla ? "মুছে ফেলুন" : "Delete"}
-                                  className="p-1.5 rounded-md text-rose-400 hover:text-white hover:bg-[#202738] transition-colors"
+                                  className="p-1.5 rounded-md text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                   onClick={() => handleDeleteClick(quotation)}
                                 >
                                   <Trash2 className="h-4 w-4" />

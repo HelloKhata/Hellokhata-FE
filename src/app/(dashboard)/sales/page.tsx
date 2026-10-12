@@ -161,12 +161,12 @@ export default function SalesPage() {
         </Card>
 
         {/* Sales Table */}
-        <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-100 tracking-tight">
+        <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+            <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
               {t("sales.saleHistory")}
             </h2>
-            <span className="text-xs font-medium text-[#718296]">
+            <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
               {salesData?.meta?.total} {isBangla ? "টি বিক্রি" : "sales total"}
             </span>
           </div>
@@ -197,7 +197,7 @@ export default function SalesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                    <tr className="border-b border-border dark:border-b-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                       <th className="px-4 py-3.5 whitespace-nowrap">
                         {isBangla ? "ক্রম" : "SL."}
                       </th>
@@ -234,7 +234,7 @@ export default function SalesPage() {
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                  <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                     {sales.map((sale, index) => {
                       const statusConfig = {
                         completed: {
@@ -265,41 +265,41 @@ export default function SalesPage() {
                       return (
                         <tr
                           key={sale.id}
-                          className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                          className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
                           onClick={() => router.push(`/sales/${sale.id}`)}
                         >
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {slNumber}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                             {sale.invoiceNo}
                           </td>
-                          <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground dark:text-slate-100 font-semibold text-sm whitespace-nowrap">
                             {sale.partyName ||
                               (isBangla ? "ওয়াকিং কাস্টমার" : "Walking Customer")}
                           </td>
-                          <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                             {formatDateTime(sale.createdAt)}
                           </td>
-                          <td className="px-4 py-4 text-slate-200 text-xs font-medium whitespace-nowrap">
+                          <td className="px-4 py-4 text-foreground/80 dark:text-slate-200 text-xs font-medium whitespace-nowrap">
                             {sale.items?.length || 0}{" "}
                             {isBangla ? "টি" : "item(s)"}
                           </td>
-                          <td className="px-4 py-4 text-slate-300 text-xs capitalize whitespace-nowrap">
+                          <td className="px-4 py-4 text-muted-foreground dark:text-slate-300 text-xs capitalize whitespace-nowrap">
                             {sale.paymentMethod || "—"}
                           </td>
-                          <td className="px-4 py-4 font-bold text-slate-100 text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 font-bold text-foreground dark:text-slate-100 text-sm whitespace-nowrap">
                             {formatCurrency(sale.total)}
                           </td>
-                          <td className="px-4 py-4 font-bold text-emerald-400 text-sm whitespace-nowrap">
+                          <td className="px-4 py-4 font-bold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
                             {formatCurrency(sale.paidAmount)}
                           </td>
                           <td className="px-4 py-4 font-bold text-sm whitespace-nowrap">
                             <span
                               className={
                                 sale.dueAmount > 0
-                                   ? "text-rose-400"
-                                  : "text-[#718296]"
+                                  ? "text-rose-600 dark:text-rose-400"
+                                  : "text-muted-foreground dark:text-[#718296]"
                               }
                             >
                               {formatCurrency(sale.dueAmount)}
@@ -321,7 +321,7 @@ export default function SalesPage() {
                               <button
                                 type="button"
                                 title={isBangla ? "দেখুন" : "View"}
-                                className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                 onClick={() => router.push(`/sales/${sale.id}`)}
                               >
                                 <Eye className="h-4 w-4" />
@@ -329,7 +329,7 @@ export default function SalesPage() {
                               <button
                                 type="button"
                                 title={isBangla ? "রিটার্ন" : "Return"}
-                                className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                                 onClick={() =>
                                   router.push(
                                     `/sales/returns/new?saleId=${sale.id}`,

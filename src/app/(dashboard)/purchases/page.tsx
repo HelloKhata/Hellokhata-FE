@@ -196,13 +196,13 @@ export default function PurchasesPage() {
         </div>
       </div>
 
-      {/* Purchases Table (Dark Aesthetic matching Sales list table) */}
-      <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-100 tracking-tight">
+      {/* Purchases Table */}
+      <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+          <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
             {isBangla ? "ক্রয়ের ইতিহাস" : "Purchase History"}
           </h2>
-          <span className="text-xs font-medium text-[#718296]">
+          <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
             {filteredPurchases.length}{" "}
             {isBangla ? "টি ক্রয়" : "purchases total"}
           </span>
@@ -238,7 +238,7 @@ export default function PurchasesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-b-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                  <tr className="border-b border-border dark:border-b-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                     <th className="px-4 py-3.5 whitespace-nowrap">
                       {isBangla ? "ক্রম" : "SL."}
                     </th>
@@ -268,7 +268,7 @@ export default function PurchasesPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+                <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                   {filteredPurchases.map((purchase, index) => {
                     const statusConfig: Record<
                       string,
@@ -278,31 +278,31 @@ export default function PurchasesPage() {
                         label: "Received",
                         labelBn: "গৃহীত",
                         color:
-                          "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                          "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20",
                       },
                       completed: {
                         label: "Completed",
                         labelBn: "সম্পন্ন",
                         color:
-                          "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                          "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20",
                       },
                       pending: {
                         label: "Pending",
                         labelBn: "অপেক্ষমান",
                         color:
-                          "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                          "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20",
                       },
                       partial: {
                         label: "Partial",
                         labelBn: "আংশিক",
                         color:
-                          "text-indigo-400 bg-indigo-500/10 border-indigo-500/20",
+                          "text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-500/10 dark:border-indigo-500/20",
                       },
                       cancelled: {
                         label: "Cancelled",
                         labelBn: "বাতিল",
                         color:
-                          "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                          "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-400 dark:bg-rose-500/10 dark:border-rose-500/20",
                       },
                     };
 
@@ -320,35 +320,35 @@ export default function PurchasesPage() {
                     return (
                       <tr
                         key={purchase.id}
-                        className="hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
+                        className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors cursor-pointer"
                         onClick={() => router.push(`/purchases/${purchase.id}`)}
                       >
-                        <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                           {slNumber}
                         </td>
-                        <td className="px-4 py-4 text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground/80 dark:text-[#718296] font-mono text-xs font-medium whitespace-nowrap">
                           {invoiceNo}
                         </td>
-                        <td className="px-4 py-4 text-slate-100 font-semibold text-sm whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground dark:text-slate-100 font-semibold text-sm whitespace-nowrap">
                           {supplierName}
                         </td>
-                        <td className="px-4 py-4 text-[#718296] text-xs whitespace-nowrap">
+                        <td className="px-4 py-4 text-muted-foreground dark:text-[#718296] text-xs whitespace-nowrap">
                           {formatDate(purchase.createdAt)}
                         </td>
-                        <td className="px-4 py-4 text-slate-200 text-xs font-medium whitespace-nowrap">
+                        <td className="px-4 py-4 text-foreground/80 dark:text-slate-200 text-xs font-medium whitespace-nowrap">
                           {purchase.items?.length || 0}{" "}
                           {isBangla ? "টি" : "item(s)"}
                         </td>
-                        <td className="px-4 py-4 font-bold text-slate-100 text-sm whitespace-nowrap">
+                        <td className="px-4 py-4 font-bold text-foreground dark:text-slate-100 text-sm whitespace-nowrap">
                           {formatCurrency(purchase.total)}
                         </td>
                         <td className="px-4 py-4 text-xs font-medium whitespace-nowrap">
                           {purchase.dueAmount > 0 ? (
-                            <span className="text-rose-400 font-bold">
+                            <span className="text-rose-600 dark:text-rose-400 font-bold">
                               {formatCurrency(purchase.dueAmount)}
                             </span>
                           ) : (
-                            <span className="text-[#718296]">৳0.00</span>
+                            <span className="text-muted-foreground dark:text-[#718296]">৳0.00</span>
                           )}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
@@ -367,7 +367,7 @@ export default function PurchasesPage() {
                             <button
                               type="button"
                               title={isBangla ? "দেখুন" : "View Details"}
-                              className="p-1.5 rounded-md text-[#718296] hover:text-white hover:bg-[#202738] transition-colors cursor-pointer"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors cursor-pointer"
                               onClick={() =>
                                 router.push(`/purchases/${purchase.id}`)
                               }
@@ -377,7 +377,7 @@ export default function PurchasesPage() {
                             <button
                               type="button"
                               title={isBangla ? "ক্রয় ফেরত" : "Return Purchase"}
-                              className="p-1.5 rounded-md text-amber-400 hover:text-white hover:bg-[#202738] transition-colors cursor-pointer"
+                              className="p-1.5 rounded-md text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-white dark:hover:bg-[#202738] transition-colors cursor-pointer"
                               onClick={() =>
                                 router.push(
                                   `/purchases/returns/new?purchaseId=${purchase.id}`,

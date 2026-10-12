@@ -241,12 +241,12 @@ export default function PromotionsPage() {
       </div>
 
       {/* Offers Table Container */}
-      <div className="rounded-xl border border-[#1e2738] bg-[#131823] shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#1f283c] flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-100 tracking-tight">
+      <div className="rounded-xl border border-border dark:border-[#1e2738] bg-card dark:bg-[#131823] shadow-sm dark:shadow-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border dark:border-[#1f283c] flex items-center justify-between bg-card dark:bg-[#131823]">
+          <h2 className="text-base font-bold text-foreground dark:text-slate-100 tracking-tight">
             {isBangla ? 'অফার তালিকা' : 'Offers List'}
           </h2>
-          <span className="text-xs font-medium text-[#718296]">
+          <span className="text-xs font-medium text-muted-foreground dark:text-[#718296]">
             {filteredOffers.length} {isBangla ? 'টি অফার' : 'total offers'}
           </span>
         </div>
@@ -254,7 +254,7 @@ export default function PromotionsPage() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <p className="text-xs text-[#718296]">{isBangla ? 'অফার লোড হচ্ছে...' : 'Loading offers...'}</p>
+            <p className="text-xs text-muted-foreground dark:text-[#718296]">{isBangla ? 'অফার লোড হচ্ছে...' : 'Loading offers...'}</p>
           </div>
         ) : filteredOffers.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center space-y-4">
@@ -262,10 +262,10 @@ export default function PromotionsPage() {
               <Sparkles className="h-8 w-8" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-100">
+              <h3 className="text-base font-bold text-foreground dark:text-slate-100">
                 {isBangla ? 'কোনো অফার পাওয়া যায়নি' : 'No Offers Found'}
               </h3>
-              <p className="text-xs text-[#718296] max-w-sm mx-auto mt-1">
+              <p className="text-xs text-muted-foreground dark:text-[#718296] max-w-sm mx-auto mt-1">
                 {isBangla
                   ? 'আপনার বিক্রয় বৃদ্ধি ও স্টক দ্রুত খালি করার জন্য প্রথম প্রমোশন অফারটি তৈরি করুন।'
                   : 'Create your first promotion offer to boost sales and accelerate batch stock turnover.'}
@@ -283,7 +283,7 @@ export default function PromotionsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-[#1f283c] bg-[#131823] text-[#718296] text-[12px] font-semibold tracking-wide">
+                <tr className="border-b border-border dark:border-[#1f283c] bg-muted/40 dark:bg-[#131823] text-muted-foreground dark:text-[#718296] text-[12px] font-semibold tracking-wide">
                   <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'পণ্য' : 'Product'}</th>
                   <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'ব্যাচ' : 'Batch'}</th>
                   <th className="px-4 py-3.5 whitespace-nowrap">{isBangla ? 'অফার ধরন' : 'Offer Type'}</th>
@@ -294,11 +294,11 @@ export default function PromotionsPage() {
                   <th className="px-4 py-3.5 text-right whitespace-nowrap">{isBangla ? 'অ্যাকশন' : 'Actions'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1b2231] bg-[#131823]">
+              <tbody className="divide-y divide-border dark:divide-[#1b2231] bg-card dark:bg-[#131823]">
                 {filteredOffers.map((offer) => (
                   <tr
                     key={offer.id}
-                    className="hover:bg-[#1a2130]/80 transition-colors"
+                    className="hover:bg-muted/50 dark:hover:bg-[#1a2130]/80 transition-colors"
                   >
                     {/* Product */}
                     <td className="px-4 py-4 whitespace-nowrap">

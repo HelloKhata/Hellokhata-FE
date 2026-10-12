@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
+import Image from 'next/image';
 
 
 export function Sidebar() {
@@ -73,12 +75,11 @@ export function Sidebar() {
         )}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-emerald flex items-center justify-center">
+              {/* <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-emerald flex items-center justify-center">
                 <Store className="h-5 w-5 text-primary-foreground" />
-              </div>
+              </div> */}
               <div className="flex flex-col">
-                <span className="text-base font-bold tracking-tight text-foreground">Hello Khata</span>
-                <span className="text-[10px] text-muted-foreground">হ্যালো খাতা</span>
+                <Image className='w-full h-full' src="/logo.png" width={150} height={150} alt='logo' />
               </div>
             </div>
           )}
@@ -242,6 +243,17 @@ export function Sidebar() {
 
         {/* Bottom Navigation */}
         <div className="border-t border-border-subtle p-3 space-y-1">
+          {/* Theme Toggle Button */}
+          <div className="flex items-center w-full">
+            <ThemeToggle
+              className={cn(
+                'w-full justify-start rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/50 cursor-pointer',
+                sidebarCollapsed && 'justify-center px-0'
+              )}
+              showLabel={!sidebarCollapsed}
+            />
+          </div>
+
           {bottomNavItems?.map((item, index) => (
             <div key={item.page} className="stagger-item" style={{ animationDelay: `${(navGroups.length + index) * 30}ms` }}>
               <Link href={item.page}
