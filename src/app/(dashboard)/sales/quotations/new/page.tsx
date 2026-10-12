@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -573,15 +573,11 @@ function NewQuotationContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            {isBangla ? "নতুন কোটেশন" : "New Quotation"}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? "নতুন কোটেশন" : "New Quotation"}
+        showBack
+        className="pb-2 border-b border-border/40"
+      />
 
       <div className="w-full lg:flex-[3] min-w-0 space-y-6">
         {/* Row 1 Layout: Search Product, Select Party, Quotation Date & Validity Date */}

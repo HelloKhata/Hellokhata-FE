@@ -211,7 +211,11 @@ export function PartyDetailsAndTransactions({
   const dueCustom = party.dueCustom ?? party.dueSummary?.custom ?? 0;
 
   return (
-    <div className="space-y-6 flex flex-col h-full">
+    <div className="w-full flex flex-col h-full">
+      {/* ========================================================= */}
+      {/* DESKTOP & TABLET VIEW (md and up) - 100% UNCHANGED       */}
+      {/* ========================================================= */}
+      <div className="hidden md:flex flex-col space-y-6 h-full">
       {/* Top Details section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
         <div className="flex items-center gap-4">
@@ -422,37 +426,7 @@ export function PartyDetailsAndTransactions({
         </div>
       </div> */}
 
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="w-[320px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isBangla ? "পার্টি মুছবেন?" : "Delete Party?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {isBangla
-                ? "এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। পার্টিটি স্থায়ীভাবে মুছে ফেলা হবে।"
-                : "This action cannot be undone. This party will be permanently deleted."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {isBangla ? "বাতিল" : "Cancel"}
-            </AlertDialogCancel>
-            <Button
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4 mr-2" />
-              )}
-              {isBangla ? "মুছুন" : "Delete"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
 
       {/* Transactions Section */}
       <div className="flex flex-col flex-1 min-h-0">
@@ -595,6 +569,290 @@ export function PartyDetailsAndTransactions({
           )}
         </div>
       </div>
+    </div>
+    {/* End Desktop & Tablet View */}
+
+      {/* ========================================================= */}
+      {/* MOBILE VIEW (< md) - CLEAN TOUCH-OPTIMIZED INTERFACE       */}
+      {/* ========================================================= */}
+      <div className="md:hidden flex flex-col space-y-4 h-full pb-4">
+        {/* Mobile Header: Back Button + Title + Quick Actions */}
+        <div className="flex items-center justify-between pb-3 border-b border-border/60">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 -ml-1 text-foreground cursor-pointer shrink-0"
+              onClick={onClose}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <span className="text-sm font-bold text-foreground truncate">
+              {isBangla ? "পার্টি বিবরণ" : "Party Details"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEditPartyModal(true)}
+              className="h-8 px-2.5 text-xs font-semibold flex items-center gap-1 border-border/80 cursor-pointer"
+            >
+              <Edit className="h-3.5 w-3.5 text-primary" />
+              <span>{isBangla ? "সম্পাদনা" : "Edit"}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteDialog(true)}
+              className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+              title={isBangla ? "মুছুন" : "Delete"}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Profile & Balance Card */}
+        <div className="rounded-xl bg-card/60 border border-border/60 p-3.5 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="h-12 w-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+              {getInitials(party.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-bold text-foreground truncate">
+                  {party.name}
+                </h2>
+                {party.type && (
+                  <span
+                    className={cn(
+                      "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
+                      party.type === "customer"
+                        ? "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+                        : "bg-purple-500/10 text-purple-500 border border-purple-500/20"
+                    )}
+                  >
+                    {party.type === "customer"
+                      ? isBangla ? "গ্রাহক" : "Customer"
+                      : isBangla ? "সরবরাহকারী" : "Supplier"}
+                  </span>
+                )}
+              </div>
+              {party.phone && (
+                <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">
+                  {party.phone}
+                </p>
+              )}
+              {party.address && (
+                <p className="text-xs text-muted-foreground/80 mt-0.5 line-clamp-1">
+                  {party.address}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Balance Row in Card */}
+          <div className="pt-2.5 border-t border-border/40 flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {isReceivable
+                ? isBangla ? "বর্তমান পাওনা" : "Current Receivable"
+                : isBangla ? "বর্তমান দেনা" : "Current Payable"}
+            </span>
+            <span
+              className={cn(
+                "text-lg font-extrabold font-mono",
+                party.currentBalance > 0
+                  ? "text-emerald-500"
+                  : party.currentBalance < 0
+                    ? "text-rose-500"
+                    : "text-foreground"
+              )}
+            >
+              {formatCurrency(Math.abs(party.currentBalance))}
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile Quick Action Buttons Row */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddReminderModal(true)}
+            className="h-10 text-xs font-semibold flex items-center justify-center gap-1.5 border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 cursor-pointer"
+          >
+            <BellRing className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{isBangla ? "তাগাদা পাঠান" : "Send Reminder"}</span>
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="truncate">{isBangla ? "লেনদেন যোগ" : "Add Transaction"}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 text-xs">
+              <DropdownMenuItem onClick={() => router.push(`/sales/new?partyId=${party.id}`)}>
+                {isBangla ? "নতুন বিক্রয়" : "New Sale"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`/purchases/new?partyId=${party.id}`)}>
+                {isBangla ? "নতুন ক্রয়" : "New Purchase"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(`/sales/quotations/new?partyId=${party.id}`)}>
+                {isBangla ? "নতুন কোটেশন" : "New Quotation"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowPaymentInModal(true)}>
+                {isBangla ? "পেমেন্ট গ্রহণ" : "Payment In"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowPaymentOutModal(true)}>
+                {isBangla ? "পেমেন্ট প্রদান" : "Payment Out"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAdjustBalanceModal(true)}>
+                {isBangla ? "ব্যালেন্স সমন্বয়" : "Adjust Balance"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Mobile Transactions Section */}
+        <div className="flex flex-col flex-1 min-h-0 space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              <span>{isBangla ? "লেনদেন সমূহ" : "Transactions"}</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground">
+                {totalTransactions}
+              </span>
+            </h3>
+          </div>
+
+          {/* Transactions List */}
+          <div className="flex-1 flex flex-col justify-between">
+            {isLedgerLoading ? (
+              <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[200px]">
+                <Loader2 className="h-7 w-7 animate-spin text-primary mb-2" />
+                <p className="text-xs">
+                  {isBangla ? "লোড হচ্ছে..." : "Loading transactions..."}
+                </p>
+              </div>
+            ) : ledgerEntries.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground flex flex-col items-center justify-center min-h-[200px] border border-dashed border-border/60 rounded-xl">
+                <CreditCard className="h-8 w-8 mx-auto text-muted-foreground/60 mb-2" />
+                <p className="text-xs font-medium">
+                  {isBangla ? "কোনো লেনদেন পাওয়া যায়নি" : "No transactions found"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div className={cn("space-y-2 max-h-[420px] overflow-y-auto pr-0.5", isLedgerFetching && "opacity-50 transition-opacity")}>
+                  {ledgerEntries.map((entry: any) => {
+                    return (
+                      <div
+                        key={entry.id}
+                        onClick={() => setSelectedTransaction(entry)}
+                        className="p-3 rounded-xl border border-border/70 bg-card/50 hover:bg-muted/30 active:scale-[0.99] transition-all cursor-pointer space-y-2 shadow-2xs"
+                      >
+                        {/* Top row: Description + Status Badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-foreground text-xs truncate">
+                              {entry.description}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                              {formatDate(entry.date, "short")}
+                            </p>
+                          </div>
+                          <div className="shrink-0">
+                            {getStatusContent(entry)}
+                          </div>
+                        </div>
+
+                        {/* Bottom row: Total, Paid, Balance */}
+                        <div className="grid grid-cols-3 gap-1 pt-2 border-t border-border/40 text-[11px]">
+                          <div>
+                            <span className="text-[10px] text-muted-foreground block">
+                              {isBangla ? "মোট" : "Total"}
+                            </span>
+                            <span className="font-medium text-foreground font-mono">
+                              {formatCurrency(Math.abs(entry.amount))}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-muted-foreground block">
+                              {isBangla ? "পরিশোধ" : "Paid"}
+                            </span>
+                            <span className="font-medium text-foreground font-mono">
+                              {entry.paidAmount !== undefined && entry.paidAmount !== null ? (
+                                formatCurrency(entry.paidAmount)
+                              ) : entry.type === "payment" ? (
+                                formatCurrency(Math.abs(entry.amount))
+                              ) : (
+                                "—"
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-muted-foreground block">
+                              {isBangla ? "ব্যালেন্স" : "Balance"}
+                            </span>
+                            <span className="font-bold text-foreground font-mono">
+                              {formatCurrency(entry.balance)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-2">
+                  <PaginationHelper
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    isBangla={isBangla}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Dialog (Shared) */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="w-[320px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isBangla ? "পার্টি মুছবেন?" : "Delete Party?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isBangla
+                ? "এই কাজ পূর্বাবস্থায় ফেরানো যাবে না। পার্টিটি স্থায়ীভাবে মুছে ফেলা হবে।"
+                : "This action cannot be undone. This party will be permanently deleted."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {isBangla ? "বাতিল" : "Cancel"}
+            </AlertDialogCancel>
+            <Button
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              {isBangla ? "মুছুন" : "Delete"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddPaymentInModal
         isOpen={showPaymentInModal}

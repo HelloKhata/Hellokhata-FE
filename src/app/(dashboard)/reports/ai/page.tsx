@@ -65,7 +65,6 @@ export default function AiInsightsReportsPage() {
         pageNameBn="এআই ইনসাইটস ড্যাশবোর্ড"
         description="Leverage machine learning algorithms to assess business health and forecast sales."
         descriptionBn="ব্যবসায়িক স্বাস্থ্য বিশ্লেষণ এবং বিক্রির পূর্বাভাস পেতে মেশিন লার্নিং ব্যবহার করুন।"
-        icon={Sparkles}
         parentName="Reports"
         parentNameBn="রিপোর্ট"
         parentHref="/reports/dashboard"

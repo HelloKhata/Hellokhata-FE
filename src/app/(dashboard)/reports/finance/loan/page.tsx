@@ -81,7 +81,6 @@ export default function LoanReportPage() {
       <FinancePageHeader
         pageName="Loans & EMI Schedule Report"
         pageNameBn="ঋণ ও কিস্তি রেজিস্টার (Loans & Liabilities)"
-        icon={PiggyBank}
       />
 
       {/* Top Liabilities KPIs */}

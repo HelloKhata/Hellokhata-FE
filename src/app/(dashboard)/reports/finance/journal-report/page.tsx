@@ -139,7 +139,6 @@ export default function JournalReportPage() {
       <FinancePageHeader
         pageName="Journal Book & Vouchers"
         pageNameBn="জাবেদা বই ও ভাউচার রেজিস্টার (Journal Register)"
-        icon={Receipt}
       />
 
       {/* Top Stats Strip */}

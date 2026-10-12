@@ -121,7 +121,6 @@ export default function DepositWithdrawalReportPage() {
       <FinancePageHeader
         pageName="Deposit & Withdrawal Report"
         pageNameBn="ব্যাংক জমা ও উত্তোলন রিপোর্ট (Fund Movements)"
-        icon={ArrowLeftRight}
       />
 
       {/* Top Movement Stats */}

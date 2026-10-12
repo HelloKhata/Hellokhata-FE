@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/common';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,22 +108,13 @@ export function FinanceReportHeader({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-2">
-      {/* 1. Left: Branding, Page Title & Operational Purpose */}
-      <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/10 to-teal-500/5 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs shrink-0 ring-1 ring-emerald-500/10">
-          <Landmark className="w-5 h-5" />
-        </div>
-
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {isBangla ? 'হিসাব ও অর্থায়ন রিপোর্ট' : 'Accounting & Finance reports'}
-          </h1>
-        </div>
-      </div>
-
-      {/* 2. Right: Unified Executive Command Bar (Connected Segments) */}
-      <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
+    <PageHeader
+      title="Accounting & Finance reports"
+      titleBn="হিসাব ও অর্থায়ন রিপোর্ট"
+      subtitle="Operational cash movement, credit aging buckets, and financial performance trends"
+      subtitleBn="রাজস্ব, নগদ তারল্য, মেয়াদোত্তীর্ণ দেনা-পাওনা এবং ব্যালেন্স শিটের বিশদ পর্যালোচনা"
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
         {/* Connected Filter Capsule */}
         <div className="inline-flex items-center rounded-2xl bg-card border border-border/80 p-1 shadow-xs divide-x divide-border/60">
           {/* A. Date Range Dropdown */}
@@ -322,7 +314,8 @@ export function FinanceReportHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </div>
+        </div>
+      }
+    />
   );
 }

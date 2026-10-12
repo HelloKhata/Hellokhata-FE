@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton, ImageWithFallback } from "@/components/common";
+import { BackButton, PageHeader, ImageWithFallback } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1171,14 +1171,11 @@ const itemsBatches = batchesData?.batches;
       {/* ========================================================= */}
       <div className="hidden md:block space-y-4 sm:space-y-6">
         {/* Top Header Section */}
-        <div className="flex items-center justify-between pb-2 border-b border-border/40">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <BackButton />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              {isBangla ? "নতুন বিক্রি" : "New Sale"}
-            </h1>
-          </div>
-        </div>
+        <PageHeader
+          title={isBangla ? "নতুন বিক্রি" : "New Sale"}
+          showBack
+          fallbackHref="/sales"
+        />
 
 
         <div className="w-full lg:flex-[3] min-w-0 space-y-4 sm:space-y-6">
@@ -2142,12 +2139,11 @@ const itemsBatches = batchesData?.batches;
       {/* ========================================================= */}
       <div className="md:hidden pb-44 space-y-3.5">
         {/* Mobile Header: BackButton + Title */}
-        <div className="flex items-center gap-3 pb-2 border-b border-border/40">
-          <BackButton />
-          <h1 className="text-lg font-bold tracking-tight text-foreground">
-            {isBangla ? "নতুন বিক্রি" : "Add New Sales"}
-          </h1>
-        </div>
+        <PageHeader
+          title={isBangla ? "নতুন বিক্রি" : "Add New Sales"}
+          showBack
+          fallbackHref="/sales"
+        />
 
         {/* Customer & Date Selector Bar */}
         <div className="flex items-center justify-between py-1 border-b border-border/40 text-xs">

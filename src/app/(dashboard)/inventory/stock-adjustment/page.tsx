@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Divider, EmptyState } from '@/components/ui/premium';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -166,24 +166,12 @@ export default function StockAdjustmentPage() {
   return (
     <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BackButton fallbackHref="/inventory" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                {adjustmentType === 'increase' ? (
-                  <ArrowUpCircle className="h-6 w-6 text-emerald" />
-                ) : (
-                  <ArrowDownCircle className="h-6 w-6 text-warning" />
-                )}
-                {isBangla ? 'স্টক সংশোধন' : 'Stock Adjustment'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-                {isBangla ? 'স্টক ম্যানুয়ালি বাড়ান বা কমান' : 'Manually increase or decrease stock'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={isBangla ? 'স্টক সংশোধন' : 'Stock Adjustment'}
+          subtitle={isBangla ? 'স্টক ম্যানুয়ালি বাড়ান বা কমান' : 'Manually increase or decrease stock'}
+          showBack
+          fallbackHref="/inventory"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Adjustment Form */}

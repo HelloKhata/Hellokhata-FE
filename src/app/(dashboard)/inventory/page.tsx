@@ -6,7 +6,7 @@
 
 import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
-import { BackButton, ImageWithFallback } from '@/components/common';
+import { PageHeader, ImageWithFallback } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaginationHelper } from '@/components/shared/PaginationHelper';
@@ -99,20 +99,11 @@ export default function InventoryPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex  sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2 sm:gap-2.5">
-                <Package className="h-6 w-6 sm:h-7 sm:w-7 text-primary shrink-0" />
-                {t('inventory.title')}
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground/80 mt-0.5 sm:mt-1">
-                {isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 self-end sm:self-auto">
+        <PageHeader
+          title={t('inventory.title')}
+          subtitle={isBangla ? 'পণ্য ও স্টক ব্যবস্থাপনা' : 'Product & stock management'}
+          showBack
+          actions={
             <Button
               onClick={() => router.push('/inventory/new')}
               className="shrink-0 h-9 sm:h-10 px-3.5 sm:px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
@@ -120,8 +111,8 @@ export default function InventoryPage() {
               <Plus className="h-4 w-4" />
               <span className="whitespace-nowrap">{t('inventory.addItem')}</span>
             </Button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Premium SaaS ERP KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

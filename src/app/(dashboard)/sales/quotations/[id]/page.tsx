@@ -7,7 +7,7 @@ import { useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -123,15 +123,11 @@ function QuotationDetailsContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
-            {isBangla ? "কোটেশন বিবরণ" : "Quotation Details"}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? "কোটেশন বিবরণ" : "Quotation Details"}
+        showBack
+        className="pb-2 border-b border-border/40"
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[400px]">

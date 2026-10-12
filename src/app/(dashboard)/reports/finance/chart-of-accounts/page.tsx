@@ -127,7 +127,6 @@ export default function ChartOfAccountsPage() {
       <FinancePageHeader
         pageName="Chart of Accounts Master"
         pageNameBn="হিসাবের তালিকা ও কোড (COA Master Hierarchy)"
-        icon={FolderTree}
       />
 
       {/* Top Architecture Stats */}

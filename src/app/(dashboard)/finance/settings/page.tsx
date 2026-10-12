@@ -154,7 +154,6 @@ export default function FinanceSettingsPage() {
         pageNameBn="ভ্যাট ও ট্যাক্স সেটিংস"
         description="Configure standard VAT and tax rules, rates, and active statuses for your transactions."
         descriptionBn="আপনার লেনদেনের জন্য আদর্শ ভ্যাট ও কর নিয়মাবলী, শতকরা হার এবং স্ট্যাটাস কনফিগার করুন।"
-        icon={Percent}
       />
 
       {/* 2. Access Control Lock Banner */}

@@ -60,7 +60,6 @@ export default function AccountLedgerPage() {
         pageNameBn="হিসাব খতিয়ান"
         description="Individual account-wise transaction ledger with running balance."
         descriptionBn="একাউন্টভিত্তিক লেনদেন খতিয়ান ও চলমান ব্যালেন্স।"
-        icon={Notebook}
         parentName="Finance Reports"
         parentNameBn="আর্থিক রিপোর্ট"
         parentHref="/reports/finance"

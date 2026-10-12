@@ -5,7 +5,7 @@
 
 import { useState, useMemo } from "react";
 import { KPICard, EmptyState } from "@/components/ui/premium";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -80,21 +80,15 @@ export default function PurchasesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Truck className="h-6 w-6 text-primary" />
-              {isBangla ? "ক্রয় ব্যবস্থাপনা" : "Purchases"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-              {isBangla
-                ? "সরবরাহকারী থেকে পণ্য ক্রয় এবং ক্রয়ের ইতিহাস পরিচালনা করুন"
-                : "Manage supplier purchases and purchase history."}
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        title={isBangla ? "ক্রয় ব্যবস্থাপনা" : "Purchases"}
+        subtitle={
+          isBangla
+            ? "সরবরাহকারী থেকে পণ্য ক্রয় এবং ক্রয়ের ইতিহাস পরিচালনা করুন"
+            : "Manage supplier purchases and purchase history."
+        }
+        showBack
+      >
         <Link
           href="/purchases/new"
           className="bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 flex gap-2 shrink-0 p-2.5 rounded-lg text-sm font-semibold items-center"
@@ -104,7 +98,7 @@ export default function PurchasesPage() {
             {isBangla ? "নতুন ক্রয়" : "New Purchase"}
           </span>
         </Link>
-      </div>
+      </PageHeader>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

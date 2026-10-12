@@ -81,7 +81,6 @@ export default function WalletStatementPage() {
       <FinancePageHeader
         pageName="MFS Wallet Statement"
         pageNameBn="এমএফএস ওয়ালেট স্টেটমেন্ট (bKash & Nagad)"
-        icon={Coins}
       />
 
       {/* Top MFS Stats Strip */}

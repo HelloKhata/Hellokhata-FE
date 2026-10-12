@@ -210,7 +210,6 @@ export default function LeavePage() {
         titleBn="ছুটি ব্যবস্থাপনা"
         subtitle={isBangla ? 'ছুটির আবেদন দেখুন, অনুমোদন করুন ও ব্যালেন্স ট্র্যাক করুন।' : 'Review, approve and track leave requests and balances.'}
         subtitleBn="ছুটির আবেদন দেখুন, অনুমোদন করুন ও ব্যালেন্স ট্র্যাক করুন।"
-        icon={CalendarOff}
         breadcrumbs={[{ label: isBangla ? 'ছুটি' : 'Leave', labelBn: 'ছুটি' }]}
         actions={
           <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => setApplyOpen(true)}>

@@ -169,7 +169,6 @@ export default function FinanceLoanPage() {
           pageNameBn="ঋণ ও দায় পরিশোধ ব্যবস্থাপনা"
           description="Register bank borrowings, log payout installments, and track APR repayment progress."
           descriptionBn="ব্যাংক ঋণ এন্ট্রি দিন, কিস্তি পরিশোধের লগ সংরক্ষণ করুন এবং সুদের হার ও অগ্রগতি ট্র্যাক করুন।"
-          icon={Landmark}
         />
         <div className="flex gap-2 shrink-0">
           <Button onClick={() => setIsBorrowOpen(true)} className="gap-1.5 text-xs h-9">

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/common';
 
 interface SupplierReportHeaderProps {
   dateRange: string;
@@ -82,11 +83,9 @@ export function SupplierReportHeader({
 
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-2">
-      {/* 1. Left: Branding & Subtitle */}
-      <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500/15 via-indigo-500/10 to-blue-500/5 border border-indigo-500/25 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-xs shrink-0 ring-1 ring-indigo-500/10">
-          <Truck className="w-5 h-5" />
-        </div>
+      {/* 1. Left: Back Button + Title & Subtitle */}
+      <div className="flex items-center gap-3">
+        <BackButton fallbackHref="/reports" className="shrink-0" />
 
         <div>
           <div className="flex items-center gap-2 flex-wrap">

@@ -163,7 +163,6 @@ export default function VatTaxCompliancePage() {
       <FinancePageHeader
         pageName="VAT & Tax Compliance Register"
         pageNameBn="মূসক ও ভ্যাট রিটার্ন রেজিস্টার"
-        icon={ShieldCheck}
       />
 
       {/* Quick Statutory Metrics Cards */}

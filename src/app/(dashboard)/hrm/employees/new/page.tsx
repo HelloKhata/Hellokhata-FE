@@ -31,7 +31,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -272,21 +272,14 @@ export default function AddEmployeePage() {
   return (
     <div className="w-full space-y-6 pb-20 px-1 sm:px-2">
       {/* 1. TOP HEADER */}
-      <div className="flex items-center justify-between gap-4 py-2">
-        <div className="flex items-center gap-3">
-          <BackButton fallbackHref="/hrm/employees" />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
-              <span>{isBangla ? 'নতুন কর্মচারী যোগ করুন' : 'Add New Employee'}</span>
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {isBangla
-                ? 'একটি সম্পূর্ণ নতুন কর্মচারী প্রোফাইল ও বেতন বিবরণী তৈরি করুন।'
-                : 'Create a new employee profile and employment arrangement.'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? 'নতুন কর্মচারী যোগ করুন' : 'Add New Employee'}
+        subtitle={isBangla
+          ? 'একটি সম্পূর্ণ নতুন কর্মচারী প্রোফাইল ও বেতন বিবরণী তৈরি করুন।'
+          : 'Create a new employee profile and employment arrangement.'}
+        showBack
+        fallbackHref="/hrm/employees"
+      />
 
       {/* FORM CONTAINER */}
       <form onSubmit={handleCreate} className="space-y-6">

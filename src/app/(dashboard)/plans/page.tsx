@@ -22,6 +22,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -140,6 +141,9 @@ export default function PlansPage() {
     <div className="w-full min-h-screen bg-background text-foreground pb-20 space-y-10">
       {/* ─── Hero Header ──────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden pt-6 pb-10 rounded-3xl bg-gradient-to-b from-primary/10 via-background to-background border border-border/40 px-4 sm:px-8 text-center">
+        <div className="absolute top-4 left-4 z-10">
+          <BackButton fallbackHref="/" />
+        </div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-primary/15 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-semibold mb-4 backdrop-blur-md shadow-sm">

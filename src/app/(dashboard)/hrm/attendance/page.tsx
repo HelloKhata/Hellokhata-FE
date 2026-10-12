@@ -327,7 +327,6 @@ export default function AttendancePage() {
         titleBn="উপস্থিতি ব্যবস্থাপনা"
         subtitle={isBangla ? 'দৈনিক উপস্থিতি রেকর্ড ও পরিচালনা করুন।' : 'Record and manage daily attendance.'}
         subtitleBn="দৈনিক উপস্থিতি রেকর্ড ও পরিচালনা করুন।"
-        icon={CalendarCheck}
         breadcrumbs={[{ label: isBangla ? 'উপস্থিতি' : 'Attendance', labelBn: 'উপস্থিতি' }]}
         actions={
           <>

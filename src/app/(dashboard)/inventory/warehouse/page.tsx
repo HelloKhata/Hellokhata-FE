@@ -80,18 +80,6 @@ export default function WarehouseOverviewPage() {
   };
   return (
     <div className="space-y-5 pb-12">
-      {/* 1. Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>{isBangla ? "ইনভেন্টরি" : "Inventory"}</span>
-          <ChevronRight className="h-3 w-3" />
-          <span>{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</span>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground font-semibold">
-            {isBangla ? "ওভারভিউ" : "Overview"}
-          </span>
-        </nav>
-      </div>
 
       {/* 2. Compact Header with Switchers & Overflow Action Menu */}
       <WarehouseHeader

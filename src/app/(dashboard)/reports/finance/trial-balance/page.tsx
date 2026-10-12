@@ -95,7 +95,6 @@ export default function TrialBalancePage() {
       <FinancePageHeader
         pageName="Trial Balance Reconciliation"
         pageNameBn="রেওয়ামিল (Trial Balance Reconciliation)"
-        icon={BookOpen}
       />
 
       {/* Top Reconciliation Equilibrium Banner */}

@@ -37,6 +37,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/common";
 
 // ============================================================================
 // TYPES & MOCK DATA
@@ -753,12 +754,11 @@ export default function SalesReportPage() {
       {/* ================================================================== */}
       {/* 1. PAGE HEADER                                                     */}
       {/* ================================================================== */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          Sales Reports
-        </h1>
-        <p className="text-sm text-slate-400">Manage and analyse your sales data</p>
-      </div>
+      <PageHeader
+        title="Sales Reports"
+        subtitle="Manage and analyse your sales data"
+        showBack
+      />
 
       {/* ================================================================== */}
       {/* SUB-MENU TABS                                                       */}

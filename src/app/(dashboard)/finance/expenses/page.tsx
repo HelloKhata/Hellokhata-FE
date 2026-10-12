@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { useToast } from "@/hooks/use-toast";
 import { useBranchStore } from "@/stores/branchStore";
 import {
@@ -558,94 +558,85 @@ const UTILITY_TYPES = [
         {/* =========================================================================
             1. HEADER SECTION
            ========================================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  {isBangla ? "ব্যয়ের হিসাব" : "Expenses"}
-                </h1>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isBangla
-                  ? "আপনার ব্যবসায়িক সকল খরচ ট্র্যাক, পরিচালনা এবং বিশদ বিশ্লেষণ করুন"
-                  : "Track, manage and analyze your business expenses"}
-              </p>
+        <PageHeader
+          title={isBangla ? "ব্যয়ের হিসাব" : "Expenses"}
+          subtitle={isBangla
+            ? "আপনার ব্যবসায়িক সকল খরচ ট্র্যাক, পরিচালনা এবং বিশদ বিশ্লেষণ করুন"
+            : "Track, manage and analyze your business expenses"}
+          showBack
+          actions={
+            <div className="flex items-center flex-wrap gap-2.5">
+              {/* Date Range Picker Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="h-9 px-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors cursor-pointer shadow-2xs">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>
+                      {isBangla
+                        ? dateRange === "Jul 23, 2026 - Aug 22, 2026"
+                          ? "২৩ জুলাই, ২০২৬ - ২২ আগস্ট, ২০২৬"
+                          : dateRange
+                        : dateRange}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+                  <DropdownMenuItem onClick={() => setDateRange("Today: Aug 22, 2026")}>
+                    {isBangla ? "আজ (২২ আগস্ট, ২০২৬)" : "Today: Aug 22, 2026"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDateRange("This Week: Aug 16 - Aug 22, 2026")}>
+                    {isBangla ? "এই সপ্তাহ (১৬ - ২২ আগস্ট)" : "This Week: Aug 16 - Aug 22, 2026"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDateRange("Jul 23, 2026 - Aug 22, 2026")}>
+                    {isBangla ? "গত ৩০ দিন (২৩ জুলাই - ২২ আগস্ট)" : "Last 30 Days (Jul 23 - Aug 22)"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDateRange("This Month: Aug 1 - Aug 31, 2026")}>
+                    {isBangla ? "এই মাস (আগস্ট ২০২৬)" : "This Month (August 2026)"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDateRange("This Year (2026)")}>
+                    {isBangla ? "এই বছর (২০২৬)" : "This Year (2026)"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Export Report Button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="h-9 px-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors cursor-pointer shadow-2xs">
+                    <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{isBangla ? "রিপোর্ট ডাউনলোড" : "Export Report"}</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      toast({
+                        title: isBangla ? "CSV ডাউনলোড হচ্ছে..." : "Exporting CSV...",
+                        description: isBangla ? "ব্যয় রিপোর্ট CSV ফাইলে ডাউনলোড সম্পন্ন।" : "Expense report downloaded as CSV.",
+                      })
+                    }
+                  >
+                    {isBangla ? "CSV ফাইল (.csv)" : "Export as CSV (.csv)"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      toast({
+                        title: isBangla ? "PDF তৈরি হচ্ছে..." : "Generating PDF...",
+                        description: isBangla ? "ব্যয় রিপোর্ট PDF ফরম্যাটে প্রস্তুত।" : "Expense report compiled as PDF.",
+                      })
+                    }
+                  >
+                    {isBangla ? "PDF ডকুমেন্ট (.pdf)" : "Export as PDF (.pdf)"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.print()}>
+                    {isBangla ? "প্রিন্ট করুন" : "Print Report"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </div>
-
-          <div className="flex items-center flex-wrap gap-2.5">
-            {/* Date Range Picker Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="h-9 px-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors cursor-pointer shadow-2xs">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>
-                    {isBangla
-                      ? dateRange === "Jul 23, 2026 - Aug 22, 2026"
-                        ? "২৩ জুলাই, ২০২৬ - ২২ আগস্ট, ২০২৬"
-                        : dateRange
-                      : dateRange}
-                  </span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-card border-border">
-                <DropdownMenuItem onClick={() => setDateRange("Today: Aug 22, 2026")}>
-                  {isBangla ? "আজ (২২ আগস্ট, ২০২৬)" : "Today: Aug 22, 2026"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDateRange("This Week: Aug 16 - Aug 22, 2026")}>
-                  {isBangla ? "এই সপ্তাহ (১৬ - ২২ আগস্ট)" : "This Week: Aug 16 - Aug 22, 2026"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDateRange("Jul 23, 2026 - Aug 22, 2026")}>
-                  {isBangla ? "গত ৩০ দিন (২৩ জুলাই - ২২ আগস্ট)" : "Last 30 Days (Jul 23 - Aug 22)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDateRange("This Month: Aug 1 - Aug 31, 2026")}>
-                  {isBangla ? "এই মাস (আগস্ট ২০২৬)" : "This Month (August 2026)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDateRange("This Year (2026)")}>
-                  {isBangla ? "এই বছর (২০২৬)" : "This Year (2026)"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Export Report Button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="h-9 px-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors cursor-pointer shadow-2xs">
-                  <Download className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{isBangla ? "রিপোর্ট ডাউনলোড" : "Export Report"}</span>
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-card border-border">
-                <DropdownMenuItem
-                  onClick={() =>
-                    toast({
-                      title: isBangla ? "CSV ডাউনলোড হচ্ছে..." : "Exporting CSV...",
-                      description: isBangla ? "ব্যয় রিপোর্ট CSV ফাইলে ডাউনলোড সম্পন্ন।" : "Expense report downloaded as CSV.",
-                    })
-                  }
-                >
-                  {isBangla ? "CSV ফাইল (.csv)" : "Export as CSV (.csv)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    toast({
-                      title: isBangla ? "PDF তৈরি হচ্ছে..." : "Generating PDF...",
-                      description: isBangla ? "ব্যয় রিপোর্ট PDF ফরম্যাটে প্রস্তুত।" : "Expense report compiled as PDF.",
-                    })
-                  }
-                >
-                  {isBangla ? "PDF ডকুমেন্ট (.pdf)" : "Export as PDF (.pdf)"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.print()}>
-                  {isBangla ? "প্রিন্ট করুন" : "Print Report"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+          }
+        />
 
         {/* =========================================================================
             2. TOP STATS CARDS (4 METRICS IN ROW)

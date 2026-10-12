@@ -15,7 +15,7 @@ import {
   Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { BackButton, PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -120,24 +120,26 @@ export default function RemindersPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
-        <div className="flex items-center gap-3">
-          <BackButton fallbackHref="/" />
-          <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
-            {isBangla ? "রিমাইন্ডারসমূহ" : "Reminders"}
-          </h1>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedReminder(null);
-            setAddModalOpen(true);
-          }}
-          className="bg-primary hover:bg-primary/60 text-white font-semibold flex items-center gap-2 rounded-lg px-4 h-10 border-none shadow-sm cursor-pointer transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          {isBangla ? "নতুন রিমাইন্ডার" : "Add New Reminder"}
-        </Button>
-      </div>
+      <PageHeader
+        showBack
+        fallbackHref="/"
+        title="Reminders"
+        titleBn="রিমাইন্ডারসমূহ"
+        subtitle="Manage upcoming reminders and payment schedules"
+        subtitleBn="আসন্ন রিমাইন্ডার ও পেমেন্টের সময়সূচি পরিচালনা করুন"
+        actions={
+          <Button
+            onClick={() => {
+              setSelectedReminder(null);
+              setAddModalOpen(true);
+            }}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 rounded-lg px-4 h-9 shadow-xs cursor-pointer transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{isBangla ? "নতুন রিমাইন্ডার" : "Add New Reminder"}</span>
+          </Button>
+        }
+      />
 
       {/* Tabs Layout */}
       <div className="flex border-b border-border/40 gap-6">

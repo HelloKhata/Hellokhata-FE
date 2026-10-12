@@ -221,7 +221,6 @@ export default function FinanceReceivablesPage() {
           pageNameBn="প্রাপ্য হিসাব ব্যবস্থাপনা (কালেকশন)"
           description="Record customer due payments, register credit invoices, and manage payment reminders."
           descriptionBn="গ্রাহকদের বকেয়া পর্যবেক্ষণ করুন, পরিশোধ আদায় রেকর্ড করুন এবং পেমেন্ট রিমাইন্ডার পাঠান।"
-          icon={HandCoins}
           showBackButton={true}
           backHref="/finance/overview"
         />

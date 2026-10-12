@@ -12,6 +12,7 @@ import {
   EmptyState,
 } from "@/components/ui/premium";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/common";
 import {
   Select,
   SelectContent,
@@ -165,16 +166,10 @@ export default function QuotationsPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <FileText className="h-6 w-6 text-primary" />
-              {isBangla ? "কোটেশন" : "Quotations"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-              {isBangla ? "সকল কোটেশনের রেকর্ড" : "All quotation records"}
-            </p>
-          </div>
+        <PageHeader
+          title={isBangla ? "কোটেশন" : "Quotations"}
+          subtitle={isBangla ? "সকল কোটেশনের রেকর্ড" : "All quotation records"}
+        >
           <Button
             onClick={() => router.push("/sales/quotations/new")}
             className="shrink-0"
@@ -184,7 +179,7 @@ export default function QuotationsPage() {
               {isBangla ? "নতুন কোটেশন" : "New Quotation"}
             </span>
           </Button>
-        </div>
+        </PageHeader>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

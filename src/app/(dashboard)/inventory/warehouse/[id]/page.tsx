@@ -19,7 +19,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { BackButton, PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -159,68 +159,48 @@ export default function WarehouseDetailPage() {
 
   return (
     <div className="space-y-5 pb-12">
-      {/* 1. Breadcrumbs */}
-      <div className="flex items-center justify-between gap-2">
-        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href="/inventory" className="hover:text-primary transition-colors">
-            {isBangla ? "ইনভেন্টরি" : "Inventory"}
-          </Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link href="/inventory/warehouse" className="hover:text-primary transition-colors">
-            {isBangla ? "ওয়্যারহাউস" : "Warehouse"}
-          </Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground font-semibold">{warehouse.name}</span>
-        </nav>
-      </div>
-
-      {/* 2. Header: Title is Warehouse Name, right side edit & transfer buttons */}
-      <div className="bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <BackButton fallbackHref="/inventory/warehouse" />
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                {warehouse.name}
-              </h1>
-              <Badge variant="outline" className="font-mono text-xs font-bold bg-muted">
-                {warehouse.code}
-              </Badge>
-              {getStatusBadge(warehouse.status)}
-            </div>
-            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
-              <span>📍 {warehouse.city}, {warehouse.branchName}</span>
-              <span>•</span>
-              <span>👤 Manager: {warehouse.managerName}</span>
-              {warehouse.managerPhone && (
-                <span className="font-mono">({warehouse.managerPhone})</span>
-              )}
-            </p>
+      {/* 1. Universal PageHeader */}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Inventory", labelBn: "ইনভেন্টরি", href: "/inventory" },
+          { label: "Warehouse", labelBn: "ওয়্যারহাউস", href: "/inventory/warehouse" },
+          { label: warehouse.name },
+        ]}
+        showBack
+        fallbackHref="/inventory/warehouse"
+        title={warehouse.name}
+        badge={
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="font-mono text-xs font-bold bg-muted">
+              {warehouse.code}
+            </Badge>
+            {getStatusBadge(warehouse.status)}
           </div>
-        </div>
+        }
+        subtitle={`📍 ${warehouse.city}, ${warehouse.branchName} • 👤 Manager: ${warehouse.managerName}${warehouse.managerPhone ? ` (${warehouse.managerPhone})` : ""}`}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditModalOpen(true)}
+              className="h-9 text-xs font-semibold gap-1.5 cursor-pointer border-border/80 rounded-xl"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              <span>{isBangla ? "এডিট করুন" : "Edit"}</span>
+            </Button>
 
-        {/* Right side header actions: Edit and Transfer */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditModalOpen(true)}
-            className="h-9 text-xs font-semibold gap-1.5 cursor-pointer border-border/80 rounded-xl"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            <span>{isBangla ? "এডিট করুন" : "Edit"}</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={() => router.push("/inventory/warehouse/transfers/new")}
-            className="h-9 text-xs font-semibold gap-1.5 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
-          >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
-            <span>{isBangla ? "স্টক ট্রান্সফার" : "Transfer"}</span>
-          </Button>
-        </div>
-      </div>
+            <Button
+              size="sm"
+              onClick={() => router.push("/inventory/warehouse/transfers/new")}
+              className="h-9 text-xs font-semibold gap-1.5 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5" />
+              <span>{isBangla ? "স্টক ট্রান্সফার" : "Transfer"}</span>
+            </Button>
+          </div>
+        }
+      />
 
       {/* 3. 4 KPI Cards (Total Items, Total Stock, Stock Value, Low Stock) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

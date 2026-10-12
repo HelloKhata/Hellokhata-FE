@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/common";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -105,30 +106,23 @@ export function TransferHistoryPage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Header & Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-4">
-        <div className="space-y-1">
-          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{isBangla ? "ইনভেন্টরি" : "Inventory"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span>{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-semibold">{isBangla ? "ট্রান্সফার হিস্ট্রি" : "Transfer History"}</span>
-          </nav>
-
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ArrowRightLeft className="h-6 w-6 text-primary" />
-            <span>{isBangla ? "স্টক ট্রান্সফার হিস্ট্রি" : "Stock Transfer History"}</span>
-          </h1>
-        </div>
-
-        <Button
-          onClick={() => router.push("/inventory/warehouse/transfers/new")}
-          className="h-9 text-xs font-bold gap-1.5 cursor-pointer shadow-xs shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          {isBangla ? "নতুন ট্রান্সফার" : "Create Transfer"}
-        </Button>
-      </div>
+      <PageHeader
+        title={isBangla ? "স্টক ট্রান্সফার হিস্ট্রি" : "Stock Transfer History"}
+        breadcrumbs={[
+          { label: "Inventory", labelBn: "ইনভেন্টরি" },
+          { label: "Warehouse", labelBn: "ওয়্যারহাউস" },
+          { label: "Transfer History", labelBn: "ট্রান্সফার হিস্ট্রি" },
+        ]}
+        actions={
+          <Button
+            onClick={() => router.push("/inventory/warehouse/transfers/new")}
+            className="h-9 text-xs font-bold gap-1.5 cursor-pointer shadow-xs shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            {isBangla ? "নতুন ট্রান্সফার" : "Create Transfer"}
+          </Button>
+        }
+      />
 
       {/* Top Toolbar: Search + Status Filter + Source + Destination + Date Range */}
       <div className="space-y-3 p-4 bg-card border border-border/60 rounded-xl shadow-xs">

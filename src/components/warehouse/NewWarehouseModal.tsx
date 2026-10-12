@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import { Building2, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { Warehouse } from "./WarehouseMockData";
 import { useCreateWarehouse } from "@/hooks/api/useWarehouse";
 
 interface NewWarehouseModalProps {

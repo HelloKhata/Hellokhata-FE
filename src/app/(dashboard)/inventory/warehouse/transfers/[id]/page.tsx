@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { BackButton, PageHeader } from "@/components/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -76,35 +76,25 @@ export function TransferDetailPage() {
 
   return (
     <div className="space-y-6 pb-16">
-      {/* 1. Header — Transfer ID, Status Badge, Date */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-4">
-        <div className="space-y-1">
-          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{isBangla ? "ইনভেন্টরি" : "Inventory"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span>{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-semibold">{isBangla ? "ট্রান্সফার বিবরণ" : "Transfer Detail"}</span>
-          </nav>
-
-          <div className="flex items-center gap-3 flex-wrap pt-1">
-            <BackButton />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
-              #{transfer.transferNo}
-            </h1>
-            {renderStatusBadge(transfer.status)}
-            <span className="text-xs text-muted-foreground font-mono">
-              {new Date(transfer.date).toLocaleString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* 1. Universal PageHeader */}
+      <PageHeader
+        breadcrumbs={[
+          { label: "Inventory", labelBn: "ইনভেন্টরি", href: "/inventory" },
+          { label: "Warehouse", labelBn: "ওয়্যারহাউস", href: "/inventory/warehouse" },
+          { label: "Transfer Detail", labelBn: "ট্রান্সফার বিবরণ" },
+        ]}
+        showBack
+        fallbackHref="/inventory/warehouse/transfers"
+        title={`#${transfer.transferNo}`}
+        badge={renderStatusBadge(transfer.status)}
+        subtitle={new Date(transfer.date).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      />
 
       {/* 2. Information Card — Source Branch, Destination Branch, Notes */}
       <Card className="border border-border/60 shadow-xs">

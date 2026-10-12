@@ -33,6 +33,7 @@ import {
 import { toast } from 'sonner';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/common';
 import {
   type UserAccessProfile,
   type AccessAuditEntry,
@@ -185,40 +186,33 @@ export default function UserAccessControlPage() {
   return (
     <div className="space-y-6 pb-20">
       {/* ─── Top Header & Primary Navigation ──────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
-            <ShieldCheck className="w-7 h-7 text-primary" />
-            <span>{isBangla ? 'রোল ও পারমিশন' : 'Roles & Permissions'}</span>
-          </h1>
+      <PageHeader
+        title={isBangla ? 'রোল ও পারমিশন' : 'Roles & Permissions'}
+        subtitle={isBangla
+          ? 'ব্যবসার ধরন অনুযায়ী রোলে অনুমতি কাস্টমাইজ করুন এবং নির্দিষ্ট ব্যবহারকারীদের জন্য ডেটা অ্যাক্সেস নিয়ন্ত্রণ করুন।'
+          : 'Customize roles with business-specific permissions and control data access for individual users.'}
+        showBack
+        actions={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button
+              onClick={() => setIsAddUserModalOpen(true)}
+              variant="outline"
+              className="rounded-xl border-border text-foreground hover:bg-muted text-xs font-bold h-10 shadow-xs cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 mr-1.5 text-primary" />
+              {isBangla ? 'কর্মী যোগ ও অ্যাক্সেস' : 'Add User Access'}
+            </Button>
 
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            {isBangla
-              ? 'ব্যবসার ধরন অনুযায়ী রোলে অনুমতি কাস্টমাইজ করুন এবং নির্দিষ্ট ব্যবহারকারীদের জন্য ডেটা অ্যাক্সেস নিয়ন্ত্রণ করুন।'
-              : 'Customize roles with business-specific permissions and control data access for individual users.'}
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            onClick={() => setIsAddUserModalOpen(true)}
-            variant="outline"
-            className="rounded-xl border-border text-foreground hover:bg-muted text-xs font-bold h-10 shadow-xs cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4 mr-1.5 text-primary" />
-            {isBangla ? 'কর্মী যোগ ও অ্যাক্সেস' : 'Add User Access'}
-          </Button>
-
-          <Button
-            onClick={() => setIsCreateRoleModalOpen(true)}
-            className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-10 shadow-sm cursor-pointer"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            {isBangla ? 'নতুন রোল যোগ' : 'Add Role'}
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={() => setIsCreateRoleModalOpen(true)}
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-bold h-10 shadow-sm cursor-pointer"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              {isBangla ? 'নতুন রোল যোগ' : 'Add Role'}
+            </Button>
+          </div>
+        }
+      />
 
       {/* ─── ROLES & PERMISSIONS TABLE & TOOLBAR ────────────────────────────── */}
       <div className="space-y-4 pt-1">

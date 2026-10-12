@@ -82,7 +82,6 @@ export default function AccountStatementPage() {
       <FinancePageHeader
         pageName="Account Statement"
         pageNameBn="হিসাব বিবরণী (Account Statement)"
-        icon={ScrollText}
       />
 
       {/* Top Account Snapshot Card */}

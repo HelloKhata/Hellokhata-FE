@@ -33,7 +33,7 @@ const offerSchema = z.object({
 type OfferFormValues = z.infer<typeof offerSchema>;
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -372,17 +372,13 @@ function OfferFormContent() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <Sparkles className="h-6 w-6 text-primary" />
-            {offerIdParam
-              ? isBangla ? 'অফার সম্পাদনা করুন' : 'Edit Promotion Offer'
-              : isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Promotion Offer'}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        title={offerIdParam
+          ? (isBangla ? 'অফার সম্পাদনা করুন' : 'Edit Promotion Offer')
+          : (isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Promotion Offer')}
+        showBack
+        fallbackHref="/inventory/promotions"
+      />
 
       {/* Main 2 Column Grid: Form (65%) & Live Preview (35%) */}
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
