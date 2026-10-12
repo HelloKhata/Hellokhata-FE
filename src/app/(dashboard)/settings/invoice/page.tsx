@@ -31,6 +31,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/common";
 import { InvoicePreviewWrapper } from "@/components/invoice/InvoiceActions";
 import { InvoiceData } from "@/types/invoice";
 
@@ -304,17 +305,13 @@ export default function InvoiceSettingsPage() {
   return (
     <div className="w-full mx-auto px-4 sm:px-6 py-6">
       {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          {isBangla ? "ইনভয়েস কাস্টমাইজেশন" : "Invoice Customization"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {isBangla
-            ? "আপনার ইনভয়েস টেমপ্লেট কাস্টমাইজ করুন এবং লাইভ প্রিভিউ দেখুন"
-            : "Customize your invoice template and view real-time preview"}
-        </p>
-      </div>
+      <PageHeader
+        title={isBangla ? "ইনভয়েস কাস্টমাইজেশন" : "Invoice Customization"}
+        subtitle={isBangla
+          ? "আপনার ইনভয়েস টেমপ্লেট কাস্টমাইজ করুন এবং লাইভ প্রিভিউ দেখুন"
+          : "Customize your invoice template and view real-time preview"}
+        showBack
+      />
 
       {/* Main Grid Layout (60% / 40%) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">

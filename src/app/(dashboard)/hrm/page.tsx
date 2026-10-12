@@ -103,7 +103,6 @@ export default function HrmDashboardPage() {
         titleBn="এইচআরএম ড্যাশবোর্ড"
         subtitle={isBangla ? 'এক নজরে আপনার প্রতিষ্ঠানের কর্মচারী ও উপস্থিতি দেখুন।' : 'Monitor employees, attendance and payroll at a glance.'}
         subtitleBn="এক নজরে আপনার প্রতিষ্ঠানের কর্মচারী ও উপস্থিতি দেখুন।"
-        icon={Users}
         breadcrumbs={[]}
         actions={
           <>

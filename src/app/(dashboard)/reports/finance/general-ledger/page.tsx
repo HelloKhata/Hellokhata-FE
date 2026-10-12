@@ -80,7 +80,6 @@ export default function GeneralLedgerPage() {
       <FinancePageHeader
         pageName="General Ledger Book"
         pageNameBn="খতিয়ান বই (General Ledger Master)"
-        icon={BookOpen}
       />
 
       {/* Top Ledger Stats */}

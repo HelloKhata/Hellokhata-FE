@@ -83,7 +83,6 @@ export default function BankBookPage() {
       <FinancePageHeader
         pageName="Bank Book & Reconciliation"
         pageNameBn="ব্যাংক হিসাব বই (Bank Book & Reconciliation)"
-        icon={Landmark}
       />
 
       {/* Top Multi-Bank Balances KPI Strip */}

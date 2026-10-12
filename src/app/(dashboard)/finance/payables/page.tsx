@@ -209,7 +209,6 @@ export default function FinancePayablesPage() {
           pageNameBn="প্রদেয় হিসাব ব্যবস্থাপনা (পেমেন্ট আউট)"
           description="Manage supplier invoice balances, schedule payouts, and record payment confirmations."
           descriptionBn="সরবরাহকারীদের বকেয়া বিল পর্যবেক্ষণ করুন, মূল্য পরিশোধ এন্ট্রি দিন এবং পেমেন্ট সিডিউল করুন।"
-          icon={FileText}
           showBackButton={true}
           backHref="/finance/overview"
         />

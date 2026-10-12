@@ -16,6 +16,7 @@ import {
   EmptyState,
 } from "@/components/ui/premium";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/common";
 import {
   Select,
   SelectContent,
@@ -92,18 +93,14 @@ export default function PurchaseReturnsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <RotateCcw className="h-6 w-6 text-primary" />
-            {isBangla ? "পারচেজ রিটার্ন" : "Purchase Returns"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-            {isBangla
-              ? "ফেরতকৃত ক্রয়, সাপ্লায়ার রিফান্ড এবং রিটার্ন ইতিহাস পরিচালনা করুন"
-              : "Manage returned purchases, supplier refunds, and purchase return history."}
-          </p>
-        </div>
+      <PageHeader
+        title={isBangla ? "পারচেজ রিটার্ন" : "Purchase Returns"}
+        subtitle={
+          isBangla
+            ? "ফেরতকৃত ক্রয়, সাপ্লায়ার রিফান্ড এবং রিটার্ন ইতিহাস পরিচালনা করুন"
+            : "Manage returned purchases, supplier refunds, and purchase return history."
+        }
+      >
         <Link href="/purchases/returns/new">
           <Button className="shrink-0">
             <Plus className="h-4 w-4 mr-2" />
@@ -112,7 +109,7 @@ export default function PurchaseReturnsPage() {
             </span>
           </Button>
         </Link>
-      </div>
+      </PageHeader>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

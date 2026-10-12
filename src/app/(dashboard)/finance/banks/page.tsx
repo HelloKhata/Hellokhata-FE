@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { useCreatePaymentMethod, useGetPaymentMethods, useGetPaymentMethodStatus } from '@/hooks/api/usePaymentMethod';
 import { useGetTransactions } from '@/hooks/api/useFinance';
 import Link from 'next/link';
@@ -417,33 +417,22 @@ export default function FinanceBankWalletsPage() {
     <div className="space-y-6 pb-10">
 
       {/* ══ HEADER ══ */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <BackButton className="mt-0.5" />
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Building2 className="h-4.5 w-4.5 text-primary" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground">
-                {isBangla ? 'ব্যাংক ও ওয়ালেট' : 'Bank & Wallets'}
-              </h1>
-            </div>
-            <p className="text-xs text-muted-foreground ml-10">
-              {isBangla
-                ? 'ব্যাংক অ্যাকাউন্ট ও মোবাইল ওয়ালেট পরিচালনা এবং ব্যালেন্স সমন্বয় করুন'
-                : 'Manage your bank accounts and mobile wallets — reconcile balances in real time'}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setHideBalances(v => !v)}
-          className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border/50 bg-card"
-        >
-          {hideBalances ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-          {hideBalances ? (isBangla ? 'দেখান' : 'Reveal') : (isBangla ? 'লুকান' : 'Hide')}
-        </button>
-      </div>
+      <PageHeader
+        title={isBangla ? 'ব্যাংক ও ওয়ালেট' : 'Bank & Wallets'}
+        subtitle={isBangla
+          ? 'ব্যাংক অ্যাকাউন্ট ও মোবাইল ওয়ালেট পরিচালনা এবং ব্যালেন্স সমন্বয় করুন'
+          : 'Manage your bank accounts and mobile wallets — reconcile balances in real time'}
+        showBack
+        actions={
+          <button
+            onClick={() => setHideBalances(v => !v)}
+            className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border/50 bg-card cursor-pointer"
+          >
+            {hideBalances ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            {hideBalances ? (isBangla ? 'দেখান' : 'Reveal') : (isBangla ? 'লুকান' : 'Hide')}
+          </button>
+        }
+      />
 
       {/* ══ TOAST ALERT ══ */}
       <AnimatePresence>

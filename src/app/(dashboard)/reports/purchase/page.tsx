@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/common";
 
 // ============================================================================
 // TYPES & MOCK DATA
@@ -495,14 +496,11 @@ export default function PurchaseReportPage() {
       {/* ================================================================== */}
       {/* 1. PAGE HEADER                                                     */}
       {/* ================================================================== */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          Purchase Reports
-        </h1>
-        <p className="text-sm text-slate-400">
-          Manage and analyse your purchase data
-        </p>
-      </div>
+      <PageHeader
+        title="Purchase Reports"
+        subtitle="Manage and analyse your purchase data"
+        showBack
+      />
 
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}

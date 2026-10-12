@@ -543,7 +543,6 @@ export default function BranchesReportsDashboard() {
         titleBn="শাখা রিপোর্ট"
         subtitle="Comprehensive multi-outlet performance analytics, cross-branch sales, profit comparison, and inventory holding distribution."
         subtitleBn="শাখাভিত্তিক পারফরম্যান্স বিশ্লেষণ, বিক্রয়, লাভ-ক্ষতি, পরিচালন খরচ এবং ইনভেন্টরি ডিস্ট্রিবিউশন পর্যবেক্ষণ করুন।"
-        icon={Building2}
         isBangla={isBangla}
       >
         <div className="flex gap-2 flex-wrap justify-end">

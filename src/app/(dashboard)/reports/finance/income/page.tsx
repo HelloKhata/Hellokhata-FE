@@ -35,7 +35,6 @@ export default function IncomeReportPage() {
         pageNameBn="আয় রিপোর্ট"
         description="Breakdown of all income sources and revenue streams."
         descriptionBn="সব আয়ের উৎস ও রাজস্ব ধারার বিশদ বিবরণী।"
-        icon={TrendingUp}
         parentName="Finance Reports"
         parentNameBn="আর্থিক রিপোর্ট"
         parentHref="/reports/finance"

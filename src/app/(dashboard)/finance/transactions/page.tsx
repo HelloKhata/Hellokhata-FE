@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import {
   Table,
   TableHeader,
@@ -150,62 +150,32 @@ export default function FinanceTransactionsPage() {
   return (
     <div className="space-y-6">
       {/* 1. Breadcrumbs Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="space-y-1.5">
-          {/* <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/" className="text-muted-foreground hover:text-foreground">
-                  {isBangla ? 'ড্যাশবোর্ড' : 'Dashboard'}
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <span className="text-muted-foreground">
-                  {isBangla ? 'অর্থায়ন ও হিসাববিজ্ঞান' : 'Finance & Accounting'}
-                </span>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className="font-medium text-foreground">
-                  {isBangla ? 'লেনদেন রেজিস্টার' : 'Transactions Ledger'}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb> */}
-          <div className="flex items-center gap-3">
-            <BackButton fallbackHref="/finance" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {isBangla ? 'লেনদেন খাতা রেজিস্টার' : 'Transactions Ledger'}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {isBangla
-                  ? 'আপনার ব্যবসায়ের সমস্ত আর্থিক লেনদেন দেখুন, রেকর্ড করুন এবং পরিচালনা করুন।'
-                  : 'View, record, and manage every financial transaction ledger across your business.'}
-              </p>
-            </div>
+      <PageHeader
+        title={isBangla ? 'লেনদেন খাতা রেজিস্টার' : 'Transactions Ledger'}
+        subtitle={isBangla
+          ? 'আপনার ব্যবসায়ের সমস্ত আর্থিক লেনদেন দেখুন, রেকর্ড করুন এবং পরিচালনা করুন।'
+          : 'View, record, and manage every financial transaction ledger across your business.'}
+        showBack
+        fallbackHref="/finance"
+        actions={
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="gap-1.5 text-xs h-9"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
+              <span>{isBangla ? 'রিফ্রেশ' : 'Refresh'}</span>
+            </Button>
+            <Button variant="outline" onClick={() => handleExport('Excel')} className="gap-1.5 text-xs h-9">
+              <Download className="h-3.5 w-3.5" />
+              <span>{isBangla ? 'এক্সপোর্ট' : 'Export'}</span>
+            </Button>
           </div>
-        </div>
-
-        {/* Toolbar Trigger Buttons */}
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-1.5 text-xs h-9"
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
-            <span>{isBangla ? 'রিফ্রেশ' : 'Refresh'}</span>
-          </Button>
-          <Button variant="outline" onClick={() => handleExport('Excel')} className="gap-1.5 text-xs h-9">
-            <Download className="h-3.5 w-3.5" />
-            <span>{isBangla ? 'এক্সপোর্ট' : 'Export'}</span>
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* 2. Dynamic Summary Cards (Liquidity Overview) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">

@@ -4,7 +4,7 @@ import { useState, Suspense, Fragment } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Label } from "@/components/ui/label";
 
 import {
@@ -39,14 +39,11 @@ function PurchaseDetailsContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80 pointer-events-auto">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            {isBangla ? `ক্রয় বিবরণ #${purchaseData?.data?.invoiceNo}` : `Purchase Details #${purchaseData?.data?.invoiceNo || purchaseData?.grnNo}`}
-          </h1>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? `ক্রয় বিবরণ #${purchaseData?.data?.invoiceNo}` : `Purchase Details #${purchaseData?.data?.invoiceNo || purchaseData?.grnNo}`}
+        showBack
+        fallbackHref="/purchases"
+      />
 
       {/* 1. Purchase Information & Metadata Card (As per user request) */}
       <div className="bg-zinc-900/20 border border-border/40 rounded-xl  p-5 space-y-5 mb-6">

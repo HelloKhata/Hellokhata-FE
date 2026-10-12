@@ -76,7 +76,6 @@ export default function ReceivablesReportPage() {
       <FinancePageHeader
         pageName="Accounts Receivable & Aging"
         pageNameBn="গ্রাহক বকেয়া ও মেয়াদ বিশ্লেষণ (Receivables Aging)"
-        icon={Percent}
       />
 
       {/* Top Aging Buckets KPI Strip */}

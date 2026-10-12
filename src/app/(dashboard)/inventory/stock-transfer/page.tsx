@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Divider, EmptyState } from '@/components/ui/premium';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -136,20 +136,12 @@ export default function StockTransferPage() {
   return (
     <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BackButton fallbackHref="/inventory" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <ArrowRightLeft className="h-6 w-6 text-primary" />
-                {isBangla ? 'স্টক স্থানান্তর' : 'Stock Transfer'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-                {isBangla ? 'শাখার মধ্যে স্টক সরান' : 'Move stock between branches'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={isBangla ? 'স্টক স্থানান্তর' : 'Stock Transfer'}
+          subtitle={isBangla ? 'শাখার মধ্যে স্টক সরান' : 'Move stock between branches'}
+          showBack
+          fallbackHref="/inventory"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Transfer Form */}

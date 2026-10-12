@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/common';
 import {
   Dialog,
   DialogContent,
@@ -278,24 +279,13 @@ export default function EmployeesPage() {
   return (
     <div className="w-full space-y-6 pb-12 px-1 sm:px-2">
       {/* 1. TOP HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2">
-        <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
-            <Users className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
-              <span>{isBangla ? 'কর্মচারী ব্যবস্থাপনা' : 'Employee Management'}</span>
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {isBangla
-                ? 'কর্মচারী তালিকা পরিচালনা করুন — যোগ, সম্পাদনা ও প্রোফাইল দেখুন।'
-                : 'Manage your workforce — add, edit and view employee profiles.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
+      <PageHeader
+        title={isBangla ? 'কর্মচারী ব্যবস্থাপনা' : 'Employee Management'}
+        subtitle={isBangla
+          ? 'কর্মচারী তালিকা পরিচালনা করুন — যোগ, সম্পাদনা ও প্রোফাইল দেখুন।'
+          : 'Manage your workforce — add, edit and view employee profiles.'}
+        showBack
+        actions={
           <Button
             onClick={openAdd}
             className="cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm"
@@ -303,8 +293,8 @@ export default function EmployeesPage() {
             <UserPlus className="h-4 w-4" />
             <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* 2. SEARCH TOOLBAR */}
       <div className="rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-xl shadow-black/40 backdrop-blur-xl p-4 sm:p-5 transition-all">

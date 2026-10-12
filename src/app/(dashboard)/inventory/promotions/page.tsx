@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -167,30 +167,22 @@ export default function PromotionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Sparkles className="h-6 w-6 text-primary" />
-              {isBangla ? 'প্রমোশন ও অফারসমূহ' : 'Promotions & Offers'}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {isBangla
-                ? 'পণ্য ও ব্যাচের জন্য বিশেষ ছাড়, BOGO ও বান্ডেল অফার পরিচালনা করুন'
-                : 'Manage special discounts, BOGO, and bundle offers across products & batches'}
-            </p>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => router.push('/inventory/promotions/new')}
-          className="shrink-0 h-10 px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 cursor-pointer flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>{isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Offer'}</span>
-        </Button>
-      </div>
+      <PageHeader
+        title={isBangla ? 'প্রমোশন ও অফারসমূহ' : 'Promotions & Offers'}
+        subtitle={isBangla
+          ? 'পণ্য ও ব্যাচের জন্য বিশেষ ছাড়, BOGO ও বান্ডেল অফার পরিচালনা করুন'
+          : 'Manage special discounts, BOGO, and bundle offers across products & batches'}
+        showBack
+        actions={
+          <Button
+            onClick={() => router.push('/inventory/promotions/new')}
+            className="shrink-0 h-10 px-4 rounded-xl font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200 cursor-pointer flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{isBangla ? 'নতুন অফার তৈরি করুন' : 'Create Offer'}</span>
+          </Button>
+        }
+      />
 
       {/* Filters Bar */}
       <div className="p-4 rounded-xl bg-card border border-border/60 shadow-sm flex flex-col md:flex-row gap-3">

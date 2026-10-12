@@ -44,9 +44,11 @@ export function PageContainer({
   );
 }
 
-// Page Header Component
+import { PageHeader as UniversalPageHeader } from './PageHeader';
+
+// Page Header Component (Delegated to universal PageHeader)
 interface PageHeaderProps {
-  icon: React.ElementType;
+  icon?: React.ElementType;
   iconColor?: 'primary' | 'indigo' | 'emerald' | 'warning';
   title: string;
   titleBn?: string;
@@ -56,44 +58,20 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ 
-  icon: Icon, 
-  iconColor = 'primary',
   title, 
   titleBn,
   description, 
   descriptionBn,
   action 
 }: PageHeaderProps) {
-  const { isBangla } = useAppTranslation();
-
-  const colorClasses = {
-    primary: 'bg-primary/15 text-primary',
-    indigo: 'bg-indigo/15 text-indigo',
-    emerald: 'bg-emerald/15 text-emerald',
-    warning: 'bg-warning/15 text-warning',
-  };
-
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={cn('h-10 w-10 rounded-xl flex items-center justify-center', colorClasses[iconColor])}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">
-              {isBangla && titleBn ? titleBn : title}
-            </h1>
-            {description && (
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {isBangla && descriptionBn ? descriptionBn : description}
-              </p>
-            )}
-          </div>
-        </div>
-        {action && <div>{action}</div>}
-      </div>
-    </div>
+    <UniversalPageHeader
+      title={title}
+      titleBn={titleBn}
+      subtitle={description}
+      subtitleBn={descriptionBn}
+      actions={action}
+    />
   );
 }
 

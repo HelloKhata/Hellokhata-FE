@@ -1005,7 +1005,6 @@ export default function EmployeeReportsDashboard() {
         titleBn="কর্মচারী রিপোর্ট"
         subtitle="Track staff productivity, sales contributions, attendance, commissions, and activity audit logs."
         subtitleBn="কর্মচারীদের উৎপাদনশীলতা, বিক্রয় অবদান, উপস্থিতি, কমিশন এবং কার্যকলাপ অডিট লগ মনিটর করুন।"
-        icon={Users}
         isBangla={isBangla}
       >
         <div className="flex gap-2 flex-wrap justify-end">

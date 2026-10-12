@@ -8,6 +8,7 @@ import { Card, CardContent, Badge, Button, Divider } from '@/components/ui/premi
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/common';
 import {
   Sparkles,
   Send,
@@ -188,21 +189,17 @@ export default function AIPage() {
         <div className="flex flex-col min-h-[calc(100vh-8rem)]">
           
           {/* Header */}
-          <div className="flex items-center justify-between mb-6 pt-2">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <Sparkles className="h-6 w-6 text-primary" />
-                {isBangla ? 'AI সহায়ক' : 'AI Assistant'}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {isBangla ? 'আপনার ব্যবসার স্মার্ট সহায়ক' : 'Your smart business assistant'}
-              </p>
-            </div>
-            <Badge variant="indigo" size="lg">
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              AI Powered
-            </Badge>
-          </div>
+          <PageHeader
+            title={isBangla ? 'AI সহায়ক' : 'AI Assistant'}
+            subtitle={isBangla ? 'আপনার ব্যবসার স্মার্ট সহায়ক' : 'Your smart business assistant'}
+            badge={
+              <Badge variant="indigo" size="lg">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                AI Powered
+              </Badge>
+            }
+            showBack
+          />
 
           {/* Main Content Grid */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4 min-h-0">

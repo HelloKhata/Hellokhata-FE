@@ -99,7 +99,6 @@ export default function BalanceSheetPage() {
       <FinancePageHeader
         pageName="Balance Sheet"
         pageNameBn="উদ্বৃত্তপত্র / ব্যালেন্স শিট (Balance Sheet)"
-        icon={Scale}
       />
 
       {/* Top Solvency & Liquidity KPI Cards */}

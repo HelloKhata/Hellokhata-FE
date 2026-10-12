@@ -105,7 +105,6 @@ export default function ProfitLossPage() {
       <FinancePageHeader
         pageName="Profit & Loss Statement"
         pageNameBn="লাভ-ক্ষতি বিবরণী (P&L Statement)"
-        icon={TrendingUp}
       />
 
       {/* Top Financial Health Executive KPI Strip */}

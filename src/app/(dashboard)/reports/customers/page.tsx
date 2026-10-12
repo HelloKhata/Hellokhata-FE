@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/common";
 
 // ============================================================================
 // TYPES & MOCK DATA
@@ -649,14 +650,11 @@ export default function CustomerReportPage() {
       {/* ================================================================== */}
       {/* 1. PAGE HEADER                                                     */}
       {/* ================================================================== */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          Customer Reports
-        </h1>
-        <p className="text-sm text-slate-400">
-          Manage and analyse your customer sales data
-        </p>
-      </div>
+      <PageHeader
+        title="Customer Reports"
+        subtitle="Manage and analyse your customer sales data"
+        showBack
+      />
 
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}

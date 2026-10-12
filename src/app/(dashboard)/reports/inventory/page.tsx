@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/common";
 
 // ============================================================================
 // TYPES & MOCK DATA
@@ -333,14 +334,11 @@ export default function InventoryReportPage() {
       {/* ================================================================== */}
       {/* 1. PAGE HEADER                                                     */}
       {/* ================================================================== */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          Inventory Reports
-        </h1>
-        <p className="text-sm text-slate-400">
-          Track stock levels, valuation, movements and expiry alerts
-        </p>
-      </div>
+      <PageHeader
+        title="Inventory Reports"
+        subtitle="Track stock levels, valuation, movements and expiry alerts"
+        showBack
+      />
 
           {/* Filter Card */}
           <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 p-5 shadow-xl shadow-black/30 backdrop-blur-xl">

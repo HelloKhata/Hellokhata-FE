@@ -16,7 +16,6 @@ import {
   Crown,
 } from 'lucide-react';
 import { useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { TopCustomerItem } from './types';

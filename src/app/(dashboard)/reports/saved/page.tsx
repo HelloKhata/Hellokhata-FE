@@ -210,7 +210,6 @@ export default function SavedReportsPage() {
         pageNameBn="সংরক্ষিত রিপোর্টসমূহ"
         description="Quick access to customized reports and filtered configurations saved by you."
         descriptionBn="আপনার কাস্টমাইজ করা এবং সংরক্ষণ করা রিপোর্ট কনফিগারেশনগুলোতে দ্রুত অ্যাক্সেস পান।"
-        icon={Star}
         parentName="Reports"
         parentNameBn="রিপোর্ট"
         parentHref="/reports/dashboard"

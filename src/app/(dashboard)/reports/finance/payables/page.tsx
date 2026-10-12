@@ -69,7 +69,6 @@ export default function PayablesReportPage() {
       <FinancePageHeader
         pageName="Accounts Payable & Supplier Dues"
         pageNameBn="সাপ্লায়ার বকেয়া ও দেনা রিপোর্ট (Accounts Payable)"
-        icon={Building2}
       />
 
       {/* Top Payables KPIs */}

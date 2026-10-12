@@ -31,7 +31,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BackButton } from '@/components/common';
+import { BackButton, PageHeader } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -366,22 +366,14 @@ export default function EditEmployeePage() {
   return (
     <div className="w-full space-y-6 pb-20 px-1 sm:px-2">
       {/* 1. TOP HEADER */}
-      <div className="flex items-center justify-between gap-4 py-2">
-        <div className="flex items-center gap-3">
-          <BackButton fallbackHref={`/hrm/employees/${employeeIdParam}`} />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
-              {/* <Pencil className="h-5 w-5 text-indigo-400" /> */}
-              <span>{isBangla ? 'কর্মচারী তথ্য সম্পাদনা' : 'Edit Employee'}</span>
-            </h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {isBangla
-                ? 'কর্মচারীর প্রোফাইল, কাজের শর্তাবলী ও বেতন বিবরণী হালনাগাদ করুন।'
-                : 'Update employee profile, employment terms, and salary details.'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? 'কর্মচারী তথ্য সম্পাদনা' : 'Edit Employee'}
+        subtitle={isBangla
+          ? 'কর্মচারীর প্রোফাইল, কাজের শর্তাবলী ও বেতন বিবরণী হালনাগাদ করুন।'
+          : 'Update employee profile, employment terms, and salary details.'}
+        showBack
+        fallbackHref={`/hrm/employees/${employeeIdParam}`}
+      />
 
       {/* FORM CONTAINER */}
       <form onSubmit={handleUpdate} className="space-y-6">

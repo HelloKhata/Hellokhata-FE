@@ -28,6 +28,7 @@ import {
 import { Button, Input } from "@/components/ui/premium";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/common";
 import {
   Select,
   SelectContent,
@@ -349,40 +350,30 @@ export default function BranchManagementPage() {
     <div className="space-y-6 mx-auto pb-24">
       {/* Top Header Card */}
       <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/40">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 border border-primary/20">
-              <Building2 className="h-7 w-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-foreground">
-                  {isBangla ? "শাখা পরিচালনা ও সেটিংস" : "Branch Settings & Management"}
-                </h1>
-                <Badge
-                  variant="outline"
-                  className="bg-primary/10 text-primary border-primary/20 text-[10px]"
-                >
-                  {branchesList.length} {isBangla ? "টি শাখা" : "Branches"}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isBangla
-                  ? "নতুন শাখা তৈরি করুন, বিদ্যমান শাখা সম্পাদনা করুন এবং সিলেক্ট করা শাখার কনফিগারেশন আপডেট করুন"
-                  : "Create new branches, edit existing locations, view details, and manage branch configurations"}
-              </p>
-            </div>
-          </div>
-
-          {/* Add Branch Button */}
-          <Button
-            onClick={handleOpenCreateForm}
-            className="rounded-xl shadow-xs shrink-0 font-medium cursor-pointer"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {isBangla ? "নতুন শাখা তৈরি করুন" : "Create a new branch"}
-          </Button>
-        </div>
+        <PageHeader
+          title={isBangla ? "শাখা পরিচালনা ও সেটিংস" : "Branch Settings & Management"}
+          subtitle={isBangla
+            ? "নতুন শাখা তৈরি করুন, বিদ্যমান শাখা সম্পাদনা করুন এবং সিলেক্ট করা শাখার কনফিগারেশন আপডেট করুন"
+            : "Create new branches, edit existing locations, view details, and manage branch configurations"}
+          badge={
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20 text-[10px]"
+            >
+              {branchesList.length} {isBangla ? "টি শাখা" : "Branches"}
+            </Badge>
+          }
+          showBack
+          actions={
+            <Button
+              onClick={handleOpenCreateForm}
+              className="rounded-xl shadow-xs shrink-0 font-medium cursor-pointer"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {isBangla ? "নতুন শাখা তৈরি করুন" : "Create a new branch"}
+            </Button>
+          }
+        />
 
         {/* Existing Branches Grid Card List */}
         <div className="space-y-3 pt-2">

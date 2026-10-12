@@ -6,7 +6,7 @@ import {
   Button,
   EmptyState,
 } from "@/components/ui/premium";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -91,19 +91,11 @@ export default function PaymentOutPage() {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <CreditCard className="h-6 w-6 text-rose-500" />
-                {isBangla ? "পেমেন্ট আউট" : "Payment Out"}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-0.5 whitespace-nowrap">
-                {isBangla ? "সরবরাহকারীদের পেমেন্ট প্রদানের তালিকা" : "All payments paid to suppliers"}
-              </p>
-            </div>
-          </div>
+        <PageHeader
+          title={isBangla ? "পেমেন্ট আউট" : "Payment Out"}
+          subtitle={isBangla ? "সরবরাহকারীদের পেমেন্ট প্রদানের তালিকা" : "All payments paid to suppliers"}
+          showBack
+        >
           <Button
             onClick={() => setIsAddModalOpen(true)}
             className="shrink-0 gap-2 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
@@ -111,7 +103,7 @@ export default function PaymentOutPage() {
             <Plus className="h-4 w-4" />
             <span className="whitespace-nowrap">{isBangla ? "পেমেন্ট প্রদান" : "Add Payment Out"}</span>
           </Button>
-        </div>
+        </PageHeader>
 
         {/* Filters */}
         <Card variant="elevated" padding="default">

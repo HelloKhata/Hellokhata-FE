@@ -7,7 +7,7 @@ import React, { useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,24 +128,25 @@ function PurchaseReturnDetailsContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <RotateCcw className="h-6 w-6 text-primary" />
-            {isBangla ? "ক্রয় ফেরত বিবরণ" : "Purchase Return Details"}
-          </h1>
-          <Badge
-            variant="outline"
-            className="text-xs font-mono border-primary/30 text-primary bg-primary/10"
-          >
-            {returnDetails.returnNo}
-          </Badge>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 capitalize">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            {returnDetails.status}
-          </span>
-        </div>
+      <PageHeader
+        title={isBangla ? "ক্রয় ফেরত বিবরণ" : "Purchase Return Details"}
+        badge={
+          <>
+            <Badge
+              variant="outline"
+              className="text-xs font-mono border-primary/30 text-primary bg-primary/10"
+            >
+              {returnDetails.returnNo}
+            </Badge>
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 capitalize">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              {returnDetails.status}
+            </span>
+          </>
+        }
+        showBack
+        className="pb-3 border-b border-border/80"
+      >
         <div className="flex items-center gap-2.5">
           <Button
             type="button"
@@ -155,17 +156,8 @@ function PurchaseReturnDetailsContent() {
             <Printer className="h-4 w-4" />
             <span>{isBangla ? "প্রিন্ট করুন" : "Print Invoice"}</span>
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push("/purchases/returns")}
-            className="h-9 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            {isBangla ? "পেছনে" : "Back"}
-          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Top Card: Purchase Invoice & Return Overview (Matching new return form layout) */}
       <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">

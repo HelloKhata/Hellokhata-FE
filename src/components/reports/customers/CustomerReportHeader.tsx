@@ -1,9 +1,6 @@
-// Hello Khata OS - Customer Reports Unified Command Header
-// হ্যালো খাতা - গ্রাহক রিপোর্টস সমন্বিত কমান্ড হেডার
-
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Users,
   Calendar,
@@ -15,8 +12,6 @@ import {
   RefreshCw,
   Check,
   FileText,
-  UserCheck,
-  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { BackButton } from '@/components/common';
 
 interface CustomerReportHeaderProps {
   dateRange: string;
@@ -84,11 +80,9 @@ export function CustomerReportHeader({
 
   return (
     <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-2">
-      {/* 1. Left: Branding & Subtitle */}
-      <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500/15 via-blue-500/10 to-indigo-500/5 border border-blue-500/25 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs shrink-0 ring-1 ring-blue-500/10">
-          <Users className="w-5 h-5" />
-        </div>
+      {/* 1. Left: Back Button + Title & Subtitle */}
+      <div className="flex items-center gap-3">
+        <BackButton fallbackHref="/reports" className="shrink-0" />
 
         <div>
           <div className="flex items-center gap-2 flex-wrap">

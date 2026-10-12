@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -292,22 +292,17 @@ function SaleDetailsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header Section (matching new sale page) */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Receipt className="h-6 w-6 text-primary" />
-              {isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {isBangla
-                ? "সম্পন্ন বিক্রয়ের বিস্তারিত তথ্য ও অর্ডার সারাংশ"
-                : "Completed sale details and order summary"}
-            </p>
-          </div>
-        </div>
+      {/* Top Header Section */}
+      <PageHeader
+        title={isBangla ? "বিক্রয় বিবরণ" : "Sale Details"}
+        subtitle={
+          isBangla
+            ? "সম্পন্ন বিক্রয়ের বিস্তারিত তথ্য ও অর্ডার সারাংশ"
+            : "Completed sale details and order summary"
+        }
+        showBack
+        className="pb-2 border-b border-border/40"
+      >
         <div className="flex items-center gap-2 flex-wrap">
           {/* Download Invoice Button */}
           <Button
@@ -357,18 +352,8 @@ function SaleDetailsContent() {
             <Printer className="h-3.5 w-3.5" />
             {isBangla ? "ইনভয়েস প্রিন্ট" : "Print"}
           </Button>
-
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => router.back()}
-            className="text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {isBangla ? "পেছনে" : "Back"}
-          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Row 1 Layout: 4 Columns Container (matching new sale page layout) */}
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end bg-card border border-border/50 rounded-xl p-5 shadow-sm">

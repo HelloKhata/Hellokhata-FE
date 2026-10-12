@@ -261,7 +261,6 @@ export default function PayrollPage() {
         titleBn="বেতন ব্যবস্থাপনা"
         subtitle={isBangla ? 'মাসিক বেতন প্রস্তুত, পরিশোধ ও পে-স্লিপ পরিচালনা করুন।' : 'Generate, pay and manage monthly payroll and payslips.'}
         subtitleBn="মাসিক বেতন প্রস্তুত, পরিশোধ ও পে-স্লিপ পরিচালনা করুন।"
-        icon={Wallet}
         breadcrumbs={[{ label: isBangla ? 'বেতন' : 'Payroll', labelBn: 'বেতন' }]}
         actions={
           <>

@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useSalesFocus } from './SalesFocusContext';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/common';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +104,7 @@ export function ReportHeader({ onExportCsv, onPrintReport }: ReportHeaderProps) 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         {/* Title and Scope context */}
         <div className="flex items-center gap-3 flex-wrap">
+          <BackButton fallbackHref="/reports" className="shrink-0" />
           {/* Report Title */}
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground font-sans">
             {isBangla ? 'বিক্রয় রিপোর্ট' : 'Sales Report'}

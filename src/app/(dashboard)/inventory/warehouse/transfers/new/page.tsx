@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,25 +148,16 @@ export function CreateTransferPage() {
   return (
     <div className="space-y-6 pb-16">
       {/* Header & Breadcrumb */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-4">
-        <div className="space-y-1">
-          <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>{isBangla ? "ইনভেন্টরি" : "Inventory"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span>{isBangla ? "ওয়্যারহাউস" : "Warehouse"}</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground font-semibold">{isBangla ? "নতুন ট্রান্সফার" : "Create Transfer"}</span>
-          </nav>
-
-          <div className="flex items-center gap-3 pt-1">
-            <BackButton />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <ArrowRightLeft className="h-6 w-6 text-primary" />
-              <span>{isBangla ? "নতুন স্টক ট্রান্সফার তৈরি করুন" : "Create Stock Transfer"}</span>
-            </h1>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? "নতুন স্টক ট্রান্সফার তৈরি করুন" : "Create Stock Transfer"}
+        breadcrumbs={[
+          { label: "Inventory", labelBn: "ইনভেন্টরি" },
+          { label: "Warehouse", labelBn: "ওয়্যারহাউস" },
+          { label: "Create Transfer", labelBn: "নতুন ট্রান্সফার" },
+        ]}
+        showBack
+        fallbackHref="/inventory/warehouse/transfers"
+      />
 
       {/* 1. Transfer Information Section */}
       <Card className="border border-border/60 shadow-xs">

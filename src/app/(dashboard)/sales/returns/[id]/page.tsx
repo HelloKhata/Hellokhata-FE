@@ -7,7 +7,7 @@ import React, { useMemo, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -239,22 +239,16 @@ function SalesReturnDetailsContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <RotateCcw className="h-6 w-6 text-red-500" />
-              {isBangla ? "বিক্রয় ফেরত বিবরণ" : "Sales Return Details"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {isBangla
-                ? "ফেরতকৃত বিক্রয়ের বিস্তারিত তথ্য ও পণ্যের তালিকা"
-                : "Detailed information and returned item list"}
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? "বিক্রয় ফেরত বিবরণ" : "Sales Return Details"}
+        subtitle={
+          isBangla
+            ? "ফেরতকৃত বিক্রয়ের বিস্তারিত তথ্য ও পণ্যের তালিকা"
+            : "Detailed information and returned item list"
+        }
+        showBack
+        className="pb-2 border-b border-border/40"
+      />
 
       {/* Main Sales Invoice Card (Structure matching new sales return) */}
       <div className="bg-card border border-border/50 rounded-xl p-5 shadow-sm space-y-4">

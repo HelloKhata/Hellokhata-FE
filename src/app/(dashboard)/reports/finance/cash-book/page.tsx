@@ -76,7 +76,6 @@ export default function CashBookPage() {
       <FinancePageHeader
         pageName="Cash Book Register"
         pageNameBn="নগদান বই (Cash Book Register)"
-        icon={Wallet}
       />
 
       {/* Top Cash Vault KPIs */}

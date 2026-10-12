@@ -80,7 +80,6 @@ export default function CashFlowPage() {
       <FinancePageHeader
         pageName="Cash Flow Statement"
         pageNameBn="নগদ প্রবাহ বিবরণী (Cash Flow)"
-        icon={RefreshCw}
       />
 
       {/* Top Liquidity Health Strip */}

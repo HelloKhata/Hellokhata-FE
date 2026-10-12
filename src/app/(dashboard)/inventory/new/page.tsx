@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { useGetMasterItems } from "@/hooks/api/useMasterItems";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/uiStore";
-import { BackButton } from "@/components/common";
+import { PageHeader } from "@/components/common";
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -243,20 +243,12 @@ export default function AddProductPage() {
       {/* ================= MAIN CONTENT CONTAINER ================= */}
       <main className="mx-auto space-y-4 sm:space-y-5 pb-24">
         {/* Header Action Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <BackButton fallbackHref="/inventory" />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Add New Product
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Initialize a new stock item, pricing, stock levels, and accounting
-                settings.
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Add New Product"
+          subtitle="Initialize a new stock item, pricing, stock levels, and accounting settings."
+          showBack
+          fallbackHref="/inventory"
+        />
 
         {/* Form Grid Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">

@@ -205,7 +205,6 @@ export default function AttendanceSummaryPage() {
         titleBn="উপস্থিতির সারাংশ"
         subtitle={isBangla ? 'শাখা, বিভাগ ও কর্মচারীভিত্তিক উপস্থিতি বিশ্লেষণ।' : 'Analyze attendance across branches, departments and employees.'}
         subtitleBn="শাখা, বিভাগ ও কর্মচারীভিত্তিক উপস্থিতি বিশ্লেষণ।"
-        icon={BarChart3}
         breadcrumbs={[{ label: isBangla ? 'উপস্থিতির সারাংশ' : 'Attendance Summary', labelBn: 'উপস্থিতির সারাংশ' }]}
         actions={
           <Button

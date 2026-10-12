@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { PageHeader } from "@/components/common";
 import {
   AreaChart,
   Area,
@@ -571,18 +572,12 @@ export default function SalesReportsPage() {
       {/* 1. TOP HEADER & FILTER BAR                                           */}
       {/* [ Date Range ] [ Branch ] [ Salesperson ] [Export]                   */}
       {/* ==================================================================== */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-1">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F7FA]">
-            Sales Reports
-          </h1>
-          <p className="text-xs text-[#737C8C] mt-0.5">
-            Track your sales performance, profit, and outstanding payments.
-          </p>
-        </div>
-
-        {/* Compact Filter Strip */}
-        <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        title="Sales Reports"
+        subtitle="Track your sales performance, profit, and outstanding payments."
+        showBack
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
           {/* [ Date Range ] */}
           <div className="relative">
             <button
@@ -688,7 +683,8 @@ export default function SalesReportsPage() {
             />
           </button>
         </div>
-      </div>
+        }
+      />
 
       {/* ==================================================================== */}
       {/* 2. PRIMARY 4 KPI CARDS                                               */}

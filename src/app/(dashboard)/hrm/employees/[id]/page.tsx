@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAppTranslation, useCurrency, useDateFormat } from '@/hooks/useAppTranslation';
-import { BackButton } from '@/components/common';
+import { PageHeader } from '@/components/common';
 import { HrmAvatar } from '@/components/hrm/shared/HrmAvatar';
 import { EmployeeStatusBadge } from '@/components/hrm/shared/HrmStatusBadge';
 import { HrmEmptyState } from '@/components/hrm/shared/HrmEmptyState';
@@ -176,40 +176,34 @@ export default function EmployeeProfilePage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <BackButton fallbackHref="/hrm/employees" />
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <span>{isBangla ? employee.nameBn || empName : empName}</span>
-              <EmployeeStatusBadge status={employee.status || (employee.isProbation ? 'PROBATION' : 'ACTIVE')} />
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-              {employee.employeeId} · {employee.designation || 'Staff'} · {getBranchLabel(employee.branchId)}
-            </p>
+      <PageHeader
+        title={isBangla ? employee.nameBn || empName : empName}
+        subtitle={`${employee.employeeId} · ${employee.designation || 'Staff'} · ${getBranchLabel(employee.branchId)}`}
+        badge={<EmployeeStatusBadge status={employee.status || (employee.isProbation ? 'PROBATION' : 'ACTIVE')} />}
+        showBack
+        fallbackHref="/hrm/employees"
+        actions={
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.success(isBangla ? 'ডাউনলোড শুরু হয়েছে' : 'Download started')}
+              className="rounded-xl border-border text-xs font-semibold h-9 cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              {isBangla ? 'রেজুমে' : 'Resume'}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => router.push(`/hrm/employees/edit/${params.id}`)}
+              className="rounded-xl bg-primary text-primary-foreground text-xs font-bold h-9 shadow-xs cursor-pointer"
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              {isBangla ? 'সম্পাদনা' : 'Edit'}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toast.success(isBangla ? 'ডাউনলোড শুরু হয়েছে' : 'Download started')}
-            className="rounded-xl border-border text-xs font-semibold h-9 cursor-pointer"
-          >
-            <Download className="h-3.5 w-3.5 mr-1.5" />
-            {isBangla ? 'রেজুমে' : 'Resume'}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => router.push(`/hrm/employees/edit/${params.id}`)}
-            className="rounded-xl bg-primary text-primary-foreground text-xs font-bold h-9 shadow-xs cursor-pointer"
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-            {isBangla ? 'সম্পাদনা' : 'Edit'}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Details Grid */}
       <motion.div

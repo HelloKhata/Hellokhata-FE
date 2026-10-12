@@ -171,7 +171,6 @@ const {mutate: deleteTransaction, isPending: isDeletingTransaction} = useDeleteT
         pageNameBn="জমা ও উত্তোলন"
         description="Record direct deposits and withdrawals for bank accounts, cash vaults, and digital wallets."
         descriptionBn="ক্যাশ বক্স, ব্যাংক অ্যাকাউন্ট এবং ডিজিটাল ওয়ালেটের জন্য সরাসরি জমা ও উত্তোলন পরিচালনা করুন।"
-        icon={formType === 'deposit' ? ArrowDownLeft : ArrowUpRight}
         showBackButton={true}
         backHref="/finance/overview"
       />

@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton, ImageWithFallback } from "@/components/common";
+import { PageHeader, ImageWithFallback } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -949,28 +949,26 @@ function NewPurchaseContent() {
   return (
     <div className="space-y-6">
       {/* Top Header Section */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            {isBangla ? "নতুন ক্রয়" : "New Purchase"}
-          </h1>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
-            className={cn(
-              "gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-all flex items-center cursor-pointer",
-              isAiPanelOpen
-                ? "bg-primary/20 text-primary border-primary/40 shadow-xs"
-                : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15",
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
-            <span>{isBangla ? "এআই সহকারী" : "AI Assistant"}</span>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={isBangla ? "নতুন ক্রয়" : "New Purchase"}
+        showBack
+        className="pb-3 border-b border-border/80"
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
+          className={cn(
+            "gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-all flex items-center cursor-pointer",
+            isAiPanelOpen
+              ? "bg-primary/20 text-primary border-primary/40 shadow-xs"
+              : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15",
+          )}
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+          <span>{isBangla ? "এআই সহকারী" : "AI Assistant"}</span>
+        </Button>
+      </PageHeader>
 
       {/* Merged Purchase Information Card */}
       <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 shadow-xs">
