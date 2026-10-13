@@ -626,41 +626,41 @@ export default function SupplierReportPage() {
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 p-5 shadow-xl shadow-black/30 backdrop-blur-xl">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Row 1: Choose Date */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Choose Date
             </label>
-            <div className="relative flex items-center h-10 rounded-lg border border-[#222c3e] bg-[#141b29] px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
+            <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
-              <span className="text-slate-500 px-2 select-none">→</span>
+              <span className="text-muted-foreground px-2 select-none">→</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
-              <Calendar className="h-4 w-4 text-slate-400 shrink-0 ml-1.5 pointer-events-none" />
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5 pointer-events-none" />
             </div>
           </div>
 
           {/* Row 1: Store */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Store
             </label>
             <Select value={selectedStore} onValueChange={setSelectedStore}>
-              <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Choose Store" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 {STORE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -672,17 +672,17 @@ export default function SupplierReportPage() {
 
           {/* Row 1: Supplier */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Supplier
             </label>
             <Select
               value={selectedSupplier}
               onValueChange={setSelectedSupplier}
             >
-              <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Supplier" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 {SUPPLIER_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -694,20 +694,20 @@ export default function SupplierReportPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[#1e2738]/60">
+        <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-border">
           <button
             type="button"
             onClick={handleResetFilter}
-            className="h-10 px-6 rounded-lg border border-[#2d3650] bg-[#141b29] hover:bg-[#1a2335] text-slate-200 font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+            className="h-10 px-6 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
           >
-            <RotateCcw className="h-4 w-4 text-slate-400" />
+            <RotateCcw className="h-4 w-4 text-muted-foreground" />
             <span>Reset Filter</span>
           </button>
 
           <button
             type="button"
             onClick={handleGenerateReport}
-            className="h-10 px-6 rounded-lg bg-[#4F5BFF] hover:bg-[#5E6AFF] text-white font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-indigo-950/40 cursor-pointer"
+            className="h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer"
           >
             <Sparkles className="h-4 w-4" />
             <span>Generate Report</span>
@@ -719,79 +719,79 @@ export default function SupplierReportPage() {
       {/* 3. SUPPLIER REPORT KPI CARDS                                       */}
       {/* ================================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden rounded-2xl border border-[#4F5BFF]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#4F5BFF]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-indigo-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#4F5BFF] flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-950/50">
-              <TrendingUp className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <TrendingUp className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Total Amount</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Amount</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{supplierReportKpis.totalAmount.toLocaleString("en-IN")}
               </p>
             </div>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-[#1FAF86]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#1FAF86]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-emerald-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#1FAF86] flex items-center justify-center text-white shrink-0 shadow-md shadow-green-950/50">
-              <CreditCard className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <CreditCard className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Total Paid</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Paid</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{supplierReportKpis.totalPaid.toLocaleString("en-IN")}
               </p>
             </div>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-[#EF4444]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#EF4444]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-rose-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-rose-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#EF4444] flex items-center justify-center text-white shrink-0 shadow-md shadow-red-950/50">
-              <Truck className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Truck className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Total Due</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Due</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{supplierReportKpis.totalDue.toLocaleString("en-IN")}
               </p>
             </div>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-[#0FBF9F]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#0FBF9F]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-teal-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-teal-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#0FBF9F] flex items-center justify-center text-white shrink-0 shadow-md shadow-teal-950/50">
-              <Package className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Package className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Total Items</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Items</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 {supplierReportKpis.totalItems.toLocaleString("en-IN")}
               </p>
             </div>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-amber-950/50">
-              <FileText className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <FileText className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Total Purchases</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Purchases</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 {supplierReportKpis.totalPurchases.toLocaleString("en-IN")}
               </p>
             </div>
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-[#8B5CF6]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#8B5CF6]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-violet-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#8B5CF6] flex items-center justify-center text-white shrink-0 shadow-md shadow-violet-950/50">
-              <Building2 className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-violet-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Building2 className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">Unique Suppliers</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-xs font-semibold text-muted-foreground truncate">Unique Suppliers</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 {supplierReportKpis.uniqueSuppliers.toLocaleString("en-IN")}
               </p>
             </div>
@@ -802,18 +802,18 @@ export default function SupplierReportPage() {
       {/* ================================================================== */}
       {/* 4. SUPPLIER REPORT TABLE CARD                                      */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 shadow-xl shadow-black/30 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         {/* Table Header */}
-        <div className="px-6 py-4 border-b border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111726]/60">
+        <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/40">
           <div className="flex items-center gap-3">
-            <h2 className="text-base font-bold text-slate-100 tracking-tight">Supplier Report</h2>
+            <h2 className="text-base font-bold text-foreground tracking-tight">Supplier Report</h2>
           </div>
           <div className="flex items-center gap-3">
             <Select value={tsCategoryFilter} onValueChange={(v) => { setTsCategoryFilter(v); setTsCurrentPage(1); }}>
-              <SelectTrigger className="h-9 w-[160px] rounded-md border-[#222c3e] bg-[#141b29] text-slate-200 text-xs">
+              <SelectTrigger className="h-9 w-[160px] rounded-md border-input bg-background text-foreground text-xs">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 {TS_CATEGORY_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
@@ -823,7 +823,7 @@ export default function SupplierReportPage() {
               type="button"
               onClick={handleDownloadExcel}
               disabled={isExporting}
-              className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
               <span>{isExporting ? "Exporting..." : "Export"}</span>
@@ -831,7 +831,7 @@ export default function SupplierReportPage() {
             <button
               type="button"
               onClick={handlePrintReport}
-              className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print Report</span>
@@ -843,7 +843,7 @@ export default function SupplierReportPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-[#1e2738] bg-[#101625] text-slate-400 text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
+              <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
                 <th className="px-4 py-3.5 whitespace-nowrap">Rank</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Supplier Name</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Code</th>
@@ -855,12 +855,12 @@ export default function SupplierReportPage() {
                 <th className="px-4 py-3.5 whitespace-nowrap">Growth</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e2738]/60 text-slate-300">
+            <tbody className="divide-y divide-border text-foreground">
               {paginatedTopSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <Building2 className="h-8 w-8 text-slate-500" />
+                      <Building2 className="h-8 w-8 text-muted-foreground" />
                       <p className="text-sm font-medium">No suppliers found</p>
                     </div>
                   </td>
@@ -869,16 +869,16 @@ export default function SupplierReportPage() {
                 paginatedTopSuppliers.map((supplier) => {
                   const isPositiveGrowth = supplier.growthRate >= 0;
                   return (
-                    <tr key={supplier.id} className="hover:bg-[#151d2e]/60 transition-colors">
+                    <tr key={supplier.id} className="hover:bg-muted/40 transition-colors">
                       {/* Rank */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {supplier.rank === 1 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                             <Trophy className="h-3 w-3" />#1
                           </span>
                         )}
                         {supplier.rank === 2 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-400/10 text-slate-300 border border-slate-500/30">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-foreground border border-border">
                             <Medal className="h-3 w-3" />#2
                           </span>
                         )}
@@ -888,25 +888,25 @@ export default function SupplierReportPage() {
                           </span>
                         )}
                         {supplier.rank > 3 && (
-                          <span className="font-mono text-slate-400 text-xs">#{supplier.rank}</span>
+                          <span className="font-mono text-muted-foreground text-xs">#{supplier.rank}</span>
                         )}
                       </td>
                       {/* Supplier Name */}
-                      <td className="px-4 py-3 font-semibold text-slate-100 whitespace-nowrap max-w-[240px] truncate">
+                      <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap max-w-[240px] truncate">
                         {supplier.supplierName}
                       </td>
                       {/* Code */}
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                         {supplier.supplierCode}
                       </td>
                       {/* Category */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#4F5BFF]/10 text-[#8b93ff] border border-[#4F5BFF]/20">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
                           {supplier.category}
                         </span>
                       </td>
                       {/* Bills */}
-                      <td className="px-4 py-3 font-bold text-slate-100 whitespace-nowrap">
+                      <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap">
                         {supplier.billsCount.toLocaleString()}
                       </td>
                       {/* Total Purchase */}
@@ -917,13 +917,13 @@ export default function SupplierReportPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={cn(
                           "font-semibold",
-                          supplier.outstandingDue > 0 ? "text-rose-400" : "text-slate-400"
+                          supplier.outstandingDue > 0 ? "text-rose-400" : "text-muted-foreground"
                         )}>
                           {formatBDT(supplier.outstandingDue)}
                         </span>
                       </td>
                       {/* Avg Bill */}
-                      <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {formatBDT(supplier.avgBillValue)}
                       </td>
                       {/* Growth Rate */}
@@ -945,17 +945,17 @@ export default function SupplierReportPage() {
         </div>
 
         {/* Supplier Report Pagination */}
-        <div className="px-6 py-4 border-t border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#101625]">
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="font-medium text-slate-300">Show</span>
+        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Show</span>
             <Select
               value={String(tsPageSize)}
               onValueChange={(val) => { setTsPageSize(Number(val)); setTsCurrentPage(1); }}
             >
-              <SelectTrigger className="h-8 w-[72px] rounded-md border-[#222c3e] bg-[#141b29] text-slate-200 text-xs">
+              <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
                 <SelectValue placeholder="10" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
                 <SelectItem value="25">25</SelectItem>
@@ -963,10 +963,10 @@ export default function SupplierReportPage() {
             </Select>
             <span>
               Showing{" "}
-              <strong className="text-slate-200">{tsTotalEntries === 0 ? 0 : (tsCurrentPage - 1) * tsPageSize + 1}</strong>{" "}
+              <strong className="text-foreground">{tsTotalEntries === 0 ? 0 : (tsCurrentPage - 1) * tsPageSize + 1}</strong>{" "}
               to{" "}
-              <strong className="text-slate-200">{Math.min(tsCurrentPage * tsPageSize, tsTotalEntries)}</strong>{" "}
-              of <strong className="text-slate-200">{tsTotalEntries}</strong> suppliers
+              <strong className="text-foreground">{Math.min(tsCurrentPage * tsPageSize, tsTotalEntries)}</strong>{" "}
+              of <strong className="text-foreground">{tsTotalEntries}</strong> suppliers
             </span>
           </div>
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
@@ -974,7 +974,7 @@ export default function SupplierReportPage() {
               type="button"
               onClick={() => setTsCurrentPage((p) => Math.max(1, p - 1))}
               disabled={tsCurrentPage <= 1}
-              className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -986,8 +986,8 @@ export default function SupplierReportPage() {
                 className={cn(
                   "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
                   tsCurrentPage === page
-                    ? "bg-[#4F5BFF] text-white shadow-md shadow-indigo-950/50"
-                    : "border border-[#222c3e] bg-[#141b29] text-slate-300 hover:bg-[#1a2335]"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "border border-border bg-background text-foreground hover:bg-muted"
                 )}
               >
                 {page}
@@ -997,7 +997,7 @@ export default function SupplierReportPage() {
               type="button"
               onClick={() => setTsCurrentPage((p) => Math.min(tsTotalPages, p + 1))}
               disabled={tsCurrentPage >= tsTotalPages}
-              className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

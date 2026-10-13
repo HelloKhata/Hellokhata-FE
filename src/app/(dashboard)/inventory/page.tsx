@@ -8,7 +8,6 @@ import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
 import { PageHeader, ImageWithFallback } from '@/components/common';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { PaginationHelper } from '@/components/shared/PaginationHelper';
 import { Badge } from '@/components/ui/badge';
 
@@ -259,7 +258,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Items List Container */}
-        <div className="bg-transparent md:bg-[#12161f] border-0 md:border md:border-border/60 md:rounded-2xl md:shadow-sm md:overflow-hidden space-y-3 md:space-y-0">
+        <div className="bg-transparent md:bg-card border-0 md:border md:border-border/60 md:rounded-2xl md:shadow-sm md:overflow-hidden space-y-3 md:space-y-0">
           <div className="px-1 sm:px-2 md:px-6 pt-1 md:pt-5 pb-1 md:pb-3 flex items-center justify-between">
             <h3 className="text-sm sm:text-base font-bold text-foreground">
               {isBangla ? 'পণ্য তালিকা' : 'Item List'}
@@ -304,7 +303,7 @@ export default function InventoryPage() {
               {/* Mobile Skeletons - Slim Cards */}
               <div className="md:hidden space-y-2.5">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="bg-[#12161f] border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm animate-pulse space-y-2">
+                  <div key={i} className="bg-card border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm animate-pulse space-y-2">
                     <div className="flex items-center gap-2.5">
                       <Skeleton className="h-11 w-11 rounded-lg shrink-0" />
                       <div className="space-y-1.5 flex-1 min-w-0">
@@ -336,7 +335,7 @@ export default function InventoryPage() {
           ) : (
             <div>
               {/* Column Header Bar - Left Aligned Except Actions (Desktop only) */}
-              <div className="hidden md:flex items-center justify-between w-full px-6 py-3 bg-[#161a23]/60 text-xs font-medium text-muted-foreground/80 border-b border-border/40 gap-4">
+              <div className="hidden md:flex items-center justify-between w-full px-6 py-3 bg-muted/40 text-xs font-medium text-muted-foreground border-b border-border/40 gap-4">
                 <div className="w-8 text-left shrink-0">SL.</div>
                 <div className="w-32 text-left shrink-0">{isBangla ? 'বারকোড / SKU' : 'Barcode / SKU'}</div>
                 <div className="w-12 text-left shrink-0">{isBangla ? 'ছবি' : 'Image'}</div>
@@ -364,7 +363,7 @@ export default function InventoryPage() {
               </div>
 
               {/* Pagination Bar */}
-              <div className="mt-2.5 md:mt-0 px-4 md:px-6 py-3 md:py-3.5 md:pb-4 bg-[#12161f] md:bg-muted/5 border border-border/60 md:border-0 md:border-t md:border-border/40 rounded-xl md:rounded-none overflow-x-auto">
+              <div className="mt-2.5 md:mt-0 px-4 md:px-6 py-3 md:py-3.5 md:pb-4 bg-card md:bg-muted/5 border border-border/60 md:border-0 md:border-t md:border-border/40 rounded-xl md:rounded-none overflow-x-auto">
                 <PaginationHelper
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -565,7 +564,7 @@ const ItemRow = memo(function ItemRow({
 
         {/* 2. Product Barcode / SKU (Left aligned) */}
         <div className="w-32 shrink-0 min-w-0 text-left">
-            <span className="text-xs font-mono text-slate-200 truncate block" title={item.barcode}>
+            <span className="text-xs font-mono text-muted-foreground truncate block" title={item.barcode}>
             {item.barcode}
             </span>
         </div>
@@ -595,7 +594,7 @@ const ItemRow = memo(function ItemRow({
               className={cn(
                 "text-[11px] font-medium tracking-wide whitespace-nowrap",
                 stockStatus.variant === 'destructive' ? "text-rose-500" :
-                stockStatus.variant === 'warning' ? "text-amber-400" : "text-slate-300"
+                stockStatus.variant === 'warning' ? "text-amber-500 dark:text-amber-400" : "text-muted-foreground"
               )}
             >
               {stockStatus.label}
@@ -620,7 +619,7 @@ const ItemRow = memo(function ItemRow({
 
         {/* Cost Price */}
         <div className="w-20 shrink-0 text-left">
-          <p className="text-xs sm:text-sm font-semibold text-slate-200 whitespace-nowrap">
+          <p className="text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">
             {formatCurrency(item.costPrice ?? 0)}
           </p>
         </div>
@@ -636,11 +635,12 @@ const ItemRow = memo(function ItemRow({
         <div className="hidden md:flex flex-col w-24 shrink-0 text-left">
           <button
             type="button"
-            className="h-auto py-1 px-3 text-foreground whitespace-nowrap text-xs font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded-full transition-colors w-fit cursor-pointer flex items-center"
+            className="h-auto py-1 px-2.5 whitespace-nowrap text-xs font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/70 rounded-full transition-colors w-fit cursor-pointer flex items-center gap-1.5 shadow-2xs hover:border-border"
             onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
           >
-            <span className="text-xs font-medium text-slate-200">
-              {item.batchCount} {item.batchCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 
+            <Box className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs font-medium text-foreground">
+              {item.batchCount ?? 0} {item.batchCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')} 
             </span>
           </button>
         </div>
@@ -710,7 +710,7 @@ const ItemRow = memo(function ItemRow({
 
       {/* Mobile Card Layout (Small Devices: md:hidden) - Slim & Smart */}
       <div
-        className="md:hidden bg-[#12161f] border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm hover:border-border/90 transition-all cursor-pointer space-y-2"
+        className="md:hidden bg-card border border-border/60 rounded-xl p-2.5 sm:p-3 shadow-sm hover:border-border/90 transition-all cursor-pointer space-y-2"
         style={{ animationDelay: `${index * 30}ms` }}
         onClick={handleRowClick}
       >
@@ -791,17 +791,17 @@ const ItemRow = memo(function ItemRow({
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
               {isBangla ? 'ক্রয়:' : 'Cost:'}{" "}
-              <strong className="text-slate-300 font-medium">{formatCurrency(item.costPrice ?? 0)}</strong>
+              <strong className="text-foreground font-medium">{formatCurrency(item.costPrice ?? 0)}</strong>
             </span>
 
             {item.batchCount !== undefined && item.batchCount > 0 && (
               <button
                 type="button"
-                className="py-0.5 px-1.5 text-foreground whitespace-nowrap text-[10px] font-medium bg-[#1c222e] hover:bg-[#232b3a] border border-border/50 rounded transition-colors cursor-pointer flex items-center gap-1"
+                className="py-0.5 px-2 whitespace-nowrap text-[10px] font-medium bg-muted/80 hover:bg-muted text-foreground border border-border/70 rounded-full transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                 onClick={(e) => handleAction(e, () => onViewBatches(item.id))}
               >
                 <Box className="h-2.5 w-2.5 text-muted-foreground" />
-                <span className="text-slate-200">
+                <span className="text-foreground font-medium">
                   {item.batchCount} {item.batchCount === 1 ? (isBangla ? 'ব্যাচ' : 'Batch') : (isBangla ? 'ব্যাচ' : 'Batches')}
                 </span>
               </button>

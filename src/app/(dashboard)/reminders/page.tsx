@@ -15,7 +15,8 @@ import {
   Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BackButton, PageHeader } from "@/components/common";
+import { PageHeader } from "@/components/common";
+import { KPICard } from "@/components/ui/premium";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -141,6 +142,57 @@ export default function RemindersPage() {
         }
       />
 
+      {/* KPI Cards Overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-28 rounded-2xl bg-muted/30 animate-pulse border border-border/40"
+            />
+          ))
+        ) : (
+          <>
+            <KPICard
+              title="Total Reminders"
+              titleBn="মোট রিমাইন্ডার"
+              value={reminders.length}
+              icon={<Bell className="h-5 w-5" />}
+              iconColor="indigo"
+              isBangla={isBangla}
+            />
+            <KPICard
+              title="Upcoming"
+              titleBn="আসন্ন"
+              value={upcomingCount}
+              icon={<Calendar className="h-5 w-5" />}
+              iconColor="warning"
+              isBangla={isBangla}
+              onClick={() => setActiveTab("upcoming")}
+              className={cn("cursor-pointer", activeTab === "upcoming" && "ring-1 ring-primary/40")}
+            />
+            <KPICard
+              title="Completed"
+              titleBn="সম্পন্ন"
+              value={completedCount}
+              icon={<CheckCircle className="h-5 w-5" />}
+              iconColor="emerald"
+              isBangla={isBangla}
+              onClick={() => setActiveTab("completed")}
+              className={cn("cursor-pointer", activeTab === "completed" && "ring-1 ring-primary/40")}
+            />
+            <KPICard
+              title="Payment Due"
+              titleBn="পেমেন্ট রিমাইন্ডার"
+              value={reminders.filter((r: any) => r.type === "payment reminder").length}
+              icon={<CreditCard className="h-5 w-5" />}
+              iconColor="emerald"
+              isBangla={isBangla}
+            />
+          </>
+        )}
+      </div>
+
       {/* Tabs Layout */}
       <div className="flex border-b border-border/40 gap-6">
         <button
@@ -193,11 +245,11 @@ export default function RemindersPage() {
         </div>
 
         {/* Reminders Table */}
-        <Card className="bg-[#131A22] border-border/40 overflow-hidden rounded-xl">
+        <Card className="bg-card border-border/60 overflow-hidden rounded-xl shadow-xs">
           <CardContent className="p-0">
             {isLoading ? (
               <div className="flex items-center justify-center h-48">
-                <Loader2 className="animate-spin h-8 w-8 text-emerald-600" />
+                <Loader2 className="animate-spin h-8 w-8 text-primary" />
               </div>
             ) : filteredReminders.length === 0 ? (
               <div className="py-12">
@@ -217,7 +269,7 @@ export default function RemindersPage() {
               </div>
             ) : (
               <Table>
-                <TableHeader className="bg-background/20 border-b border-border/40">
+                <TableHeader className="bg-muted/40 border-b border-border/40">
                   <TableRow className="border-b border-border/40 hover:bg-transparent">
                     <TableHead className="w-1/4 text-muted-foreground font-semibold py-4 px-6">
                       {isBangla ? "ধরণ" : "Type"}
@@ -245,11 +297,11 @@ export default function RemindersPage() {
                     return (
                       <TableRow
                         key={reminder.id}
-                        className="border-b border-border/40 hover:bg-muted/10 transition-colors"
+                        className="border-b border-border/40 hover:bg-muted/30 transition-colors"
                       >
                         <TableCell className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-muted/40 flex items-center justify-center text-muted-foreground shrink-0">
+                            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                               <IconComponent className="h-4 w-4" />
                             </div>
                             <span className="text-sm font-medium text-foreground">

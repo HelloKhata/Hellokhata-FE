@@ -1,13 +1,13 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from "@/components/ui/premium";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useChangeBusinessTypes, useGetMasterBusinessTypes } from "@/hooks/api/useMasterItems";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Check, Loader2, Save, Store } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface MasterBusinessType {
     id: string;
@@ -20,21 +20,33 @@ interface MasterBusinessType {
 
 const InventorySettings = () => {
     const { isBangla } = useAppTranslation();
+    const queryClient = useQueryClient();
     const { data: masterTypesData, isLoading } = useGetMasterBusinessTypes();
     const masterTypes: MasterBusinessType[] = masterTypesData?.businessTypes ?? [];
-    const {mutate:changeMasterTypes, isPending:isLoadingMasterItesmChange} = useChangeBusinessTypes()
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const { mutate: changeMasterTypes, isPending: isLoadingMasterItesmChange } = useChangeBusinessTypes();
+    const [userSelectedIds, setUserSelectedIds] = useState<string[] | null>(null);
+
+    // Derive effective selection: if user has interacted, use userSelectedIds; otherwise default to masterTypes where isSelected is true
+    const selectedIds = useMemo(() => {
+        if (userSelectedIds !== null) return userSelectedIds;
+        return masterTypes.filter((type) => type.isSelected).map((type) => type.id);
+    }, [userSelectedIds, masterTypes]);
 
     const toggleType = (id: string) => {
-        setSelectedIds((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-        );
+        setUserSelectedIds((prev) => {
+            const current = prev !== null ? prev : masterTypes.filter((type) => type.isSelected).map((type) => type.id);
+            return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+        });
     };
 
     const handleSave = () => {
         changeMasterTypes(selectedIds, {
-            onSuccess: data => {
-                if (data.success) toast.success("Business types updated successfully");
+            onSuccess: (data) => {
+                if (data.success) {
+                    toast.success(isBangla ? "ব্যবসার ধরন সফলভাবে আপডেট হয়েছে" : "Business types updated successfully");
+                    setUserSelectedIds(null);
+                    queryClient.invalidateQueries({ queryKey: ['master-business-types'] });
+                }
             },
         });
     };
@@ -102,7 +114,12 @@ const InventorySettings = () => {
                                         >
                                             {isBangla ? type.labelBn : type.labelEn}
                                         </span>
-                                        {isChecked && <Check className="h-4 w-4 text-primary" />}
+                                        {type.isDefault && (
+                                            <Badge variant="secondary" size="sm" className="text-[10px] font-medium shrink-0">
+                                                {isBangla ? "ডিফল্ট" : "Default"}
+                                            </Badge>
+                                        )}
+                                        {isChecked && <Check className="h-4 w-4 text-primary shrink-0" />}
                                     </button>
                                 );
                             })}

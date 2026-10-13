@@ -57,7 +57,7 @@ export function HrmDataTable<T>({
 }: Props<T>) {
   if (loading) {
     return (
-      <div className="w-full rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-2xl shadow-black/40 backdrop-blur-xl p-6">
+      <div className="w-full rounded-2xl border border-border bg-card shadow-sm p-6">
         <HrmTableSkeleton rows={skeletonRows} columns={columns.length} />
       </div>
     );
@@ -65,7 +65,7 @@ export function HrmDataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className="w-full rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-2xl shadow-black/40 backdrop-blur-xl p-6">
+      <div className="w-full rounded-2xl border border-border bg-card shadow-sm p-6">
         <HrmEmptyState
           icon={emptyIcon}
           title={emptyTitle}
@@ -79,11 +79,11 @@ export function HrmDataTable<T>({
   }
 
   return (
-    <div className="w-full rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-2xl shadow-black/40 backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-slate-700/80">
+    <div className="w-full rounded-2xl border border-border bg-card shadow-sm overflow-hidden transition-all duration-300 hover:border-border/80">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse text-sm min-w-[640px]">
           <thead>
-            <tr className="border-b border-slate-800/80 bg-slate-900/80 text-slate-400 text-[11px] font-semibold tracking-wider uppercase">
+            <tr className="border-b border-border bg-muted/50 text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -99,7 +99,7 @@ export function HrmDataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60">
+          <tbody className="divide-y divide-border/60">
             {data.map((row, index) => (
               <motion.tr
                 key={keyField(row)}
@@ -111,7 +111,7 @@ export function HrmDataTable<T>({
                   if (e.key === 'Enter' && onRowClick) onRowClick(row);
                 }}
                 className={cn(
-                  'border-b border-slate-800/60 transition-colors hover:bg-slate-800/40',
+                  'border-b border-border/60 transition-colors hover:bg-muted/40',
                   onRowClick && 'cursor-pointer',
                   rowClassName?.(row)
                 )}

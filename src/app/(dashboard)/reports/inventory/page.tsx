@@ -116,11 +116,11 @@ const formatKpiNumber = (amount: number) => {
 type Accent = "indigo" | "teal" | "emerald" | "red" | "amber";
 
 const ACCENT_STYLES: Record<Accent, { border: string; icon: string; shadow: string }> = {
-  indigo: { border: "border-[#4F5BFF]/25 hover:border-[#4F5BFF]/45", icon: "bg-[#4F5BFF]", shadow: "shadow-indigo-950/50" },
-  teal: { border: "border-[#0FBF9F]/25 hover:border-[#0FBF9F]/45", icon: "bg-[#0FBF9F]", shadow: "shadow-teal-950/50" },
-  emerald: { border: "border-[#1FAF86]/25 hover:border-[#1FAF86]/45", icon: "bg-[#1FAF86]", shadow: "shadow-green-950/50" },
-  red: { border: "border-[#EF4444]/25 hover:border-[#EF4444]/45", icon: "bg-[#EF4444]", shadow: "shadow-red-950/50" },
-  amber: { border: "border-amber-500/25 hover:border-amber-500/45", icon: "bg-amber-500", shadow: "shadow-amber-950/50" },
+  indigo: { border: "border-indigo-500/25 hover:border-indigo-500/40", icon: "bg-indigo-500", shadow: "shadow-sm" },
+  teal: { border: "border-teal-500/25 hover:border-teal-500/40", icon: "bg-teal-500", shadow: "shadow-sm" },
+  emerald: { border: "border-emerald-500/25 hover:border-emerald-500/40", icon: "bg-emerald-500", shadow: "shadow-sm" },
+  red: { border: "border-rose-500/25 hover:border-rose-500/40", icon: "bg-rose-500", shadow: "shadow-sm" },
+  amber: { border: "border-amber-500/25 hover:border-amber-500/45", icon: "bg-amber-500", shadow: "shadow-sm" },
 };
 
 function KpiCard({
@@ -138,23 +138,23 @@ function KpiCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5",
+        "relative overflow-hidden rounded-2xl border bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5",
         style.border
       )}
     >
       <div className="flex items-center gap-4">
         <div
           className={cn(
-            "h-13 w-13 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md",
+            "h-12 w-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md",
             style.icon,
             style.shadow
           )}
         >
-          <Icon className="h-7 w-7" />
+          <Icon className="h-6 w-6" />
         </div>
         <div className="min-w-0 space-y-0.5">
-          <p className="text-xs font-semibold text-slate-400 truncate">{label}</p>
-          <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <p className="text-xs font-semibold text-muted-foreground truncate">{label}</p>
+          <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
             {value}
           </p>
         </div>
@@ -173,14 +173,14 @@ function TableHeaderBar({
   isExporting?: boolean;
 }) {
   return (
-    <div className="px-6 py-4 border-b border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111726]/60">
-      <h2 className="text-base font-bold text-slate-100 tracking-tight">{title}</h2>
+    <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/40">
+      <h2 className="text-base font-bold text-foreground tracking-tight">{title}</h2>
       <div className="flex items-center gap-2.5">
         <button
           type="button"
           onClick={onExport}
           disabled={isExporting}
-          className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+          className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
         >
           <Download className="h-3.5 w-3.5" />
           <span>{isExporting ? "Exporting..." : "Download Excel"}</span>
@@ -188,7 +188,7 @@ function TableHeaderBar({
         <button
           type="button"
           onClick={() => window.print()}
-          className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+          className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
         >
           <Printer className="h-3.5 w-3.5" />
           <span>Print Report</span>
@@ -200,11 +200,11 @@ function TableHeaderBar({
 
 const EmptyState = ({ message }: { message: string }) => (
   <tr>
-    <td colSpan={9} className="px-4 py-12 text-center text-slate-400">
+    <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
       <div className="flex flex-col items-center justify-center gap-2">
-        <AlertCircle className="h-8 w-8 text-slate-500" />
+        <AlertCircle className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm font-medium">{message}</p>
-        <p className="text-xs text-slate-500">Try adjusting your date range or filters.</p>
+        <p className="text-xs text-muted-foreground">Try adjusting your date range or filters.</p>
       </div>
     </td>
   </tr>
@@ -341,37 +341,37 @@ export default function InventoryReportPage() {
       />
 
           {/* Filter Card */}
-          <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 p-5 shadow-xl shadow-black/30 backdrop-blur-xl">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Choose Date */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Choose Date</label>
-                <div className="relative flex items-center h-10 rounded-lg border border-[#222c3e] bg-[#141b29] px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
+                <label className="text-xs font-semibold text-foreground">Choose Date</label>
+                <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                    className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
                   />
-                  <span className="text-slate-500 px-2 select-none">→</span>
+                  <span className="text-muted-foreground px-2 select-none">→</span>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                    className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
                   />
-                  <Calendar className="h-4 w-4 text-slate-400 shrink-0 ml-1.5 pointer-events-none" />
+                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5 pointer-events-none" />
                 </div>
               </div>
 
               {/* Store */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Store</label>
+                <label className="text-xs font-semibold text-foreground">Store</label>
                 <Select value={selectedStore} onValueChange={setSelectedStore}>
-                  <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+                  <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                     <SelectValue placeholder="Choose Store" />
                   </SelectTrigger>
-                  <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
                     {STORE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
@@ -383,12 +383,12 @@ export default function InventoryReportPage() {
 
               {/* Category */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Category</label>
+                <label className="text-xs font-semibold text-foreground">Category</label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+                  <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
-                  <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
                     {CATEGORY_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}
@@ -400,19 +400,19 @@ export default function InventoryReportPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[#1e2738]/60">
+            <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-border">
               <button
                 type="button"
                 onClick={handleResetFilter}
-                className="h-10 px-6 rounded-lg border border-[#2d3650] bg-[#141b29] hover:bg-[#1a2335] text-slate-200 font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                className="h-10 px-6 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
               >
-                <RotateCcw className="h-4 w-4 text-slate-400" />
+                <RotateCcw className="h-4 w-4 text-muted-foreground" />
                 <span>Reset Filter</span>
               </button>
               <button
                 type="button"
                 onClick={handleGenerateReport}
-                className="h-10 px-6 rounded-lg bg-[#4F5BFF] hover:bg-[#5E6AFF] text-white font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-indigo-950/40 cursor-pointer"
+                className="h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer"
               >
                 <Sparkles className="h-4 w-4" />
                 <span>Generate Report</span>
@@ -449,7 +449,7 @@ export default function InventoryReportPage() {
           </div>
 
           {/* Current Stock Table */}
-          <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 shadow-xl shadow-black/30 backdrop-blur-xl overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
             <TableHeaderBar
               title="Current Stock Report"
               onExport={handleDownloadExcel}
@@ -458,7 +458,7 @@ export default function InventoryReportPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
-                  <tr className="border-b border-[#1e2738] bg-[#101625] text-slate-400 text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
+                  <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
                     <th className="px-4 py-3.5 whitespace-nowrap">#</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">Product</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">SKU</th>
@@ -471,7 +471,7 @@ export default function InventoryReportPage() {
                     <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e2738]/60 text-slate-300">
+                <tbody className="divide-y divide-border text-foreground">
                   {paginatedStock.length === 0 ? (
                     <EmptyState message="No stock records found" />
                   ) : (
@@ -480,23 +480,23 @@ export default function InventoryReportPage() {
                       return (
                         <tr
                           key={row.id}
-                          className="hover:bg-[#151d2e]/60 transition-colors group"
+                          className="hover:bg-muted/40 transition-colors group"
                         >
-                          <td className="px-4 py-3 font-mono text-slate-400 text-xs whitespace-nowrap">
+                          <td className="px-4 py-3 font-mono text-muted-foreground text-xs whitespace-nowrap">
                             {rowNumber}
                           </td>
                           <td className="px-4 py-3 font-semibold text-primary text-xs whitespace-nowrap group-hover:underline cursor-pointer">
                             {row.itemName}
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                             {row.sku}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#4F5BFF]/10 text-[#8b93ff] border border-[#4F5BFF]/20">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
                               {row.category}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          <td className="px-4 py-3 text-foreground whitespace-nowrap">
                             {row.store}
                           </td>
                           <td
@@ -506,15 +506,15 @@ export default function InventoryReportPage() {
                                 ? "text-rose-400"
                                 : row.status === "Low Stock"
                                   ? "text-amber-400"
-                                  : "text-slate-100"
+                                  : "text-foreground"
                             )}
                           >
                             {row.qty.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          <td className="px-4 py-3 text-foreground whitespace-nowrap">
                             {formatBDT(row.costPrice)}
                           </td>
-                          <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                          <td className="px-4 py-3 text-foreground whitespace-nowrap">
                             {formatBDT(row.sellingPrice)}
                           </td>
                           <td className="px-4 py-3 font-medium text-emerald-400 whitespace-nowrap">
@@ -522,19 +522,19 @@ export default function InventoryReportPage() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             {row.status === "In Stock" && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" />
                                 In Stock
                               </span>
                             )}
                             {row.status === "Low Stock" && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                                 <Clock className="h-3 w-3" />
                                 Low Stock
                               </span>
                             )}
                             {row.status === "Out of Stock" && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                                 <XCircle className="h-3 w-3" />
                                 Out of Stock
                               </span>
@@ -549,9 +549,9 @@ export default function InventoryReportPage() {
             </div>
 
             {/* Pagination + Page Size */}
-            <div className="px-6 py-4 border-t border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#101625]">
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span className="font-medium text-slate-300">Show</span>
+            <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Show</span>
                 <Select
                   value={String(pageSize)}
                   onValueChange={(val) => {
@@ -559,10 +559,10 @@ export default function InventoryReportPage() {
                     setCurrentPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-8 w-[72px] rounded-md border-[#222c3e] bg-[#141b29] text-slate-200 text-xs">
+                  <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
                     <SelectValue placeholder="10" />
                   </SelectTrigger>
-                  <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
                     <SelectItem value="5">5</SelectItem>
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="25">25</SelectItem>
@@ -571,14 +571,14 @@ export default function InventoryReportPage() {
                 </Select>
                 <span>
                   Showing{" "}
-                  <strong className="text-slate-200">
+                  <strong className="text-foreground">
                     {filteredStock.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
                   </strong>{" "}
                   to{" "}
-                  <strong className="text-slate-200">
+                  <strong className="text-foreground">
                     {Math.min(currentPage * pageSize, filteredStock.length)}
                   </strong>{" "}
-                  of <strong className="text-slate-200">{filteredStock.length}</strong> entries
+                  of <strong className="text-foreground">{filteredStock.length}</strong> entries
                 </span>
               </div>
               <div className="flex items-center gap-1.5 self-end sm:self-auto">
@@ -586,7 +586,7 @@ export default function InventoryReportPage() {
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage <= 1}
-                  className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                  className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -602,8 +602,8 @@ export default function InventoryReportPage() {
                     className={cn(
                       "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
                       p === currentPage
-                        ? "bg-[#4F5BFF] text-white shadow-md shadow-indigo-950/50"
-                        : "border border-[#222c3e] bg-[#141b29] text-slate-300 hover:bg-[#1a2335]"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "border border-border bg-background text-foreground hover:bg-muted"
                     )}
                   >
                     {p}
@@ -617,7 +617,7 @@ export default function InventoryReportPage() {
                     )
                   }
                   disabled={currentPage >= Math.max(1, Math.ceil(filteredStock.length / pageSize))}
-                  className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+                  className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
                   aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
