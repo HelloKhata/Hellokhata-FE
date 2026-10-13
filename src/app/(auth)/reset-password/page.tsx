@@ -127,9 +127,9 @@ function ResetPasswordContent() {
             className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl mb-4 shrink-0 relative"
             style={{
               background:
-                "linear-gradient(135deg, #4F5BFF 0%, #6366F1 50%, #0FBF9F 100%)",
+                "linear-gradient(135deg, #0E5B43 0%, #052B20 100%)",
               boxShadow:
-                "0 0 30px rgba(79, 91, 255, 0.3), 0 0 60px rgba(15, 191, 159, 0.15)",
+                "0 0 30px rgba(14, 91, 67, 0.3), 0 0 60px rgba(14, 91, 67, 0.15)",
             }}
           >
             <Store className="h-8 w-8 md:h-10 md:w-10 text-white" />
@@ -334,7 +334,7 @@ export default function ResetPasswordPage() {
           className="min-h-screen flex items-center justify-center"
           style={{ backgroundColor: "#0F141B" }}
         >
-          <Loader2 className="h-8 w-8 animate-spin text-primary" style={{ color: "#4F5BFF" }} />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" style={{ color: "#0E5B43" }} />
         </div>
       }
     >

@@ -971,7 +971,7 @@ function NewPurchaseContent() {
       </PageHeader>
 
       {/* Merged Purchase Information Card */}
-      <div className="bg-zinc-900/20 border border-border rounded-xl p  -5 space-y-5 shadow-xs">
+      <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2.5">
           <span className="text-sm font-semibold text-foreground">
             {isBangla ? "ক্রয় সংক্রান্ত তথ্য" : "Purchase Information"}
@@ -1208,7 +1208,7 @@ function NewPurchaseContent() {
         {/* Left Form Content (9 Columns wide on Desktop) */}
         <div className="col-span-1 lg:col-span-9 space-y-6">
           {/* Billing Items Table */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "পণ্য ও মূল্য নির্ধারণ" : "Items & Pricing"}
@@ -1223,7 +1223,7 @@ function NewPurchaseContent() {
             <div className="hidden lg:block overflow-x-auto border border-border/60 rounded-lg">
               <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
+                  <tr className="bg-muted/40 dark:bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
                     <th className="px-3 py-3 w-[4%] text-center">#</th>
                     <th className="px-3 py-3 w-[30%]">{isBangla ? "পণ্য বা ডেসক্রিপশন *" : "Item *"}</th>
                     <th className="px-3 py-3 w-[12%] text-center">{isBangla ? "ব্যাচ ট্র্যাকিং" : "Track Batch"}</th>
@@ -1257,7 +1257,7 @@ function NewPurchaseContent() {
                       .filter((i) => i.itemId)
                       .map((item, idx) => (
                       <Fragment key={item.itemId}>
-                        <tr className="hover:bg-muted/10 transition-colors">
+                        <tr className="hover:bg-muted/30 dark:hover:bg-muted/10 transition-colors">
                           <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle text-center">
                             {idx + 1}
                           </td>
@@ -1377,7 +1377,7 @@ function NewPurchaseContent() {
                         {openExpiryRowId === item.itemId && (
                           <tr
                             data-expiry-container
-                            className="bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
+                            className="bg-muted/25 dark:bg-muted/15 border-b border-border/50 animate-in fade-in duration-150"
                           >
                             <td colSpan={9} className="px-4 py-2 text-xs">
                               {renderBatchExpiryPanel(item, "pl-7")}
@@ -1413,7 +1413,7 @@ function NewPurchaseContent() {
                   .map((item, idx) => (
                     <div
                       key={item.itemId}
-                      className="border border-border/60 rounded-lg p-3 space-y-3 bg-background/30"
+                      className="border border-border/60 rounded-lg p-3 space-y-3 bg-muted/20 dark:bg-background/30"
                     >
                       {/* Header: image, name, sku, stock, delete */}
                       <div className="flex items-start gap-3">
@@ -1523,7 +1523,7 @@ function NewPurchaseContent() {
                       {openExpiryRowId === item.itemId && (
                         <div
                           data-expiry-container
-                          className="bg-muted/15 border border-border/50 rounded-lg p-2.5 animate-in fade-in duration-150"
+                          className="bg-muted/25 dark:bg-muted/15 border border-border/50 rounded-lg p-2.5 animate-in fade-in duration-150"
                         >
                           {renderBatchExpiryPanel(item)}
                         </div>
@@ -1537,7 +1537,7 @@ function NewPurchaseContent() {
           </div>
 
           {/* Notes & Invoice Image Upload */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Remarks/Notes */}
               <div className="space-y-1.5">
@@ -1576,7 +1576,7 @@ function NewPurchaseContent() {
                     </div>
                   </div>
                 ) : (
-                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-background/30 hover:bg-background/50 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
+                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-muted/20 hover:bg-muted/40 dark:bg-background/30 dark:hover:bg-background/50 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
                     <Upload className="h-6 w-6 text-muted-foreground mb-1.5" />
                     <span className="text-xs font-semibold text-foreground">
                       {isBangla ? "ইনভয়েস ছবি আপলোড করুন" : "Upload Invoice Image"}
@@ -1599,7 +1599,7 @@ function NewPurchaseContent() {
 
         {/* Right Section: Purchase Summary Sticky Panel */}
         <div className="col-span-1 lg:col-span-3 lg:sticky lg:top-6 space-y-6">
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               {isBangla ? "ক্রয় সারাংশ" : "Purchase Summary"}
             </h3>
@@ -1624,7 +1624,7 @@ function NewPurchaseContent() {
                     value={shippingCost || ""}
                     onChange={(e) => setShippingCost(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
+                    className="h-8 text-right pl-6 bg-background/50 border-input text-xs text-foreground font-semibold"
                     min="0"
                   />
                 </div>
@@ -1640,7 +1640,7 @@ function NewPurchaseContent() {
                     value={additionalCharges || ""}
                     onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
+                    className="h-8 text-right pl-6 bg-background/50 border-input text-xs text-foreground font-semibold"
                     min="0"
                   />
                 </div>
@@ -1684,7 +1684,7 @@ function NewPurchaseContent() {
                 const maxAllowedForActive = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
 
                 return (
-                  <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
+                  <div key={p.id} className="bg-muted/20 dark:bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
                     {/* Method chips */}
                     <div className="grid grid-cols-3 gap-2 mb-3">
                       {METHODS.map((m) => {

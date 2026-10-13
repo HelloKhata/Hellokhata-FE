@@ -52,7 +52,7 @@ import {
 } from '@/components/hrm/mock-data';
 import { useRouter } from 'next/navigation';
 
-const PIE_COLORS = ['#4F5BFF', '#0FBF9F', '#E8A23A', '#C93C42', '#818CF8', '#38BDF8', '#F472B6'];
+const PIE_COLORS = ['#0E5B43', '#0FBF9F', '#E8A23A', '#C93C42', '#16A34A', '#38BDF8', '#F472B6'];
 const ACTIVITY_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; tone: string }> = {
   join: { icon: UserPlus, tone: 'text-emerald bg-emerald-subtle' },
   leave: { icon: CalendarOff, tone: 'text-warning bg-warning-subtle' },
@@ -86,7 +86,7 @@ export default function HrmDashboardPage() {
     present: { label: isBangla ? 'উপস্থিত' : 'Present', color: '#0FBF9F' },
     late: { label: isBangla ? 'দেরি' : 'Late', color: '#E8A23A' },
     absent: { label: isBangla ? 'অনুপস্থিত' : 'Absent', color: '#C93C42' },
-    leave: { label: isBangla ? 'ছুটি' : 'Leave', color: '#4F5BFF' },
+    leave: { label: isBangla ? 'ছুটি' : 'Leave', color: '#0E5B43' },
   };
 
   const quickActions = [
@@ -219,7 +219,7 @@ export default function HrmDashboardPage() {
                   <Area type="monotone" dataKey="present" stroke="#0FBF9F" strokeWidth={2.5} fill="url(#gradPresent)" name={isBangla ? 'উপস্থিত' : 'Present'} />
                   <Area type="monotone" dataKey="late" stroke="#E8A23A" strokeWidth={1.8} fill="transparent" name={isBangla ? 'দেরি' : 'Late'} />
                   <Area type="monotone" dataKey="absent" stroke="#C93C42" strokeWidth={1.8} fill="transparent" name={isBangla ? 'অনুপস্থিত' : 'Absent'} />
-                  <Area type="monotone" dataKey="leave" stroke="#4F5BFF" strokeWidth={1.8} fill="transparent" name={isBangla ? 'ছুটি' : 'Leave'} />
+                  <Area type="monotone" dataKey="leave" stroke="#0E5B43" strokeWidth={1.8} fill="transparent" name={isBangla ? 'ছুটি' : 'Leave'} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
