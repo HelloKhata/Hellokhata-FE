@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
 import { toast } from "@/hooks/use-toast";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -13,30 +13,41 @@ import {
   Mail,
   Phone,
   MapPin,
-  FileText,
   Camera,
   Trash2,
+  Pencil,
 } from "lucide-react";
 
 import { Button, Input } from "@/components/ui/premium";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { useUpdateBusiness, useUpdateUser } from "@/hooks/api/useSettings";
 
 export default function AccountSettingsPage() {
   const { isBangla } = useAppTranslation();
-  const { user, business } = useSessionStore();
+  const {
+    user,
+    business,
+    updateUser: updateSessionUser,
+    updateBusiness: updateSessionBusiness,
+  } = useSessionStore();
+
+  const { mutate: updateUser, isPending: isUpdatingUser } = useUpdateUser();
+  const { mutate: updateBusiness, isPending: isUpdatingBusiness } =
+    useUpdateBusiness();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(
-    user?.image || null,
+    (user as any)?.image || null,
   );
+
   // 1. Personal Profile State
   const [personalForm, setPersonalForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
-    image: user?.image || null,
   });
-  const [isSavingPersonal, setIsSavingPersonal] = useState(false);
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
 
   // 2. Business Profile State
   const [businessForm, setBusinessForm] = useState({
@@ -44,57 +55,99 @@ export default function AccountSettingsPage() {
     nameBn: business?.nameBn || "",
     phone: business?.phone || "",
     address: business?.address || "",
-    taxId: business?.taxId || "",
   });
-  const [isSavingBusiness, setIsSavingBusiness] = useState(false);
+  
+  const [isEditingBusiness, setIsEditingBusiness] = useState(false);
+
+  // Sync with sessionStore on load when not actively editing
+  useEffect(() => {
+    if (user && !isEditingPersonal) {
+      setPersonalForm({
+        name: user?.name || "",
+        email: user?.email || "",
+        phone: user?.phone || "",
+      });
+      setPreviewImage((user as any)?.image || null);
+    }
+  }, [user, isEditingPersonal]);
+
+  useEffect(() => {
+    if (business && !isEditingBusiness) {
+      setBusinessForm({
+        name: business?.name || "",
+        nameBn: (business as any)?.nameBn || "",
+        phone: (business as any)?.phone || "",
+        address: (business as any)?.address || "",
+      });
+    }
+  }, [business, isEditingBusiness]);
 
   // Handlers
   const handleSavePersonal = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setIsSavingPersonal(true);
 
-    try {
-      toast({
-        title: isBangla ? "সফলভাবে আপডেট করা হয়েছে" : "Profile Updated",
-        description: isBangla
-          ? "ব্যক্তিগত তথ্য সফলভাবে আপডেট হয়েছে"
-          : "Personal information saved successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: isBangla ? "ত্রুটি ঘটেছে" : "Error",
-        description:
-          error?.message ||
-          (isBangla ? "কিছু একটা ভুল হয়েছে" : "Something went wrong"),
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingPersonal(false);
+    updateUser(personalForm, {
+      onSuccess: () => {
+        updateSessionUser?.(personalForm);
+        setIsEditingPersonal(false);
+        toast({
+          title: isBangla ? "সফলভাবে আপডেট করা হয়েছে" : "Profile Updated",
+          description: isBangla
+            ? "ব্যক্তিগত তথ্য সফলভাবে আপডেট হয়েছে"
+            : "Personal information saved successfully",
+        });
+      },
+    });
+  };
+
+  const handleCancelPersonal = () => {
+    setPersonalForm({
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+    });
+    setPreviewImage((user as any)?.image || null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
+    setIsEditingPersonal(false);
   };
 
   const handleSaveBusiness = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    setIsSavingBusiness(true);
 
-    try {
-      toast({
-        title: isBangla ? "সফলভাবে আপডেট করা হয়েছে" : "Business Updated",
-        description: isBangla
-          ? "ব্যবসার তথ্য সফলভাবে আপডেট হয়েছে"
-          : "Business details saved successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: isBangla ? "ত্রুটি ঘটেছে" : "Error",
-        description:
-          error?.message ||
-          (isBangla ? "কিছু একটা ভুল হয়েছে" : "Something went wrong"),
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingBusiness(false);
-    }
+    updateBusiness(businessForm, {
+      onSuccess: () => {
+        updateSessionBusiness?.(businessForm);
+        setIsEditingBusiness(false);
+        toast({
+          title: isBangla ? "সফলভাবে আপডেট করা হয়েছে" : "Business Updated",
+          description: isBangla
+            ? "ব্যবসার তথ্য সফলভাবে আপডেট হয়েছে"
+            : "Business details saved successfully",
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: isBangla ? "ত্রুটি ঘটেছে" : "Error",
+          description:
+            error?.response?.data?.message ||
+            error?.message ||
+            (isBangla ? "কিছু একটা ভুল হয়েছে" : "Something went wrong"),
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleCancelBusiness = () => {
+    setBusinessForm({
+      name: business?.name || "",
+      nameBn: (business as any)?.nameBn || "",
+      phone: (business as any)?.phone || "",
+      address: (business as any)?.address || "",
+    });
+    setIsEditingBusiness(false);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,6 +181,7 @@ export default function AccountSettingsPage() {
           accept="image/*"
           onChange={handleImageChange}
           className="hidden"
+          disabled={!isEditingPersonal}
         />
 
         {/* Header with Integrated Interactive Avatar */}
@@ -135,10 +189,19 @@ export default function AccountSettingsPage() {
           <div className="flex items-center gap-4">
             {/* Interactive Avatar with Hover Overlay */}
             <div
-              onClick={() => fileInputRef.current?.click()}
-              className="relative group cursor-pointer h-20 w-20 rounded-full overflow-hidden border-2 border-border/80 shadow-sm shrink-0 transition-all hover:border-primary/50"
+              onClick={() => {
+                if (isEditingPersonal) fileInputRef.current?.click();
+              }}
+              className={cn(
+                "relative h-20 w-20 rounded-full overflow-hidden border-2 border-border/80 shadow-sm shrink-0 transition-all",
+                isEditingPersonal
+                  ? "group cursor-pointer hover:border-primary/50"
+                  : "cursor-default"
+              )}
               title={
-                isBangla ? "ছবি আপলোড/পরিবর্তন করুন" : "Upload or change photo"
+                isEditingPersonal
+                  ? (isBangla ? "ছবি আপলোড/পরিবর্তন করুন" : "Upload or change photo")
+                  : undefined
               }
             >
               <Avatar className="h-full w-full rounded-full">
@@ -154,13 +217,15 @@ export default function AccountSettingsPage() {
                 </AvatarFallback>
               </Avatar>
 
-              {/* Hover Camera Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 backdrop-blur-[2px] rounded-full">
-                <Camera className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-none">
-                  {isBangla ? "পরিবর্তন" : "Change"}
-                </span>
-              </div>
+              {/* Hover Camera Overlay only in edit mode */}
+              {isEditingPersonal && (
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white gap-1 backdrop-blur-[2px] rounded-full">
+                  <Camera className="h-5 w-5" />
+                  <span className="text-[10px] font-medium leading-none">
+                    {isBangla ? "পরিবর্তন" : "Change"}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Section Title & Subtitle */}
@@ -169,11 +234,11 @@ export default function AccountSettingsPage() {
                 <h2 className="text-lg font-semibold text-foreground">
                   {isBangla ? "ব্যক্তিগত প্রোফাইল" : "Personal Profile"}
                 </h2>
-                {previewImage && (
+                {isEditingPersonal && previewImage && (
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="text-xs text-destructive hover:underline flex items-center gap-0.5 ml-1"
+                    className="text-xs text-destructive hover:underline flex items-center gap-0.5 ml-1 cursor-pointer"
                     title={isBangla ? "ছবি মুছে ফেলুন" : "Remove image"}
                   >
                     <Trash2 className="h-3 w-3" />
@@ -188,6 +253,20 @@ export default function AccountSettingsPage() {
               </p>
             </div>
           </div>
+
+          {/* Top Right Edit Button */}
+          {!isEditingPersonal && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditingPersonal(true)}
+              className="rounded-xl h-8 text-xs gap-1.5 border-border/80 hover:bg-muted hover:text-primary hover:border-primary/40 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {isBangla ? "এডিট করুন" : "Edit"}
+            </Button>
+          )}
         </div>
 
         {/* Input Fields */}
@@ -199,12 +278,13 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="text"
+              disabled={!isEditingPersonal}
               value={personalForm.name}
               onChange={(e) =>
-                setPersonalForm({ ...personalForm, name: e.target.value })
+                setPersonalForm((prev) => ({ ...prev, name: e.target.value }))
               }
               placeholder={isBangla ? "আপনার নাম লিখুন" : "Enter full name"}
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
 
@@ -215,12 +295,13 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="email"
+              disabled={!isEditingPersonal}
               value={personalForm.email}
               onChange={(e) =>
-                setPersonalForm({ ...personalForm, email: e.target.value })
+                setPersonalForm((prev) => ({ ...prev, email: e.target.value }))
               }
               placeholder={isBangla ? "ইমেইল লিখুন" : "Enter email address"}
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
 
@@ -231,15 +312,45 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="text"
+              disabled={!isEditingPersonal}
               value={personalForm.phone}
               onChange={(e) =>
-                setPersonalForm({ ...personalForm, phone: e.target.value })
+                setPersonalForm((prev) => ({ ...prev, phone: e.target.value }))
               }
               placeholder={isBangla ? "ফোন নম্বর লিখুন" : "Enter phone number"}
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
         </div>
+
+        {/* Bottom Right Save & Cancel Buttons */}
+        {isEditingPersonal && (
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCancelPersonal}
+              disabled={isUpdatingUser}
+              className="rounded-xl cursor-pointer hover:bg-muted hover:text-foreground transition-all duration-150 active:scale-95"
+            >
+              {isBangla ? "বাতিল করুন" : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isUpdatingUser}
+              className="rounded-xl cursor-pointer hover:bg-primary/90 transition-all duration-150 active:scale-95 shadow-sm"
+            >
+              {isUpdatingUser ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {isBangla ? "সংরক্ষণ করুন" : "Save"}
+            </Button>
+          </div>
+        )}
       </form>
 
       {/* SECTION 2: BUSINESS PROFILE */}
@@ -264,6 +375,20 @@ export default function AccountSettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Top Right Edit Button */}
+          {!isEditingBusiness && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditingBusiness(true)}
+              className="rounded-xl h-8 text-xs gap-1.5 border-border/80 hover:bg-muted hover:text-primary hover:border-primary/40 transition-all duration-150 cursor-pointer shadow-xs active:scale-95"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              {isBangla ? "এডিট করুন" : "Edit"}
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -274,14 +399,15 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="text"
+              disabled={!isEditingBusiness}
               value={businessForm.name}
               onChange={(e) =>
-                setBusinessForm({ ...businessForm, name: e.target.value })
+                setBusinessForm((prev) => ({ ...prev, name: e.target.value }))
               }
               placeholder={
                 isBangla ? "ইংরেজিতে ব্যবসার নাম" : "Business name in English"
               }
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
 
@@ -292,14 +418,15 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="text"
+              disabled={!isEditingBusiness}
               value={businessForm.nameBn}
               onChange={(e) =>
-                setBusinessForm({ ...businessForm, nameBn: e.target.value })
+                setBusinessForm((prev) => ({ ...prev, nameBn: e.target.value }))
               }
               placeholder={
                 isBangla ? "বাংলায় ব্যবসার নাম" : "Business name in Bangla"
               }
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
 
@@ -310,84 +437,69 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               type="text"
+              disabled={!isEditingBusiness}
               value={businessForm.phone}
               onChange={(e) =>
-                setBusinessForm({ ...businessForm, phone: e.target.value })
+                setBusinessForm((prev) => ({ ...prev, phone: e.target.value }))
               }
               placeholder={
                 isBangla ? "ব্যবসার ফোন নম্বর" : "Business phone number"
               }
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" />
-              {isBangla ? "ট্যাক্স আইডেন্টিফায়ার" : "BIN / Tax Identification"}
-            </Label>
-            <Input
-              type="text"
-              value={businessForm.taxId}
-              onChange={(e) =>
-                setBusinessForm({ ...businessForm, taxId: e.target.value })
-              }
-              placeholder={
-                isBangla ? "BIN / Tax ID লিখুন" : "Enter BIN or Tax ID"
-              }
-              className="h-10"
-            />
-          </div>
-
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2 sm:col-span-2 lg:col-span-3">
             <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5" />
               {isBangla ? "ঠিকানা" : "Address"}
             </Label>
             <Input
               type="text"
+              disabled={!isEditingBusiness}
               value={businessForm.address}
               onChange={(e) =>
-                setBusinessForm({ ...businessForm, address: e.target.value })
+                setBusinessForm((prev) => ({ ...prev, address: e.target.value }))
               }
               placeholder={
                 isBangla
                   ? "ব্যবসার পূর্ণ ঠিকানা"
                   : "Enter full business address"
               }
-              className="h-10"
+              className="h-10 disabled:opacity-75 disabled:cursor-not-allowed disabled:bg-muted/30"
             />
           </div>
         </div>
-      </form>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          type="button"
-          disabled={isSavingPersonal || isSavingBusiness}
-          size="sm"
-          className="rounded-xl bg-red-500 border border-red-600"
-        >
-          {isBangla ? "বাতিল করুন" : "Cancel"}
-        </Button>
-        <Button
-          type="button"
-          onClick={() => {
-            handleSavePersonal();
-            handleSaveBusiness();
-          }}
-          disabled={isSavingPersonal || isSavingBusiness}
-          size="sm"
-          className="rounded-xl"
-        >
-          {isSavingPersonal || isSavingBusiness ? (
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          {isBangla ? "সংরক্ষণ করুন" : "Save"}
-        </Button>
-      </div>
+        {/* Bottom Right Save & Cancel Buttons */}
+        {isEditingBusiness && (
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-border/40">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCancelBusiness}
+              disabled={isUpdatingBusiness}
+              className="rounded-xl cursor-pointer hover:bg-muted hover:text-foreground transition-all duration-150 active:scale-95"
+            >
+              {isBangla ? "বাতিল করুন" : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isUpdatingBusiness}
+              className="rounded-xl cursor-pointer hover:bg-primary/90 transition-all duration-150 active:scale-95 shadow-sm"
+            >
+              {isUpdatingBusiness ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {isBangla ? "সংরক্ষণ করুন" : "Save"}
+            </Button>
+          </div>
+        )}
+      </form>
     </div>
   );
 }
