@@ -134,10 +134,10 @@ export default function EmployeesPage() {
               className="ring-1 ring-slate-700/60 shadow-sm"
             />
             <div className="min-w-0">
-              <p className="font-semibold text-slate-100 text-sm truncate max-w-[170px] hover:text-indigo-400 transition-colors">
+              <p className="font-semibold text-foreground text-sm truncate max-w-[170px] hover:text-primary transition-colors">
                 {isBangla ? e.nameBn || empName : empName}
               </p>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">{e.employeeId}</p>
+              <p className="text-xs text-muted-foreground font-mono mt-0.5">{e.employeeId}</p>
             </div>
           </div>
         );
@@ -151,8 +151,8 @@ export default function EmployeesPage() {
         const email = e.emailAddress || e.email || '-';
         return (
           <div className="min-w-0">
-            <p className="text-sm text-slate-200 font-medium tabular-nums">{phone}</p>
-            <p className="text-xs text-slate-400 truncate max-w-[180px] mt-0.5">{email}</p>
+            <p className="text-sm text-foreground font-medium tabular-nums">{phone}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[180px] mt-0.5">{email}</p>
           </div>
         );
       },
@@ -162,8 +162,8 @@ export default function EmployeesPage() {
       header: isBangla ? 'বিভাগ ও পদবি' : 'Department & Role',
       render: (e) => (
         <div>
-          <p className="text-sm text-slate-200 font-medium whitespace-nowrap">{e.department || '-'}</p>
-          <p className="text-xs text-slate-400 whitespace-nowrap mt-0.5">{e.designation || '-'}</p>
+          <p className="text-sm text-foreground font-medium whitespace-nowrap">{e.department || '-'}</p>
+          <p className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">{e.designation || '-'}</p>
         </div>
       ),
     },
@@ -171,14 +171,14 @@ export default function EmployeesPage() {
       key: 'branch',
       header: isBangla ? 'শাখা' : 'Branch',
       render: (e) => (
-        <span className="text-sm text-slate-300 whitespace-nowrap">{getBranchLabel(e.branchId)}</span>
+        <span className="text-sm text-foreground/90 whitespace-nowrap">{getBranchLabel(e.branchId)}</span>
       ),
     },
     {
       key: 'joining',
       header: isBangla ? 'যোগদান' : 'Joined',
       render: (e) => (
-        <span className="text-sm text-slate-400 whitespace-nowrap tabular-nums">
+        <span className="text-sm text-muted-foreground whitespace-nowrap tabular-nums">
           {e.joiningDate ? formatDate(e.joiningDate) : '-'}
         </span>
       ),
@@ -191,11 +191,11 @@ export default function EmployeesPage() {
         const salaryVal = e.basicSalary ?? e.salary ?? 0;
         return (
           <div className="text-right">
-            <span className="text-sm font-bold text-emerald-400 whitespace-nowrap tabular-nums">
+            <span className="text-sm font-bold text-emerald-500 whitespace-nowrap tabular-nums">
               {formatCurrency(salaryVal)}
             </span>
             {e.salaryCycle && (
-              <span className="text-[10px] text-slate-400 block font-normal capitalize">
+              <span className="text-[10px] text-muted-foreground block font-normal capitalize">
                 /{e.salaryCycle.toLowerCase()}
               </span>
             )}
@@ -221,51 +221,51 @@ export default function EmployeesPage() {
             type="button"
             onClick={() => router.push(`/hrm/employees/${e.id}`)}
             aria-label="View"
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer"
           >
             <Eye className="h-4 w-4" />
           </button>
 
           <Button
-          variant="outline"
+            variant="outline"
             onClick={() => openEdit(e.id)}
-            className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+            className="hover:bg-muted hover:text-foreground cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2 border-border"
           >
-            <Pencil className="h-4 w-4 mr-2 text-indigo-400" />
+            <Pencil className="h-4 w-4 mr-2 text-primary" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label="More"
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800/80 transition-all cursor-pointer"
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all cursor-pointer"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-[#0d131f] border-slate-800 text-slate-200 shadow-2xl shadow-black/80 rounded-xl p-1.5">
+            <DropdownMenuContent align="end" className="w-48 bg-popover border-border text-popover-foreground shadow-xl rounded-xl p-1.5">
               <DropdownMenuItem
                 onClick={() => openEdit(e.id)}
-                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+                className="hover:bg-muted hover:text-foreground cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
-                <Pencil className="h-4 w-4 mr-2 text-indigo-400" /> {isBangla ? 'সম্পাদনা' : 'Edit'}
+                <Pencil className="h-4 w-4 mr-2 text-primary" /> {isBangla ? 'সম্পাদনা' : 'Edit'}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => router.push(`/hrm/employees/${e.id}`)}
-                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+                className="hover:bg-muted hover:text-foreground cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
-                <FileText className="h-4 w-4 mr-2 text-sky-400" /> {isBangla ? 'প্রোফাইল' : 'Profile'}
+                <FileText className="h-4 w-4 mr-2 text-sky-500" /> {isBangla ? 'প্রোফাইল' : 'Profile'}
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-slate-800/80 my-1" />
+              <DropdownMenuSeparator className="bg-border my-1" />
               <DropdownMenuItem
                 onClick={() => setResetTarget(e)}
-                className="hover:bg-slate-800/80 hover:text-slate-100 focus:bg-slate-800/80 focus:text-slate-100 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+                className="hover:bg-muted hover:text-foreground cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
-                <KeyRound className="h-4 w-4 mr-2 text-amber-400" /> {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset Password'}
+                <KeyRound className="h-4 w-4 mr-2 text-amber-500" /> {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset Password'}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setArchiveTarget(e)}
-                className="text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 focus:bg-rose-500/10 focus:text-rose-300 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
+                className="text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 focus:bg-rose-500/10 focus:text-rose-600 cursor-pointer rounded-lg text-xs font-medium px-2.5 py-2"
               >
                 <Archive className="h-4 w-4 mr-2" /> {isBangla ? 'আর্কাইভ' : 'Archive'}
               </DropdownMenuItem>
@@ -297,12 +297,12 @@ export default function EmployeesPage() {
       />
 
       {/* 2. SEARCH TOOLBAR */}
-      <div className="rounded-2xl border border-slate-800/90 bg-[#0d131f]/95 shadow-xl shadow-black/40 backdrop-blur-xl p-4 sm:p-5 transition-all">
+      <div className="rounded-2xl border border-border bg-card shadow-sm p-4 sm:p-5 transition-all">
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
-              className="w-full h-10.5 pl-10 pr-4 bg-slate-900/60 border border-slate-800/90 text-slate-100 placeholder:text-slate-500 rounded-lg text-xs focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+              className="w-full h-10.5 pl-10 pr-4 bg-background border border-input text-foreground placeholder:text-muted-foreground/60 rounded-lg text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
               placeholder={isBangla ? 'নাম, আইডি, ফোন বা ইমেইল খুঁজুন…' : 'Search name, ID, phone or email…'}
               value={searchTerm}
               onChange={(e) => {
@@ -311,7 +311,7 @@ export default function EmployeesPage() {
               }}
             />
           </div>
-          <div className="h-10.5 px-3.5 rounded-lg bg-slate-900/60 border border-slate-800/90 text-xs text-slate-400 flex items-center justify-center whitespace-nowrap font-medium self-end md:self-auto">
+          <div className="h-10.5 px-3.5 rounded-lg bg-muted/60 border border-border text-xs text-muted-foreground flex items-center justify-center whitespace-nowrap font-medium self-end md:self-auto">
             {isBangla
               ? `${filtered.length} জন ফলাফল`
               : `${filtered.length} result${filtered.length === 1 ? '' : 's'}`}
@@ -355,22 +355,22 @@ export default function EmployeesPage() {
 
       {/* 4. ARCHIVE CONFIRM DIALOG */}
       <Dialog open={!!archiveTarget} onOpenChange={(o) => !o && setArchiveTarget(null)}>
-        <DialogContent className="sm:max-w-md bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
+        <DialogContent className="sm:max-w-md bg-card border border-border text-foreground shadow-2xl rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-100">
+            <DialogTitle className="text-lg font-bold text-foreground">
               {isBangla ? 'কর্মচারী আর্কাইভ করুন?' : 'Archive employee?'}
             </DialogTitle>
           </DialogHeader>
-          <p className="text-xs sm:text-sm text-slate-400 py-2 leading-relaxed">
+          <p className="text-xs sm:text-sm text-muted-foreground py-2 leading-relaxed">
             {archiveTarget
               ? isBangla
                 ? `${archiveTarget.fullName || archiveTarget.name} কে আর্কাইভ করলে তিনি আর সক্রিয় কর্মচারী তালিকায় থাকবেন না।`
                 : `${archiveTarget.fullName || archiveTarget.name} will no longer appear in the active employee list.`
               : ''}
           </p>
-          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
+          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-border">
             <DialogClose asChild>
-              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg text-xs h-10 cursor-pointer">
+              <Button variant="outline" className="border-border bg-background hover:bg-muted text-foreground rounded-lg text-xs h-10 cursor-pointer">
                 {isBangla ? 'বাতিল' : 'Cancel'}
               </Button>
             </DialogClose>
@@ -388,15 +388,15 @@ export default function EmployeesPage() {
 
       {/* 5. RESET PASSWORD DIALOG */}
       <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
-        <DialogContent className="sm:max-w-md bg-[#0d131f] border border-slate-800 text-slate-100 shadow-2xl rounded-2xl p-6">
+        <DialogContent className="sm:max-w-md bg-card border border-border text-foreground shadow-2xl rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-100">
+            <DialogTitle className="text-lg font-bold text-foreground">
               {isBangla ? 'পাসওয়ার্ড রিসেট' : 'Reset password'}
             </DialogTitle>
           </DialogHeader>
           <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3.5 my-2">
-            <KeyRound className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <KeyRound className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground/90 leading-relaxed">
               {resetTarget
                 ? isBangla
                   ? `${resetTarget.fullName || resetTarget.name} এর লগইন পাসওয়ার্ড রিসেট করতে একটি লিংক পাঠানো হবে।`
@@ -404,15 +404,15 @@ export default function EmployeesPage() {
                 : ''}
             </p>
           </div>
-          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-slate-800/80">
+          <DialogFooter className="gap-2 sm:gap-3 pt-3 border-t border-border">
             <DialogClose asChild>
-              <Button variant="outline" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-slate-100 rounded-lg text-xs h-10 cursor-pointer">
+              <Button variant="outline" className="border-border bg-background hover:bg-muted text-foreground rounded-lg text-xs h-10 cursor-pointer">
                 {isBangla ? 'বাতিল' : 'Cancel'}
               </Button>
             </DialogClose>
             <Button
               onClick={handleResetPassword}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/30 rounded-lg text-xs h-10 px-5 cursor-pointer flex items-center gap-1.5"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md rounded-lg text-xs h-10 px-5 cursor-pointer flex items-center gap-1.5"
             >
               <KeyRound className="h-4 w-4" />
               <span>{isBangla ? 'লিংক পাঠান' : 'Send Link'}</span>

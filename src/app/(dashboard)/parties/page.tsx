@@ -48,6 +48,7 @@ import { useParties, useDeleteParty, usePartyStats } from '@/hooks/api/usePartie
 import { getInitials } from '@/components/parties/utils';
 import { PartyDetailsAndTransactions } from '@/components/parties/PartyDetailsAndTransactions';
 import { toast } from 'sonner';
+import { KPICard } from '@/components/ui/premium';
 
 // Helper for consistent vibrant avatar colors
 const AVATAR_COLORS = [
@@ -136,226 +137,41 @@ export default function PartiesPage() {
       {/* =========================================================================
           2. TOP STATS CARDS (4 METRICS IN ROW WITH GLOW & WAVES)
          ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Card 1: Customers (Blue theme) */}
-        <div
-          onClick={() => setTypeFilter(typeFilter === 'customer' ? 'all' : 'customer')}
-          className="rounded-2xl border border-blue-500/20 hover:border-blue-500/50 hover:-translate-y-0.5 p-3 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group transition-all duration-200 cursor-pointer select-none bg-gradient-to-br from-[#0c1c44] via-[#091535] to-[#040b1e]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/40 shrink-0">
-                <User className="h-4 w-4 sm:h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none font-mono">
-                  {partyStats?.customers ?? 0}
-                </div>
-                <p className="text-[11px] sm:text-xs text-slate-300 font-medium mt-1 truncate">
-                  {t('parties.customers') || (isBangla ? 'গ্রাহক' : 'Customers')}
-                </p>
-              </div>
-            </div>
-            {/* Watermark Icon */}
-            <Users className="w-8 h-8 text-blue-400/20 shrink-0 pointer-events-none hidden sm:block" />
-          </div>
-
-          <div className="mt-2.5 sm:mt-4 flex items-center justify-between z-10">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="truncate">+12% vs last month</span>
-            </p>
-          </div>
-
-          {/* Glowing Wave SVG */}
-          <div className="hidden sm:block absolute right-0 bottom-0 w-36 h-16 pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity">
-            <svg viewBox="0 0 140 60" className="w-full h-full fill-none">
-              <path
-                d="M0,50 C40,45 60,20 90,30 C120,40 130,10 140,5 L140,60 L0,60 Z"
-                fill="url(#blue-gradient-fill)"
-                opacity="0.3"
-              />
-              <path
-                d="M0,50 C40,45 60,20 90,30 C120,40 130,10 140,5"
-                stroke="#38bdf8"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]"
-              />
-              <defs>
-                <linearGradient id="blue-gradient-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-
-        {/* Card 2: Suppliers (Purple theme) */}
-        <div
-          onClick={() => setTypeFilter(typeFilter === 'supplier' ? 'all' : 'supplier')}
-          className="rounded-2xl border border-purple-500/20 hover:border-purple-500/50 hover:-translate-y-0.5 p-3 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group transition-all duration-200 cursor-pointer select-none bg-gradient-to-br from-[#240e48] via-[#180933] to-[#0b031b]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-600/40 shrink-0">
-                <Building2 className="h-4 w-4 sm:h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none font-mono">
-                  {partyStats?.suppliers ?? 0}
-                </div>
-                <p className="text-[11px] sm:text-xs text-slate-300 font-medium mt-1 truncate">
-                  {t('parties.suppliers') || (isBangla ? 'সরবরাহকারী' : 'Suppliers')}
-                </p>
-              </div>
-            </div>
-            {/* Watermark Icon */}
-            <FileText className="w-8 h-8 text-purple-400/20 shrink-0 pointer-events-none hidden sm:block" />
-          </div>
-
-          <div className="mt-2.5 sm:mt-4 flex items-center justify-between z-10">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="truncate">+8% vs last month</span>
-            </p>
-          </div>
-
-          {/* Glowing Wave SVG */}
-          <div className="hidden sm:block absolute right-0 bottom-0 w-36 h-16 pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity">
-            <svg viewBox="0 0 140 60" className="w-full h-full fill-none">
-              <path
-                d="M0,45 C35,40 55,15 85,28 C115,40 125,12 140,8 L140,60 L0,60 Z"
-                fill="url(#purple-gradient-fill)"
-                opacity="0.3"
-              />
-              <path
-                d="M0,45 C35,40 55,15 85,28 C115,40 125,12 140,8"
-                stroke="#c084fc"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_8px_rgba(192,132,252,0.5)]"
-              />
-              <defs>
-                <linearGradient id="purple-gradient-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c084fc" />
-                  <stop offset="100%" stopColor="#581c87" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-
-        {/* Card 3: Receivable (Teal/Emerald theme) */}
-        <div
-          onClick={() => setPaymentFilter(paymentFilter === 'receivable' ? 'all' : 'receivable')}
-          className="rounded-2xl border border-teal-500/20 hover:border-teal-500/50 hover:-translate-y-0.5 p-3 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group transition-all duration-200 cursor-pointer select-none bg-gradient-to-br from-[#06302a] via-[#04201c] to-[#02100e]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-500/40 shrink-0">
-                <Coins className="h-4 w-4 sm:h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none font-mono">
-                  {formatCurrency(partyStats?.totalReceivable ?? 0)}
-                </div>
-                <p className="text-[11px] sm:text-xs text-slate-300 font-medium mt-1 truncate">
-                  {t('dashboard.receivable') || (isBangla ? 'পাওনা' : 'Receivable')}
-                </p>
-              </div>
-            </div>
-            {/* Watermark Icon */}
-            <BarChart3 className="w-8 h-8 text-teal-400/20 shrink-0 pointer-events-none hidden sm:block" />
-          </div>
-
-          <div className="mt-2.5 sm:mt-4 flex items-center justify-between z-10">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="truncate">+15% vs last month</span>
-            </p>
-          </div>
-
-          {/* Glowing Wave SVG */}
-          <div className="hidden sm:block absolute right-0 bottom-0 w-36 h-16 pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity">
-            <svg viewBox="0 0 140 60" className="w-full h-full fill-none">
-              <path
-                d="M0,52 C30,48 55,25 85,35 C115,45 128,15 140,6 L140,60 L0,60 Z"
-                fill="url(#teal-gradient-fill)"
-                opacity="0.3"
-              />
-              <path
-                d="M0,52 C30,48 55,25 85,35 C115,45 128,15 140,6"
-                stroke="#2dd4bf"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_8px_rgba(45,212,191,0.5)]"
-              />
-              <defs>
-                <linearGradient id="teal-gradient-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2dd4bf" />
-                  <stop offset="100%" stopColor="#134e4a" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
-
-        {/* Card 4: Payable (Rose/Crimson theme) */}
-        <div
-          onClick={() => setPaymentFilter(paymentFilter === 'payable' ? 'all' : 'payable')}
-          className="rounded-2xl border border-rose-500/20 hover:border-rose-500/50 hover:-translate-y-0.5 p-3 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group transition-all duration-200 cursor-pointer select-none bg-gradient-to-br from-[#3b0d18] via-[#26070f] to-[#140207]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/40 shrink-0">
-                <TrendingDown className="h-4 w-4 sm:h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none font-mono">
-                  {formatCurrency(partyStats?.totalPayable ?? 0)}
-                </div>
-                <p className="text-[11px] sm:text-xs text-slate-300 font-medium mt-1 truncate">
-                  {t('dashboard.payable') || (isBangla ? 'দেনা' : 'Payable')}
-                </p>
-              </div>
-            </div>
-            {/* Watermark Icon */}
-            <Wallet className="w-8 h-8 text-rose-400/20 shrink-0 pointer-events-none hidden sm:block" />
-          </div>
-
-          <div className="mt-2.5 sm:mt-4 flex items-center justify-between z-10">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-rose-400 flex items-center gap-1">
-              <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="truncate">+5% vs last month</span>
-            </p>
-          </div>
-
-          {/* Glowing Wave SVG */}
-          <div className="hidden sm:block absolute right-0 bottom-0 w-36 h-16 pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity">
-            <svg viewBox="0 0 140 60" className="w-full h-full fill-none">
-              <path
-                d="M0,48 C35,42 60,18 90,32 C120,44 130,12 140,5 L140,60 L0,60 Z"
-                fill="url(#rose-gradient-fill)"
-                opacity="0.3"
-              />
-              <path
-                d="M0,48 C35,42 60,18 90,32 C120,44 130,12 140,5"
-                stroke="#fb7185"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                className="drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]"
-              />
-              <defs>
-                <linearGradient id="rose-gradient-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fb7185" />
-                  <stop offset="100%" stopColor="#881337" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Customers"
+          titleBn="গ্রাহক"
+          value={partyStats?.customers ?? 0}
+          trend={{ value: 12, isPositive: true }}
+          icon={<Users className="h-5 w-5" />}
+          isBangla={isBangla}
+        />
+        <KPICard
+          title="Suppliers"
+          titleBn="সরবরাহকারী"
+          value={partyStats?.suppliers ?? 0}
+          trend={{ value: 8, isPositive: true }}
+          icon={<Building2 className="h-5 w-5" />}
+          isBangla={isBangla}
+        />
+        <KPICard
+          title="Receivable"
+          titleBn="পাওনা"
+          value={formatCurrency(partyStats?.totalReceivable ?? 0)}
+          prefix="৳"
+          trend={{ value: 15, isPositive: true }}
+          icon={<Coins className="h-5 w-5" />}
+          isBangla={isBangla}
+        />
+        <KPICard
+          title="Payable"
+          titleBn="দেনা"
+          value={formatCurrency(partyStats?.totalPayable ?? 0)}
+          prefix="৳"
+          trend={{ value: 5, isPositive: true }}
+          icon={<Wallet className="h-5 w-5" />}
+          isBangla={isBangla}
+        />
       </div>
 
       {/* =========================================================================

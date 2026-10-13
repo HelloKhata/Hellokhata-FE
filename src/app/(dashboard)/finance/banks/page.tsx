@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { PageHeader } from '@/components/common';
+import { KPICard } from '@/components/ui/premium';
 import { useCreatePaymentMethod, useGetPaymentMethods, useGetPaymentMethodStatus } from '@/hooks/api/usePaymentMethod';
 import { useGetTransactions } from '@/hooks/api/useFinance';
 import Link from 'next/link';
@@ -34,6 +35,7 @@ import {
   Wifi,
   Banknote,
   Send,
+  Coins,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -455,89 +457,62 @@ export default function FinanceBankWalletsPage() {
       </AnimatePresence>
 
       {/* ══ SECTION A: LIQUIDITY OVERVIEW CARDS ══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5 rounded-2xl border border-border bg-zinc-900/30 shadow-inner">
-        {/* Total */}
-        <div className="rounded-2xl p-5 border bg-emerald-500/10 border-emerald-500/20 shadow-xs relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-1 relative z-10">
-            {isBangla ? 'সর্বমোট তারল্য' : 'Total Liquidity'}
-          </p>
-          <div className="relative z-10 min-h-[36px] flex items-center">
-            {isLoadingStats ? (
-              <div className="h-8 w-32 bg-emerald-500/20 animate-pulse rounded" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold text-foreground font-mono truncate">
-                {hideBalances ? '৳ ••••••' : formatCurrency(totalLiquid)}
-              </p>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
-            {(accounts || []).length} {isBangla ? 'টি অ্যাকাউন্ট' : 'accounts active'}
-          </p>
-        </div>
-
-        {/* Cash Vault */}
-        <div className="rounded-2xl p-5 border bg-amber-500/10 border-amber-500/20 shadow-xs relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1 flex items-center gap-1 relative z-10">
-            <Banknote className="h-3 w-3" />
-            {isBangla ? 'ক্যাশ ভল্ট' : 'Cash Vault'}
-          </p>
-          <div className="relative z-10 min-h-[32px] flex items-center">
-            {isLoadingStats ? (
-              <div className="h-7 w-28 bg-amber-500/20 animate-pulse rounded" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground font-mono truncate">
-                {hideBalances ? '৳ ••••••' : formatCurrency(totalCash)}
-              </p>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
-            {(accounts || []).filter((a: any) => a.type === 'cash').length} {isBangla ? 'টি ক্যাশ ভল্ট' : 'vault'}
-          </p>
-        </div>
-
-        {/* Bank */}
-        <div className="rounded-2xl p-5 border bg-blue-500/10 border-blue-500/20 shadow-xs relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-1 flex items-center gap-1 relative z-10">
-            <Landmark className="h-3 w-3" />
-            {isBangla ? 'ব্যাংক ব্যালেন্স' : 'Bank Balance'}
-          </p>
-          <div className="relative z-10 min-h-[32px] flex items-center">
-            {isLoadingStats ? (
-              <div className="h-7 w-28 bg-blue-500/20 animate-pulse rounded" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground font-mono truncate">
-                {hideBalances ? '৳ ••••••' : formatCurrency(totalBank)}
-              </p>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
-            {(accounts || []).filter((a: any) => a.type === 'bank').length} {isBangla ? 'টি ব্যাংক' : 'banks'}
-          </p>
-        </div>
-
-        {/* Wallet */}
-        <div className="rounded-2xl p-5 border bg-pink-500/10 border-pink-500/20 shadow-xs relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-pink-500 mb-1 flex items-center gap-1 relative z-10">
-            <Wallet className="h-3 w-3" />
-            {isBangla ? 'ওয়ালেট ব্যালেন্স' : 'Wallet Balance'}
-          </p>
-          <div className="relative z-10 min-h-[32px] flex items-center">
-            {isLoadingStats ? (
-              <div className="h-7 w-28 bg-pink-500/20 animate-pulse rounded" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground font-mono truncate">
-                {hideBalances ? '৳ ••••••' : formatCurrency(totalWallet)}
-              </p>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-0.5 relative z-10">
-            {(accounts || []).filter((a: any) => a.type === 'mobile_banking' || a.type === 'wallet').length} {isBangla ? 'টি ওয়ালেট' : 'wallets'}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {isLoadingStats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-28 rounded-2xl bg-muted/30 animate-pulse border border-border/40"
+            />
+          ))
+        ) : (
+          <>
+            <KPICard
+              title="Total Liquidity"
+              titleBn="সর্বমোট তারল্য"
+              value={hideBalances ? '••••••' : totalLiquid}
+              prefix="৳"
+              subtext={`${(accounts || []).length} accounts active`}
+              subtextBn={`${(accounts || []).length} টি অ্যাকাউন্ট সক্রিয়`}
+              icon={<Coins className="h-5 w-5" />}
+              iconColor="emerald"
+              isBangla={isBangla}
+            />
+            <KPICard
+              title="Cash Vault"
+              titleBn="ক্যাশ ভল্ট"
+              value={hideBalances ? '••••••' : totalCash}
+              prefix="৳"
+              subtext="Physical cash"
+              subtextBn="নগদ তহবিল"
+              icon={<Banknote className="h-5 w-5" />}
+              iconColor="warning"
+              isBangla={isBangla}
+            />
+            <KPICard
+              title="Bank Balance"
+              titleBn="ব্যাংক ব্যালেন্স"
+              value={hideBalances ? '••••••' : totalBank}
+              prefix="৳"
+              subtext={`${(accounts || []).filter((a: any) => a.type === 'bank').length} banks`}
+              subtextBn={`${(accounts || []).filter((a: any) => a.type === 'bank').length} টি ব্যাংক`}
+              icon={<Landmark className="h-5 w-5" />}
+              iconColor="indigo"
+              isBangla={isBangla}
+            />
+            <KPICard
+              title="Wallet Balance"
+              titleBn="ওয়ালেট ব্যালেন্স"
+              value={hideBalances ? '••••••' : totalWallet}
+              prefix="৳"
+              subtext={`${(accounts || []).filter((a: any) => a.type === 'mobile_banking' || a.type === 'wallet').length} wallets`}
+              subtextBn={`${(accounts || []).filter((a: any) => a.type === 'mobile_banking' || a.type === 'wallet').length} টি ওয়ালেট`}
+              icon={<Wallet className="h-5 w-5" />}
+              iconColor="indigo"
+              isBangla={isBangla}
+            />
+          </>
+        )}
       </div>
 
       {/* ══ SECTION B: VIRTUAL CARDS + ADD FORM ══ */}

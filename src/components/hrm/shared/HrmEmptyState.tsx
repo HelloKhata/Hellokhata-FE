@@ -27,7 +27,7 @@ export function HrmEmptyState({
   className,
 }: Props) {
   const { isBangla } = useAppTranslation();
-
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -40,11 +40,11 @@ export function HrmEmptyState({
           <Icon className="h-8 w-8" />
         </div>
       )}
-      <h3 className="text-base font-bold text-slate-100 mb-1">
+      <h3 className="text-base font-bold text-foreground mb-1">
         {isBangla && titleBn ? titleBn : title}
       </h3>
       {(description || descriptionBn) && (
-        <p className="text-xs sm:text-sm text-slate-400 mb-5 max-w-sm">
+        <p className="text-xs sm:text-sm text-muted-foreground mb-5 max-w-sm">
           {isBangla && descriptionBn ? descriptionBn : description}
         </p>
       )}

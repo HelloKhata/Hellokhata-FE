@@ -252,7 +252,7 @@ export default function AddProductPage() {
           {/* LEFT / MAIN COLUMN (2 cols wide) */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-5">
             {/* CARD 1: Basic Product Information */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Boxes className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">
@@ -683,7 +683,7 @@ export default function AddProductPage() {
             </section>
 
             {/* CARD 2: Pricing & Profit Margins */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
               <div className="flex items-center justify-between pb-2.5 border-b border-border">
                 <div className="flex items-center gap-2">
                   <CircleDollarSign className="w-4 h-4 text-primary" />
@@ -922,7 +922,7 @@ export default function AddProductPage() {
             </section>
 
             {/* CARD 3: Inventory Stock Levels */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Boxes className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">
@@ -1014,7 +1014,7 @@ export default function AddProductPage() {
           {/* RIGHT COLUMN SIDEBAR CARDS - STICKY WRAPPER */}
           <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-6">
             {/* Product Media Dropzone Card */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl p-4.5 space-y-3 shadow-xs">
+            <section className="bg-card border border-border rounded-xl p-4.5 space-y-3 shadow-xs">
               <div className="flex items-center gap-2 pb-2 border-b border-border">
                 <UploadCloud className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold text-foreground">
@@ -1068,7 +1068,7 @@ export default function AddProductPage() {
               </div>
             </section> */}
                {/* CARD 5: Description Section */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Tag className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">

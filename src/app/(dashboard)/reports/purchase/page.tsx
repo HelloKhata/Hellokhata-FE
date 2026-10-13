@@ -505,41 +505,41 @@ export default function PurchaseReportPage() {
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 p-5 shadow-xl shadow-black/30 backdrop-blur-xl">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Row 1: Choose Date */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Choose Date
             </label>
-            <div className="relative flex items-center h-10 rounded-lg border border-[#222c3e] bg-[#141b29] px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
+            <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
-              <span className="text-slate-500 px-2 select-none">→</span>
+              <span className="text-muted-foreground px-2 select-none">→</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-slate-200 outline-none cursor-pointer [color-scheme:dark]"
+                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
-              <Calendar className="h-4 w-4 text-slate-400 shrink-0 ml-1.5 pointer-events-none" />
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5 pointer-events-none" />
             </div>
           </div>
 
           {/* Row 1: Store */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Store
             </label>
             <Select value={selectedStore} onValueChange={setSelectedStore}>
-              <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Choose Store" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 {STORE_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -551,17 +551,17 @@ export default function PurchaseReportPage() {
 
           {/* Row 1: Supplier */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-semibold text-foreground">
               Supplier
             </label>
             <Select
               value={selectedSupplier}
               onValueChange={setSelectedSupplier}
             >
-              <SelectTrigger className="w-full h-10 rounded-lg border-[#222c3e] bg-[#141b29] text-slate-200 text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Supplier" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 {SUPPLIER_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -573,20 +573,20 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Row 3: Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[#1e2738]/60">
+        <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-border">
           <button
             type="button"
             onClick={handleResetFilter}
-            className="h-10 px-6 rounded-lg border border-[#2d3650] bg-[#141b29] hover:bg-[#1a2335] text-slate-200 font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+            className="h-10 px-6 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
           >
-            <RotateCcw className="h-4 w-4 text-slate-400" />
+            <RotateCcw className="h-4 w-4 text-muted-foreground" />
             <span>Reset Filter</span>
           </button>
 
           <button
             type="button"
             onClick={handleGenerateReport}
-            className="h-10 px-6 rounded-lg bg-[#4F5BFF] hover:bg-[#5E6AFF] text-white font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-md shadow-indigo-950/40 cursor-pointer"
+            className="h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer"
           >
             <Sparkles className="h-4 w-4" />
             <span>Generate Report</span>
@@ -599,16 +599,16 @@ export default function PurchaseReportPage() {
       {/* ================================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total Units Purchased — Primary Indigo */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#4F5BFF]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#4F5BFF]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-indigo-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#4F5BFF] flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-950/50">
-              <BarChart3 className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <BarChart3 className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">
+              <p className="text-xs font-semibold text-muted-foreground truncate">
                 Total Units Purchased
               </p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 {formatKpiNumber(kpiMetrics.totalUnits)}
               </p>
             </div>
@@ -616,16 +616,16 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Card 2: Total Purchase Amount — Emerald */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#0FBF9F]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#0FBF9F]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-teal-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-teal-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#0FBF9F] flex items-center justify-center text-white shrink-0 shadow-md shadow-teal-950/50">
-              <TrendingUp className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <TrendingUp className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">
+              <p className="text-xs font-semibold text-muted-foreground truncate">
                 Total Purchase Amount
               </p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{formatKpiNumber(kpiMetrics.totalPurchases)}
               </p>
             </div>
@@ -633,16 +633,16 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Card 3: Total Paid — Emerald/success */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#1FAF86]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#1FAF86]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-emerald-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#1FAF86] flex items-center justify-center text-white shrink-0 shadow-md shadow-green-950/50">
-              <CreditCard className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <CreditCard className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">
+              <p className="text-xs font-semibold text-muted-foreground truncate">
                 Total Paid
               </p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{formatKpiNumber(kpiMetrics.totalPaid)}
               </p>
             </div>
@@ -650,16 +650,16 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Card 4: Total Due — Destructive rose */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#EF4444]/25 bg-[#0d131f]/95 p-4 sm:p-5 shadow-lg shadow-black/30 backdrop-blur-xl transition-all duration-200 hover:border-[#EF4444]/45 hover:-translate-y-0.5">
+        <div className="relative overflow-hidden rounded-2xl border border-rose-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-rose-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
-            <div className="h-13 w-13 rounded-xl bg-[#EF4444] flex items-center justify-center text-white shrink-0 shadow-md shadow-red-950/50">
-              <Truck className="h-7 w-7" />
+            <div className="h-12 w-12 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Truck className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-slate-400 truncate">
+              <p className="text-xs font-semibold text-muted-foreground truncate">
                 Total Due
               </p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 ৳{formatKpiNumber(kpiMetrics.totalDue)}
               </p>
             </div>
@@ -670,10 +670,10 @@ export default function PurchaseReportPage() {
       {/* ================================================================== */}
       {/* 4. PURCHASE REPORT DATA TABLE CARD                                 */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-[#1e2738] bg-[#0d131f]/95 shadow-xl shadow-black/30 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         {/* Table Header Bar */}
-        <div className="px-6 py-4 border-b border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#111726]/60">
-          <h2 className="text-base font-bold text-slate-100 tracking-tight">
+        <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/40">
+          <h2 className="text-base font-bold text-foreground tracking-tight">
             Purchase Report
           </h2>
 
@@ -682,7 +682,7 @@ export default function PurchaseReportPage() {
               type="button"
               onClick={handleDownloadExcel}
               disabled={isExporting}
-              className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
               <span>{isExporting ? "Exporting..." : "Download Excel"}</span>
@@ -691,7 +691,7 @@ export default function PurchaseReportPage() {
             <button
               type="button"
               onClick={handlePrintReport}
-              className="h-9 px-3.5 rounded-lg border border-[#4F5BFF]/30 bg-[#4F5BFF]/8 hover:bg-[#4F5BFF]/15 text-[#8b93ff] text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print Report</span>
@@ -703,7 +703,7 @@ export default function PurchaseReportPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-[#1e2738] bg-[#101625] text-slate-400 text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
+              <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
                 <th className="px-4 py-3.5 whitespace-nowrap">#</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Bill No</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Supplier</th>
@@ -717,17 +717,17 @@ export default function PurchaseReportPage() {
                 <th className="px-4 py-3.5 whitespace-nowrap">Created At</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e2738]/60 text-slate-300">
+            <tbody className="divide-y divide-border text-foreground">
               {paginatedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={11}
-                    className="px-4 py-12 text-center text-slate-400"
+                    className="px-4 py-12 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <AlertCircle className="h-8 w-8 text-slate-500" />
+                      <AlertCircle className="h-8 w-8 text-muted-foreground" />
                       <p className="text-sm font-medium">No purchase records found</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         Try adjusting your date range or filters.
                       </p>
                     </div>
@@ -739,10 +739,10 @@ export default function PurchaseReportPage() {
                   return (
                     <tr
                       key={row.id}
-                      className="hover:bg-[#151d2e]/60 transition-colors group"
+                      className="hover:bg-muted/40 transition-colors group"
                     >
                       {/* # */}
-                      <td className="px-4 py-3 font-mono text-slate-400 text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono text-muted-foreground text-xs whitespace-nowrap">
                         {rowNumber}
                       </td>
 
@@ -752,22 +752,22 @@ export default function PurchaseReportPage() {
                       </td>
 
                       {/* Supplier */}
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {row.supplierName}
                       </td>
 
                       {/* Branch */}
-                      <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {row.branch}
                       </td>
 
                       {/* Total Qty */}
-                      <td className="px-4 py-3 font-bold text-slate-100 whitespace-nowrap">
+                      <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap">
                         {row.totalQty.toLocaleString()}
                       </td>
 
                       {/* Grand Total */}
-                      <td className="px-4 py-3 font-medium text-slate-200 whitespace-nowrap">
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                         {formatBDT(row.grandTotal)}
                       </td>
 
@@ -783,7 +783,7 @@ export default function PurchaseReportPage() {
                             {formatBDT(row.dueAmount)}
                           </span>
                         ) : (
-                          <span className="text-slate-400 font-medium">
+                          <span className="text-muted-foreground font-medium">
                             {formatBDT(0)}
                           </span>
                         )}
@@ -792,25 +792,25 @@ export default function PurchaseReportPage() {
                       {/* Status */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {row.status === "Received" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <CheckCircle2 className="h-3 w-3" />
                             Received
                           </span>
                         )}
                         {row.status === "Pending" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             <Clock className="h-3 w-3" />
                             Pending
                           </span>
                         )}
                         {row.status === "Partial" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                             <Clock className="h-3 w-3" />
                             Partial
                           </span>
                         )}
                         {row.status === "Cancelled" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             <XCircle className="h-3 w-3" />
                             Cancelled
                           </span>
@@ -820,19 +820,19 @@ export default function PurchaseReportPage() {
                       {/* Payment Status */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {row.paymentStatus === "Paid" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <CheckCircle2 className="h-3 w-3" />
                             Paid
                           </span>
                         )}
                         {row.paymentStatus === "Partial" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             <Clock className="h-3 w-3" />
                             Partial
                           </span>
                         )}
                         {row.paymentStatus === "Due" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             <AlertCircle className="h-3 w-3" />
                             Due
                           </span>
@@ -840,7 +840,7 @@ export default function PurchaseReportPage() {
                       </td>
 
                       {/* Created At */}
-                      <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                         {row.createdAt}
                       </td>
                     </tr>
@@ -852,10 +852,10 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Table Footer / Pagination */}
-        <div className="px-6 py-4 border-t border-[#1e2738] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#101625]">
+        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
           {/* Left: Page Size Selector & Entries Count */}
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="font-medium text-slate-300">Show</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Show</span>
             <Select
               value={String(pageSize)}
               onValueChange={(val) => {
@@ -863,10 +863,10 @@ export default function PurchaseReportPage() {
                 setCurrentPage(1);
               }}
             >
-              <SelectTrigger className="h-8 w-[72px] rounded-md border-[#222c3e] bg-[#141b29] text-slate-200 text-xs">
+              <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
                 <SelectValue placeholder="10" />
               </SelectTrigger>
-              <SelectContent className="border-[#222c3e] bg-[#141b29] text-slate-200">
+              <SelectContent className="border-border bg-popover text-popover-foreground">
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
                 <SelectItem value="25">25</SelectItem>
@@ -876,14 +876,14 @@ export default function PurchaseReportPage() {
 
             <span>
               Showing{" "}
-              <strong className="text-slate-200">
+              <strong className="text-foreground">
                 {totalEntries === 0 ? 0 : (currentPage - 1) * pageSize + 1}
               </strong>{" "}
               to{" "}
-              <strong className="text-slate-200">
+              <strong className="text-foreground">
                 {Math.min(currentPage * pageSize, totalEntries)}
               </strong>{" "}
-              of <strong className="text-slate-200">{totalEntries}</strong> entries
+              of <strong className="text-foreground">{totalEntries}</strong> entries
             </span>
           </div>
 
@@ -894,7 +894,7 @@ export default function PurchaseReportPage() {
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage <= 1}
-              className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Previous page"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -911,8 +911,8 @@ export default function PurchaseReportPage() {
                   className={cn(
                     "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
                     isActive
-                      ? "bg-[#4F5BFF] text-white shadow-md shadow-indigo-950/50"
-                      : "border border-[#222c3e] bg-[#141b29] text-slate-300 hover:bg-[#1a2335]"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "border border-border bg-background text-foreground hover:bg-muted"
                   )}
                 >
                   {page}
@@ -925,7 +925,7 @@ export default function PurchaseReportPage() {
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              className="h-8 w-8 rounded-md border border-[#222c3e] bg-[#141b29] hover:bg-[#1a2335] text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Next page"
             >
               <ChevronRight className="h-4 w-4" />
