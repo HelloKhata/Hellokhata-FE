@@ -131,11 +131,11 @@ export function AILauncherButton() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #4F5BFF, #6366F1)',
+          background: 'linear-gradient(135deg, #0E5B43, #052B20)',
           color: 'white',
-          border: '1px solid rgba(79, 91, 255, 0.3)',
+          border: '1px solid rgba(14, 91, 67, 0.3)',
           boxShadow: hover
-            ? '0 0 24px rgba(79, 91, 255, 0.5)'
+            ? '0 0 24px rgba(14, 91, 67, 0.5)'
             : '0 4px 12px rgba(0, 0, 0, 0.3)',
           cursor: 'pointer',
           outline: 'none',
@@ -150,7 +150,7 @@ export function AILauncherButton() {
             position: 'absolute',
             inset: 0,
             borderRadius: '12px',
-            background: 'rgba(79, 91, 255, 0.2)',
+            background: 'rgba(14, 91, 67, 0.2)',
             animation: 'aiButtonPulse 2s ease-out infinite',
             pointerEvents: 'none',
           }}

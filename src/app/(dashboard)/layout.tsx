@@ -76,8 +76,8 @@ const DashboardLayout = ({ children }) => {
           className="flex flex-col items-center gap-4"
         >
           <div
-            className="h-12 w-12 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #4F5BFF 0%, #6366F1 50%, #0FBF9F 100%)' }}
+            className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #0E5B43 0%, #052B20 100%)' }}
           >
             <Sparkles className="h-6 w-6 text-white animate-pulse" />
           </div>

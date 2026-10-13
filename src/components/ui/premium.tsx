@@ -443,7 +443,7 @@ export function CircularProgress({
   
   // Premium grade colors with glow
   const gradeColors = {
-    A: { stroke: '#4F5BFF', text: 'text-primary', glow: 'rgba(79, 91, 255, 0.2)' },
+    A: { stroke: '#0E5B43', text: 'text-primary', glow: 'rgba(14, 91, 67, 0.2)' },
     B: { stroke: '#0FBF9F', text: 'text-emerald', glow: 'rgba(15, 191, 159, 0.2)' },
     C: { stroke: '#E8A23A', text: 'text-warning', glow: 'rgba(232, 162, 58, 0.2)' },
     D: { stroke: '#F97316', text: 'text-orange-500', glow: 'rgba(249, 115, 22, 0.2)' },
@@ -459,7 +459,7 @@ export function CircularProgress({
           {/* Gradient definition */}
           <defs>
             <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4F5BFF" />
+              <stop offset="0%" stopColor="#0E5B43" />
               <stop offset="100%" stopColor="#0FBF9F" />
             </linearGradient>
           </defs>
