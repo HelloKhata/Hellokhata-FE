@@ -76,7 +76,7 @@ export function Sidebar() {
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3">
               <div className="flex flex-col">
-                <Image className='w-full h-full' src="/logo.png" width={150} height={150} alt='logo' />
+                <Link href="/"><Image className='w-full h-full' src="/logo.png" width={150} height={150} alt='logo' /></Link>
               </div>
             </div>
           )}

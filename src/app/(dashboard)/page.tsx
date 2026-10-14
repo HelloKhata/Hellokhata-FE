@@ -1,10 +1,6 @@
-// Hello Khata OS - Reports Dashboard Page
-// হ্যালো খাতা - রিপোর্টস ড্যাশবোর্ড পেজ
-// Recreated with premium aesthetics, HelloKhata color palette, and interactive widgets
-
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import  { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,7 +21,6 @@ import {
   FileSpreadsheet,
   BarChart3,
   Landmark,
-  Home,
   Check,
   ChevronRight,
 } from 'lucide-react';
@@ -239,10 +234,12 @@ function MiniSparkline({
   data,
   color,
   gradientId,
+  className,
 }: {
   data: number[];
   color: string;
   gradientId: string;
+  className?: string;
 }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -261,7 +258,10 @@ function MiniSparkline({
   const areaPoints = `0,${height} ${points} ${width},${height}`;
 
   return (
-    <svg width={width} height={height} className="overflow-visible shrink-0">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className={cn('w-10 sm:w-[84px] h-4 sm:h-[32px] overflow-visible shrink-0', className)}
+    >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -357,44 +357,45 @@ export default function ReportsDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background/50 text-foreground pb-12 space-y-6">
+    <div className="min-h-screen bg-background/50 text-foreground pb-12 space-y-3 sm:space-y-6">
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & BREADCRUMBS ROW                                           */}
       {/* ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-1">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 pt-1">
         {/* Left Title & Breadcrumbs */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
-            <BarChart3 className="w-6 h-6" />
+        <div className="flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
+            <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl sm:text-3xl font-bold tracking-tight text-foreground">
                 {isBangla ? 'ড্যাশবোর্ড' : 'Dashboard'}
               </h1>
-
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            <p className="text-[11px] sm:text-sm text-muted-foreground mt-0.5">
               {isBangla ? 'এক নজরে ব্যবসার গুরুত্বপূর্ণ তথ্য ও বিশ্লেষণ' : 'Business insights at a glance'}
             </p>
           </div>
         </div>
 
-        {/* Right Controls: Date Range Selector & Branch Selector */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Right Controls: Date Range Selector & Branch Selector (single line on small devices) */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Date Range Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-2"
+                className="flex-1 sm:flex-initial min-w-0 h-9 sm:h-10 px-2 sm:px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-1 sm:gap-2 justify-between sm:justify-start"
               >
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs sm:text-sm">
-                  {isBangla ? dateRangeLabels[dateRange].rangeTextBn : dateRangeLabels[dateRange].rangeTextEn}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-1" />
+                <div className="flex items-center gap-1.5 min-w-0 truncate">
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+                  <span className="text-[11px] sm:text-xs md:text-sm font-medium truncate">
+                    {isBangla ? dateRangeLabels[dateRange].rangeTextBn : dateRangeLabels[dateRange].rangeTextEn}
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground shrink-0 ml-0.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl shadow-lg">
@@ -424,15 +425,17 @@ export default function ReportsDashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-2"
+                className="flex-1 sm:flex-initial min-w-0 h-9 sm:h-10 px-2 sm:px-3.5 rounded-xl border-border bg-card hover:bg-muted/50 text-foreground font-medium shadow-xs gap-1 sm:gap-2 justify-between sm:justify-start"
               >
-                <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs sm:text-sm">
-                  {viewAllBranches
-                    ? (isBangla ? 'সব শাখা' : 'All Branches')
-                    : (currentBranch?.name || (isBangla ? 'ঢাকা শাখা' : 'Dhaka Branch'))}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-1" />
+                <div className="flex items-center gap-1.5 min-w-0 truncate">
+                  <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="text-[11px] sm:text-xs md:text-sm font-medium truncate">
+                    {viewAllBranches
+                      ? (isBangla ? 'সব শাখা' : 'All Branches')
+                      : (currentBranch?.name || (isBangla ? 'ঢাকা শাখা' : 'Dhaka Branch'))}
+                  </span>
+                </div>
+                <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground shrink-0 ml-0.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-card border-border rounded-xl shadow-lg">
@@ -465,7 +468,7 @@ export default function ReportsDashboardPage() {
                         : 'text-foreground hover:bg-muted/50'
                     )}
                   >
-                    <span>{ b.name}</span>
+                    <span>{b.name}</span>
                     {!viewAllBranches && currentBranchId === b.id && <Check className="w-4 h-4 text-emerald-600" />}
                   </DropdownMenuItem>
                 ))
@@ -483,106 +486,102 @@ export default function ReportsDashboardPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. TOP KPI SUMMARY METRIC CARDS (4 Columns)                                */}
+      {/* 2. TOP KPI SUMMARY METRIC CARDS (2x2 on mobile, slim & responsive)         */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Revenue Card */}
-        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-emerald-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
-                <BarChart3 className="w-5 h-5" />
+        <div className="bg-card border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-4.5 shadow-xs hover:border-emerald-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6.5 h-6.5 sm:w-9 sm:h-9 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'মোট আয়' : 'Total Revenue'}</p>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
-                  {isBangla ? '৳২,৪৮,৫০০' : '৳2,48,500'}
-                </h3>
-              </div>
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                {isBangla ? 'মোট আয়' : 'Total Revenue'}
+              </p>
             </div>
-          </div>
-          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              <span>+ 12.4%</span>
-              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+              <span>+12.4%</span>
             </span>
-            <MiniSparkline data={[40, 52, 48, 65, 58, 80, 95]} color="#0FBF9F" gradientId="grad-revenue" />
+          </div>
+
+          <div className="flex items-end justify-between gap-1 mt-2 sm:mt-3">
+            <h3 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-foreground font-mono truncate leading-none">
+              {isBangla ? '৳২,৪৮,৫০০' : '৳2,48,500'}
+            </h3>
+            <MiniSparkline data={[40, 52, 48, 65, 58, 80, 95]} color="#0FBF9F" gradientId="grad-revenue" className="w-10 h-4 sm:w-[84px] sm:h-[30px]" />
           </div>
         </div>
 
         {/* Total Expense Card */}
-        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-rose-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center">
-                <Receipt className="w-5 h-5" />
+        <div className="bg-card border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-4.5 shadow-xs hover:border-rose-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6.5 h-6.5 sm:w-9 sm:h-9 rounded-lg bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center shrink-0">
+                <Receipt className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'মোট ব্যয়' : 'Total Expense'}</p>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
-                  {isBangla ? '৳৭৬,২০০' : '৳76,200'}
-                </h3>
-              </div>
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                {isBangla ? 'মোট ব্যয়' : 'Total Expense'}
+              </p>
             </div>
-          </div>
-          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block" />
-              <span>- 6.7%</span>
-              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-rose-600 dark:text-rose-400 shrink-0">
+              <span>-6.7%</span>
             </span>
-            <MiniSparkline data={[70, 65, 55, 60, 50, 48, 42]} color="#F43F5E" gradientId="grad-expense" />
+          </div>
+
+          <div className="flex items-end justify-between gap-1 mt-2 sm:mt-3">
+            <h3 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-foreground font-mono truncate leading-none">
+              {isBangla ? '৳৭৬,২০০' : '৳76,200'}
+            </h3>
+            <MiniSparkline data={[70, 65, 55, 60, 50, 48, 42]} color="#F43F5E" gradientId="grad-expense" className="w-10 h-4 sm:w-[84px] sm:h-[30px]" />
           </div>
         </div>
 
         {/* Net Profit Card */}
-        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-teal-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5" />
+        <div className="bg-card border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-4.5 shadow-xs hover:border-teal-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6.5 h-6.5 sm:w-9 sm:h-9 rounded-lg bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/20 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'নিট লাভ' : 'Net Profit'}</p>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
-                  {isBangla ? '৳১,৭২,৩০০' : '৳1,72,300'}
-                </h3>
-              </div>
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                {isBangla ? 'নিট লাভ' : 'Net Profit'}
+              </p>
             </div>
-          </div>
-          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-600 dark:text-teal-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 inline-block" />
-              <span>+ 18.6%</span>
-              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-teal-600 dark:text-teal-400 shrink-0">
+              <span>+18.6%</span>
             </span>
-            <MiniSparkline data={[30, 42, 38, 55, 62, 75, 88]} color="#14B8A6" gradientId="grad-profit" />
+          </div>
+
+          <div className="flex items-end justify-between gap-1 mt-2 sm:mt-3">
+            <h3 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-foreground font-mono truncate leading-none">
+              {isBangla ? '৳১,৭২,৩০০' : '৳1,72,300'}
+            </h3>
+            <MiniSparkline data={[30, 42, 38, 55, 62, 75, 88]} color="#14B8A6" gradientId="grad-profit" className="w-10 h-4 sm:w-[84px] sm:h-[30px]" />
           </div>
         </div>
 
         {/* Sales Orders Card */}
-        <div className="bg-card border border-border/80 rounded-2xl p-4.5 shadow-xs hover:border-blue-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5" />
+        <div className="bg-card border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-4.5 shadow-xs hover:border-blue-500/40 hover:shadow-md transition-all duration-200 relative overflow-hidden group flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-6.5 h-6.5 sm:w-9 sm:h-9 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/20 flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{isBangla ? 'বিক্রয় অর্ডার' : 'Sales Orders'}</p>
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground mt-0.5 font-mono">
-                  {isBangla ? '৩৪২' : '342'}
-                </h3>
-              </div>
+              <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">
+                {isBangla ? 'বিক্রয় অর্ডার' : 'Sales Orders'}
+              </p>
             </div>
-          </div>
-          <div className="flex items-center justify-between mt-3.5 pt-2 border-t border-border/40">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
-              <span>+ 14.2%</span>
-              <span className="text-muted-foreground font-normal">{isBangla ? 'গত সপ্তাহের চেয়ে' : 'vs last week'}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-blue-600 dark:text-blue-400 shrink-0">
+              <span>+14.2%</span>
             </span>
-            <MiniSparkline data={[45, 48, 55, 62, 58, 70, 85]} color="#3B82F6" gradientId="grad-orders" />
+          </div>
+
+          <div className="flex items-end justify-between gap-1 mt-2 sm:mt-3">
+            <h3 className="text-base sm:text-xl lg:text-2xl font-bold tracking-tight text-foreground font-mono truncate leading-none">
+              {isBangla ? '৩৪২' : '342'}
+            </h3>
+            <MiniSparkline data={[45, 48, 55, 62, 58, 70, 85]} color="#3B82F6" gradientId="grad-orders" className="w-10 h-4 sm:w-[84px] sm:h-[30px]" />
           </div>
         </div>
       </div>
@@ -590,7 +589,7 @@ export default function ReportsDashboardPage() {
       {/* ========================================================================= */}
       {/* 3. MIDDLE SECTION: Performance Area Chart, Donut Category, Quick Reports  */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5">
         {/* Left: Financial Performance Area Chart (Spans 5 cols on lg, 5 cols on xl) */}
         <div className="lg:col-span-5 bg-card border border-border/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
           <div>

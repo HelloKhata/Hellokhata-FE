@@ -18,6 +18,7 @@ import { useLoginUser } from "@/hooks/api/useUser";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,31 +51,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 relative overflow-hidden">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #0E5B43 0%, #083D2D 50%, #052B20 100%)",
+      }}
+    >
       {/* Background Elements */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{ backgroundColor: "#0F141B" }}
-      >
+      <div className="fixed inset-0 pointer-events-none">
         <div
-          className="absolute top-0 left-0 w-[600px] h-[500px] opacity-30"
+          className="absolute top-0 left-0 w-[600px] h-[500px] opacity-25"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 5% 0%, rgba(79, 91, 255, 0.15) 0%, transparent 60%)",
+              "radial-gradient(ellipse 80% 60% at 5% 0%, rgba(255, 255, 255, 0.25) 0%, transparent 60%)",
           }}
         />
         <div
-          className="absolute bottom-0 right-0 w-[500px] h-[400px] opacity-30"
+          className="absolute bottom-0 right-0 w-[500px] h-[400px] opacity-25"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 90% 90%, rgba(20, 35, 55, 0.4) 0%, transparent 60%)",
+              "radial-gradient(ellipse 60% 50% at 90% 90%, rgba(0, 0, 0, 0.4) 0%, transparent 60%)",
           }}
         />
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] opacity-20"
           style={{
             background:
-              "radial-gradient(ellipse 50% 40% at 50% 50%, rgba(15, 191, 159, 0.08) 0%, transparent 70%)",
+              "radial-gradient(ellipse 50% 40% at 50% 50%, rgba(15, 191, 159, 0.15) 0%, transparent 70%)",
           }}
         />
       </div>
@@ -86,28 +89,10 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8 md:mb-10">
-          <motion.div
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl mb-4 shrink-0 relative"
-            style={{
-              background:
-                "linear-gradient(135deg, #0E5B43 0%, #052B20 100%)",
-              boxShadow:
-                "0 0 30px rgba(14, 91, 67, 0.3), 0 0 60px rgba(14, 91, 67, 0.15)",
-            }}
-          >
-            <Store className="h-8 w-8 md:h-10 md:w-10 text-white" />
-          </motion.div>
-          <h1
-            className="text-2xl md:text-3xl font-bold text-foreground whitespace-nowrap"
-            style={{ color: "#E6EDF5" }}
-          >
-            Hello Khata
-          </h1>
+          <Image className="mx-auto" src="/logo.png" alt="Logo" width={200} height={200} />
           <p
-            className="text-muted-foreground mt-1 text-sm md:text-base whitespace-nowrap"
-            style={{ color: "#9DA7B3" }}
+            className="mt-1 text-sm md:text-base whitespace-nowrap"
+            style={{ color: "rgba(255, 255, 255, 0.85)" }}
           >
             আপনার ব্যবসার ডিজিটাল খাতা
           </p>
@@ -115,23 +100,14 @@ export default function LoginPage() {
 
         {/* Login Card */}
         <div
-          className="px-6 py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 rounded-xl w-full flex flex-col relative"
+          className="px-6 py-6 md:px-10 md:py-8 lg:px-12 lg:py-10 rounded-2xl w-full flex flex-col relative"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(35, 46, 60, 1) 0%, rgba(28, 36, 48, 1) 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
+            background: "#F6F1E5",
+            border: "1px solid #E5DEC9",
             boxShadow:
-              "inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 4px 24px rgba(0, 0, 0, 0.25)",
+              "0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08)",
           }}
         >
-          <div
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 50%)",
-            }}
-          />
-
           <AnimatePresence mode="wait">
             <motion.form
               onSubmit={(e) => {
@@ -146,14 +122,14 @@ export default function LoginPage() {
             >
               <div className="shrink-0">
                 <h2
-                  className="text-xl md:text-2xl font-semibold whitespace-nowrap"
-                  style={{ color: "#E6EDF5" }}
+                  className="text-xl md:text-2xl font-bold whitespace-nowrap"
+                  style={{ color: "#0F172A" }}
                 >
                   Welcome Back!
                 </h2>
                 <p
                   className="text-sm md:text-base whitespace-nowrap mt-1"
-                  style={{ color: "#9DA7B3" }}
+                  style={{ color: "#64748B" }}
                 >
                   Enter your phone number to login
                 </p>
@@ -161,15 +137,15 @@ export default function LoginPage() {
 
               <div className="flex flex-col gap-2">
                 <label
-                  className="text-sm font-medium whitespace-nowrap shrink-0"
-                  style={{ color: "#E6EDF5" }}
+                  className="text-sm font-semibold whitespace-nowrap shrink-0"
+                  style={{ color: "#0F172A" }}
                 >
                   Phone Number
                 </label>
                 <div className="relative w-full">
                   <Phone
                     className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                    style={{ color: "#6B7684" }}
+                    style={{ color: "#64748B" }}
                   />
                   <Input
                     type="tel"
@@ -178,19 +154,19 @@ export default function LoginPage() {
                     onChange={(e) =>
                       setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))
                     }
-                    className="pl-12 w-full h-12 md:h-14 text-base"
+                    className="pl-12 w-full h-12 md:h-14 text-base placeholder:text-[#94A3B8]"
                     style={{
-                      backgroundColor: "#171F29",
-                      borderColor: "rgba(255, 255, 255, 0.05)",
-                      color: "#E6EDF5",
+                      backgroundColor: "#FFFFFF",
+                      borderColor: "#E5DEC9",
+                      color: "#0F172A",
                     }}
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-2">
                 <label
-                  className="text-sm font-medium whitespace-nowrap shrink-0"
-                  style={{ color: "#E6EDF5" }}
+                  className="text-sm font-semibold whitespace-nowrap shrink-0"
+                  style={{ color: "#0F172A" }}
                 >
                   Password
                 </label>
@@ -198,7 +174,7 @@ export default function LoginPage() {
                 <div className="relative w-full">
                   <Lock
                     className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 shrink-0"
-                    style={{ color: "#6B7684" }}
+                    style={{ color: "#64748B" }}
                   />
 
                   <Input
@@ -206,26 +182,26 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 pr-12 w-full h-12 md:h-14 text-base"
+                    className="pl-12 pr-12 w-full h-12 md:h-14 text-base placeholder:text-[#94A3B8]"
                     style={{
-                      backgroundColor: "#171F29",
-                      borderColor: "rgba(255, 255, 255, 0.05)",
-                      color: "#E6EDF5",
+                      backgroundColor: "#FFFFFF",
+                      borderColor: "#E5DEC9",
+                      color: "#0F172A",
                     }}
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                   >
                     {showPassword ? (
                       <EyeOff
                         className="h-5 w-5"
-                        style={{ color: "#6B7684" }}
+                        style={{ color: "#64748B" }}
                       />
                     ) : (
-                      <Eye className="h-5 w-5" style={{ color: "#6B7684" }} />
+                      <Eye className="h-5 w-5" style={{ color: "#64748B" }} />
                     )}
                   </button>
                 </div>
@@ -233,7 +209,7 @@ export default function LoginPage() {
               <div className="flex justify-end -mt-2 shrink-0">
                 <Link
                   href="/forgot-password"
-                  className="text-xs md:text-sm hover:underline transition-colors text-primary"
+                  className="text-xs md:text-sm font-medium hover:underline transition-colors text-primary"
                 >
                   Forgot Password?
                 </Link>
@@ -241,12 +217,12 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loginUser.isPending || phone.length !== 11 || password.length < 8}
-                className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
+                className="w-full shrink-0 h-12 md:h-14 font-medium text-base cursor-pointer"
                 style={{
                   background:
                     "linear-gradient(135deg, #0E5B43 0%, #052B20 100%)",
                   color: "#FFFFFF",
-                  boxShadow: "0 0 20px rgba(14, 91, 67, 0.25)",
+                  boxShadow: "0 4px 14px rgba(14, 91, 67, 0.25)",
                 }}
               >
                 {loginUser.isPending ? (
@@ -263,16 +239,15 @@ export default function LoginPage() {
                 <div className="absolute inset-0 flex items-center">
                   <div
                     className="w-full border-t"
-                    style={{ borderColor: "rgba(255, 255, 255, 0.05)" }}
+                    style={{ borderColor: "#E5DEC9" }}
                   ></div>
                 </div>
                 <div className="relative flex justify-center text-xs md:text-sm">
                   <span
-                    className="px-3 whitespace-nowrap"
+                    className="px-3 whitespace-nowrap font-medium"
                     style={{
-                      color: "#6B7684",
-                      background:
-                        "linear-gradient(180deg, rgba(35, 46, 60, 1) 0%, rgba(28, 36, 48, 1) 100%)",
+                      color: "#64748B",
+                      background: "#F6F1E5",
                     }}
                   >
                     or
@@ -284,11 +259,11 @@ export default function LoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full shrink-0 h-12 md:h-14 font-medium text-base"
+                  className="w-full shrink-0 h-12 md:h-14 font-medium text-base hover:bg-white/80 cursor-pointer"
                   style={{
-                    backgroundColor: "transparent",
-                    borderColor: "rgba(255, 255, 255, 0.1)",
-                    color: "#E6EDF5",
+                    backgroundColor: "#FFFFFF",
+                    borderColor: "#E5DEC9",
+                    color: "#0F172A",
                   }}
                 >
                   Create New Account
@@ -300,7 +275,7 @@ export default function LoginPage() {
 
         <p
           className="text-center text-xs md:text-sm mt-6 whitespace-nowrap"
-          style={{ color: "#6B7684" }}
+          style={{ color: "rgba(255, 255, 255, 0.75)" }}
         >
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>

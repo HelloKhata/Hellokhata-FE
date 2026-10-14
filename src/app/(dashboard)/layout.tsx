@@ -7,9 +7,7 @@ import { useSessionStore } from '@/stores/sessionStore';
 import { useUiStore } from '@/stores/uiStore';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import client from '@/lib/axios';
 import { useRouter } from 'next/navigation';
-import { useNotifications } from '@/hooks/api/useNotifications';
 import NotificatoinProvider from '@/components/notifications/NotificatoinProvider';
 import { AI_UI_ENABLED } from '@/lib/ai/config';
 
@@ -30,7 +28,6 @@ const DashboardLayout = ({ children }) => {
   // Get state from stores after mount
   const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
   const toggleAiDrawer = useUiStore((state) => state.toggleAiDrawer);
-  const currentPage = useUiStore((state) => state.currentPage);
 
   const router = useRouter()
   // Listen for command palette open event
