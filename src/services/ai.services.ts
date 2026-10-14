@@ -1,4 +1,4 @@
-import { api } from '@/lib/api-client';
+import client from '@/lib/axios';
 import {
   AI_CONTRACT_VERSION,
   type AiLanguage,
@@ -34,7 +34,7 @@ export async function submitAiTextRequest(
     },
   };
 
-  const response = await api.post<AiProposalResponse>('/ai/requests', request);
+  const response = await client.post<AiProposalResponse>('/ai/requests', request);
 
   if (!response.data) {
     throw new Error('The ERP backend returned an empty AI proposal response.');
@@ -44,7 +44,7 @@ export async function submitAiTextRequest(
 }
 
 export async function createActionFromRequest(requestId: string) {
-  const response = await api.post<{ success: true; data: unknown }>(
+  const response = await client.post<{ success: true; data: unknown }>(
     `/ai/actions/from-request/${requestId}`,
   );
   return response.data;
@@ -54,7 +54,7 @@ export async function confirmAiAction(
   actionId: string,
   decisionNotes?: string,
 ) {
-  const response = await api.post<{ success: true; data: unknown }>(
+  const response = await client.post<{ success: true; data: unknown }>(
     `/ai/actions/${actionId}/confirm`,
     { decisionNotes },
   );
@@ -65,7 +65,7 @@ export async function rejectAiAction(
   actionId: string,
   decisionNotes?: string,
 ) {
-  const response = await api.post<{ success: true; data: unknown }>(
+  const response = await client.post<{ success: true; data: unknown }>(
     `/ai/actions/${actionId}/reject`,
     { decisionNotes },
   );

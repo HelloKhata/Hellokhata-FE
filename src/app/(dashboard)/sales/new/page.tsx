@@ -1014,11 +1014,12 @@ const itemsBatches = batchesData?.batches;
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-8 w-8 rounded overflow-hidden bg-muted flex items-center justify-center border border-border/80 shrink-0">
                         <Image
-                          src={product.imageUrl || "/images/image.png"}
+                          src={product.imageUrl}
                           alt={product.name}
                           width={32}
-                          height={32}
+                          height={32} 
                           className="h-8 w-8 object-cover"
+                          onError={()=> '"/images/image.png"'}
                         />
                       </div>
                       <div className="min-w-0">
