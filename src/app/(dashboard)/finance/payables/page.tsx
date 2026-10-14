@@ -71,12 +71,6 @@ export default function FinancePayablesPage() {
     balanceType: 'payable',
   });
 
-  // State Management: Payout Log List
-  const [payoutLogs, setPayoutLogs] = useState<PayoutLog[]>([
-    { id: 'PAY-AP-101', date: '2026-08-01', supplierName: 'Apex Distributers', supplierNameBn: 'এপেক্স ডিস্ট্রিবিউটর', amount: 100000, discount: 0, method: 'Bank Transfer', methodBn: 'ব্যাংক স্থানান্তর', ref: 'Bank Transfer Voucher #8902' },
-    { id: 'PAY-BT-094', date: '2026-07-25', supplierName: 'Bata Wholesale Hub', supplierNameBn: 'বাটা পাইকারি হাব', amount: 50000, discount: 2000, method: 'Mobile Wallet', methodBn: 'মোবাইল ওয়ালেট', ref: 'bKash Payout #82910' },
-  ]);
-
   // UI Active Tab: 'balances' or 'logs'
   const [activeTab, setActiveTab] = useState<'balances' | 'logs'>('balances');
 

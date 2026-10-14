@@ -6,7 +6,6 @@
 
 import { useState, useEffect, memo } from 'react';
 import { Button, KPICard, EmptyState,  Skeleton } from '@/components/ui/premium';
-import { PageHeader, ImageWithFallback } from '@/components/common';
 import { Input } from '@/components/ui/input';
 import { PaginationHelper } from '@/components/shared/PaginationHelper';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +58,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useGetItemsCategories } from '@/hooks/api/useItemCategories';
+import { PageHeader } from '@/components/common';
+import Image from 'next/image';
  
 export default function InventoryPage() {
   const { t, isBangla } = useAppTranslation();
@@ -719,12 +720,11 @@ const ItemRow = memo(function ItemRow({
           {/* Thumbnail */}
           <div className="h-11 w-11 rounded-lg bg-white flex items-center justify-center overflow-hidden border border-border/40 p-0.5 shrink-0 shadow-xs">
             {item.imageUrl ? (
-              <ImageWithFallback
-                src={item.imageUrl}
+              <Image
+                src={item.imageUrl || '/images/image.png'}
                 alt={item.name}
                 width={44}
                 height={44}
-                fallbackSrc="/images/image.png"
                 className="h-full w-full object-contain"
               />
             ) : (

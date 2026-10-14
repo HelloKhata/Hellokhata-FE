@@ -56,8 +56,3 @@ export const updateBatchDetails = async (
     const res = await client.patch(`/api/batches/${id}`, data);
     return res.data;
 }
-
-export const generateMissingBarcodes = async (batch_ids: string[]) => {
-    const res = await client.post(`/api/batches/generate-missing-barcodes`, { batch_ids });
-    return res.data;
-}

@@ -70,13 +70,6 @@ export default function FinanceReceivablesPage() {
     balanceType: 'receivable',
   });
 
-  console.log(customers)
-  // State Management: Collection Log List 
-  const [collectionLogs, setCollectionLogs] = useState<CollectionLog[]>([
-    { id: 'REC-2026-102', date: '2026-08-01', customerName: 'M/S Rahman & Sons', customerNameBn: 'মেসার্স রহমান এন্ড সন্স', amount: 100000, discount: 5000, method: 'Bank Transfer', methodBn: 'ব্যাংক স্থানান্তর', ref: 'Bank Transfer Receipt' },
-    { id: 'REC-2026-099', date: '2026-07-28', customerName: 'Jamuna Traders', customerNameBn: 'যমুনা ট্রেডার্স', amount: 50000, discount: 0, method: 'Cash', methodBn: 'নগদ টাকা', ref: 'Counter Receipt' },
-  ]);
-
   
   // UI Active Tab: 'dues' or 'logs'
   const [activeTab, setActiveTab] = useState<'dues' | 'logs'>('dues');

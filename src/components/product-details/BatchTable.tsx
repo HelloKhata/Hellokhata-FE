@@ -44,8 +44,8 @@ import {
   Plus,
 } from "lucide-react";
 import { Batch } from "./mock-data";
-import { EmptyState } from "./EmptyState";
 import { useGetOffers } from "@/hooks/api/useOffers";
+import { EmptyState } from "../common";
 
 interface BatchTableProps {
   batches: Batch[];
@@ -216,7 +216,7 @@ export function BatchTable({
         {filteredBatches.length === 0 ? (
           <div className="py-12">
             <EmptyState
-              icon={<Layers className="h-10 w-10 text-muted-foreground/60" />}
+              // icon={<Layers className="h-10 w-10 text-muted-foreground/60" />}
               title="No batches match criteria"
               description="Try adjusting your search terms or clearing status/branch filters."
             />

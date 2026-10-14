@@ -367,35 +367,35 @@ export function BatchesModal({
                         const getBatchBadge = () => {
                           if (batch.isActive === false) {
                             return (
-                              <Badge variant="outline" size="sm" className="whitespace-nowrap text-slate-400 border-slate-600">
+                              <Badge variant="outline" className="whitespace-nowrap text-slate-400 border-slate-600">
                                 {isBangla ? 'নিষ্ক্রিয়' : 'Inactive'}
                               </Badge>
                             );
                           }
                           if (batch.status ==='expired') {
                             return (
-                              <Badge variant="destructive" size="sm" className="whitespace-nowrap">
+                              <Badge variant="destructive"  className="whitespace-nowrap">
                                 {isBangla ? 'মেয়াদউত্তীর্ণ' : 'Expired'}
                               </Badge>
                             );
                           }
                           if (isExpiringSoon) {
                             return (
-                              <Badge variant="warning" size="sm" className="whitespace-nowrap">
+                              <Badge variant="destructive" className="whitespace-nowrap">
                                 {isBangla ? 'শীঘ্রই মেয়াদ শেষ' : 'Expiring Soon'}
                               </Badge>
                             );
                           }
                           if (isOut) {
                             return (
-                              <Badge variant="destructive" size="sm" className="whitespace-nowrap">
+                              <Badge variant="destructive"   className="whitespace-nowrap">
                                 {isBangla ? 'স্টক শেষ' : 'Out of Stock'}
                               </Badge>
                             );
                           }
                           if (isLowStock) {
                             return (
-                              <Badge variant="warning" size="sm" className="whitespace-nowrap">
+                              <Badge variant="destructive" className="whitespace-nowrap">
                                 {isBangla ? 'স্টক কম' : 'Low Stock'}
                               </Badge>
                             );
@@ -479,8 +479,7 @@ export function BatchesModal({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      variant="ghost"
-                                      size="icon-sm"
+                                        variant="ghost"
                                       className="cursor-pointer"
                                       onClick={() => setSelectedBatch(batch)}
                                     >
@@ -496,7 +495,6 @@ export function BatchesModal({
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
-                                      size="icon-sm"
                                       className="cursor-pointer"
                                       onClick={() => {
                                         onClose();
@@ -513,7 +511,7 @@ export function BatchesModal({
 
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon-sm" className="cursor-pointer">
+                                    <Button variant="ghost"  className="cursor-pointer">
                                       <MoreVertical className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>

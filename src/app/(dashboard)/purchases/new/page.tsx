@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense, useEffect, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { PageHeader, ImageWithFallback } from "@/components/common";
+import { PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";

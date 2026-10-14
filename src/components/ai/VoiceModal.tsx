@@ -53,7 +53,7 @@ export function VoiceModal({ isOpen, onClose }: VoiceModalProps) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const fullTranscriptRef = useRef('');
 
   // Update ref whenever transcript changes

@@ -316,17 +316,6 @@ export default function BatchesPage() {
         </div>
       </div>
 
-      {/* Batch Detail Panel (Commented off) */}
-      {/* <BatchDetailSheet
-        batchId={inspectingBatchId}
-        isOpen={!!inspectingBatchId}
-        onClose={() => {
-          setInspectingBatchId(null);
-          setInspectingFallback(null);
-        }}
-        fallbackBatch={inspectingFallback}
-      /> */}
-
       {/* Edit Batch Details Modal */}
       {editingBatch && (
         <EditBatchDetailsModal

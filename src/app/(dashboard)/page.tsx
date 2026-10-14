@@ -430,7 +430,7 @@ export default function ReportsDashboardPage() {
                 <span className="text-xs sm:text-sm">
                   {viewAllBranches
                     ? (isBangla ? 'সব শাখা' : 'All Branches')
-                    : (currentBranch?.nameBn || currentBranch?.name || (isBangla ? 'ঢাকা শাখা' : 'Dhaka Branch'))}
+                    : (currentBranch?.name || (isBangla ? 'ঢাকা শাখা' : 'Dhaka Branch'))}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-muted-foreground ml-1" />
               </Button>
@@ -465,7 +465,7 @@ export default function ReportsDashboardPage() {
                         : 'text-foreground hover:bg-muted/50'
                     )}
                   >
-                    <span>{b.nameBn || b.name}</span>
+                    <span>{ b.name}</span>
                     {!viewAllBranches && currentBranchId === b.id && <Check className="w-4 h-4 text-emerald-600" />}
                   </DropdownMenuItem>
                 ))
