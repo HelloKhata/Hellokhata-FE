@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useCurrency } from "@/hooks/useAppTranslation";
 import { useAppTranslation } from "@/hooks/useAppTranslation";
-import { cn } from "@/lib/utils";
 import { useUser } from "@/stores/sessionStore";
 import Image from "next/image";
 import {
@@ -46,12 +45,12 @@ function PurchaseDetailsContent() {
       />
 
       {/* 1. Purchase Information & Metadata Card (As per user request) */}
-      <div className="bg-zinc-900/20 border border-border/40 rounded-xl  p-5 space-y-5 mb-6">
+      <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-5 mb-6 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
-          <span className="text-[13px] font-bold text-white">
+          <span className="text-[13px] font-bold text-foreground">
             {isBangla ? "ক্রয় সংক্রান্ত তথ্য এবং মেটাডেটা" : "Purchase Information & Metadata"}
           </span>
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
             {isBangla ? "গৃহীত" : "Received"}
           </div>
@@ -60,21 +59,21 @@ function PurchaseDetailsContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Purchase Invoice No */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               {isBangla ? "ক্রয় ইনভয়েস নং" : "Purchase Invoice No"}
             </Label>
-            <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center px-3.5">
-              <span className="text-indigo-400 font-bold text-xs">{purchaseData?.invoiceNo || purchaseData?.grnNo}</span>
+            <div className="h-10 bg-muted/40 dark:bg-[#1a1d27] border border-border dark:border-white/5 rounded-lg flex items-center px-3.5">
+              <span className="text-primary dark:text-indigo-400 font-bold text-xs font-mono">{purchaseData?.invoiceNo || purchaseData?.grnNo}</span>
             </div>  
           </div>
 
           {/* Purchase Date */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               {isBangla ? "ক্রয়ের তারিখ" : "Purchase Date"}
             </Label>
-            <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center justify-between px-3.5">
-              <span className="text-white font-semibold text-xs">
+            <div className="h-10 bg-muted/40 dark:bg-[#1a1d27] border border-border dark:border-white/5 rounded-lg flex items-center justify-between px-3.5">
+              <span className="text-foreground font-semibold text-xs">
                 {(() => {
                   const dateStr = purchaseData?.purchaseDate || purchaseData?.createdAt;
                   if (!dateStr) return "—";
@@ -82,27 +81,27 @@ function PurchaseDetailsContent() {
                   return !isNaN(parsed.getTime()) ? format(parsed, "dd MMM yyyy") : "—";
                 })()}
               </span>
-              <CalendarIcon className="h-3.5 w-3.5 text-white/40 shrink-0" />
+              <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             </div>
           </div>
 
           {/* Branch */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               {isBangla ? "শাখা" : "Branch"}
             </Label>
-            <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center px-3.5">
-              <span className="text-white font-semibold text-xs truncate">{purchaseData?.branchName}</span>
+            <div className="h-10 bg-muted/40 dark:bg-[#1a1d27] border border-border dark:border-white/5 rounded-lg flex items-center px-3.5">
+              <span className="text-foreground font-semibold text-xs truncate">{purchaseData?.branchName}</span>
             </div>
           </div>
 
           {/* Responsible Person */}
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
               {isBangla ? "দায়িত্বশীল ব্যক্তি" : "Responsible Person"}
             </Label>
-            <div className="h-10 bg-[#1a1d27] border border-white/5 rounded-lg flex items-center px-3.5">
-              <span className="text-white font-semibold text-xs truncate">{user?.name || "—"}</span>
+            <div className="h-10 bg-muted/40 dark:bg-[#1a1d27] border border-border dark:border-white/5 rounded-lg flex items-center px-3.5">
+              <span className="text-foreground font-semibold text-xs truncate">{user?.name || "—"}</span>
             </div>
           </div>
         </div>
@@ -113,17 +112,17 @@ function PurchaseDetailsContent() {
         {/* Left Form Content (9 Columns wide on Desktop) */}
         <div className="col-span-1 lg:col-span-9 space-y-6">
           {/* Billing Items Table */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <span className="text-sm font-semibold text-foreground">
                 {isBangla ? "পণ্য ও মূল্য নির্ধারণ" : "Items & Pricing"}
               </span>
             </div>
 
-            <div className="overflow-x-auto border border-border/60 rounded-lg">
+            <div className="overflow-x-auto border border-border rounded-lg">
               <table className="w-full text-left text-xs border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-muted/20 text-muted-foreground border-b border-border/80 font-semibold">
+                  <tr className="bg-muted/40 text-muted-foreground border-b border-border font-semibold">
                     <th className="px-3 py-3 w-[4%] text-center">#</th>
                     <th className="px-3 py-3 w-[26%]">{isBangla ? "পণ্য বা ডেসক্রিপশন" : "Item"}</th>
                     <th className="px-3 py-3 w-[11%] text-center">{isBangla ? "ব্যাচ নং" : "Batch No"}</th>
@@ -157,8 +156,8 @@ function PurchaseDetailsContent() {
 
                       return (
                       <Fragment key={itemId}>
-                        <tr className="hover:bg-muted/10 transition-colors">
-                          <td className="px-3 py-3 font-semibold text-amber-500/80 align-middle text-center">
+                        <tr className="hover:bg-muted/30 transition-colors">
+                          <td className="px-3 py-3 font-semibold text-amber-600 dark:text-amber-500/80 align-middle text-center">
                             {idx + 1}
                           </td>
 
@@ -169,10 +168,10 @@ function PurchaseDetailsContent() {
                                 <img
                                   src={rawItem.item.imageUrl}
                                   alt={itemName}
-                                  className="h-8 w-8 rounded object-cover border border-border/80 shrink-0"
+                                  className="h-8 w-8 rounded object-cover border border-border shrink-0"
                                 />
                               ) : (
-                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center border border-border/60 shrink-0">
+                                <div className="h-8 w-8 rounded bg-muted/60 flex items-center justify-center border border-border/60 shrink-0">
                                   <Image
                                     src="/images/image.png"
                                     width={40}
@@ -207,7 +206,7 @@ function PurchaseDetailsContent() {
                           {/* Batch No */}
                           <td className="px-3 py-3 align-middle text-center text-xs font-mono text-foreground font-medium">
                             {batchNo && batchNo !== "—" ? (
-                              <span className="bg-muted/40 px-2 py-0.5 rounded border border-border/60">
+                              <span className="bg-muted/60 px-2 py-0.5 rounded border border-border text-foreground">
                                 {batchNo}
                               </span>
                             ) : (
@@ -260,12 +259,12 @@ function PurchaseDetailsContent() {
 
           {/* Notes */}
           {purchaseData?.notes && (
-            <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+            <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-foreground">
                   {isBangla ? "মন্তব্য বা বিশেষ নির্দেশনা" : "Remarks or Special Notes"}
                 </Label>
-                <div className="bg-background/50 border border-border/60 rounded-lg p-3 text-xs text-muted-foreground min-h-[60px]">
+                <div className="bg-muted/30 dark:bg-background/50 border border-border rounded-lg p-3 text-xs text-muted-foreground min-h-[60px]">
                   {purchaseData?.notes}
                 </div>
               </div>
@@ -275,7 +274,7 @@ function PurchaseDetailsContent() {
 
         {/* Right Section: Purchase Summary Sticky Panel */}
         <div className="col-span-1 lg:col-span-3 lg:sticky lg:top-6 space-y-6">
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card dark:bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               {isBangla ? "ক্রয় সারাংশ" : "Purchase Summary"}
             </h3>
@@ -333,7 +332,7 @@ function PurchaseDetailsContent() {
                 <Button
                   type="button"
                   onClick={() => router.push(`/purchases/returns/new?purchaseId=${id}`)}
-                  className="flex-1 h-10 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                  className="flex-1 h-10 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-500 border border-amber-500/30 font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                 >
                   <Undo2 className="h-4 w-4" />
                   <span>{isBangla ? "ফেরত দিন" : "Return"}</span>
@@ -349,7 +348,7 @@ function PurchaseDetailsContent() {
               <Button
                 type="button"
                 onClick={() => router.push('/purchases')}
-                className="w-full h-10 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                className="w-full h-10 bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border font-semibold flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>{isBangla ? "ফিরে যান" : "Back"}</span>

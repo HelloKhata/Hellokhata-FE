@@ -335,7 +335,7 @@ export default function EmployeeProfilePage() {
                 value={roleName || (isBangla ? 'কোনো রোল নেই' : 'No Role')}
                 badge={
                   roleName ? (
-                    <Badge variant="outline" className="text-[10px] bg-indigo-500/10 text-indigo-400 border-indigo-500/20 font-bold ml-1.5">
+                    <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 font-bold ml-1.5">
                       <Shield className="w-2.5 h-2.5 mr-0.5" />
                       Role
                     </Badge>

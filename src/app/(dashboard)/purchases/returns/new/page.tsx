@@ -62,9 +62,9 @@ interface PaymentRow {
 }
 
 const METHODS = [
-  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
-  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
-  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-600 dark:text-emerald-400", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/30" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-600 dark:text-blue-400", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/30" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-600 dark:text-orange-400", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/30" },
 ];
 
 interface ReturnItemRow {
@@ -476,7 +476,7 @@ function NewPurchaseReturnContent() {
                     ? "ইনভয়েস নম্বর দিয়ে খুঁজুন..."
                     : "Search purchase invoice number..."
                 }
-                className="pr-10 h-11 bg-background/50 border-input focus-visible:ring-1 text-sm font-medium w-full"
+                className="pr-10 h-11 bg-background border-input focus-visible:ring-1 text-sm font-medium w-full"
               />
               {isPurchaseLoading ? (
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary animate-spin" />
@@ -580,7 +580,7 @@ function NewPurchaseReturnContent() {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full h-11 justify-between text-left font-normal bg-background/50 border-input text-foreground hover:bg-muted text-sm font-medium cursor-pointer"
+                      className="w-full h-11 justify-between text-left font-normal bg-background border-input text-foreground hover:bg-muted text-sm font-medium cursor-pointer"
                     >
                       <span>{format(returnDate, "dd MMM yyyy")}</span>
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -636,7 +636,7 @@ function NewPurchaseReturnContent() {
         {/* Left Section (Spans 9 columns on desktop) */}
         <div className="lg:col-span-9 space-y-6">
           {/* Section 3: Return Items List Table */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs space-y-4">
+          <div className="bg-card border border-border/60 rounded-xl overflow-hidden shadow-xs space-y-4">
             {/* Purchase Billing Info Text in sm text at the top of table */}
             {purchase && (
               <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs font-medium">
@@ -655,7 +655,7 @@ function NewPurchaseReturnContent() {
                   </span>
                   <span>
                     {isBangla ? "পরিশোধিত:" : "Paid:"}{" "}
-                    <strong className="font-bold text-emerald-500">
+                    <strong className="font-bold text-emerald-600 dark:text-emerald-500">
                       {formatCurrency(
                         purchase.paidAmount ||  0
                       )}
@@ -663,7 +663,7 @@ function NewPurchaseReturnContent() {
                   </span>
                   <span>
                     {isBangla ? "বাকি:" : "Due:"}{" "}
-                    <strong className="font-bold text-rose-500">
+                    <strong className="font-bold text-rose-600 dark:text-rose-500">
                       {formatCurrency(
                         purchase?.dueAmount || 0
                       )}
@@ -683,7 +683,7 @@ function NewPurchaseReturnContent() {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-semibold">
+                  <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
                     <th className="px-4 py-3">{isBangla ? "আইটেম বিবরণ" : "Item & SKU"}</th>
                     <th className="px-3 py-3 text-right">{isBangla ? "মূল্য" : "Purchase Price"}</th>
                     <th className="px-3 py-3 text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
@@ -701,7 +701,7 @@ function NewPurchaseReturnContent() {
                     <tr 
                       key={item?.id} 
                       className={cn(
-                        "hover:bg-muted/20 transition-colors cursor-pointer",
+                        "hover:bg-muted/30 transition-colors cursor-pointer",
                         item?.isSelected ? "bg-primary/5" : ""
                       )}
                       onClick={() => updateItemField(item?.id, "isSelected", !item?.isSelected)}
@@ -720,7 +720,7 @@ function NewPurchaseReturnContent() {
                         {item?.maxQuantity} {item?.unit}
                       </td>
                       <td className="px-4 py-3.5 align-middle">
-                        <div className="flex items-center border border-input rounded bg-background/50 h-8 w-24 mx-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center border border-border rounded bg-muted/30 h-8 w-24 mx-auto" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             disabled={(item?.quantity || 0) <= 0}
@@ -753,7 +753,7 @@ function NewPurchaseReturnContent() {
                             value={item?.returnType}
                             onValueChange={(val: any) => updateItemField(item?.id, "returnType", val)}
                           >
-                            <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
+                            <SelectTrigger className="h-8 text-[11px] bg-background w-28 border-input">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -772,7 +772,7 @@ function NewPurchaseReturnContent() {
                             value={item?.reason}
                             onValueChange={(val: any) => updateItemField(item?.id, "reason", val)}
                           >
-                            <SelectTrigger className="h-8 text-[11px] bg-background/40 w-28 border-input">
+                            <SelectTrigger className="h-8 text-[11px] bg-background w-28 border-input">
                               <SelectValue placeholder={isBangla ? "কারণ বলুন" : "Reason"} />
                             </SelectTrigger>
                             <SelectContent>
@@ -804,13 +804,13 @@ function NewPurchaseReturnContent() {
             </div>
 
             {/* Bottom summary bar */}
-            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/10 border-t border-border">
+            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/20 border-t border-border">
              
               <div className="flex items-center gap-4">
                 <span className="text-muted-foreground font-semibold text-xs">
                   {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
                 </span>
-                <span className="font-bold text-foreground text-sm">
+                <span className="font-bold text-foreground text-sm font-mono">
                   {formatCurrency(subtotal)}
                 </span>
               </div>
@@ -818,7 +818,7 @@ function NewPurchaseReturnContent() {
           </div>
 
           {/* Notes & Invoice Image Upload Card */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-4">
+          <div className="bg-card border border-border/60 rounded-xl p-5 shadow-xs space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Remarks/Notes */}
               <div className="space-y-1.5">
@@ -833,7 +833,7 @@ function NewPurchaseReturnContent() {
                       ? "অতিরিক্ত বিবরণ লিখুন..."
                       : "Enter additional purchase remarks..."
                   }
-                  className="h-32 bg-background/50 border-input resize-none text-xs"
+                  className="h-32 bg-background border-input resize-none text-xs"
                 />
               </div>
 
@@ -843,7 +843,7 @@ function NewPurchaseReturnContent() {
                   {isBangla ? "ইনভয়েস বা রসিদের ছবি" : "Invoice / Receipt Image"}
                 </Label>
                 {invoiceImagePreview ? (
-                  <div className="relative h-32 w-full rounded-lg border border-border bg-background/50 overflow-hidden flex items-center justify-center group">
+                  <div className="relative h-32 w-full rounded-lg border border-border bg-muted/20 overflow-hidden flex items-center justify-center group">
                     <img
                       src={invoiceImagePreview}
                       alt="Invoice preview"
@@ -861,7 +861,7 @@ function NewPurchaseReturnContent() {
                     </div>
                   </div>
                 ) : (
-                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-background/30 hover:bg-background/50 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
+                  <label className="h-32 w-full rounded-lg border-2 border-dashed border-input hover:border-primary/60 bg-muted/20 hover:bg-muted/40 flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
                     <Upload className="h-6 w-6 text-muted-foreground mb-1.5" />
                     <span className="text-xs font-semibold text-foreground">
                       {isBangla ? "ইনভয়েস ছবি আপলোড করুন" : "Upload Invoice Image"}
@@ -884,7 +884,7 @@ function NewPurchaseReturnContent() {
 
         {/* Right Section: Refund Summary sticky card (3 columns on desktop) */}
         <div className="lg:col-span-3 lg:sticky lg:top-6 space-y-6">
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card border border-border/60 rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               {isBangla ? "ফেরত বিবরণী" : "Refund Summary"}
             </h3>
@@ -892,13 +892,13 @@ function NewPurchaseReturnContent() {
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-muted-foreground">
                 <span>{isBangla ? "আইটেম উপমোট" : "Item Subtotal"}</span>
-                <span className="font-semibold text-foreground">{formatCurrency(subtotal)}</span>
+                <span className="font-semibold text-foreground font-mono">{formatCurrency(subtotal)}</span>
               </div>
 
               {/* Calculated Tax */}
               <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40">
                 <span>{isBangla ? "ট্যাক্স" : "Tax"}</span>
-                <span className="font-semibold text-foreground">{formatCurrency(taxAmount)}</span>
+                <span className="font-semibold text-foreground font-mono">{formatCurrency(taxAmount)}</span>
               </div>
 
               {/* Additional Cost */}
@@ -911,7 +911,7 @@ function NewPurchaseReturnContent() {
                     value={additionalCharges || ""}
                     onChange={(e) => setAdditionalCharges(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="h-8 text-right pl-6 bg-background/40 text-xs text-foreground font-semibold"
+                    className="h-8 text-right pl-6 bg-background text-xs text-foreground font-semibold border-input"
                     min="0"
                   />
                 </div>
@@ -920,7 +920,7 @@ function NewPurchaseReturnContent() {
               {/* Grand Total */}
               <div className="flex justify-between items-center border-t border-border pt-3 text-sm font-bold">
                 <span className="text-foreground">{isBangla ? "সর্বমোট ফেরতযোগ্য" : "Grand Total"}</span>
-                <span className="text-primary text-base">{formatCurrency(grandTotal)}</span>
+                <span className="text-primary text-base font-mono">{formatCurrency(grandTotal)}</span>
               </div>
 
               {/* Refund Info Section */}
@@ -948,7 +948,7 @@ function NewPurchaseReturnContent() {
                     const p = activePayment;
 
                     return (
-                      <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
+                      <div key={p.id} className="bg-muted/30 p-4 border border-border rounded-xl transition-colors">
                         {/* Method chips */}
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {METHODS.map((m) => {
@@ -967,7 +967,7 @@ function NewPurchaseReturnContent() {
                                 }}
                                 className={cn(
                                   "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all cursor-pointer",
-                                  active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
+                                  active ? cn(m.bgClass, m.borderClass) : "border-border bg-card hover:bg-muted/40"
                                 )}
                               >
                                 <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
@@ -995,7 +995,7 @@ function NewPurchaseReturnContent() {
                         {/* Common Amount Input */}
                         {!["cash", "bank", "mobile_banking"].includes(p.method) && (
                           <div className="mb-3">
-                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <div className="flex items-center bg-background rounded-xl border border-input px-3.5 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
                               <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                               <input
                                 type="number"
@@ -1011,7 +1011,7 @@ function NewPurchaseReturnContent() {
                         {/* Fields for Cash */}
                         {p.method === "cash" && (
                           <div className="mb-3">
-                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <div className="flex items-center bg-background rounded-xl border border-input px-3.5 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
                               <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                               <input
                                 type="number"
@@ -1027,7 +1027,7 @@ function NewPurchaseReturnContent() {
                         {/* Fields for Bank */}
                         {p.method === "bank" && (
                           <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                            <div className="flex items-center bg-background rounded-xl border border-input px-3.5 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20">
                               <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                               <input
                                 type="number"
@@ -1041,7 +1041,7 @@ function NewPurchaseReturnContent() {
                               value={p.accountId}
                               onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
                             >
-                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                              <SelectTrigger className="h-10 text-xs bg-background border-input w-full rounded-xl">
                                 <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                               </SelectTrigger>
                               <SelectContent>
@@ -1062,7 +1062,7 @@ function NewPurchaseReturnContent() {
                               value={p.accountId}
                               onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
                             >
-                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                              <SelectTrigger className="h-10 text-xs bg-background border-input w-full rounded-xl">
                                 <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
                               </SelectTrigger>
                               <SelectContent>
@@ -1073,7 +1073,7 @@ function NewPurchaseReturnContent() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
+                            <div className="flex items-center bg-background rounded-xl border border-input px-3.5 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 h-10">
                               <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
                               <input
                                 type="number"
@@ -1088,14 +1088,14 @@ function NewPurchaseReturnContent() {
                               value={p.transactionId}
                               onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
                               placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
-                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                              className="w-full h-10 bg-background rounded-xl border border-input px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary/20"
                             />
                             <input
                               type="text"
                               value={p.reference}
                               onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
                               placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
-                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                              className="w-full h-10 bg-background rounded-xl border border-input px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary/20"
                             />
                           </div>
                         )}

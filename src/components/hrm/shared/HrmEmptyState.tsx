@@ -36,7 +36,7 @@ export function HrmEmptyState({
       className={`flex flex-col items-center justify-center text-center p-10 w-full min-h-[220px] ${className || ''}`}
     >
       {Icon && (
-        <div className="h-16 w-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center mb-4 shrink-0 shadow-sm shadow-indigo-500/20 text-indigo-400">
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-4 shrink-0 shadow-sm shadow-primary/20 text-primary">
           <Icon className="h-8 w-8" />
         </div>
       )}

@@ -288,7 +288,7 @@ export default function EmployeesPage() {
         actions={
           <Button
             onClick={openAdd}
-            className="cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm"
+            className="cursor-pointer font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm"
           >
             <UserPlus className="h-4 w-4" />
             <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
@@ -334,7 +334,7 @@ export default function EmployeesPage() {
         emptyAction={
           <Button
             onClick={openAdd}
-            className="cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm mt-3"
+            className="cursor-pointer font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs h-10 px-5 rounded-lg transition-all flex items-center gap-2 text-xs sm:text-sm mt-3"
           >
             <UserPlus className="h-4 w-4" />
             <span>{isBangla ? 'কর্মচারী যোগ করুন' : 'Add Employee'}</span>
