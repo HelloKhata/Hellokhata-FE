@@ -269,7 +269,7 @@ export default function StockAdjustmentPage() {
                       <SelectContent>
                         {products.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
-                            {product.name} {product.sku && `(${product.sku})`}
+                            {product.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -432,7 +432,7 @@ export default function StockAdjustmentPage() {
               className="w-full h-12 text-base"
               onClick={handleSubmit}
               disabled={isSubmitting || !itemId || !quantity || !reason}
-              variant={adjustmentType === 'decrease' ? 'warning' : 'default'}
+              variant={adjustmentType === 'decrease' ? 'destructive' : 'default'}
             >
               {isSubmitting ? (
                 <>

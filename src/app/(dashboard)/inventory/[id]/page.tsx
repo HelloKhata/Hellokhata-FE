@@ -1,5 +1,4 @@
-// Hello Khata OS - Product Details Page (Inventory Focused ERP Experience)
-// হ্যালো খাতা - পণ্য বিবরণী ও ইনভেন্টরি পেজ
+
 
 "use client";
 

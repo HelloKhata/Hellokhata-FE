@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { BackButton, PageHeader, ImageWithFallback } from "@/components/common";
+import { BackButton, PageHeader } from "@/components/common";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +71,7 @@ import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
 import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
 import { Offer, POSAppliedOffer, calculateBogoOffer, calculatePercentageOffer, calculateFlatOffer, calculateBundleOffer } from "@/types/offer.types";
+import Image from "next/image";
 
 interface PaymentRow {
   id: string;
@@ -488,6 +489,15 @@ const itemsBatches = batchesData?.batches;
     return parseFloat((taxableAmount * (taxRate / 100)).toFixed(2)) || 0;
   };
 
+    // Calculate Row Total helper
+  const calculateRowTotal = (
+    qty: number,
+    price: number,
+    flatDiscount: number,
+  ) => {
+    return Math.max(0, qty * price - flatDiscount);
+  };
+  
   // Add Product to Table with chosen batch
   const handleSelectBatchAndAdd = (product: any, batch?: any) => {
     if (!product) return;
@@ -688,14 +698,7 @@ const itemsBatches = batchesData?.batches;
     setSelectedItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Calculate Row Total helper
-  const calculateRowTotal = (
-    qty: number,
-    price: number,
-    flatDiscount: number,
-  ) => {
-    return Math.max(0, qty * price - flatDiscount);
-  };
+
 
   // Handle Quantity Change
   const handleQuantityChange = (id: string, val: string) => {
@@ -1010,7 +1013,7 @@ const itemsBatches = batchesData?.batches;
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-8 w-8 rounded overflow-hidden bg-muted flex items-center justify-center border border-border/80 shrink-0">
-                        <ImageWithFallback
+                        <Image
                           src={product.imageUrl || "/images/image.png"}
                           alt={product.name}
                           width={32}
@@ -1375,7 +1378,7 @@ const itemsBatches = batchesData?.batches;
                         {/* Product Thumbnail */}
                         <TableCell className="px-3 py-3 align-middle">
                           <div className="h-8 w-8 rounded overflow-hidden bg-muted flex items-center justify-center border border-border/80">
-                            <ImageWithFallback
+                            <Image
                               src={item.imageUrl || "/images/image.png"}
                               alt={item.itemName || "Product"}
                               width={32}
@@ -1547,7 +1550,7 @@ const itemsBatches = batchesData?.batches;
                         {/* Product Thumbnail with S.N. badge */}
                         <div className="relative shrink-0">
                           <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border/80">
-                            <ImageWithFallback
+                            <Image
                               src={item.imageUrl || "/images/image.png"}
                               alt={item.itemName || "Product"}
                               width={48}
@@ -2248,7 +2251,7 @@ const itemsBatches = batchesData?.batches;
                     <div className="flex items-start gap-3">
                       <div className="h-11 w-11 rounded-lg border border-border/80 bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
                         {item.imageUrl ? (
-                          <ImageWithFallback
+                          <Image
                             src={item.imageUrl}
                             alt={item.itemName}
                             width={44}
@@ -2483,7 +2486,7 @@ const itemsBatches = batchesData?.batches;
                     <div className="flex items-start gap-3">
                       <div className="h-11 w-11 rounded-lg border border-border/80 bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
                         {prod.imageUrl ? (
-                          <ImageWithFallback
+                          <Image
                             src={prod.imageUrl}
                             alt={prod.name}
                             width={44}

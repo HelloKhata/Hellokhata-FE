@@ -101,21 +101,21 @@ export function AddPartyModal({ isOpen, onClose, partyToEdit }: AddPartyModalPro
       notes: formData.notes || undefined,
     };
 
-    if (partyToEdit) {
-      updateMutation.mutate(partyItem, {
-        onSuccess: () => {
-          toast.success(isBangla ? 'পার্টি তথ্য আপডেট হয়েছে!' : 'Party updated successfully!');
-          onClose();
-        },
-      });
-    } else {
-      createMutation.mutate(partyItem, {
-        onSuccess: () => {
-          toast.success(isBangla ? 'পার্টি তৈরি হয়েছে!' : 'Party created successfully!');
-          onClose();
-        },
-      });
-    }
+    // if (partyToEdit) {
+    //   updateMutation.mutate({ ...partyItem, id: partyToEdit?.id }, {
+    //     onSuccess: () => {
+    //       toast.success(isBangla ? 'পার্টি তথ্য আপডেট হয়েছে!' : 'Party updated successfully!');
+    //       onClose();
+    //     },
+    //   });
+    // } else {
+    //   createMutation.mutate(partyItem, {
+    //     onSuccess: () => {
+    //       toast.success(isBangla ? 'পার্টি তৈরি হয়েছে!' : 'Party created successfully!');
+    //       onClose();
+    //     },
+    //   });
+    // }
   };
 
   return (

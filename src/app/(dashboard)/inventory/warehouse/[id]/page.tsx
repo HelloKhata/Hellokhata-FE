@@ -39,6 +39,7 @@ import {
 import { NewWarehouseModal } from "@/components/warehouse/NewWarehouseModal";
 import { BatchesModal } from "@/components/inventory/BatchesModal";
 import Link from "next/link";
+import { EditWarehouseModal } from "@/components/warehouse/EditWarehouseModal";
 
 export default function WarehouseDetailPage() {
   const params = useParams();
@@ -469,11 +470,11 @@ export default function WarehouseDetailPage() {
       </div>
 
       {/* Edit Warehouse Modal */}
-      <NewWarehouseModal
+      <EditWarehouseModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveWarehouse}
-        editingWarehouse={warehouse}
+        warehouse={warehouse}
         isBangla={isBangla}
       />
 

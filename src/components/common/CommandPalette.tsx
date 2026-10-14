@@ -286,25 +286,4 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   );
 }
 
-// Command Palette Trigger Button
-export function CommandPaletteTrigger({ onClick }: { onClick: () => void }) {
-  const { isBangla } = useAppTranslation();
-  
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 h-10 px-3 rounded-xl bg-muted/50 border border-border-subtle hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-    >
-      <Search className="h-4 w-4" />
-      <span className="text-sm hidden sm:inline">
-        {isBangla ? 'খুঁজুন...' : 'Search...'}
-      </span>
-      <div className="hidden md:flex items-center gap-0.5 ml-2">
-        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border-subtle">⌘</kbd>
-        <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] border border-border-subtle">K</kbd>
-      </div>
-    </button>
-  );
-}
-
 export default CommandPalette;

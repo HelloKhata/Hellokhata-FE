@@ -197,7 +197,7 @@ export function ImportItemsModal({ isOpen, onClose, onSuccess }: ImportItemsModa
                   </div>
                   <Button
                     variant="ghost"
-                    size="icon-sm"
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       setFile(null);

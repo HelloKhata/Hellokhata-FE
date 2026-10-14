@@ -5,7 +5,6 @@ import {
     getBatchMovements,
     adjustBatchQuantity,
     updateBatchDetails,
-    generateMissingBarcodes,
     type BatchStatus,
     type BatchSort,
 } from "@/services/batches.services";
@@ -75,14 +74,3 @@ export const useUpdateBatchDetails = () => {
         },
     });
 }
-
-export const useGenerateMissingBarcodes = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (batch_ids: string[]) => generateMissingBarcodes(batch_ids),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['batches'] });
-        },
-    });
-}
-

@@ -1800,7 +1800,7 @@ export default function EmployeeReportsDashboard() {
         businessName={business?.name || 'HelloKhata Business'}
         branchName={selectedBranchId === 'all' ? (isBangla ? 'সকল শাখা' : 'All Branches') : getBranchName(branches, selectedBranchId)}
         businessAddress={(business as any)?.address || (isBangla ? 'ঢাকা, বাংলাদেশ' : 'Dhaka, Bangladesh')}
-        contactInfo={business?.phone || '+৮৮০ ১৭০০০-০০০০০'}
+        contactInfo={'+৮৮০ ১৭০০০-০০০০০'}
         userName={user?.name || 'Owner'}
         dateRange={{
           start: activeFilters.dateRange.from ? format(activeFilters.dateRange.from, 'dd MMM yyyy') : undefined,

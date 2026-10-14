@@ -169,7 +169,7 @@ export default function StockTransferPage() {
                           <SelectItem key={branch.id} value={branch.id} disabled={branch.id === toBranchId}>
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span>{branch.nameBn || branch.name}</span>
+                              <span>{ branch.name}</span>
                               {branch.isMain && (
                                 <Badge variant="indigo" size="sm">{isBangla ? 'প্রধান' : 'Main'}</Badge>
                               )}
