@@ -52,12 +52,12 @@ import {
 import { useGetRoles, useDeleteRole } from '@/hooks/api/useRoles';
 
 const getRoleBadgeColor = (color?: string | null) => {
-  if (!color) return '#6366f1';
+  if (!color) return 'var(--primary)';
   const c = color.toLowerCase();
   if (c === 'gray' || c === 'grey') return '#64748b';
   if (c === 'purple') return '#8b5cf6';
   if (c === 'blue') return '#3b82f6';
-  if (c === 'indigo') return '#6366f1';
+  if (c === 'indigo' || c === 'primary') return 'var(--primary)';
   if (c === 'emerald' || c === 'green') return '#10b981';
   if (c === 'amber' || c === 'orange') return '#f59e0b';
   if (c === 'rose' || c === 'red') return '#f43f5e';
@@ -509,9 +509,9 @@ export default function UserAccessControlPage() {
                             <Button
                               size="sm"
                               onClick={() => handleEditRole(role)}
-                              className="h-8 px-3.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-xs"
+                              className="h-8 px-3.5 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-xs"
                             >
-                              <Edit2 className="w-3.5 h-3.5 text-white" />
+                              <Edit2 className="w-3.5 h-3.5 text-primary-foreground" />
                               <span>{isBangla ? 'Edit' : 'Edit'}</span>
                             </Button>
 

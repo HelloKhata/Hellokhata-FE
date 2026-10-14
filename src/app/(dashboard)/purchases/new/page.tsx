@@ -518,8 +518,8 @@ function NewPurchaseContent() {
     const payload = {
       branchId: activeBranch?.id || user?.branchId,
       allocationMethod: "VALUE",
-      additionalCharges: additionalCharges || 0,
-      shippingCost: shippingCost || 0,
+      // additionalCharges: additionalCharges || 0,
+      // shippingCost: shippingCost || 0,
       purchaseDate: format(invoiceDate, "yyyy-MM-dd"),
       purchaseType: purchaseType === "warehouse" ? "WAREHOUSE" : "INSTORE",
       warehouseId: purchaseType === "warehouse" ? (warehouseId || undefined) : undefined,
@@ -1615,7 +1615,7 @@ function NewPurchaseContent() {
               </div>
 
               {/* Shipping Cost Input */}
-              <div className="flex justify-between items-center text-muted-foreground">
+              {/* <div className="flex justify-between items-center text-muted-foreground">
                 <span>{isBangla ? "পরিবহন খরচ" : "Shipping Cost"}</span>
                 <div className="relative w-28 flex items-center">
                   <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
@@ -1628,10 +1628,10 @@ function NewPurchaseContent() {
                     min="0"
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Additional Charges Input */}
-              <div className="flex justify-between items-center text-muted-foreground">
+              {/* <div className="flex justify-between items-center text-muted-foreground">
                 <span>{isBangla ? "অন্যান্য খরচ" : "Additional Charges"}</span>
                 <div className="relative w-28 flex items-center">
                   <span className="absolute left-2 text-[10px] font-medium text-muted-foreground">Tk.</span>
@@ -1644,7 +1644,7 @@ function NewPurchaseContent() {
                     min="0"
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Grand Total output */}
               <div className="flex justify-between items-center border-t border-border pt-3 text-sm font-bold">

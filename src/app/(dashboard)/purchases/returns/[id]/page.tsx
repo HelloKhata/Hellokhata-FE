@@ -13,8 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/premium";
 import {
-  RotateCcw,
-  ArrowLeft,
   Loader2,
   Printer,
   Calendar as CalendarIcon,
@@ -22,7 +20,6 @@ import {
   CreditCard,
   Smartphone,
   Receipt,
-  FileText,
   ImageIcon,
 } from "lucide-react";
 import { useCurrency, useAppTranslation } from "@/hooks/useAppTranslation";
@@ -30,9 +27,9 @@ import { useGetPurchaseReturnById } from "@/hooks/api/useReturns";
 import { cn } from "@/lib/utils";
 
 const METHODS = [
-  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
-  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
-  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-600 dark:text-emerald-400", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
+  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-600 dark:text-blue-400", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
+  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-600 dark:text-orange-400", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
 ];
 
 function PurchaseReturnDetailsContent() {
@@ -138,8 +135,8 @@ function PurchaseReturnDetailsContent() {
             >
               {returnDetails.returnNo}
             </Badge>
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 capitalize">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 capitalize">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               {returnDetails.status}
             </span>
           </>
@@ -160,7 +157,7 @@ function PurchaseReturnDetailsContent() {
       </PageHeader>
 
       {/* Top Card: Purchase Invoice & Return Overview (Matching new return form layout) */}
-      <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+      <div className="bg-card border border-border/60 rounded-xl p-5 space-y-4 shadow-xs">
         <div className="flex items-center justify-between border-b border-border/50 pb-3">
           <div className="flex items-center gap-2 text-primary font-bold text-sm">
             <Receipt className="h-4 w-4" />
@@ -240,7 +237,7 @@ function PurchaseReturnDetailsContent() {
         {/* Left Section (Spans 9 columns on desktop) */}
         <div className="lg:col-span-9 space-y-6">
           {/* Return Items List Table */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl overflow-hidden shadow-xs space-y-4">
+          <div className="bg-card border border-border/60 rounded-xl overflow-hidden shadow-xs space-y-4">
             {/* Purchase Billing Info Bar */}
             {returnDetails.purchaseTotal > 0 && (
               <div className="px-4 py-2.5 bg-muted/40 border-b border-border/50 flex flex-wrap items-center justify-between gap-3 text-xs font-medium">
@@ -258,13 +255,13 @@ function PurchaseReturnDetailsContent() {
                   </span>
                   <span>
                     {isBangla ? "পরিশোধিত:" : "Paid:"}{" "}
-                    <strong className="font-bold text-emerald-500 font-mono">
+                    <strong className="font-bold text-emerald-600 dark:text-emerald-500 font-mono">
                       {formatCurrency(returnDetails.purchasePaid)}
                     </strong>
                   </span>
                   <span>
                     {isBangla ? "বাকি:" : "Due:"}{" "}
-                    <strong className="font-bold text-rose-500 font-mono">
+                    <strong className="font-bold text-rose-600 dark:text-rose-500 font-mono">
                       {formatCurrency(returnDetails.purchaseDue)}
                     </strong>
                   </span>
@@ -285,7 +282,7 @@ function PurchaseReturnDetailsContent() {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-xs">
                 <thead>
-                  <tr className="border-b border-border/80 bg-muted/20 text-muted-foreground font-semibold">
+                  <tr className="border-b border-border bg-muted/40 text-muted-foreground font-semibold">
                     <th className="px-4 py-3">{isBangla ? "আইটেম বিবরণ" : "Item & SKU"}</th>
                     <th className="px-3 py-3 text-right">{isBangla ? "মূল্য" : "Purchase Price"}</th>
                     <th className="px-3 py-3 text-center">{isBangla ? "ট্যাক্স (%)" : "Tax (%)"}</th>
@@ -298,7 +295,7 @@ function PurchaseReturnDetailsContent() {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {returnDetails.items.map((item: any, idx: number) => (
-                    <tr key={item.id || idx} className="hover:bg-muted/10 transition-colors">
+                    <tr key={item.id || idx} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3.5 align-middle">
                         <p className="font-semibold text-foreground text-xs leading-tight">{item.itemName}</p>
                         <p className="text-[10px] text-muted-foreground font-mono">SKU: {item.sku}</p>
@@ -323,12 +320,12 @@ function PurchaseReturnDetailsContent() {
                         </span>
                       </td>
                       <td className="px-3 py-3.5 align-middle">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-background/50 border border-border/60 text-xs font-semibold text-foreground capitalize">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted/50 border border-border text-xs font-semibold text-foreground capitalize">
                           {item.returnType}
                         </span>
                       </td>
                       <td className="px-3 py-3.5 align-middle">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-background/50 border border-border/60 text-xs text-muted-foreground capitalize">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground capitalize">
                           {item.reason}
                         </span>
                       </td>
@@ -342,7 +339,7 @@ function PurchaseReturnDetailsContent() {
             </div>
 
             {/* Bottom summary bar */}
-            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/10 border-t border-border">
+            <div className="flex justify-end items-center px-5 py-3.5 bg-muted/20 border-t border-border">
               <div className="flex items-center gap-4">
                 <span className="text-muted-foreground font-semibold text-xs">
                   {isBangla ? "আইটেম উপমোট পরিমাণ" : "Return Subtotal Amount"}
@@ -355,7 +352,7 @@ function PurchaseReturnDetailsContent() {
           </div>
 
           {/* Notes & Invoice Image Card */}
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 shadow-xs space-y-4">
+          <div className="bg-card border border-border/60 rounded-xl p-5 shadow-xs space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Remarks/Notes */}
               <div className="space-y-1.5">
@@ -366,7 +363,7 @@ function PurchaseReturnDetailsContent() {
                   readOnly
                   disabled
                   value={returnDetails.notes || (isBangla ? "কোনো মন্তব্য নেই" : "No special remarks")}
-                  className="h-32 bg-background/50 border-input resize-none text-xs disabled:opacity-90"
+                  className="h-32 bg-muted/30 border-input resize-none text-xs disabled:opacity-90"
                 />
               </div>
 
@@ -376,7 +373,7 @@ function PurchaseReturnDetailsContent() {
                   {isBangla ? "ইনভয়েস বা রসিদের ছবি" : "Invoice / Receipt Image"}
                 </Label>
                 {returnDetails.invoiceImage ? (
-                  <div className="relative h-32 w-full rounded-lg border border-border bg-background/50 overflow-hidden flex items-center justify-center">
+                  <div className="relative h-32 w-full rounded-lg border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
                     <img
                       src={returnDetails.invoiceImage}
                       alt="Invoice preview"
@@ -384,7 +381,7 @@ function PurchaseReturnDetailsContent() {
                     />
                   </div>
                 ) : (
-                  <div className="h-32 w-full rounded-lg border-2 border-dashed border-input bg-background/30 flex flex-col items-center justify-center text-center p-4">
+                  <div className="h-32 w-full rounded-lg border-2 border-dashed border-input bg-muted/20 flex flex-col items-center justify-center text-center p-4">
                     <ImageIcon className="h-6 w-6 text-muted-foreground mb-1.5 opacity-50" />
                     <span className="text-xs text-muted-foreground">
                       {isBangla ? "কোনো ছবি সংযুক্ত নেই" : "No invoice image attached"}
@@ -398,7 +395,7 @@ function PurchaseReturnDetailsContent() {
 
         {/* Right Section: Refund Summary sticky card (3 columns on desktop) */}
         <div className="lg:col-span-3 lg:sticky lg:top-6 space-y-6">
-          <div className="bg-zinc-900/20 border border-border rounded-xl p-5 space-y-4 shadow-xs">
+          <div className="bg-card border border-border/60 rounded-xl p-5 space-y-4 shadow-xs">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               {isBangla ? "ফেরত বিবরণী" : "Refund Summary"}
             </h3>
@@ -445,7 +442,7 @@ function PurchaseReturnDetailsContent() {
                           "flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all",
                           isActive
                             ? cn(m.bgClass, m.borderClass)
-                            : "border-border/40 bg-transparent opacity-40"
+                            : "border-border/40 bg-muted/20 hover:bg-muted/40"
                         )}
                       >
                         <Icon
@@ -468,7 +465,7 @@ function PurchaseReturnDetailsContent() {
 
                 {/* Account Details if applicable */}
                 {returnDetails.accountName && (
-                  <div className="flex justify-between items-center text-xs text-muted-foreground bg-background/40 p-2.5 rounded-lg border border-border/50">
+                  <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border">
                     <span>{isBangla ? "অ্যাকাউন্ট" : "Account"}:</span>
                     <span className="font-semibold text-foreground">{returnDetails.accountName}</span>
                   </div>

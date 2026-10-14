@@ -293,12 +293,12 @@ export default function AddEmployeePage() {
           {/* Section Header */}
           <div className="p-5 sm:p-6 pb-4 sm:pb-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-sm shadow-primary/20">
                 <User className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+                  <span className="h-2 w-2 rounded-full bg-primary shadow-xs shadow-primary/30" />
                   <h2 className="text-sm sm:text-base font-bold text-foreground tracking-wider uppercase">
                     {isBangla ? 'ব্যক্তিগত তথ্য' : 'PERSONAL INFORMATION'}
                   </h2>
@@ -319,11 +319,11 @@ export default function AddEmployeePage() {
             {/* 1.1 Compact Photo Upload */}
             <div className="p-4 sm:p-5 rounded-xl border border-border bg-muted/30 space-y-3">
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
-                <span className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
                   {isBangla ? 'কর্মচারীর ছবি' : 'EMPLOYEE PHOTO'}
                 </span>
-                <span className="text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">
                   {isBangla ? 'প্রস্তাবিত' : 'Recommended'}
                 </span>
               </div>
@@ -359,7 +359,7 @@ export default function AddEmployeePage() {
                       type="button"
                       size="sm"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-8.5 px-4 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-md shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                      className="h-8.5 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <Upload className="h-3.5 w-3.5" />
                       {photoUrl
@@ -386,8 +386,8 @@ export default function AddEmployeePage() {
 
             {/* 1.2 Basic Identity Subsection */}
             <div className="space-y-3.5">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'মৌলিক পরিচয়' : 'BASIC IDENTITY'}</span>
               </div>
 
@@ -409,7 +409,7 @@ export default function AddEmployeePage() {
                       placeholder={isBangla ? 'যেমন: আবদুর রহমান' : 'Abdur Rahman'}
                       aria-invalid={!!errors.fullName}
                       className={cn(
-                        'pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                        'pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all',
                         errors.fullName && 'border-rose-500/80 focus-visible:ring-rose-500/30'
                       )}
                     />
@@ -430,7 +430,7 @@ export default function AddEmployeePage() {
                     <button
                       type="button"
                       onClick={generateNewId}
-                      className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 cursor-pointer font-medium transition-colors"
+                      className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 cursor-pointer font-medium transition-colors"
                       title={isBangla ? 'নতুন আইডি তৈরি করুন' : 'Generate new ID'}
                     >
                       <RefreshCw className="h-3 w-3" />
@@ -438,7 +438,7 @@ export default function AddEmployeePage() {
                     </button>
                   </div>
                   <div className="relative flex items-center">
-                    <BadgeCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-400/80 pointer-events-none" />
+                    <BadgeCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/80 pointer-events-none" />
                     <Input
                       id="employeeId"
                       value={employeeId}
@@ -449,7 +449,7 @@ export default function AddEmployeePage() {
                       placeholder="HK-9638"
                       aria-invalid={!!errors.employeeId}
                       className={cn(
-                        'pl-10 h-10.5 font-mono font-medium bg-background border-border text-indigo-300 placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                        'pl-10 h-10.5 font-mono font-medium bg-background border-border text-primary placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all',
                         errors.employeeId && 'border-rose-500/80 focus-visible:ring-rose-500/30'
                       )}
                     />
@@ -465,8 +465,8 @@ export default function AddEmployeePage() {
 
             {/* 1.3 Personal Details Subsection */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'ব্যক্তিগত বিবরণ' : 'PERSONAL DETAILS'}</span>
               </div>
 
@@ -483,7 +483,7 @@ export default function AddEmployeePage() {
                       type="date"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
-                      className="pl-10 h-10.5 font-mono text-sm bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                      className="pl-10 h-10.5 font-mono text-sm bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     />
                   </div>
                 </div>
@@ -494,7 +494,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'লিঙ্গ' : 'Gender'}
                   </Label>
                   <Select value={gender} onValueChange={setGender}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -511,7 +511,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'রক্তের গ্রুপ' : 'Blood Group'}
                   </Label>
                   <Select value={bloodGroup} onValueChange={setBloodGroup}>
-                    <SelectTrigger className="w-full h-10.5 font-mono bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 font-mono bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground font-mono">
@@ -530,7 +530,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'বৈবাহিক অবস্থা' : 'Marital Status'}
                   </Label>
                   <Select value={maritalStatus} onValueChange={setMaritalStatus}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -546,8 +546,8 @@ export default function AddEmployeePage() {
 
             {/* 1.4 Identity & Demographics Subsection */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'জাতীয়তা ও পরিচয়পত্র' : 'IDENTITY & DEMOGRAPHICS'}</span>
               </div>
 
@@ -562,7 +562,7 @@ export default function AddEmployeePage() {
                     value={nid}
                     onChange={(e) => setNid(e.target.value)}
                     placeholder="1993269145829103"
-                    className="h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    className="h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                   />
                 </div>
 
@@ -576,7 +576,7 @@ export default function AddEmployeePage() {
                     value={passport}
                     onChange={(e) => setPassport(e.target.value)}
                     placeholder="e.g. EGXXXXXXX"
-                    className="h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    className="h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                   />
                 </div>
 
@@ -593,7 +593,7 @@ export default function AddEmployeePage() {
                       id="nationalityVal"
                       value={nationality}
                       onChange={(e) => setNationality(e.target.value)}
-                      className="pl-12 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                      className="pl-12 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     />
                   </div>
                 </div>
@@ -605,7 +605,7 @@ export default function AddEmployeePage() {
                   </Label>
 
                   <Select value={religion} onValueChange={setReligion}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -632,12 +632,12 @@ export default function AddEmployeePage() {
           {/* Section Header */}
           <div className="p-5 sm:p-6 pb-4 sm:pb-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-sm shadow-primary/20">
                 <Phone className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+                  <span className="h-2 w-2 rounded-full bg-primary shadow-xs shadow-primary/30" />
                   <h2 className="text-sm sm:text-base font-bold text-foreground tracking-wider uppercase">
                     {isBangla ? 'যোগাযোগের তথ্য' : 'CONTACT INFORMATION'}
                   </h2>
@@ -657,8 +657,8 @@ export default function AddEmployeePage() {
           <div className="p-5 sm:p-6 space-y-6">
             {/* 2.1 Primary Contact Details */}
             <div className="space-y-3.5">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'প্রাথমিক যোগাযোগ' : 'PRIMARY CONTACT'}</span>
               </div>
 
@@ -670,7 +670,7 @@ export default function AddEmployeePage() {
                   </Label>
                   <div className="relative flex items-center">
                     <div className="absolute left-2.5 flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/80 border border-border/80 text-[11px] font-semibold text-foreground/90 select-none pointer-events-none">
-                      <span className="font-bold text-indigo-400">BD</span>
+                      <span className="font-bold text-primary">BD</span>
                       <span className="text-muted-foreground">+880</span>
                     </div>
                     <Input
@@ -683,7 +683,7 @@ export default function AddEmployeePage() {
                       placeholder="01712345678"
                       aria-invalid={!!errors.phone}
                       className={cn(
-                        'pl-24 h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                        'pl-24 h-10.5 font-mono bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all',
                         errors.phone && 'border-rose-500/80 focus-visible:ring-rose-500/30'
                       )}
                     />
@@ -708,7 +708,7 @@ export default function AddEmployeePage() {
                       value={emailVal}
                       onChange={(e) => setEmailVal(e.target.value)}
                       placeholder="abdur.rahman@hellokhata.com"
-                      className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                      className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     />
                   </div>
                 </div>
@@ -717,8 +717,8 @@ export default function AddEmployeePage() {
 
             {/* 2.2 Address */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'ঠিকানা' : 'ADDRESS'}</span>
               </div>
 
@@ -733,7 +733,7 @@ export default function AddEmployeePage() {
                     value={presentAddress}
                     onChange={(e) => setPresentAddress(e.target.value)}
                     placeholder={isBangla ? 'যেমন: বাড়ি # ৪২, রোড # ১১, বনানী ব্লক-ডি, ঢাকা' : 'House # 42, Road # 11, Banani Block-D, Dhaka'}
-                    className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
@@ -751,12 +751,12 @@ export default function AddEmployeePage() {
           {/* Section Header */}
           <div className="p-5 sm:p-6 pb-4 sm:pb-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-sm shadow-primary/20">
                 <Briefcase className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+                  <span className="h-2 w-2 rounded-full bg-primary shadow-xs shadow-primary/30" />
                   <h2 className="text-sm sm:text-base font-bold text-foreground tracking-wider uppercase">
                     {isBangla ? 'কর্মসংস্থান তথ্য' : 'EMPLOYMENT INFORMATION'}
                   </h2>
@@ -776,8 +776,8 @@ export default function AddEmployeePage() {
           <div className="p-5 sm:p-6 space-y-6">
             {/* 3.1 Organization Structure */}
             <div className="space-y-3.5">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'প্রাতিষ্ঠানিক কাঠামো' : 'ORGANIZATION STRUCTURE'}</span>
               </div>
 
@@ -788,9 +788,9 @@ export default function AddEmployeePage() {
                     {isBangla ? 'শাখা' : 'Branch'} <span className="text-rose-400 font-bold">*</span>
                   </Label>
                   <Select value={branch} onValueChange={setBranch}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <div className="flex items-center gap-2 truncate">
-                        <Building2 className="h-4 w-4 text-indigo-400 shrink-0" />
+                        <Building2 className="h-4 w-4 text-primary shrink-0" />
                         <SelectValue placeholder={isBangla ? 'শাখা নির্বাচন করুন' : 'Select Branch'} />
                       </div>
                     </SelectTrigger>
@@ -801,7 +801,7 @@ export default function AddEmployeePage() {
                             <div className="flex items-center gap-2">
                               <span>{isBangla && b.nameBn ? b.nameBn : b.name}</span>
                               {b.isMain && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
                                   {isBangla ? 'মূল' : 'Main'}
                                 </span>
                               )}
@@ -825,9 +825,9 @@ export default function AddEmployeePage() {
                     {isBangla ? 'বিভাগ' : 'Department'} <span className="text-rose-400 font-bold">*</span>
                   </Label>
                   <Select value={department} onValueChange={setDepartment}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <div className="flex items-center gap-2 truncate">
-                        <Layers className="h-4 w-4 text-indigo-400 shrink-0" />
+                        <Layers className="h-4 w-4 text-primary shrink-0" />
                         <SelectValue />
                       </div>
                     </SelectTrigger>
@@ -847,9 +847,9 @@ export default function AddEmployeePage() {
                     {isBangla ? 'পদবি' : 'Designation'} <span className="text-rose-400 font-bold">*</span>
                   </Label>
                   <Select value={designation} onValueChange={setDesignation}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <div className="flex items-center gap-2 truncate">
-                        <Trophy className="h-4 w-4 text-indigo-400 shrink-0" />
+                        <Trophy className="h-4 w-4 text-primary shrink-0" />
                         <SelectValue />
                       </div>
                     </SelectTrigger>
@@ -867,8 +867,8 @@ export default function AddEmployeePage() {
 
             {/* 3.2 Role & Hierarchy */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'ভূমিকা ও নিয়োগ শর্ত' : 'ROLE & EMPLOYMENT TERMS'}</span>
               </div>
 
@@ -891,9 +891,9 @@ export default function AddEmployeePage() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <div className="flex items-center gap-2 truncate">
-                        <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0" />
+                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                         <SelectValue placeholder={isBangla ? 'রোল নির্বাচন করুন (ঐচ্ছিক)' : 'Select Role (Optional)'} />
                       </div>
                     </SelectTrigger>
@@ -905,7 +905,7 @@ export default function AddEmployeePage() {
                             <div className="flex items-center gap-2">
                               <span className="capitalize">{isBangla && r.nameBn ? r.nameBn : r.name}</span>
                               {r.isSystem && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">
                                   {isBangla ? 'সিস্টেম' : 'System'}
                                 </span>
                               )}
@@ -941,7 +941,7 @@ export default function AddEmployeePage() {
                         placeholder="••••••••"
                         aria-invalid={!!errors.password}
                         className={cn(
-                          'pl-10 pr-10 h-10.5 font-mono text-sm bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                          'pl-10 pr-10 h-10.5 font-mono text-sm bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all',
                           errors.password && 'border-rose-500/80 focus-visible:ring-rose-500/30'
                         )}
                       />
@@ -978,7 +978,7 @@ export default function AddEmployeePage() {
                       value={manager}
                       onChange={(e) => setManager(e.target.value)}
                       placeholder={isBangla ? 'যেমন: মাসুদ রানা' : 'Masud Rana'}
-                      className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                      className="pl-10 h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     />
                   </div>
                 </div>
@@ -995,7 +995,7 @@ export default function AddEmployeePage() {
                       type="date"
                       value={joiningDate}
                       onChange={(e) => setJoiningDate(e.target.value)}
-                      className="pl-10 h-10.5 font-mono text-sm bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                      className="pl-10 h-10.5 font-mono text-sm bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                     /> 
                   </div>
                 </div>
@@ -1004,8 +1004,8 @@ export default function AddEmployeePage() {
 
             {/* 3.3 Work Schedule & Status */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'কাজের শিফট ও স্ট্যাটাস' : 'WORK SCHEDULE & STATUS'}</span>
               </div>
 
@@ -1016,7 +1016,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'চাকরির ধরণ' : 'Employment Type'}
                   </Label>
                   <Select value={employmentType} onValueChange={setEmploymentType}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1034,7 +1034,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'কর্ম শিফট' : 'Work Shift'}
                   </Label>
                   <Select value={workShift} onValueChange={setWorkShift}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1051,7 +1051,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'কার্যদিবস (সাপ্তাহিক)' : 'Working Days'}
                   </Label>
                   <Select value={workingDays} onValueChange={setWorkingDays}>
-                    <SelectTrigger className="w-full h-10.5 font-mono bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 font-mono bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground font-mono">
@@ -1068,7 +1068,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'প্রবেশন সময়?' : 'Probation?'}
                   </Label>
                   <Select value={probation} onValueChange={setProbation}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1085,7 +1085,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'স্ট্যাটাস' : 'Employee Status'}
                   </Label>
                   <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1131,12 +1131,12 @@ export default function AddEmployeePage() {
           {/* Section Header */}
           <div className="p-5 sm:p-6 pb-4 sm:pb-5 border-b border-border flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400 shrink-0 shadow-sm shadow-indigo-500/20">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0 shadow-sm shadow-primary/20">
                 <Banknote className="h-5 w-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500" />
+                  <span className="h-2 w-2 rounded-full bg-primary shadow-xs shadow-primary/30" />
                   <h2 className="text-sm sm:text-base font-bold text-foreground tracking-wider uppercase">
                     {isBangla ? 'বেতন বিবরণী ও ক্ষতিপূরণ' : 'SALARY & COMPENSATION'}
                   </h2>
@@ -1156,8 +1156,8 @@ export default function AddEmployeePage() {
           <div className="p-5 sm:p-6 space-y-6">
             {/* 4.1 Core Compensation */}
             <div className="space-y-3.5">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'মূল ক্ষতিপূরণ' : 'CORE COMPENSATION'}</span>
               </div>
 
@@ -1168,7 +1168,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'মূল বেতন' : 'Basic Salary'} <span className="text-rose-400 font-bold">*</span>
                   </Label>
                   <div className="relative flex items-center">
-                    <div className="absolute left-3.5 flex items-center justify-center text-indigo-400 font-bold text-base select-none pointer-events-none">
+                    <div className="absolute left-3.5 flex items-center justify-center text-primary font-bold text-base select-none pointer-events-none">
                       ৳
                     </div>
                     <Input
@@ -1182,7 +1182,7 @@ export default function AddEmployeePage() {
                       placeholder="35,000"
                       aria-invalid={!!errors.salary}
                       className={cn(
-                        'pl-9 h-10.5 font-mono text-base font-semibold bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all',
+                        'pl-9 h-10.5 font-mono text-base font-semibold bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all',
                         errors.salary && 'border-rose-500/80 focus-visible:ring-rose-500/30'
                       )}
                     />
@@ -1200,7 +1200,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'বেতনের চক্র' : 'Salary Cycle'}
                   </Label>
                   <Select value={salaryType} onValueChange={setSalaryType}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1218,7 +1218,7 @@ export default function AddEmployeePage() {
                     {isBangla ? 'পেমেন্ট মাধ্যম' : 'Payment Method'}
                   </Label>
                   <Select value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val)}>
-                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30">
+                    <SelectTrigger className="w-full h-10.5 bg-background border-border text-foreground rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border text-foreground">
@@ -1233,8 +1233,8 @@ export default function AddEmployeePage() {
             </div>
             {/* 4.3 Additional Compensation & Notes */}
             <div className="space-y-3.5 pt-2 border-t border-border/60">
-              <div className="text-xs font-bold text-indigo-300/90 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 shadow-xs shadow-indigo-400/50" />
+              <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-xs shadow-primary/40" />
                 <span>{isBangla ? 'ভাতা ও নির্দেশাবলী' : 'ALLOWANCES & NOTES'}</span>
               </div>
 
@@ -1253,7 +1253,7 @@ export default function AddEmployeePage() {
                         ? 'মেডিকেল: ২০০০, যাতায়াত: ১৫০০, খাবার: ১০০০'
                         : 'Medical: 2000, Transport: 1500, Food: 1000'
                     }
-                    className="h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    className="h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                   />
                   <p className="text-[11px] text-muted-foreground/60">
                     {isBangla ? 'কমা দিয়ে আলাদা করুন: লেবেল: পরিমাণ' : 'Comma-separated label: amount pairs'}
@@ -1274,7 +1274,7 @@ export default function AddEmployeePage() {
                         ? '৬ মাস পূর্ণ হওয়ার পর উৎসব বোনাস প্রযোজ্য হবে।'
                         : 'Standard festival bonus eligible after completion of 6 months.'
                     }
-                    className="h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-indigo-500 focus-visible:ring-1 focus-visible:ring-indigo-500/30 transition-all"
+                    className="h-10.5 bg-background border-border text-foreground placeholder:text-muted-foreground/60 rounded-lg focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 transition-all"
                   />
                 </div>
               </div>
@@ -1305,7 +1305,7 @@ export default function AddEmployeePage() {
               <Button
                 type="submit"
                 disabled={isCreating}
-                className="flex-1 sm:flex-none cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 h-10 px-6 rounded-lg transition-all min-w-[160px]"
+                className="flex-1 sm:flex-none cursor-pointer font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs font-semibold h-10 px-6 rounded-lg transition-all min-w-[160px]"
               >
                 {isCreating ? (
                   <span className="flex items-center gap-2">
