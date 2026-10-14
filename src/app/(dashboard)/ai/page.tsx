@@ -27,7 +27,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import { useAiInsights, useDashboardStats } from '@/hooks/queries';
+// import { useAiInsights, useDashboardStats } from '@/hooks/queries';
 import { useAppTranslation } from '@/hooks/useAppTranslation';
 import { useFeatureAccess } from '@/stores/featureGateStore';
 import { useSessionStore } from '@/stores/sessionStore';
