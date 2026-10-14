@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   Search,
   X,
+  Sparkles,
 } from 'lucide-react';
 
 import { useAppTranslation } from '@/hooks/useAppTranslation';
@@ -142,12 +143,8 @@ export function MobileBottomNav() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const isPosActive = pathname === '/sales/new';
+  const isAiActive = pathname === '/ai';
 
-  // Close slider on route change
-  useEffect(() => {
-    setIsAllOpen(false);
-    setSearchQuery('');
-  }, [pathname]);
 
   // Lock body scroll when ALL drawer is open
   useEffect(() => {
@@ -416,11 +413,11 @@ export function MobileBottomNav() {
       </AnimatePresence>
 
       {/* ========================================================================= */}
-      {/* 2-LAYER FIXED BOTTOM NAVIGATION BAR                                       */}
+      {/* 2-LAYER FIXED BOTTOM NAVIGATION BAR WITH INNER CURVE NOTCH               */}
       {/* ========================================================================= */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden bg-card/95 dark:bg-[#0B0F19] backdrop-blur-xl border-t border-border/80 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] overflow-visible box-border"
+        className="fixed bottom-0 left-0 right-0 inset-x-0 w-full max-w-full z-50 md:hidden overflow-visible box-border"
         style={{
           position: 'fixed',
           bottom: 0,
@@ -436,9 +433,15 @@ export function MobileBottomNav() {
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
+        {/* Curved Wave Mask Background Layer - Constant #052B20 matching large screen sidebar light theme */}
+        <div
+          className="inner-curve absolute inset-0 bg-[#052B20] border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] pointer-events-none"
+          aria-hidden="true"
+        />
+
         {/* Unified 5-Column Grid */}
         <div
-          className="grid grid-cols-5 w-full max-w-full box-border px-1 py-1 items-center overflow-visible"
+          className="relative z-10 grid grid-cols-5 w-full max-w-full box-border px-1 py-1 items-center overflow-visible"
           style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}
         >
           {/* ── ROW 1 ── */}
@@ -448,66 +451,57 @@ export function MobileBottomNav() {
             href="/"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-13 py-0.5 text-center transition-colors',
-              pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname === '/' ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <LayoutDashboard className="h-4.5 w-4.5 shrink-0" />
             <span
               className={cn(
                 'text-[9.5px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname === '/' && 'font-bold text-primary'
+                pathname === '/' ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'হোম' : 'Home'}
             </span>
           </Link>
 
-          {/* 2. Sales */}
+          {/* 2. POS */}
           <Link
-            href="/sales"
+            href="/sales/new"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-13 py-0.5 text-center transition-colors',
-              pathname.startsWith('/sales') && !isPosActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              isPosActive ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
-            <Receipt className="h-4.5 w-4.5 shrink-0" />
+            <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
             <span
               className={cn(
                 'text-[9.5px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/sales') && !isPosActive && 'font-bold text-primary'
-              )}
-            >
-              {isBangla ? 'বিক্রয়' : 'Sales'}
-            </span>
-          </Link>
-
-          {/* 3. CENTER ELEVATED POS BUTTON */}
-          <div className="min-w-0 w-full overflow-visible flex flex-col items-center justify-center h-13 relative">
-            <Link
-              href="/sales/new"
-              id="mobile-pos-center-btn"
-              aria-label="POS Billing"
-              className={cn(
-                'absolute -top-5.5 h-13.5 w-13.5 rounded-full flex flex-col items-center justify-center shrink-0',
-                'bg-gradient-to-br from-primary via-primary to-indigo text-white',
-                'shadow-[0_8px_20px_rgba(79,91,255,0.5)] border-[3.5px] border-card dark:border-[#0B0F19]',
-                'transition-transform active:scale-90',
-                isPosActive && 'ring-2 ring-primary ring-offset-2 ring-offset-background dark:ring-offset-[#0B0F19]'
-              )}
-            >
-              <ShoppingCart className="h-5 w-5 text-white" />
-              <span className="text-[9px] font-extrabold tracking-widest text-white leading-none mt-0.5">
-                POS
-              </span>
-            </Link>
-            <span
-              className={cn(
-                'text-[9.5px] font-bold tracking-tight mt-6 truncate w-full text-center px-0.5 block',
-                isPosActive ? 'text-primary' : 'text-foreground'
+                isPosActive ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'পিওএস' : 'POS'}
             </span>
+          </Link>
+
+          {/* 3. CENTER ELEVATED AI BUTTON */}
+          <div className="min-w-0 w-full overflow-visible flex flex-col items-center justify-center h-13 relative">
+            <Link
+              href="/ai"
+              id="mobile-ai-center-btn"
+              aria-label="AI Copilot"
+              className={cn(
+                'absolute -top-5.5 h-13.5 w-13.5 rounded-full flex flex-col items-center justify-center shrink-0',
+                'bg-gradient-to-br from-emerald-500 via-[#0E5B43] to-[#052B20] text-white',
+                'shadow-[0_8px_20px_rgba(0,0,0,0.5)] border-[3.5px] border-[#052B20]',
+                'transition-transform active:scale-90',
+                isAiActive && 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-[#052B20]'
+              )}
+            >
+              <span className="text-[14px] font-extrabold tracking-widest text-white leading-none mt-0.5">
+                AI
+              </span>
+            </Link>
           </div>
 
           {/* 4. Parties */}
@@ -515,14 +509,14 @@ export function MobileBottomNav() {
             href="/parties"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-13 py-0.5 text-center transition-colors',
-              pathname.startsWith('/parties') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/parties') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <Users className="h-4.5 w-4.5 shrink-0" />
             <span
               className={cn(
                 'text-[9.5px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/parties') && 'font-bold text-primary'
+                pathname.startsWith('/parties') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'পার্টি' : 'Parties'}
@@ -534,14 +528,14 @@ export function MobileBottomNav() {
             href="/purchases"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-13 py-0.5 text-center transition-colors',
-              pathname.startsWith('/purchases') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/purchases') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <Truck className="h-4.5 w-4.5 shrink-0" />
             <span
               className={cn(
                 'text-[9.5px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/purchases') && 'font-bold text-primary'
+                pathname.startsWith('/purchases') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'ক্রয়' : 'Purchases'}
@@ -555,14 +549,14 @@ export function MobileBottomNav() {
             href="/finance/transactions"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-11 py-0.5 text-center transition-colors',
-              pathname.startsWith('/finance') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/finance') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <Wallet className="h-4 w-4 shrink-0" />
             <span
               className={cn(
                 'text-[9px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/finance') && 'font-bold text-primary'
+                pathname.startsWith('/finance') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'লেনদেন' : 'Payments'}
@@ -574,14 +568,14 @@ export function MobileBottomNav() {
             href="/inventory"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-11 py-0.5 text-center transition-colors',
-              pathname.startsWith('/inventory') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/inventory') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <Package className="h-4 w-4 shrink-0" />
             <span
               className={cn(
                 'text-[9px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/inventory') && 'font-bold text-primary'
+                pathname.startsWith('/inventory') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'ইনভেন্টরি' : 'Inventory'}
@@ -593,14 +587,14 @@ export function MobileBottomNav() {
             href="/hrm/employees"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-11 py-0.5 text-center transition-colors',
-              pathname.startsWith('/hrm') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/hrm') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <UsersRound className="h-4 w-4 shrink-0" />
             <span
               className={cn(
                 'text-[9px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/hrm') && 'font-bold text-primary'
+                pathname.startsWith('/hrm') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'এইচআরএম' : 'HRM'}
@@ -612,14 +606,14 @@ export function MobileBottomNav() {
             href="/reports/dashboard"
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-11 py-0.5 text-center transition-colors',
-              pathname.startsWith('/reports') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              pathname.startsWith('/reports') ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <BarChart3 className="h-4 w-4 shrink-0" />
             <span
               className={cn(
                 'text-[9px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                pathname.startsWith('/reports') && 'font-bold text-primary'
+                pathname.startsWith('/reports') ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'রিপোর্ট' : 'Reports'}
@@ -632,14 +626,14 @@ export function MobileBottomNav() {
             onClick={() => setIsAllOpen(true)}
             className={cn(
               'min-w-0 w-full overflow-hidden flex flex-col items-center justify-center h-11 py-0.5 text-center transition-colors',
-              isAllOpen ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              isAllOpen ? 'text-emerald-400' : 'text-white/65 hover:text-white'
             )}
           >
             <LayoutGrid className="h-4 w-4 shrink-0" />
             <span
               className={cn(
                 'text-[9px] tracking-tight mt-0.5 font-medium truncate w-full text-center px-0.5 block',
-                isAllOpen && 'font-bold text-primary'
+                isAllOpen ? 'font-bold text-emerald-400' : 'text-white/75'
               )}
             >
               {isBangla ? 'সব' : 'ALL'}
