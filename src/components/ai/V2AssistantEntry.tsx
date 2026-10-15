@@ -22,17 +22,18 @@ export function V2AssistantEntry({
       }}
     >
       <DialogContent className="min-w-0">
-        <DialogTitle>AI সহকারী / AI assistant</DialogTitle>
+        <DialogTitle>AI Assistant</DialogTitle>
         <DialogDescription>
-          একই chat-এ লিখুন অথবা voice record করুন। Transcript review করে Send
-          করুন; কোনো কাজ নিজে থেকে execute হবে না।
+          Ask about your business or record a voice message. Review your
+          transcript before sending, and confirm transaction details before any
+          changes are made.
         </DialogDescription>
         <Link
           href="/ai"
           onClick={onClose}
-          className="inline-block rounded border p-3"
+          className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Chat ও voice assistant খুলুন / Open assistant
+          Open assistant
         </Link>
       </DialogContent>
     </Dialog>
