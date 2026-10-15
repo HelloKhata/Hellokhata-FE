@@ -266,8 +266,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
         {/* Left Column (4 cols): Photo Upload & Party Type & Financial Config */}
         <div className="lg:col-span-4 space-y-6">
           {/* Profile Photo & Type Card */}
-          <Card className="border-border/60 shadow-sm overflow-hidden">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-3">
+          <Card className="border-border/60 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="px-6 py-4 border-b border-border/50">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
                 {isBangla ? 'প্রোফাইল ছবি ও ধরন' : 'Profile Photo & Type'}
@@ -369,8 +369,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
           </Card>
 
           {/* Financial & Opening Balance Card */}
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-3">
+          <Card className="border-border/60 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="px-6 py-4 border-b border-border/50">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-emerald-500" />
                 {isBangla ? 'আর্থিক সেটিংস ও ব্যালেন্স' : 'Financial & Balance'}
@@ -441,8 +441,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
         {/* Right Column (8 cols): Primary Form Fields */}
         <div className="lg:col-span-8 space-y-6">
           {/* Main Information Card */}
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-3">
+          <Card className="border-border/60 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="px-6 py-4 border-b border-border/50">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
                 {isBangla ? 'যোগাযোগের সাধারণ তথ্য' : 'Primary Contact Details'}
@@ -512,8 +512,8 @@ export default function EditPartyPage({ params }: EditPartyPageProps) {
           </Card>
 
           {/* Notes & Additional Remarks Card */}
-          <Card className="border-border/60 shadow-sm">
-            <CardHeader className="bg-muted/30 border-b border-border/40 pb-3">
+          <Card className="border-border/60 shadow-sm overflow-hidden py-0 gap-0">
+            <CardHeader className="px-6 py-4 border-b border-border/50">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 {isBangla ? 'অতিরিক্ত মন্তব্য ও নোট' : 'Notes & Additional Remarks'}
