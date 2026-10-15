@@ -1,8 +1,9 @@
 import axios from "axios";
 import { toast } from "sonner";
+import { ERP_API_ORIGIN } from "@/lib/api-url";
 
 const client = axios.create({
-  baseURL: "https://voiceerp.mapleitfirm.com",
+  baseURL: ERP_API_ORIGIN,
   withCredentials: true,
 });
 
@@ -20,7 +21,11 @@ const processQueue = (error: any, success = false) => {
 client.interceptors.response.use(
   (res) => res,
   async (error) => {
-      console.log("Request:", error.config?.method?.toUpperCase(), error.config?.url);
+    console.log(
+      "Request:",
+      error.config?.method?.toUpperCase(),
+      error.config?.url,
+    );
     console.log("Status:", error.response?.status);
     console.log("Response:", error.response?.data);
     const originalRequest = error.config;
@@ -41,7 +46,7 @@ client.interceptors.response.use(
 
       try {
         await axios.post(
-          "https://voiceerp.mapleitfirm.com/api/auth/refresh",
+          `${ERP_API_ORIGIN}/api/auth/refresh`,
           {},
           { withCredentials: true },
         );
@@ -65,7 +70,7 @@ client.interceptors.response.use(
       }
     }
 
-    console.log('error',error.response?.data)
+    console.log("error", error.response?.data);
     toast.error(message);
     return Promise.reject(error);
   },
