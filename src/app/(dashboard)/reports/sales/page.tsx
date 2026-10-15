@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   Download,
@@ -10,21 +10,22 @@ import {
   TrendingUp,
   CreditCard,
   ShoppingBag,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
+  Package,
+  Trophy,
+  FileText,
   CheckCircle2,
   Clock,
   XCircle,
   AlertCircle,
-  Package,
-  Star,
-  Trophy,
-  Medal,
-  FileText,
+  Loader2,
+  Search,
+  User,
+  Check,
+  X,
 } from "lucide-react";
 import {
-  Select,
+  Select, 
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -38,512 +39,59 @@ import {
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/common";
+import { PaginationHelper } from "@/components/shared/PaginationHelper";
+import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { useGetBranches } from "@/hooks/api/useBranches";
+import { useGetBestSellingProducts, useGetSalesReport } from "@/hooks/api/useReports";
+import { useParties } from "@/hooks/api/useParties";
 
 // ============================================================================
-// TYPES & MOCK DATA
+// CONSTANTS & OPTIONS
 // ============================================================================
-
-export interface SalesReportRow {
-  id: string;
-  invoiceNo: string;
-  customerName: string;
-  customerId: string;
-  grandTotal: number;
-  payableTotal: number;
-  paidAmount: number;
-  dueAmount: number;
-  changeAmount: number;
-  store: string;
-  storeId: string;
-  unitsSold: number;
-  status: "Completed" | "Pending" | "Processing" | "Cancelled";
-  paymentStatus: "Paid" | "Partial" | "Due";
-  createdAt: string;
-  isoDate: string;
-}
-
-const INITIAL_MOCK_DATA: SalesReportRow[] = [
-  {
-    id: "sale-1",
-    invoiceNo: "INV-2026-0045",
-    customerName: "Rahim Enterprise",
-    customerId: "cust-1",
-    grandTotal: 25400.0,
-    payableTotal: 25000.0,
-    paidAmount: 25000.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 42,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "08 Oct 2026, 11:30 AM",
-    isoDate: "2026-10-08",
-  },
-  {
-    id: "sale-2",
-    invoiceNo: "INV-2026-0044",
-    customerName: "Karim Trading Co.",
-    customerId: "cust-2",
-    grandTotal: 18200.0,
-    payableTotal: 18000.0,
-    paidAmount: 10000.0,
-    dueAmount: 8000.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 28,
-    status: "Completed",
-    paymentStatus: "Partial",
-    createdAt: "08 Oct 2026, 10:15 AM",
-    isoDate: "2026-10-08",
-  },
-  {
-    id: "sale-3",
-    invoiceNo: "INV-2026-0043",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 3450.0,
-    payableTotal: 3450.0,
-    paidAmount: 3500.0,
-    dueAmount: 0.0,
-    changeAmount: 50.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 6,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "07 Oct 2026, 08:45 PM",
-    isoDate: "2026-10-07",
-  },
-  {
-    id: "sale-4",
-    invoiceNo: "INV-2026-0042",
-    customerName: "Bengal Superstore",
-    customerId: "cust-3",
-    grandTotal: 45600.0,
-    payableTotal: 44800.0,
-    paidAmount: 44800.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 94,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "07 Oct 2026, 06:10 PM",
-    isoDate: "2026-10-07",
-  },
-  {
-    id: "sale-5",
-    invoiceNo: "INV-2026-0041",
-    customerName: "Apex Retail",
-    customerId: "cust-4",
-    grandTotal: 12800.0,
-    payableTotal: 12800.0,
-    paidAmount: 0.0,
-    dueAmount: 12800.0,
-    changeAmount: 0.0,
-    store: "Uttara Outlet",
-    storeId: "store-uttara",
-    unitsSold: 18,
-    status: "Pending",
-    paymentStatus: "Due",
-    createdAt: "07 Oct 2026, 03:20 PM",
-    isoDate: "2026-10-07",
-  },
-  {
-    id: "sale-6",
-    invoiceNo: "INV-2026-0040",
-    customerName: "Green Valley Agro",
-    customerId: "cust-5",
-    grandTotal: 32150.0,
-    payableTotal: 31500.0,
-    paidAmount: 20000.0,
-    dueAmount: 11500.0,
-    changeAmount: 0.0,
-    store: "Chittagong Central",
-    storeId: "store-ctg",
-    unitsSold: 55,
-    status: "Completed",
-    paymentStatus: "Partial",
-    createdAt: "06 Oct 2026, 05:40 PM",
-    isoDate: "2026-10-06",
-  },
-  {
-    id: "sale-7",
-    invoiceNo: "INV-2026-0039",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 1850.0,
-    payableTotal: 1850.0,
-    paidAmount: 2000.0,
-    dueAmount: 0.0,
-    changeAmount: 150.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 3,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "06 Oct 2026, 02:15 PM",
-    isoDate: "2026-10-06",
-  },
-  {
-    id: "sale-8",
-    invoiceNo: "INV-2026-0038",
-    customerName: "Modern Tech Solutions",
-    customerId: "cust-6",
-    grandTotal: 56000.0,
-    payableTotal: 55000.0,
-    paidAmount: 55000.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 110,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "05 Oct 2026, 04:50 PM",
-    isoDate: "2026-10-05",
-  },
-  {
-    id: "sale-9",
-    invoiceNo: "INV-2026-0037",
-    customerName: "Dhaka Grocers",
-    customerId: "cust-7",
-    grandTotal: 9400.0,
-    payableTotal: 9200.0,
-    paidAmount: 0.0,
-    dueAmount: 9200.0,
-    changeAmount: 0.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 14,
-    status: "Cancelled",
-    paymentStatus: "Due",
-    createdAt: "05 Oct 2026, 12:30 PM",
-    isoDate: "2026-10-05",
-  },
-  {
-    id: "sale-10",
-    invoiceNo: "INV-2026-0036",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 5750.0,
-    payableTotal: 5750.0,
-    paidAmount: 5750.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Uttara Outlet",
-    storeId: "store-uttara",
-    unitsSold: 9,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "04 Oct 2026, 07:15 PM",
-    isoDate: "2026-10-04",
-  },
-  {
-    id: "sale-11",
-    invoiceNo: "INV-2026-0035",
-    customerName: "Padma Distributions",
-    customerId: "cust-8",
-    grandTotal: 68300.0,
-    payableTotal: 66500.0,
-    paidAmount: 66500.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Chittagong Central",
-    storeId: "store-ctg",
-    unitsSold: 135,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "04 Oct 2026, 01:20 PM",
-    isoDate: "2026-10-04",
-  },
-  {
-    id: "sale-12",
-    invoiceNo: "INV-2026-0034",
-    customerName: "Prime Pharma",
-    customerId: "cust-9",
-    grandTotal: 28900.0,
-    payableTotal: 28000.0,
-    paidAmount: 15000.0,
-    dueAmount: 13000.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 45,
-    status: "Processing",
-    paymentStatus: "Partial",
-    createdAt: "03 Oct 2026, 09:45 AM",
-    isoDate: "2026-10-03",
-  },
-  {
-    id: "sale-13",
-    invoiceNo: "INV-2026-0033",
-    customerName: "Star Stationery",
-    customerId: "cust-10",
-    grandTotal: 7650.0,
-    payableTotal: 7500.0,
-    paidAmount: 7500.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 22,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "02 Oct 2026, 03:30 PM",
-    isoDate: "2026-10-02",
-  },
-  {
-    id: "sale-14",
-    invoiceNo: "INV-2026-0032",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 4100.0,
-    payableTotal: 4100.0,
-    paidAmount: 4100.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 8,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "01 Oct 2026, 04:10 PM",
-    isoDate: "2026-10-01",
-  },
-  {
-    id: "sale-15",
-    invoiceNo: "INV-2026-0031",
-    customerName: "Sylhet Wholesale Hub",
-    customerId: "cust-11",
-    grandTotal: 39500.0,
-    payableTotal: 38800.0,
-    paidAmount: 38800.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 76,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "01 Oct 2026, 11:00 AM",
-    isoDate: "2026-10-01",
-  },
-];
-
-// Available Filter Options
-const STORE_OPTIONS = [
-  { value: "all", label: "Choose Store" },
-  { value: "store-main", label: "Main Branch (Dhaka)" },
-  { value: "store-gulshan", label: "Gulshan Flagship Store" },
-  { value: "store-dhanmondi", label: "Dhanmondi Hub" },
-  { value: "store-uttara", label: "Uttara Outlet" },
-  { value: "store-ctg", label: "Chittagong Central" },
-];
-
-const CUSTOMER_OPTIONS = [
-  { value: "all", label: "Select Customer" },
-  { value: "cust-walkin", label: "Walk-in Customer" },
-  { value: "cust-1", label: "Rahim Enterprise" },
-  { value: "cust-2", label: "Karim Trading Co." },
-  { value: "cust-3", label: "Bengal Superstore" },
-  { value: "cust-4", label: "Apex Retail" },
-  { value: "cust-5", label: "Green Valley Agro" },
-  { value: "cust-6", label: "Modern Tech Solutions" },
-  { value: "cust-7", label: "Dhaka Grocers" },
-  { value: "cust-8", label: "Padma Distributions" },
-  { value: "cust-9", label: "Prime Pharma" },
-  { value: "cust-10", label: "Star Stationery" },
-  { value: "cust-11", label: "Sylhet Wholesale Hub" },
-];
-
-const ORDER_STATUS_OPTIONS = [
-  { value: "all", label: "Choose" },
-  { value: "Completed", label: "Completed" },
-  { value: "Pending", label: "Pending" },
-  { value: "Processing", label: "Processing" },
-  { value: "Cancelled", label: "Cancelled" },
-];
 
 const PAYMENT_STATUS_OPTIONS = [
-  { value: "all", label: "Choose" },
-  { value: "Paid", label: "Paid" },
-  { value: "Partial", label: "Partial" },
-  { value: "Due", label: "Due" },
-];
-
-// ============================================================================
-// BEST SELLING MOCK DATA
-// ============================================================================
-
-export interface BestSellingProduct {
-  rank: number;
-  id: string;
-  productName: string;
-  sku: string;
-  category: string;
-  unitsSold: number;
-  totalRevenue: number;
-  avgSellingPrice: number;
-  stockLeft: number;
-  growthRate: number;
-}
-
-const BEST_SELLING_MOCK: BestSellingProduct[] = [
-  {
-    rank: 1,
-    id: "prod-1",
-    productName: "Premium Rice (Miniket) 5kg",
-    sku: "GRC-MNK-5K",
-    category: "Groceries",
-    unitsSold: 342,
-    totalRevenue: 188100,
-    avgSellingPrice: 550,
-    stockLeft: 214,
-    growthRate: 18.4,
-  },
-  {
-    rank: 2,
-    id: "prod-2",
-    productName: "Soybean Oil 5L",
-    sku: "OIL-SOY-5L",
-    category: "Cooking Oil",
-    unitsSold: 298,
-    totalRevenue: 238400,
-    avgSellingPrice: 800,
-    stockLeft: 87,
-    growthRate: 12.1,
-  },
-  {
-    rank: 3,
-    id: "prod-3",
-    productName: "Arla Full Cream Milk 1L",
-    sku: "DRY-ARL-1L",
-    category: "Dairy",
-    unitsSold: 276,
-    totalRevenue: 96600,
-    avgSellingPrice: 350,
-    stockLeft: 320,
-    growthRate: 9.7,
-  },
-  {
-    rank: 4,
-    id: "prod-4",
-    productName: "Lux Soap Bar (Pack of 4)",
-    sku: "SOAP-LUX-P4",
-    category: "Personal Care",
-    unitsSold: 243,
-    totalRevenue: 72900,
-    avgSellingPrice: 300,
-    stockLeft: 155,
-    growthRate: 6.3,
-  },
-  {
-    rank: 5,
-    id: "prod-5",
-    productName: "Nescafe Classic 200g",
-    sku: "BEV-NES-200",
-    category: "Beverages",
-    unitsSold: 218,
-    totalRevenue: 130800,
-    avgSellingPrice: 600,
-    stockLeft: 43,
-    growthRate: 22.5,
-  },
-  {
-    rank: 6,
-    id: "prod-6",
-    productName: "Fresh Bread (Large Loaf)",
-    sku: "BAK-BRD-LG",
-    category: "Bakery",
-    unitsSold: 195,
-    totalRevenue: 48750,
-    avgSellingPrice: 250,
-    stockLeft: 28,
-    growthRate: -3.2,
-  },
-  {
-    rank: 7,
-    id: "prod-7",
-    productName: "Sugar (Refined) 1kg",
-    sku: "GRC-SUG-1K",
-    category: "Groceries",
-    unitsSold: 187,
-    totalRevenue: 28050,
-    avgSellingPrice: 150,
-    stockLeft: 512,
-    growthRate: 4.8,
-  },
-  {
-    rank: 8,
-    id: "prod-8",
-    productName: "Hand Sanitizer 250ml",
-    sku: "HGN-SAN-250",
-    category: "Hygiene",
-    unitsSold: 174,
-    totalRevenue: 69600,
-    avgSellingPrice: 400,
-    stockLeft: 98,
-    growthRate: 15.6,
-  },
-  {
-    rank: 9,
-    id: "prod-9",
-    productName: "Chicken Curry Masala 100g",
-    sku: "SPC-CCM-100",
-    category: "Spices",
-    unitsSold: 161,
-    totalRevenue: 40250,
-    avgSellingPrice: 250,
-    stockLeft: 230,
-    growthRate: 7.9,
-  },
-  {
-    rank: 10,
-    id: "prod-10",
-    productName: "Bottled Water 600ml (24-pack)",
-    sku: "BEV-WAT-24P",
-    category: "Beverages",
-    unitsSold: 148,
-    totalRevenue: 44400,
-    avgSellingPrice: 300,
-    stockLeft: 176,
-    growthRate: 2.1,
-  },
-];
-
-const BS_CATEGORY_OPTIONS = [
-  { value: "all", label: "All Categories" },
-  { value: "Groceries", label: "Groceries" },
-  { value: "Cooking Oil", label: "Cooking Oil" },
-  { value: "Dairy", label: "Dairy" },
-  { value: "Personal Care", label: "Personal Care" },
-  { value: "Beverages", label: "Beverages" },
-  { value: "Bakery", label: "Bakery" },
-  { value: "Hygiene", label: "Hygiene" },
-  { value: "Spices", label: "Spices" },
+  { value: "all", label: "All Payment Status" },
+  { value: "paid", label: "Paid" },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "partial", label: "Partial" },
 ];
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-const formatBDT = (amount: number) => {
-  return `৳${amount.toLocaleString("en-IN", {
+const formatBDT = (amount: number = 0) => {
+  const num = Number(amount) || 0;
+  return `৳${num.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 };
 
-const formatKpiNumber = (amount: number) => {
-  return amount.toLocaleString("en-IN", {
+const formatKpiNumber = (amount: number = 0) => {
+  const num = Number(amount) || 0;
+  return num.toLocaleString("en-IN", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
+};
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return dateStr;
+  }
 };
 
 // ============================================================================
@@ -551,197 +99,221 @@ const formatKpiNumber = (amount: number) => {
 // ============================================================================
 
 export default function SalesReportPage() {
+  const { isBangla } = useAppTranslation();
+
   // Filter States
   const [startDate, setStartDate] = useState("2026-10-01");
   const [endDate, setEndDate] = useState("2026-10-08");
-  const [selectedStore, setSelectedStore] = useState("all");
-  const [selectedCustomer, setSelectedCustomer] = useState("all");
-  const [selectedOrderStatus, setSelectedOrderStatus] = useState("all");
-  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("all");
+  const [selectedStore, setSelectedStore] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [selectedCustomerName, setSelectedCustomerName] = useState("Walk-in Customer");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("");
+
+  // Debounce customer search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchQuery]);
+
+  // Click outside to close customer suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Sub-menu tab
   const [activeTab, setActiveTab] = useState<"sales-report" | "best-selling">("sales-report");
-
-  // Applied Filters State (Updated when "Generate Report" is clicked)
-  const [appliedFilters, setAppliedFilters] = useState({
-    startDate: "2026-10-01",
-    endDate: "2026-10-08",
-    store: "all",
-    customer: "all",
-    orderStatus: "all",
-    paymentStatus: "all",
-  });
-
-  // Best Selling filter
-  const [bsCategoryFilter, setBsCategoryFilter] = useState("all");
-  const [bsPageSize, setBsPageSize] = useState(10);
-  const [bsCurrentPage, setBsCurrentPage] = useState(1);
-
-  const filteredBestSelling = useMemo(() => {
-    if (bsCategoryFilter === "all") return BEST_SELLING_MOCK;
-    return BEST_SELLING_MOCK.filter((p) => p.category === bsCategoryFilter);
-  }, [bsCategoryFilter]);
-
-  const bsTotalEntries = filteredBestSelling.length;
-  const bsTotalPages = Math.max(1, Math.ceil(bsTotalEntries / bsPageSize));
-  const paginatedBestSelling = useMemo(() => {
-    const start = (bsCurrentPage - 1) * bsPageSize;
-    return filteredBestSelling.slice(start, start + bsPageSize);
-  }, [filteredBestSelling, bsCurrentPage, bsPageSize]);
 
   // Table Pagination State
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  // Filtered List
-  const filteredData = useMemo(() => {
-    return INITIAL_MOCK_DATA.filter((item) => {
-      // Date filter
-      if (appliedFilters.startDate && item.isoDate < appliedFilters.startDate) {
-        return false;
-      }
-      if (appliedFilters.endDate && item.isoDate > appliedFilters.endDate) {
-        return false;
-      }
-      // Store filter
-      if (
-        appliedFilters.store !== "all" &&
-        item.storeId !== appliedFilters.store
-      ) {
-        return false;
-      }
-      // Customer filter
-      if (
-        appliedFilters.customer !== "all" &&
-        item.customerId !== appliedFilters.customer
-      ) {
-        return false;
-      }
-      // Order Status filter
-      if (
-        appliedFilters.orderStatus !== "all" &&
-        item.status !== appliedFilters.orderStatus
-      ) {
-        return false;
-      }
-      // Payment Status filter
-      if (
-        appliedFilters.paymentStatus !== "all" &&
-        item.paymentStatus !== appliedFilters.paymentStatus
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [appliedFilters]);
+  // Best Selling filter
+  const [bsPageSize, setBsPageSize] = useState(10);
+  const [bsCurrentPage, setBsCurrentPage] = useState(1);
 
-  // Aggregate Metrics for 4 KPI Cards
-  const kpiMetrics = useMemo(() => {
-    const totalUnits = filteredData.reduce((sum, row) => sum + row.unitsSold, 0);
-    const totalSales = filteredData.reduce((sum, row) => sum + row.payableTotal, 0);
-    const totalPaid = filteredData.reduce((sum, row) => sum + row.paidAmount, 0);
-    const totalDue = filteredData.reduce((sum, row) => sum + row.dueAmount, 0);
+  // api data
+  const { data: branches, isLoading: isBranchesLoading } = useGetBranches();
+  const { data: partiesData = [], isLoading: isLoadingParties } = useParties({
+    type: "customer",
+    search: debouncedCustomerSearch || undefined,
+    includeWalkIn: true,
+  });
+  const { data: salesReportData, refetch: refetchReport, isLoading: isLoadingSalesReport } = useGetSalesReport(
+    {
+      startDate,
+      endDate,
+      branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
+      customerId: selectedCustomer || undefined,
+      paymentStatus: selectedPaymentStatus === "all" ? undefined : selectedPaymentStatus || undefined,
+      page: currentPage,
+      limit: pageSize,
+    },
+    { enabled: false }
+  );
+  
+  console.log('salesReportData',salesReportData)
+  const {
+    data: getBestSellingData,
+    refetch: refetchBestSellingReport,
+    isLoading: isLoadingBestSelling,
+  } = useGetBestSellingProducts(
+    {
+      startDate,
+      endDate,
+      branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
+      page: bsCurrentPage,
+      limit: bsPageSize,
+    },
+    { enabled: false }
+  );
 
-    return { totalUnits, totalSales, totalPaid, totalDue };
-  }, [filteredData]);
+  // Refetch when pagination changes
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    refetchReport();
+  }, [currentPage, pageSize]);
 
-  // Paginated Table Data
-  const totalEntries = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
-  const paginatedData = useMemo(() => {
-    const startIdx = (currentPage - 1) * pageSize;
-    return filteredData.slice(startIdx, startIdx + pageSize);
-  }, [filteredData, currentPage, pageSize]);
+  const isFirstBsRender = useRef(true);
+  useEffect(() => {
+    if (isFirstBsRender.current) {
+      isFirstBsRender.current = false;
+      return;
+    }
+    refetchBestSellingReport();
+  }, [bsCurrentPage, bsPageSize]);
+
+  const customerParties: any[] = Array.isArray(partiesData)
+    ? partiesData
+    : Array.isArray((partiesData as any)?.data)
+    ? (partiesData as any).data
+    : [];
+
+  const handleSelectCustomer = (party: any) => {
+    if (!party || party.id === "walk-in" || party.isWalkIn) {
+      setSelectedCustomer("");
+      setSelectedCustomerName("Walk-in Customer");
+      setCustomerSearchQuery("");
+    } else {
+      setSelectedCustomer(party.id);
+      setSelectedCustomerName(party.name);
+      setCustomerSearchQuery("");
+    }
+    setShowCustomerSuggestions(false);
+  };
+
+  const salesData: any[] =
+     salesReportData?.data
+    || [];
+
+  const totalEntries = salesReportData?.meta?.total ?? salesData.length;
+  const salesTotalPages =
+    salesReportData?.meta?.totalPages ??
+    Math.max(1, Math.ceil(totalEntries / pageSize));
+
+  const branchList = Array.isArray(branches)
+    ? branches
+    : Array.isArray((branches as any)?.data)
+    ? (branches as any).data
+    : Array.isArray((branches as any)?.branches)
+    ? (branches as any).branches
+    : [];
+
+  const bestSellingList: any[] = Array.isArray(getBestSellingData?.data)
+    ? getBestSellingData.data
+    : Array.isArray(getBestSellingData)
+    ? getBestSellingData
+    : [];
+
+  const bsTotalEntries =
+    getBestSellingData?.meta?.total ?? bestSellingList.length;
+  const bsTotalPages =
+    getBestSellingData?.meta?.totalPages ??
+    Math.max(1, Math.ceil(bsTotalEntries / bsPageSize));
+
+  // KPI calculations for Best Selling (100% dynamic from summary)
+  const bsSummary = getBestSellingData?.summary;
+  const bsTotalProducts = bsSummary?.totalProducts ?? bestSellingList.length;
+  const bsTotalSoldQty =
+    bsSummary?.totalSoldQty ??
+    bestSellingList.reduce(
+      (s: number, p: any) => s + (Number(p.soldQty) || 0),
+      0
+    );
+  const bsTotalSoldAmount =
+    bsSummary?.totalSoldAmount ??
+    bestSellingList.reduce(
+      (s: number, p: any) => s + (Number(p.soldAmount) || 0),
+      0
+    );
 
   // Handle Generate Report
   const handleGenerateReport = () => {
-    setAppliedFilters({
-      startDate,
-      endDate,
-      store: selectedStore,
-      customer: selectedCustomer,
-      orderStatus: selectedOrderStatus,
-      paymentStatus: selectedPaymentStatus,
-    });
-    setCurrentPage(1);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      refetchReport();
+    }
+  };
+
+  // Handle Reset Filter for Best Selling
+  const handleResetBsFilter = () => {
+    setStartDate("2026-10-01");
+    setEndDate("2026-10-08");
+    setSelectedStore("");
+    if (bsCurrentPage !== 1) {
+      setBsCurrentPage(1);
+    }
+  };
+
+  // Handle Generate Report for Best Selling
+  const handleGenerateBsReport = () => {
+    if (bsCurrentPage !== 1) {
+      setBsCurrentPage(1);
+    } else {
+      refetchBestSellingReport();
+    }
   };
 
   // Handle Reset Filter
   const handleResetFilter = () => {
     setStartDate("2026-10-01");
     setEndDate("2026-10-08");
-    setSelectedStore("all");
-    setSelectedCustomer("all");
-    setSelectedOrderStatus("all");
-    setSelectedPaymentStatus("all");
-
-    setAppliedFilters({
-      startDate: "2026-10-01",
-      endDate: "2026-10-08",
-      store: "all",
-      customer: "all",
-      orderStatus: "all",
-      paymentStatus: "all",
-    });
-    setCurrentPage(1);
+    setSelectedStore("");
+    setSelectedCustomer("");
+    setSelectedCustomerName("Walk-in Customer");
+    setCustomerSearchQuery("");
+    setShowCustomerSuggestions(false);
+    setSelectedPaymentStatus("");
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
   // Handle Export Excel / CSV
   const handleDownloadExcel = () => {
-    setIsExporting(true);
-    try {
-      const headers = [
-        "#",
-        "Invoice No",
-        "Grand Total",
-        "Payable Total",
-        "Paid Amount",
-        "Due Amount",
-        "Change Amount",
-        "Store",
-        "Status",
-        "Payment Status",
-        "Created At",
-      ];
-
-      const csvRows = [
-        headers.join(","),
-        ...filteredData.map((row, index) =>
-          [
-            index + 1,
-            `"${row.invoiceNo}"`,
-            row.grandTotal,
-            row.payableTotal,
-            row.paidAmount,
-            row.dueAmount,
-            row.changeAmount,
-            `"${row.store}"`,
-            `"${row.status}"`,
-            `"${row.paymentStatus}"`,
-            `"${row.createdAt}"`,
-          ].join(",")
-        ),
-      ];
-
-      const blob = new Blob([csvRows.join("\n")], {
-        type: "text/csv;charset=utf-8;",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `Sales_Report_${new Date().toISOString().slice(0, 10)}.csv`
-      );
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Export error:", err);
-    } finally {
-      setTimeout(() => setIsExporting(false), 600);
-    }
+  
   };
 
   // Handle Print Report
@@ -804,71 +376,165 @@ export default function SalesReportPage() {
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
-              <Calendar className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5 pointer-events-none" />
             </div>
           </div>
 
-          {/* Row 1: Store */}
+          {/* Row 1: Branch */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Store
+              Branch
             </label>
             <Select value={selectedStore} onValueChange={setSelectedStore}>
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Choose Store" />
+                <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
               <SelectContent className="border-border bg-popover text-popover-foreground">
-                {STORE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                <SelectItem value="all">All Branches</SelectItem>
+                {branchList.length > 0 ? (
+                  branchList.map((branch: any) => (
+                    <SelectItem
+                      key={branch.id || branch._id}
+                      value={String(branch.id || branch._id || branch.name)}
+                    >
+                      {branch.name}
+                    </SelectItem>
+                  ))
+                ) : isBranchesLoading ? (
+                  <SelectItem value="loading" disabled>
+                    Loading branches...
                   </SelectItem>
-                ))}
+                ) : Array.isArray(branches) ? (
+                  branches.map((opt: any) => (
+                    <SelectItem key={opt.id || opt.value} value={String(opt.id || opt.value)}>
+                      {opt.name || opt.label}
+                    </SelectItem>
+                  ))
+                ) : null}
               </SelectContent>
             </Select>
           </div>
 
           {/* Row 1: Customer */}
-          <div className="space-y-1.5">
+          <div ref={customerDropdownRef} className="space-y-1.5 relative">
             <label className="text-xs font-semibold text-foreground">
               Customer
             </label>
-            <Select
-              value={selectedCustomer}
-              onValueChange={setSelectedCustomer}
-            >
-              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Select Customer" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                {CUSTOMER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={
+                  showCustomerSuggestions
+                    ? customerSearchQuery
+                    : (selectedCustomerName || "Walk-in Customer")
+                }
+                onChange={(e) => {
+                  setCustomerSearchQuery(e.target.value);
+                  if (!showCustomerSuggestions) setShowCustomerSuggestions(true);
+                }}
+                onFocus={() => {
+                  setShowCustomerSuggestions(true);
+                }}
+                placeholder="Search customer / phone..."
+                className="w-full h-10 rounded-lg border border-input bg-background px-3 pr-8 text-xs sm:text-sm text-foreground outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground"
+              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {selectedCustomer && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectCustomer(null);
+                    }}
+                    className="p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="Reset to Walk-in Customer"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <Search className="h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              </div>
 
-          {/* Row 2: Order Status */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Order Status
-            </label>
-            <Select
-              value={selectedOrderStatus}
-              onValueChange={setSelectedOrderStatus}
-            >
-              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Choose" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                {ORDER_STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {showCustomerSuggestions && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
+                  {/* Default: Walk-in Customer */}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                      !selectedCustomer && "bg-primary/10 text-primary font-medium"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectCustomer(null);
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">
+                        Walk-in Customer
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                        Default
+                      </span>
+                    </div>
+                    {!selectedCustomer && (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+
+                  {/* Loading State */}
+                  {isLoadingParties ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      <span>Loading customers...</span>
+                    </div>
+                  ) : customerParties.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      No customers found
+                    </div>
+                  ) : (
+                    customerParties
+                      .filter(
+                        (p: any) =>
+                          !p.isWalkIn &&
+                          !p.name?.toLowerCase().includes("walk-in") &&
+                          !p.name?.toLowerCase().includes("walking")
+                      )
+                      .map((party: any) => {
+                        const isSelected = selectedCustomer === party.id;
+                        return (
+                          <button
+                            key={party.id}
+                            type="button"
+                            className={cn(
+                              "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                              isSelected && "bg-primary/10 text-primary font-medium"
+                            )}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectCustomer(party);
+                            }}
+                          >
+                            <div className="flex flex-col min-w-0 pr-2">
+                              <span className="font-semibold text-foreground truncate">
+                                {party.name}
+                              </span>
+                              {party.phone && (
+                                <span className="text-[11px] text-muted-foreground font-mono">
+                                  {party.phone}
+                                </span>
+                              )}
+                            </div>
+                            {isSelected && (
+                              <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-2" />
+                            )}
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Row 2: Payment Status */}
@@ -881,10 +547,11 @@ export default function SalesReportPage() {
               onValueChange={setSelectedPaymentStatus}
             >
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Choose" />
+                <SelectValue placeholder="Select Payment Status" />
               </SelectTrigger>
               <SelectContent className="border-border bg-popover text-popover-foreground">
-                {PAYMENT_STATUS_OPTIONS.map((opt) => (
+                <SelectItem value="all">All Payment Status</SelectItem>
+                {PAYMENT_STATUS_OPTIONS.filter((opt) => opt.value !== "all").map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -931,7 +598,7 @@ export default function SalesReportPage() {
                 Total Units Sold
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatKpiNumber(kpiMetrics.totalUnits)}
+                {formatKpiNumber(salesReportData?.summary?.totalUnitsSold ?? 0)}
               </p>
             </div>
           </div>
@@ -948,7 +615,7 @@ export default function SalesReportPage() {
                 Total Sales Amount
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(kpiMetrics.totalSales)}
+                ৳{formatKpiNumber(salesReportData?.summary?.totalSalesAmount ?? 0)}
               </p>
             </div>
           </div>
@@ -965,7 +632,7 @@ export default function SalesReportPage() {
                 Total Paid
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(kpiMetrics.totalPaid)}
+                ৳{formatKpiNumber(salesReportData?.summary?.totalPaid ?? 0)}
               </p>
             </div>
           </div>
@@ -982,7 +649,7 @@ export default function SalesReportPage() {
                 Total Due
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(kpiMetrics.totalDue)}
+                ৳{formatKpiNumber(salesReportData?.summary?.totalDue ?? 0)}
               </p>
             </div>
           </div>
@@ -1028,11 +695,11 @@ export default function SalesReportPage() {
               <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
                 <th className="px-4 py-3.5 whitespace-nowrap">#</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Invoice No</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Customer</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Grand Total</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Payable Total</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Paid Amount</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Due Amount</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Change Amount</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Store</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Payment Status</th>
@@ -1040,7 +707,19 @@ export default function SalesReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-foreground">
-              {paginatedData.length === 0 ? (
+              {isLoadingSalesReport ? (
+                <tr>
+                  <td
+                    colSpan={11}
+                    className="px-4 py-16 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                      <p className="text-sm font-medium">Loading sales report...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : salesData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={11}
@@ -1056,42 +735,45 @@ export default function SalesReportPage() {
                   </td>
                 </tr>
               ) : (
-                paginatedData.map((row, idx) => {
-                  const rowNumber = (currentPage - 1) * pageSize + idx + 1;
+                salesData.map((row: any, idx: number) => {
+                  const rowNumber = row.index ?? (currentPage - 1) * pageSize + idx + 1;
+                  const statusKey = String(row.status || "").toLowerCase();
+                  const paymentStatusKey = String(row.paymentStatus || "").toLowerCase();
+
                   return (
                     <tr
-                      key={row.id}
+                      key={row.id || row.invoiceNo || idx}
                       className="hover:bg-muted/40 transition-colors group"
                     >
-                      {/* # */}
                       <td className="px-4 py-3 font-mono text-muted-foreground text-xs whitespace-nowrap">
                         {rowNumber}
                       </td>
 
-                      {/* Invoice No */}
-                      <td className="px-4 py-3 font-semibold text-primary font-mono text-xs whitespace-nowrap group-hover:underline cursor-pointer">
-                        {row.invoiceNo}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="font-semibold text-primary font-mono text-xs group-hover:underline cursor-pointer block">
+                          {row.invoiceNo}
+                        </span>
                       </td>
 
-                      {/* Grand Total */}
+                      <td className="px-4 py-3 whitespace-nowrap text-foreground font-medium text-xs">
+                        {row.customer || "Walk-in Customer"}
+                      </td>
+
                       <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                         {formatBDT(row.grandTotal)}
                       </td>
 
-                      {/* Payable Total */}
                       <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
                         {formatBDT(row.payableTotal)}
                       </td>
 
-                      {/* Paid Amount */}
-                      <td className="px-4 py-3 font-medium text-emerald-400 whitespace-nowrap">
+                      <td className="px-4 py-3 font-medium text-emerald-500 whitespace-nowrap">
                         {formatBDT(row.paidAmount)}
                       </td>
 
-                      {/* Due Amount */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {row.dueAmount > 0 ? (
-                          <span className="font-semibold text-rose-400">
+                        {(row.dueAmount ?? 0) > 0 ? (
+                          <span className="font-semibold text-rose-500">
                             {formatBDT(row.dueAmount)}
                           </span>
                         ) : (
@@ -1101,69 +783,76 @@ export default function SalesReportPage() {
                         )}
                       </td>
 
-                      {/* Change Amount */}
-                      <td className="px-4 py-3 text-muted-foreground font-medium whitespace-nowrap">
-                        {formatBDT(row.changeAmount)}
-                      </td>
-
-                      {/* Store */}
                       <td className="px-4 py-3 text-foreground whitespace-nowrap">
-                        {row.store}
+                        {row.store || "—"}
                       </td>
 
-                      {/* Status */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {row.status === "Completed" && (
+                        {statusKey === "completed" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <CheckCircle2 className="h-3 w-3" />
                             Completed
                           </span>
                         )}
-                        {row.status === "Pending" && (
+                        {statusKey === "returned" && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                            <RotateCcw className="h-3 w-3" />
+                            Returned
+                          </span>
+                        )}
+                        {statusKey === "pending" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             <Clock className="h-3 w-3" />
                             Pending
                           </span>
                         )}
-                        {row.status === "Processing" && (
+                        {statusKey === "processing" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                             <Clock className="h-3 w-3" />
                             Processing
                           </span>
                         )}
-                        {row.status === "Cancelled" && (
+                        {statusKey === "cancelled" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             <XCircle className="h-3 w-3" />
                             Cancelled
                           </span>
                         )}
+                        {!["completed", "returned", "pending", "processing", "cancelled"].includes(statusKey) && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground border border-border capitalize">
+                            {row.status || "—"}
+                          </span>
+                        )}
                       </td>
 
-                      {/* Payment Status */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {row.paymentStatus === "Paid" && (
+                        {paymentStatusKey === "paid" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <CheckCircle2 className="h-3 w-3" />
                             Paid
                           </span>
                         )}
-                        {row.paymentStatus === "Partial" && (
+                        {paymentStatusKey === "partial" && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                             <Clock className="h-3 w-3" />
                             Partial
                           </span>
                         )}
-                        {row.paymentStatus === "Due" && (
+                        {(paymentStatusKey === "due" || paymentStatusKey === "unpaid") && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                             <AlertCircle className="h-3 w-3" />
                             Due
                           </span>
                         )}
+                        {!["paid", "partial", "due", "unpaid"].includes(paymentStatusKey) && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-muted text-muted-foreground border border-border capitalize">
+                            {row.paymentStatus || "—"}
+                          </span>
+                        )}
                       </td>
 
-                      {/* Created At */}
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                        {row.createdAt}
+                        {formatDateTime(row.createdAt)}
                       </td>
                     </tr>
                   );
@@ -1173,87 +862,17 @@ export default function SalesReportPage() {
           </table>
         </div>
 
-        {/* Table Footer / Pagination */}
-        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
-          {/* Left: Page Size Selector & Entries Count */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Show</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(val) => {
-                setPageSize(Number(val));
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <span>
-              Showing{" "}
-              <strong className="text-foreground">
-                {totalEntries === 0 ? 0 : (currentPage - 1) * pageSize + 1}
-              </strong>{" "}
-              to{" "}
-              <strong className="text-foreground">
-                {Math.min(currentPage * pageSize, totalEntries)}
-              </strong>{" "}
-              of <strong className="text-foreground">{totalEntries}</strong> entries
-            </span>
+        {/* Reusable Pagination */}
+        {salesTotalPages > 1 && (
+          <div className="px-6 pb-4">
+            <PaginationHelper
+              currentPage={currentPage}
+              totalPages={salesTotalPages}
+              onPageChange={setCurrentPage}
+              isBangla={isBangla}
+            />
           </div>
-
-          {/* Right: Pagination Navigation */}
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
-            {/* Prev Button */}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage <= 1}
-              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-              aria-label="Previous page"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            {/* Page Buttons */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-              const isActive = page === currentPage;
-              return (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => setCurrentPage(page)}
-                  className={cn(
-                    "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "border border-border bg-background text-foreground hover:bg-muted"
-                  )}
-                >
-                  {page}
-                </button>
-              );
-            })}
-
-            {/* Next Button */}
-            <button
-              type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-              aria-label="Next page"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        )}
       </div>
         </TabsContent>
 
@@ -1262,8 +881,111 @@ export default function SalesReportPage() {
         {/* ============================================================== */}
         <TabsContent value="best-selling" className="space-y-6 outline-none">
 
-          {/* Best Selling KPI Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* ============================================================== */}
+          {/* 1. FILTER CARD (Date & Branch)                                 */}
+          {/* ============================================================== */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+              {/* Choose Date */}
+              <div className="space-y-1.5 flex-1 min-w-[260px]">
+                <label className="text-xs font-semibold text-foreground">
+                  Choose Date
+                </label>
+                <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setBsCurrentPage(1);
+                    }}
+                    className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
+                  />
+                  <span className="text-muted-foreground px-2 select-none">→</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setBsCurrentPage(1);
+                    }}
+                    className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Branch */}
+              <div className="space-y-1.5 flex-1 min-w-[200px]">
+                <label className="text-xs font-semibold text-foreground">
+                  Branch
+                </label>
+                <Select
+                  value={selectedStore}
+                  onValueChange={(val) => {
+                    setSelectedStore(val);
+                    setBsCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent className="border-border bg-popover text-popover-foreground">
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {branchList.length > 0 ? (
+                      branchList.map((branch: any) => (
+                        <SelectItem
+                          key={branch.id || branch._id}
+                          value={String(branch.id || branch._id || branch.name)}
+                        >
+                          {branch.name}
+                        </SelectItem>
+                      ))
+                    ) : isBranchesLoading ? (
+                      <SelectItem value="loading" disabled>
+                        Loading branches...
+                      </SelectItem>
+                    ) : Array.isArray(branches) ? (
+                      branches.map((opt: any) => (
+                        <SelectItem key={opt.id || opt.value} value={String(opt.id || opt.value)}>
+                          {opt.name || opt.label}
+                        </SelectItem>
+                      ))
+                    ) : null}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 pt-2 lg:pt-0 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleGenerateBsReport}
+                  disabled={isLoadingBestSelling}
+                  className="h-10 px-5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoadingBestSelling ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span>Generate Report</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetBsFilter}
+                  className="h-10 px-5 rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                >
+                  <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                  <span>Reset Filter</span>
+                </button>
+
+               
+              </div>
+            </div>
+          </div>
+
+          {/* Best Selling KPI Strip (Dynamic Summary: totalProducts, totalSoldQty, totalSoldAmount) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="relative overflow-hidden rounded-2xl border border-indigo-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-indigo-500/40 hover:-translate-y-0.5">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -1271,7 +993,9 @@ export default function SalesReportPage() {
                 </div>
                 <div className="min-w-0 space-y-0.5">
                   <p className="text-xs font-semibold text-muted-foreground truncate">Top Products</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{BEST_SELLING_MOCK.length}</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                    {bsTotalProducts}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1281,9 +1005,9 @@ export default function SalesReportPage() {
                   <TrendingUp className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs font-semibold text-muted-foreground truncate">Total Units Sold</p>
+                  <p className="text-xs font-semibold text-muted-foreground truncate">Total Sold Qty</p>
                   <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                    {BEST_SELLING_MOCK.reduce((s, p) => s + p.unitsSold, 0).toLocaleString()}
+                    {bsTotalSoldQty.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1294,22 +1018,9 @@ export default function SalesReportPage() {
                   <BarChart3 className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs font-semibold text-muted-foreground truncate">Total Revenue</p>
+                  <p className="text-xs font-semibold text-muted-foreground truncate">Total Sold Amount</p>
                   <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                    ৳{BEST_SELLING_MOCK.reduce((s, p) => s + p.totalRevenue, 0).toLocaleString("en-IN")}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-                  <Star className="h-6 w-6" />
-                </div>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-xs font-semibold text-muted-foreground truncate">Avg Growth Rate</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                    {(BEST_SELLING_MOCK.reduce((s, p) => s + p.growthRate, 0) / BEST_SELLING_MOCK.length).toFixed(1)}%
+                    {formatBDT(bsTotalSoldAmount)}
                   </p>
                 </div>
               </div>
@@ -1324,16 +1035,6 @@ export default function SalesReportPage() {
                 <h2 className="text-base font-bold text-foreground tracking-tight">Best Selling Products</h2>
               </div>
               <div className="flex items-center gap-3">
-                <Select value={bsCategoryFilter} onValueChange={(v) => { setBsCategoryFilter(v); setBsCurrentPage(1); }}>
-                  <SelectTrigger className="h-9 w-[160px] rounded-md border-input bg-background text-foreground text-xs">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent className="border-border bg-popover text-popover-foreground">
-                    {BS_CATEGORY_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <button
                   type="button"
                   onClick={handleDownloadExcel}
@@ -1350,21 +1051,29 @@ export default function SalesReportPage() {
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
-                    <th className="px-4 py-3.5 whitespace-nowrap">Rank</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">#</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">Product Name</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">SKU</th>
                     <th className="px-4 py-3.5 whitespace-nowrap">Category</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">Units Sold</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">Total Revenue</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">Avg. Price</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">Stock Left</th>
-                    <th className="px-4 py-3.5 whitespace-nowrap">Growth</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Brand</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Sold Qty</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">In-Stock Qty</th>
+                    <th className="px-4 py-3.5 whitespace-nowrap">Sold Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-foreground">
-                  {paginatedBestSelling.length === 0 ? (
+                  {isLoadingBestSelling ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <p className="text-sm font-medium">Loading best selling products...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : bestSellingList.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <Package className="h-8 w-8 text-muted-foreground" />
                           <p className="text-sm font-medium">No products found</p>
@@ -1372,75 +1081,51 @@ export default function SalesReportPage() {
                       </td>
                     </tr>
                   ) : (
-                    paginatedBestSelling.map((product) => {
-                      const isPositiveGrowth = product.growthRate >= 0;
+                    bestSellingList.map((product: any, idx: number) => {
+                      const rank = product.index ?? (bsCurrentPage - 1) * bsPageSize + idx + 1;
+                      const name = (product.productName || "").trim() || "—";
+                      const sku = product.sku || "—";
+                      const category = product.category || "—";
+                      const brand = product.brand || "—";
+                      const soldQty = Number(product.soldQty ?? 0);
+                      const inStockQty = Number(product.inStockQty ?? 0);
+                      const soldAmount = Number(product.soldAmount ?? 0);
+
                       return (
-                        <tr key={product.id} className="hover:bg-muted/40 transition-colors">
-                          {/* Rank */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {product.rank === 1 && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                <Trophy className="h-3 w-3" />#1
-                              </span>
-                            )}
-                            {product.rank === 2 && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-foreground border border-border">
-                                <Medal className="h-3 w-3" />#2
-                              </span>
-                            )}
-                            {product.rank === 3 && (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-700/15 text-orange-400 border border-orange-700/30">
-                                <Medal className="h-3 w-3" />#3
-                              </span>
-                            )}
-                            {product.rank > 3 && (
-                              <span className="font-mono text-muted-foreground text-xs">#{product.rank}</span>
-                            )}
+                        <tr key={product.id || idx} className="hover:bg-muted/40 transition-colors">
+                          {/* Rank / Index */}
+                          <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
+                            {rank}
                           </td>
                           {/* Product Name */}
-                          <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap max-w-[240px] truncate">
-                            {product.productName}
+                          <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap max-w-[240px] truncate" title={name}>
+                            {name}
                           </td>
                           {/* SKU */}
                           <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                            {product.sku}
+                            {sku}
                           </td>
                           {/* Category */}
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                              {product.category}
+                              {category}
                             </span>
                           </td>
-                          {/* Units Sold */}
+                          {/* Brand */}
+                          <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-medium">
+                            {brand}
+                          </td>
+                          {/* Sold Qty */}
                           <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap">
-                            {product.unitsSold.toLocaleString()}
+                            {soldQty.toLocaleString()}
                           </td>
-                          {/* Total Revenue */}
+                          {/* In-Stock Qty */}
+                          <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap">
+                            {inStockQty.toLocaleString()}
+                          </td>
+                          {/* Sold Amount */}
                           <td className="px-4 py-3 font-medium text-emerald-400 whitespace-nowrap">
-                            {formatBDT(product.totalRevenue)}
-                          </td>
-                          {/* Avg Price */}
-                          <td className="px-4 py-3 text-foreground whitespace-nowrap">
-                            {formatBDT(product.avgSellingPrice)}
-                          </td>
-                          {/* Stock Left */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={cn(
-                              "font-semibold",
-                              product.stockLeft < 50 ? "text-rose-400" : product.stockLeft < 150 ? "text-amber-400" : "text-foreground"
-                            )}>
-                              {product.stockLeft.toLocaleString()}
-                            </span>
-                          </td>
-                          {/* Growth Rate */}
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={cn(
-                              "inline-flex items-center gap-1 text-xs font-semibold",
-                              isPositiveGrowth ? "text-emerald-400" : "text-rose-400"
-                            )}>
-                              {isPositiveGrowth ? "▲" : "▼"}
-                              {Math.abs(product.growthRate)}%
-                            </span>
+                            {formatBDT(soldAmount)}
                           </td>
                         </tr>
                       );
@@ -1450,65 +1135,17 @@ export default function SalesReportPage() {
               </table>
             </div>
 
-            {/* Best Selling Pagination */}
-            <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Show</span>
-                <Select
-                  value={String(bsPageSize)}
-                  onValueChange={(val) => { setBsPageSize(Number(val)); setBsCurrentPage(1); }}
-                >
-                  <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
-                    <SelectValue placeholder="10" />
-                  </SelectTrigger>
-                  <SelectContent className="border-border bg-popover text-popover-foreground">
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span>
-                  Showing{" "}
-                  <strong className="text-foreground">{bsTotalEntries === 0 ? 0 : (bsCurrentPage - 1) * bsPageSize + 1}</strong>{" "}
-                  to{" "}
-                  <strong className="text-foreground">{Math.min(bsCurrentPage * bsPageSize, bsTotalEntries)}</strong>{" "}
-                  of <strong className="text-foreground">{bsTotalEntries}</strong> products
-                </span>
+            {/* Reusable Pagination */}
+            {bsTotalPages > 1 && (
+              <div className="px-6 pb-4">
+                <PaginationHelper
+                  currentPage={bsCurrentPage}
+                  totalPages={bsTotalPages}
+                  onPageChange={setBsCurrentPage}
+                  isBangla={isBangla}
+                />
               </div>
-              <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setBsCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={bsCurrentPage <= 1}
-                  className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                {Array.from({ length: bsTotalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setBsCurrentPage(page)}
-                    className={cn(
-                      "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
-                      bsCurrentPage === page
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "border border-border bg-background text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setBsCurrentPage((p) => Math.min(bsTotalPages, p + 1))}
-                  disabled={bsCurrentPage >= bsTotalPages}
-                  className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
         </TabsContent>

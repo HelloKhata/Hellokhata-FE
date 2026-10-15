@@ -1232,6 +1232,7 @@
 /* ============================================
    RESPONSIVE UTILITIES
    ============================================ */
+   
 @layer utilities {
   /* Safe Area */
   .safe-area-inset-top {

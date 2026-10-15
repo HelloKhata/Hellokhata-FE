@@ -5,6 +5,8 @@ import {
   getDueAgingReport,
   getDiscountsReport,
   getDeadStockReport,
+  getSalesReport,
+  getBestSellingProducts,
 } from "@/services/reports.services";
 import { useQuery } from "@tanstack/react-query";
 
@@ -67,5 +69,28 @@ export const useGetDeadStockReport = (
     queryKey: ["reports", "sales", "dead-stock", filter],
     queryFn: () => getDeadStockReport(filter),
     select: (data) => data?.data ?? data,
+  });
+};
+
+
+
+
+// New Reports API's
+
+export const useGetSalesReport = (filters?:any, queryOptions?:any) =>{
+  return useQuery<any>({
+    queryKey: ["sales-report", filters],
+    queryFn: () => getSalesReport(filters),
+    // select: (data:any) => data?.data,
+    ...queryOptions
+  })
+};
+
+
+export const useGetBestSellingProducts = (filters?: any, queryOptions?: any) => {
+  return useQuery<any>({
+    queryKey: ["reports", "sales", "best-selling", filters],
+    queryFn: () => getBestSellingProducts(filters),
+    ...queryOptions,
   });
 };
