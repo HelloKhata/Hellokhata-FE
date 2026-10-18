@@ -1,4 +1,4 @@
-import { createTaxCategories, getTaxCategories, updateTaxCategory } from "@/services/taxCategoriesServices";
+import { createTaxCategories, getTaxCategories, updateTaxCategory } from "@/services/taxCategories.services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export const useCreateTaxCategories =() =>{

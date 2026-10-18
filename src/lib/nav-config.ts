@@ -389,13 +389,13 @@ export const navGroups: NavItem[] = [
 ];
 
 export const bottomNavItems = [
-  // {
-  //   page: "/ai",
-  //   icon: Sparkles,
-  //   labelKey: "AI",
-  //   labelBn: "AI সহায়ক",
-  //   isPro: true,
-  // },
+  {
+    page: "/ai",
+    icon: Sparkles,
+    labelKey: "AI",
+    labelBn: "AI সহায়ক",
+    isPro: true,
+  },
   {
     page: "/plans",
     icon: Crown,

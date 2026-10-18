@@ -202,7 +202,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
         </button>
         
         {/* Voice Mic (Primary CTA) */}
-        {/* <button
+        <button
           onClick={() => {
             if (onOpenVoice) {
               onOpenVoice();
@@ -225,7 +225,7 @@ export function Header({ onOpenCommandPalette, onOpenVoice }: HeaderProps) {
             <line x1="12" y1="19" x2="12" y2="23" />
             <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
-        </button> */}
+        </button>
 
         {/* Theme Toggle */}
         <ThemeToggle className="flex" />

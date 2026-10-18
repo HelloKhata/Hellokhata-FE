@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { erpApiEndpoint } from "@/lib/api-url";
 
 const NotificatoinProvider = ({ children }: { children: React.ReactNode }) => {
+
   useEffect(() => {
     const eventSource = new EventSource(
-      erpApiEndpoint("notifications/stream"),
+      erpApiEndpoint("api/notifications/stream"),
       {
         withCredentials: true,
       },
