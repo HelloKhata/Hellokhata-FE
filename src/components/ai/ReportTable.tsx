@@ -3,7 +3,12 @@ import { Download, ChevronRight, FileSpreadsheet, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { useSessionStore } from "../../stores/sessionStore";
 import type { ReportPresentation } from "../../types/ai-integration/generic-tool.contract";
-import { technicalField, opaqueIdentifier } from "./chat-presentation";
+import {
+  technicalField,
+  opaqueIdentifier,
+  displayLabel,
+  moneyMetric,
+} from "./chat-presentation";
 export const csvCell = (value: unknown) => {
   const raw = String(value ?? "");
   const safe = /^[\s]*[=+\-@\t\r]/.test(raw) ? "'" + raw : raw;
@@ -21,10 +26,7 @@ export function ReportTable({
   const columns = report.columns.filter(
     (column) => !technicalField(column.key),
   );
-  const title = report.title
-    .replace(/^reports\./, "")
-    .replace(/[_.]/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const title = displayLabel(report.title);
   const currency = useSessionStore(
     (session) => session.business?.currency ?? "BDT",
   );
@@ -101,20 +103,25 @@ export function ReportTable({
       </div>
       {Object.keys(report.totals).length > 0 && (
         <dl className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 sm:p-5">
-          {Object.entries(report.totals).map(([key, value]) => (
-            <div key={key} className="min-w-0 rounded-xl bg-muted/50 px-3 py-3">
-              <dt className="text-xs text-muted-foreground">
-                {key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ")}
-              </dt>
-              <dd className="mt-1 break-words text-lg font-semibold tabular-nums">
-                {display(
-                  value,
-                  report.columns.find((column) => column.key === key)?.format ??
-                    "number",
-                )}
-              </dd>
-            </div>
-          ))}
+          {Object.entries(report.totals)
+            .filter(([key]) => !technicalField(key))
+            .map(([key, value]) => (
+              <div
+                key={key}
+                className="min-w-0 rounded-xl bg-muted/50 px-3 py-3"
+              >
+                <dt className="text-xs text-muted-foreground">
+                  {displayLabel(key)}
+                </dt>
+                <dd className="mt-1 break-words text-lg font-semibold tabular-nums">
+                  {display(
+                    value,
+                    report.columns.find((column) => column.key === key)
+                      ?.format ?? (moneyMetric(key) ? "money" : "number"),
+                  )}
+                </dd>
+              </div>
+            ))}
         </dl>
       )}
       <div className="overflow-x-auto">

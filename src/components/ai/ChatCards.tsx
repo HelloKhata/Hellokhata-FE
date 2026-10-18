@@ -28,6 +28,8 @@ import {
   businessFields,
   readableSummary,
   reviewPresentation,
+  operationTitle,
+  reportSummary,
 } from "./chat-presentation";
 import { useSessionStore } from "../../stores/sessionStore";
 
@@ -51,6 +53,14 @@ export function StructuredDetails({
     (state) => state.business?.currency ?? "BDT",
   );
   value = businessFields(value);
+  if (Array.isArray(value))
+    value = value.filter(
+      (entry) =>
+        entry !== null &&
+        (typeof entry !== "object" || Object.keys(entry).length > 0),
+    );
+  if (value && typeof value === "object" && Object.keys(value).length === 0)
+    return <span className="text-muted-foreground">No additional details</span>;
   if (value === null || value === undefined)
     return <span className="text-muted-foreground">Not specified</span>;
   if (depth > 6)
@@ -281,9 +291,15 @@ export function ChatMessage({
     return () => clearTimeout(timer);
   }, [copied]);
   const user = entry.role === "user";
+  const currency = useSessionStore(
+    (state) => state.business?.currency ?? "BDT",
+  );
   const response = entry.response;
   const text =
-    entry.text ?? (response?.kind === "ANSWER" ? response.text : undefined);
+    !user && response?.kind === "ANSWER" && response.reports?.length
+      ? reportSummary(response.reports, currency)
+      : (entry.text ??
+        (response?.kind === "ANSWER" ? response.text : undefined));
   return (
     <article
       className={`flex min-w-0 gap-3 ${user ? "justify-end" : ""}`}
@@ -375,7 +391,7 @@ export function ChatMessage({
         {response?.kind === "PENDING_ACTION" && !children && (
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="mb-2 text-sm font-medium">
-              {humanize(response.action.call.name)}
+              {operationTitle(response.action.call.name)}
             </p>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground">
               {readableSummary(response.action.summary)}

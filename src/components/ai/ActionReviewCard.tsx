@@ -2,9 +2,13 @@
 
 import { Check, Clock3, Pencil, ShieldCheck, X } from "lucide-react";
 import { Button } from "../ui/button";
-import { humanize, StructuredDetails } from "./ChatCards";
+import { StructuredDetails } from "./ChatCards";
 import { SchemaReviewForm } from "./SchemaReviewForm";
-import { readableSummary, reviewPresentation } from "./chat-presentation";
+import {
+  readableSummary,
+  reviewPresentation,
+  operationTitle,
+} from "./chat-presentation";
 import type {
   JsonObject,
   PendingAction,
@@ -50,7 +54,7 @@ export function ActionReviewCard({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-primary/5 px-4 py-3 sm:px-5">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <ShieldCheck className="h-4 w-4 text-primary" />
-          Review {humanize(action.call.name)}
+          {operationTitle(action.call.name)}
         </p>
         <span className="flex items-center gap-1.5 rounded-full bg-[var(--warning-subtle)] px-2.5 py-1 text-[11px] font-medium text-[var(--warning)]">
           <Clock3 className="h-3 w-3" />

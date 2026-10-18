@@ -2,6 +2,7 @@ import type {
   JsonObject,
   JsonValue,
   PendingAction,
+  ReportPresentation,
 } from "../../types/ai-integration/generic-tool.contract";
 
 export const technicalField = (key: string) =>
@@ -102,4 +103,71 @@ export const readableSummary = (summary: string) =>
     summary,
   )
     ? "Review the transaction details below before confirming."
-    : summary;
+    : summary.replace(/;\s*(?:full-)?review-sha256:[a-f0-9]{64}/gi, "").trim();
+
+export const operationTitle = (name: string) =>
+  displayLabel(name).replace(/ Create$/, " review");
+
+export function displayLabel(key: string): string {
+  const labels: Record<string, string> = {
+    "dashboard.summary": "Sales and purchases overview",
+    salesGross: "Sales total",
+    salesPaid: "Sales paid",
+    salesDue: "Sales outstanding",
+    purchaseGross: "Purchases total",
+    purchasePaid: "Purchases paid",
+    purchaseDue: "Purchases outstanding",
+    purchaseCount: "Purchase invoices",
+    activeProducts: "Active products",
+    signedCurrentBalance: "Current balance (signed)",
+    cashReceipts: "Cash receipts",
+    expenses: "Expenses",
+    cashAfterExpenses: "Cash after expenses",
+  };
+  return (
+    labels[key] ??
+    key
+      .replace(/^(reports|dashboard)\./, "")
+      .replace(/([a-z\d])([A-Z])/g, "$1 $2")
+      .replace(/[_.-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
+}
+
+export const moneyMetric = (key: string) =>
+  /(?:Gross|Paid|Due|Balance|Receipts|expenses|Expenses)$/.test(key);
+
+/** Legacy persisted answers may contain raw JSON. Rebuild their visible text
+ * from verified report data, never from tool names or unverified model prose. */
+export function reportSummary(
+  reports: ReportPresentation[],
+  currency = "BDT",
+): string {
+  return reports
+    .map((report) => {
+      const metrics = Object.entries(report.totals)
+        .filter(([key]) => !technicalField(key))
+        .map(([key, value]) => {
+          const display =
+            typeof value === "number"
+              ? new Intl.NumberFormat(
+                  "en-BD",
+                  moneyMetric(key)
+                    ? {
+                        style: "currency",
+                        currency: /^[A-Z]{3}$/.test(currency)
+                          ? currency
+                          : "BDT",
+                      }
+                    : { maximumFractionDigits: 3 },
+                ).format(value)
+              : String(businessFields(value) ?? "Not available");
+          return `${displayLabel(key)}: ${display}`;
+        });
+      const period = report.startDate
+        ? ` (${report.startDate}${report.endDate && report.endDate !== report.startDate ? " to " + report.endDate : ""})`
+        : "";
+      return `${displayLabel(report.title)}${period}. ${metrics.length ? metrics.join("; ") : `${report.totalRecords} records found`}.`;
+    })
+    .join("\n");
+}
