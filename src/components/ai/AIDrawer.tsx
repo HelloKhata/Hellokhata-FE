@@ -2,6 +2,7 @@
 // Dynamic data with real LLM chat and working actions
 
 'use client';
+import { V2AssistantEntry } from "./V2AssistantEntry";
 
 import { useState, useEffect, useRef, useSyncExternalStore, useCallback } from 'react';
 import { createPortal } from 'react-dom';
@@ -201,6 +202,12 @@ export function AILauncherButton() {
 
 // AI Drawer Component
 export function AIDrawer() {
+  const { aiDrawerCollapsed, toggleAiDrawer } = useUiStore();
+  if (process.env.NEXT_PUBLIC_AI_V2_ENABLED === "true")
+    return <V2AssistantEntry open={!aiDrawerCollapsed} onClose={toggleAiDrawer} />;
+  return <LegacyAIDrawer />;
+}
+function LegacyAIDrawer() {
   const { isBangla } = useAppTranslation();
   const { aiDrawerCollapsed: isCollapsed, toggleAiDrawer: onToggle } = useUiStore();
   const { business } = useSessionStore();
