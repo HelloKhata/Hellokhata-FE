@@ -9,7 +9,7 @@ import {
   getBestSellingProducts,
   getPurchaseReport,
 } from "@/services/reports.services";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const useGetSalesReportSummary = (
   filter: any = {},
@@ -20,7 +20,6 @@ export const useGetSalesReportSummary = (
     select: (data) => data?.data ?? data,
   });
 };
-
 
 export const useGetWhatDroveSales = (
   filter: any = {},
@@ -75,21 +74,20 @@ export const useGetDeadStockReport = (
 
 
 // New Reports API's
-
 export const useGetSalesReport = (filters?:any, queryOptions?:any) =>{
   return useQuery<any>({
     queryKey: ["sales-report", filters],
     queryFn: () => getSalesReport(filters),
-    // select: (data:any) => data?.data,
+    placeholderData: keepPreviousData,
     ...queryOptions
   })
 };
-
 
 export const useGetBestSellingProducts = (filters?: any, queryOptions?: any) => {
   return useQuery<any>({
     queryKey: ["reports", "sales", "best-selling", filters],
     queryFn: () => getBestSellingProducts(filters),
+      placeholderData: keepPreviousData,
     ...queryOptions,
   });
 };
@@ -100,6 +98,7 @@ export const useGetPurhcaseReport = (filter:any, queryOptions?:any)=>{
   return useQuery<any>({
     queryKey: ["purchase-report", filter],
     queryFn: () => getPurchaseReport(filter),
+    placeholderData: keepPreviousData,
     ...queryOptions,
   })
 }

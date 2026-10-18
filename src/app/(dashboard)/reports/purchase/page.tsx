@@ -170,7 +170,7 @@ export default function PurchaseReportPage() {
     paymentStatus: selectedPaymentStatus === "all" ? undefined : selectedPaymentStatus || undefined,
     page: currentPage,
     limit: pageSize,
-  });
+  },{ enabled:false});
 
   const supplierParties: any[] = Array.isArray(partiesData)
     ? partiesData
