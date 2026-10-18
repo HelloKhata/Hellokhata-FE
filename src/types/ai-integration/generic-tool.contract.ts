@@ -12,7 +12,12 @@ export const GENERIC_INTEGRATION_PATHS = {
   publicActionStatus: '/api/ai/v2/actions/:actionId',
 } as const;
 export type JsonValue =
-  null | boolean | number | string | JsonValue[] | JsonObject;
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | JsonObject;
 export interface JsonObject {
   [key: string]: JsonValue;
 }
@@ -103,6 +108,8 @@ export interface PublicUserRequest {
   input: { modality: 'text'; text: string; language: string };
 }
 export interface PendingAction {
+  /** ERP-authored business details, never model-generated or execution input. */
+  presentation?: JsonObject;
   actionId: string;
   version: number;
   call: ToolCall;
@@ -132,7 +139,8 @@ export type ActionCommand = {
   expectedVersion: number;
   idempotencyKey: string;
 } & (
-  { command: 'CONFIRM' | 'REJECT' } | { command: 'EDIT'; arguments: JsonObject }
+  | { command: 'CONFIRM' | 'REJECT' }
+  | { command: 'EDIT'; arguments: JsonObject }
 );
 export type PublicChatResponse = {
   contractVersion: typeof GENERIC_TOOL_CONTRACT_VERSION;

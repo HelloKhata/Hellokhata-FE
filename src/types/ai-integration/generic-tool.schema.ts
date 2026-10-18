@@ -124,14 +124,18 @@ const envelope = {
   catalogVersion: str(),
   step: integer(0, 15),
 };
-const pendingAction = obj({
-  actionId: uuid,
-  version: integer(1, Number.MAX_SAFE_INTEGER),
-  call,
-  summary: str(1000),
-  expiresAtMs: timestamp,
-  status: literal('PENDING'),
-});
+const pendingAction = obj(
+  {
+    presentation: jsonObject,
+    actionId: uuid,
+    version: integer(1, Number.MAX_SAFE_INTEGER),
+    call,
+    summary: str(1000),
+    expiresAtMs: timestamp,
+    status: literal('PENDING'),
+  },
+  ['actionId', 'version', 'call', 'summary', 'expiresAtMs', 'status'],
+);
 const receipt = obj({
   actionId: uuid,
   actionVersion: integer(1, Number.MAX_SAFE_INTEGER),

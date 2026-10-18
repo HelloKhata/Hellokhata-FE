@@ -60,6 +60,8 @@ const object = (value: JsonValue | undefined): JsonObject =>
   value && typeof value === "object" && !Array.isArray(value) ? value : {};
 
 export function reviewPresentation(action: PendingAction): JsonObject {
+  if (action.presentation)
+    return businessFields(action.presentation) as JsonObject;
   const args = action.call.arguments;
   if (!/^(sales|purchases)\.create$/.test(action.call.name))
     return businessFields(args) as JsonObject;
