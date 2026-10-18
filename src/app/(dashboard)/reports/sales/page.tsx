@@ -21,6 +21,7 @@ import {
   Loader2,
   Search,
   User,
+  Users,
   Check,
   X,
 } from "lucide-react";
@@ -94,24 +95,47 @@ const formatDateTime = (dateStr?: string) => {
   }
 };
 
+const formatInputDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getInitialDateRange = () => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 7);
+  return {
+    start: formatInputDate(start),
+    end: formatInputDate(end),
+  };
+};
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function SalesReportPage() {
   const { isBangla } = useAppTranslation();
+  const initialDates = getInitialDateRange();
 
-  // Filter States
-  const [startDate, setStartDate] = useState("2026-10-01");
-  const [endDate, setEndDate] = useState("2026-10-08");
+  // Tab 1 (Sales Report) Filter States
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
   const [selectedStore, setSelectedStore] = useState("");
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [selectedCustomerName, setSelectedCustomerName] = useState("Walk-in Customer");
+  const [selectedCustomer, setSelectedCustomer] = useState("all");
+  const [selectedCustomerName, setSelectedCustomerName] = useState("All");
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const customerDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState("");
+
+  // Tab 2 (Best Selling) Filter States
+  const [bsStartDate, setBsStartDate] = useState(initialDates.start);
+  const [bsEndDate, setBsEndDate] = useState(initialDates.end);
+  const [bsSelectedStore, setBsSelectedStore] = useState("");
 
   // Debounce customer search query
   useEffect(() => {
@@ -161,7 +185,7 @@ export default function SalesReportPage() {
       startDate,
       endDate,
       branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
-      customerId: selectedCustomer || undefined,
+      customerId: selectedCustomer === "all" || !selectedCustomer ? undefined : selectedCustomer,
       paymentStatus: selectedPaymentStatus === "all" ? undefined : selectedPaymentStatus || undefined,
       page: currentPage,
       limit: pageSize,
@@ -169,41 +193,21 @@ export default function SalesReportPage() {
     { enabled: false }
   );
   
-  console.log('salesReportData',salesReportData)
   const {
     data: getBestSellingData,
     refetch: refetchBestSellingReport,
     isLoading: isLoadingBestSelling,
   } = useGetBestSellingProducts(
     {
-      startDate,
-      endDate,
-      branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
+      startDate: bsStartDate,
+      endDate: bsEndDate,
+      branchId: bsSelectedStore === "all" ? undefined : bsSelectedStore || undefined,
       page: bsCurrentPage,
       limit: bsPageSize,
     },
     { enabled: false }
   );
-
-  // Refetch when pagination changes
-  const isFirstRender = useRef(true);
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    refetchReport();
-  }, [currentPage, pageSize]);
-
-  const isFirstBsRender = useRef(true);
-  useEffect(() => {
-    if (isFirstBsRender.current) {
-      isFirstBsRender.current = false;
-      return;
-    }
-    refetchBestSellingReport();
-  }, [bsCurrentPage, bsPageSize]);
-
+ 
   const customerParties: any[] = Array.isArray(partiesData)
     ? partiesData
     : Array.isArray((partiesData as any)?.data)
@@ -211,16 +215,24 @@ export default function SalesReportPage() {
     : [];
 
   const handleSelectCustomer = (party: any) => {
-    if (!party || party.id === "walk-in" || party.isWalkIn) {
-      setSelectedCustomer("");
+    if (!party || party === "all" || party.id === "all") {
+      setSelectedCustomer("all");
+      setSelectedCustomerName("All");
+      setCustomerSearchQuery("");
+    } else if (party === "walk-in" || party.id === "walk-in" || party.isWalkIn) {
+      const walkIn = customerParties.find(
+        (p: any) => p.isWalkIn || p.id === "walk-in" || p.name?.toLowerCase().includes("walk-in")
+      );
+      setSelectedCustomer(walkIn?.id || walkIn?._id || "walk-in");
       setSelectedCustomerName("Walk-in Customer");
       setCustomerSearchQuery("");
     } else {
-      setSelectedCustomer(party.id);
+      setSelectedCustomer(party.id || party._id);
       setSelectedCustomerName(party.name);
       setCustomerSearchQuery("");
     }
     setShowCustomerSuggestions(false);
+    setCurrentPage(1);
   };
 
   const salesData: any[] =
@@ -279,9 +291,10 @@ export default function SalesReportPage() {
 
   // Handle Reset Filter for Best Selling
   const handleResetBsFilter = () => {
-    setStartDate("2026-10-01");
-    setEndDate("2026-10-08");
-    setSelectedStore("");
+    const dates = getInitialDateRange();
+    setBsStartDate(dates.start);
+    setBsEndDate(dates.end);
+    setBsSelectedStore("");
     if (bsCurrentPage !== 1) {
       setBsCurrentPage(1);
     }
@@ -298,11 +311,12 @@ export default function SalesReportPage() {
 
   // Handle Reset Filter
   const handleResetFilter = () => {
-    setStartDate("2026-10-01");
-    setEndDate("2026-10-08");
+    const dates = getInitialDateRange();
+    setStartDate(dates.start);
+    setEndDate(dates.end);
     setSelectedStore("");
-    setSelectedCustomer("");
-    setSelectedCustomerName("Walk-in Customer");
+    setSelectedCustomer("all");
+    setSelectedCustomerName("All");
     setCustomerSearchQuery("");
     setShowCustomerSuggestions(false);
     setSelectedPaymentStatus("");
@@ -313,7 +327,104 @@ export default function SalesReportPage() {
 
   // Handle Export Excel / CSV
   const handleDownloadExcel = () => {
-  
+    setIsExporting(true);
+    try {
+      if (activeTab === "sales-report") {
+        if (!salesData || salesData.length === 0) return;
+        const headers = [
+          "#",
+          "Invoice No",
+          "Customer",
+          "Grand Total",
+          "Payable Total",
+          "Paid Amount",
+          "Due Amount",
+          "Branch",
+          "Status",
+          "Payment Status",
+          "Created At",
+        ];
+
+        const csvRows = [
+          headers.join(","),
+          ...salesData.map((row: any, idx: number) =>
+            [
+              row.index ?? (currentPage - 1) * pageSize + idx + 1,
+              `"${row.invoiceNo || ""}"`,
+              `"${(row.customer || "Walk-in Customer").replace(/"/g, '""')}"`,
+              Number(row.grandTotal || 0).toFixed(2),
+              Number(row.payableTotal || 0).toFixed(2),
+              Number(row.paidAmount || 0).toFixed(2),
+              Number(row.dueAmount || 0).toFixed(2),
+              `"${(row.store || "").replace(/"/g, '""')}"`,
+              `"${(row.status || "").replace(/"/g, '""')}"`,
+              `"${(row.paymentStatus || "").replace(/"/g, '""')}"`,
+              `"${formatDateTime(row.createdAt)}"`,
+            ].join(",")
+          ),
+        ];
+
+        const blob = new Blob([csvRows.join("\n")], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `Sales_Report_${new Date().toISOString().slice(0, 10)}.csv`
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        if (!bestSellingList || bestSellingList.length === 0) return;
+        const headers = [
+          "#",
+          "Product Name",
+          "SKU",
+          "Category",
+          "Brand",
+          "Sold Qty",
+          "In-Stock Qty",
+          "Sold Amount",
+        ];
+
+        const csvRows = [
+          headers.join(","),
+          ...bestSellingList.map((product: any, idx: number) =>
+            [
+              product.index ?? (bsCurrentPage - 1) * bsPageSize + idx + 1,
+              `"${(product.productName || "").replace(/"/g, '""')}"`,
+              `"${(product.sku || "").replace(/"/g, '""')}"`,
+              `"${(product.category || "").replace(/"/g, '""')}"`,
+              `"${(product.brand || "").replace(/"/g, '""')}"`,
+              Number(product.soldQty || 0),
+              Number(product.inStockQty || 0),
+              Number(product.soldAmount || 0).toFixed(2),
+            ].join(",")
+          ),
+        ];
+
+        const blob = new Blob([csvRows.join("\n")], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute(
+          "download",
+          `Best_Selling_Products_${new Date().toISOString().slice(0, 10)}.csv`
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error("Export error:", err);
+    } finally {
+      setTimeout(() => setIsExporting(false), 500);
+    }
   };
 
   // Handle Print Report
@@ -336,7 +447,7 @@ export default function SalesReportPage() {
       {/* SUB-MENU TABS                                                       */}
       {/* ================================================================== */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
-        <TabsList className="bg-muted text-muted-foreground border p-1 rounded-lg w-full flex overflow-x-auto select-none scrollbar-none h-auto flex-nowrap shrink-0">
+        <TabsList className="bg-muted text-muted-foreground border p-1 rounded-lg w-full flex overflow-x-auto select-none scrollbar-none h-auto flex-nowrap shrink-0 print:hidden">
           <TabsTrigger value="sales-report" className="text-xs font-bold gap-1.5 px-4 py-2 shrink-0">
             <FileText className="h-3.5 w-3.5" />
             Sales Report
@@ -355,7 +466,7 @@ export default function SalesReportPage() {
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Row 1: Choose Date */}
           <div className="space-y-1.5">
@@ -366,14 +477,20 @@ export default function SalesReportPage() {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
               <span className="text-muted-foreground px-2 select-none">→</span>
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
             </div>
@@ -384,7 +501,13 @@ export default function SalesReportPage() {
             <label className="text-xs font-semibold text-foreground">
               Branch
             </label>
-            <Select value={selectedStore} onValueChange={setSelectedStore}>
+            <Select
+              value={selectedStore}
+              onValueChange={(val) => {
+                setSelectedStore(val);
+                setCurrentPage(1);
+              }}
+            >
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
@@ -425,7 +548,7 @@ export default function SalesReportPage() {
                 value={
                   showCustomerSuggestions
                     ? customerSearchQuery
-                    : (selectedCustomerName || "Walk-in Customer")
+                    : (selectedCustomerName || "All")
                 }
                 onChange={(e) => {
                   setCustomerSearchQuery(e.target.value);
@@ -438,15 +561,15 @@ export default function SalesReportPage() {
                 className="w-full h-10 rounded-lg border border-input bg-background px-3 pr-8 text-xs sm:text-sm text-foreground outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground"
               />
               <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {selectedCustomer && (
+                {selectedCustomer && selectedCustomer !== "all" && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSelectCustomer(null);
+                      handleSelectCustomer("all");
                     }}
                     className="p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-                    title="Reset to Walk-in Customer"
+                    title="Reset to All Customers"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -456,16 +579,42 @@ export default function SalesReportPage() {
 
               {showCustomerSuggestions && (
                 <div className="absolute z-50 left-0 right-0 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-border text-foreground">
-                  {/* Default: Walk-in Customer */}
+                  {/* Option 1: All Customers (Default) */}
                   <button
                     type="button"
                     className={cn(
                       "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
-                      !selectedCustomer && "bg-primary/10 text-primary font-medium"
+                      (selectedCustomer === "all" || !selectedCustomer) && "bg-primary/10 text-primary font-medium"
                     )}
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      handleSelectCustomer(null);
+                      handleSelectCustomer("all");
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">
+                        All
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                        Default
+                      </span>
+                    </div>
+                    {(selectedCustomer === "all" || !selectedCustomer) && (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+
+                  {/* Option 2: Walk-in Customer */}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                      (selectedCustomer === "walk-in" || selectedCustomerName === "Walk-in Customer") && "bg-primary/10 text-primary font-medium"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectCustomer("walk-in");
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -474,15 +623,15 @@ export default function SalesReportPage() {
                         Walk-in Customer
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
-                        Default
+                        Walk-in
                       </span>
                     </div>
-                    {!selectedCustomer && (
+                    {(selectedCustomer === "walk-in" || selectedCustomerName === "Walk-in Customer") && (
                       <Check className="h-3.5 w-3.5 text-primary" />
                     )}
                   </button>
 
-                  {/* Loading State */}
+                  {/* Option 3: Search / Registered Customers */}
                   {isLoadingParties ? (
                     <div className="p-3 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
@@ -498,13 +647,16 @@ export default function SalesReportPage() {
                         (p: any) =>
                           !p.isWalkIn &&
                           !p.name?.toLowerCase().includes("walk-in") &&
-                          !p.name?.toLowerCase().includes("walking")
+                          !p.name?.toLowerCase().includes("walking") &&
+                          p.id !== "walk-in" &&
+                          p._id !== "walk-in"
                       )
                       .map((party: any) => {
-                        const isSelected = selectedCustomer === party.id;
+                        const partyId = party.id || party._id;
+                        const isSelected = selectedCustomer === partyId;
                         return (
                           <button
-                            key={party.id}
+                            key={partyId}
                             type="button"
                             className={cn(
                               "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
@@ -544,7 +696,10 @@ export default function SalesReportPage() {
             </label>
             <Select
               value={selectedPaymentStatus}
-              onValueChange={setSelectedPaymentStatus}
+              onValueChange={(val) => {
+                setSelectedPaymentStatus(val);
+                setCurrentPage(1);
+              }}
             >
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Payment Status" />
@@ -666,7 +821,7 @@ export default function SalesReportPage() {
             Sales Report
           </h2>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 print:hidden">
             <button
               type="button"
               onClick={handleDownloadExcel}
@@ -700,7 +855,7 @@ export default function SalesReportPage() {
                 <th className="px-4 py-3.5 whitespace-nowrap">Payable Total</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Paid Amount</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Due Amount</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Store</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Branch</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Status</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Payment Status</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Created At</th>
@@ -864,7 +1019,7 @@ export default function SalesReportPage() {
 
         {/* Reusable Pagination */}
         {salesTotalPages > 1 && (
-          <div className="px-6 pb-4">
+          <div className="px-6 pb-4 print:hidden">
             <PaginationHelper
               currentPage={currentPage}
               totalPages={salesTotalPages}
@@ -884,7 +1039,7 @@ export default function SalesReportPage() {
           {/* ============================================================== */}
           {/* 1. FILTER CARD (Date & Branch)                                 */}
           {/* ============================================================== */}
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
             <div className="flex flex-col lg:flex-row lg:items-end gap-4">
               {/* Choose Date */}
               <div className="space-y-1.5 flex-1 min-w-[260px]">
@@ -894,9 +1049,9 @@ export default function SalesReportPage() {
                 <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
                   <input
                     type="date"
-                    value={startDate}
+                    value={bsStartDate}
                     onChange={(e) => {
-                      setStartDate(e.target.value);
+                      setBsStartDate(e.target.value);
                       setBsCurrentPage(1);
                     }}
                     className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
@@ -904,9 +1059,9 @@ export default function SalesReportPage() {
                   <span className="text-muted-foreground px-2 select-none">→</span>
                   <input
                     type="date"
-                    value={endDate}
+                    value={bsEndDate}
                     onChange={(e) => {
-                      setEndDate(e.target.value);
+                      setBsEndDate(e.target.value);
                       setBsCurrentPage(1);
                     }}
                     className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
@@ -920,9 +1075,9 @@ export default function SalesReportPage() {
                   Branch
                 </label>
                 <Select
-                  value={selectedStore}
+                  value={bsSelectedStore}
                   onValueChange={(val) => {
-                    setSelectedStore(val);
+                    setBsSelectedStore(val);
                     setBsCurrentPage(1);
                   }}
                 >
@@ -1034,14 +1189,15 @@ export default function SalesReportPage() {
               <div className="flex items-center gap-3">
                 <h2 className="text-base font-bold text-foreground tracking-tight">Best Selling Products</h2>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 print:hidden">
                 <button
                   type="button"
                   onClick={handleDownloadExcel}
-                  className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                  disabled={isExporting}
+                  className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Download className="h-3.5 w-3.5" />
-                  <span>Export</span>
+                  <span>{isExporting ? "Exporting..." : "Export"}</span>
                 </button>
               </div>
             </div>
@@ -1137,7 +1293,7 @@ export default function SalesReportPage() {
 
             {/* Reusable Pagination */}
             {bsTotalPages > 1 && (
-              <div className="px-6 pb-4">
+              <div className="px-6 pb-4 print:hidden">
                 <PaginationHelper
                   currentPage={bsCurrentPage}
                   totalPages={bsTotalPages}

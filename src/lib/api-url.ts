@@ -7,7 +7,7 @@ export const ERP_API_ORIGIN = ERP_API_BASE_URL.replace(/\/api\/?$/, "").replace(
   /\/$/,
   "",
 );
-
+ 
 export function erpApiEndpoint(path: string): string {
   const base = ERP_API_BASE_URL.replace(/\/$/, "");
   return new URL(

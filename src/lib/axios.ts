@@ -1,12 +1,13 @@
 import axios from "axios";
 import { toast } from "sonner";
-import { ERP_API_ORIGIN } from "@/lib/api-url";
+import { ERP_API_BASE_URL, ERP_API_ORIGIN } from "@/lib/api-url";
 
+console.log(ERP_API_BASE_URL,ERP_API_ORIGIN)
 const client = axios.create({
-  baseURL: ERP_API_ORIGIN,
+  baseURL: 'https://voiceerp.mapleitfirm.com/',
   withCredentials: true,
 });
-
+ 
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -46,7 +47,7 @@ client.interceptors.response.use(
 
       try {
         await axios.post(
-          `${ERP_API_ORIGIN}/api/auth/refresh`,
+          `https://voiceerp.mapleitfirm.com/api/auth/refresh`,
           {},
           { withCredentials: true },
         );
