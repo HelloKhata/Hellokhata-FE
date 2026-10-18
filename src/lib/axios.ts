@@ -1,10 +1,10 @@
 import axios from "axios";
 import { toast } from "sonner";
-import { ERP_API_BASE_URL, ERP_API_ORIGIN } from "@/lib/api-url";
+import {  ERP_API_ORIGIN } from "@/lib/api-url";
 
-console.log(ERP_API_BASE_URL,ERP_API_ORIGIN)
+
 const client = axios.create({
-  baseURL: 'https://voiceerp.mapleitfirm.com/',
+  baseURL: ERP_API_ORIGIN,
   withCredentials: true,
 });
  
@@ -47,7 +47,7 @@ client.interceptors.response.use(
 
       try {
         await axios.post(
-          `https://voiceerp.mapleitfirm.com/api/auth/refresh`,
+          `${ERP_API_ORIGIN}/api/auth/refresh`,
           {},
           { withCredentials: true },
         );

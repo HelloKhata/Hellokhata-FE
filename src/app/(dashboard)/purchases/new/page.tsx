@@ -517,7 +517,7 @@ function NewPurchaseContent() {
 
     const payload = {
       branchId: activeBranch?.id || user?.branchId,
-      allocationMethod: "VALUE",
+      // allocationMethod: "VALUE",
       // additionalCharges: additionalCharges || 0,
       // shippingCost: shippingCost || 0,
       purchaseDate: format(invoiceDate, "yyyy-MM-dd"),
@@ -540,9 +540,9 @@ function NewPurchaseContent() {
         warrantyDays: 0,
         mrp: item.unitCost || 0,
         location: undefined,
-        weight: 0,
-        volume: 0,
-        manualAllocatedCost: 0,
+        // weight: 0,
+        // volume: 0,
+        // manualAllocatedCost: 0,
       })),
       discount: 0,
       tax: itemTax || 0,

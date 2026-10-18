@@ -35,6 +35,8 @@ export const getDeadStockReport = async (filter: any = {}) => {
 
 
 // Reports New
+
+// sales
 export const getSalesReport = async( filters?:any) =>{
   const res = await client.get("/api/reports-new/sales-report", { params: filters });
   return res.data;
@@ -43,4 +45,11 @@ export const getSalesReport = async( filters?:any) =>{
 export const getBestSellingProducts = async(filters?:any) =>{
   const res = await client.get("/api/reports-new/best-selling-products", { params: filters });
   return res.data;
-}
+};
+
+
+// purchase
+export const getPurchaseReport = async( filters?:any) =>{
+  const res = await client.get("/api/reports-new/purchase-report", { params: filters });
+  return res.data;
+};

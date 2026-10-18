@@ -1,6 +1,3 @@
-// Hello Khata OS - Premium App Layout
-// Elite SaaS Design - Dark Theme First
-// Proper scroll handling with sticky header and fixed AI button
 
 'use client';
 

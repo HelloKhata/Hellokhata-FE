@@ -1,5 +1,5 @@
 
-import { createPaymentMethod, getPaymentMethods, getDepositsAndWithdrawls, createDeposit, createWithdrawal, deleteTransaction, getPaymentMethodStatus } from "@/services/paymentMethodServices";
+import { createPaymentMethod, getPaymentMethods, getDepositsAndWithdrawls, createDeposit, createWithdrawal, deleteTransaction, getPaymentMethodStatus } from "@/services/paymentMethod.services";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useCreatePaymentMethod = () =>{
