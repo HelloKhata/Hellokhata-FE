@@ -2,7 +2,7 @@ name: Deploy Next.js via PM2
 
 on:
   push:
-    branches: ["dev"] # or "dev"
+    branches: ["main"] # or "dev"
 
 jobs:
   deploy:
