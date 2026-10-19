@@ -8,8 +8,6 @@ import {
   TrendingUp,
   Package,
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   CheckCircle2,
   Clock,
@@ -30,6 +28,8 @@ import { PageHeader } from "@/components/common";
 import { useGetItemsCategories } from "@/hooks/api/useItemCategories";
 import { useGetBranches } from "@/hooks/api/useBranches";
 import { useGetInventoryReport } from "@/hooks/api/useReports";
+import { PaginationHelper } from "@/components/shared/PaginationHelper";
+import { useAppTranslation } from "@/hooks/useAppTranslation";
 
 // ============================================================================
 // TYPES & MOCK DATA
@@ -178,6 +178,7 @@ const EmptyState = ({ message }: { message: string }) => (
 // ============================================================================
 
 export default function InventoryReportPage() {
+  const { isBangla } = useAppTranslation();
   // Filter States
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -202,19 +203,30 @@ export default function InventoryReportPage() {
  const summary = inventoryData?.summary;
  const meta = inventoryData?.meta 
 
+
+ const handlePageChange = (newPage:number) =>{
+    setCurrentPage(newPage)
+   setActiveFilters(prev => ({...prev,page:newPage}))
+ }
   // Handle Generate Report
   const handleGenerateReport = () => {
     // category:selectedCategory,
-    setActiveFilters({branchId:selectedBranch,stockType:selectedStatus});
     setCurrentPage(1);
-  };
+    setActiveFilters({
+      branchId:selectedBranch === "all"? undefined :selectedBranch,
+      stockType:selectedStatus === "all"? undefined :selectedStatus,
+      page:currentPage,
+      limit:pageSize
+    });
+  };    
 
   // Handle Reset Filter
   const handleResetFilter = () => {
+    setCurrentPage(1);
     setSelectedBranch("all");
     setSelectedCategory("all");
     setSelectedStatus("all");
-
+    setActiveFilters(null);
   };
 
   // Handle Export
@@ -417,7 +429,8 @@ export default function InventoryReportPage() {
                             {formatBDT(row.valuation)}
                             {row.valuation}
                           </td>
-                          {/* <td className="px-4 py-3 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            In stock
                             {row.stockType === "IN STOCK" && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" />
@@ -436,13 +449,25 @@ export default function InventoryReportPage() {
                                 Out of Stock
                               </span>
                             )}
-                          </td> */}
+                          </td>
                         </tr>
                       );
                     })
                   )}
                 </tbody>
+                
               </table>
+                {/* Reusable Pagination */}
+                        {activeFilters && meta?.totalPages > 1 && (
+                          <div className="px-6 py-4 border-t border-border print:hidden">
+                            <PaginationHelper
+                              currentPage={currentPage}
+                              totalPages={meta?.totalPages}
+                              onPageChange={handlePageChange}
+                              isBangla={isBangla}
+                            />
+                          </div>
+                        )}
             </div>
           </div>
     </div>

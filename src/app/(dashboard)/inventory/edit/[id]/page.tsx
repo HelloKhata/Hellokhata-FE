@@ -283,7 +283,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
           {/* LEFT / MAIN COLUMN (2 cols wide) */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-5">
             {/* CARD 1: Basic Product Information */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Boxes className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">
@@ -308,8 +308,8 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     placeholder="e.g. Premium Jasmine Rice 5kg"
-                    className={`w-full bg-background/50 border ${
-                      errors.name ? "border-destructive" : "border-input"
+                    className={`w-full bg-background border ${
+                      errors.name ? "border-destructive" : "border-border"
                     } rounded-lg px-3.5 h-11 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all`}
                   />
                   {errors.name && (
@@ -404,7 +404,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                       value={sku}
                       onChange={(e) => setSku(e.target.value)}
                       placeholder="e.g. JSM-RC-5KG"
-                      className="w-full bg-background/50 border border-input rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
                   </div>
                   <div>
@@ -418,7 +418,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                       value={barcode}
                       onChange={(e) => setBarcode(e.target.value)}
                       placeholder="e.g. 8901030700812"
-                      className="w-full bg-background/50 border border-input rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
                   </div>
                 </div>
@@ -436,7 +436,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     >
                       <option value="">Select Category</option>
                       {itemCategories?.map((cat: any) => (
@@ -461,7 +461,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       placeholder="e.g. Royal Harvest"
-                      className="w-full bg-background/50 border border-input rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     />
                   </div>
 
@@ -476,8 +476,8 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                         if (errors.unitId)
                           setErrors((prev) => ({ ...prev, unitId: "" }));
                       }}
-                      className={`w-full bg-background/50 border ${
-                        errors.unitId ? "border-destructive" : "border-input"
+                      className={`w-full bg-background border ${
+                        errors.unitId ? "border-destructive" : "border-border"
                       } rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all`}
                     >
                       <option value="">Select Unit</option>
@@ -503,7 +503,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                     <select
                       value={productType}
                       onChange={(e) => setProductType(e.target.value)}
-                      className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     >
                       <option value="PRODUCT">Physical Product</option>
                       <option value="DIGITAL">Digital Product</option>
@@ -517,7 +517,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
-                      className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                      className="w-full bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                     >
                       <option value="ACTIVE">Active</option>
                       <option value="INACTIVE">Inactive</option>
@@ -536,7 +536,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                           setWarranty(e.target.value as "YES" | "NO")
                         }
                         className={cn(
-                          "bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all",
+                          "bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all",
                           warranty === "YES" ? "w-24 shrink-0" : "w-full"
                         )}
                       >
@@ -558,7 +558,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               )
                             }
                             placeholder="1"
-                            className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono min-w-0"
+                            className="w-full bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono min-w-0"
                           />
                           <select
                             value={warrantyUnit}
@@ -567,7 +567,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                                 e.target.value as "DAYS" | "MONTHS" | "YEARS"
                               )
                             }
-                            className="bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all shrink-0 cursor-pointer"
+                            className="bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all shrink-0 cursor-pointer"
                           >
                             <option value="DAYS">Days</option>
                             <option value="MONTHS">Months</option>
@@ -591,13 +591,13 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                           onChange={handleTrackBatchChange}
                           className="sr-only peer"
                         />
-                        <div className="w-8 h-4 bg-muted border border-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-foreground after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-foreground after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
+                        <div className="w-8 h-4 bg-muted peer-checked:bg-primary border border-border rounded-full peer peer-focus:outline-none after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all after:shadow-xs peer-checked:after:translate-x-4 relative transition-colors"></div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-foreground font-medium block">
                               Batch Tracking
                             </span>
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-md">
                               <Sparkles className="w-2.5 h-2.5" />
                               PRO
                             </span>
@@ -625,13 +625,13 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                           disabled={!trackBatch}
                           className="sr-only peer"
                         />
-                        <div className="w-8 h-4 bg-muted border border-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-foreground after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-foreground after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative peer-disabled:opacity-50"></div>
+                        <div className="w-8 h-4 bg-muted peer-checked:bg-primary border border-border rounded-full peer peer-focus:outline-none after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all after:shadow-xs peer-checked:after:translate-x-4 relative transition-colors peer-disabled:opacity-50"></div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-foreground font-medium block">
                               Expiry Tracking
                             </span>
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-md">
                               <Sparkles className="w-2.5 h-2.5" />
                               PRO
                             </span>
@@ -660,10 +660,10 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                                 manufactureDate: "",
                               }));
                           }}
-                          className={`w-full bg-background/50 border ${
+                          className={`w-full bg-background border ${
                             errors.manufactureDate
                               ? "border-destructive"
-                              : "border-input"
+                              : "border-border"
                           } rounded-lg px-3 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                         {errors.manufactureDate && (
@@ -693,10 +693,10 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                                 expiryDate: "",
                               }));
                           }}
-                          className={`w-full bg-background/50 border ${
+                          className={`w-full bg-background border ${
                             errors.expiryDate
                               ? "border-destructive"
-                              : "border-input"
+                              : "border-border"
                           } rounded-lg px-3 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                         {errors.expiryDate && (
@@ -714,7 +714,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
             </section>
 
             {/* CARD 2: Pricing & Profit Margins */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between pb-2.5 border-b border-border">
                 <div className="flex items-center gap-2">
                   <CircleDollarSign className="w-4 h-4 text-primary" />
@@ -750,10 +750,10 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               setErrors((prev) => ({ ...prev, costPrice: "" }));
                           }}
                           placeholder="0.00"
-                          className={`w-full bg-background/50 border ${
+                          className={`w-full bg-background border ${
                             errors.costPrice
                               ? "border-destructive"
-                              : "border-input"
+                              : "border-border"
                           } rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                       </div>
@@ -789,10 +789,10 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               }));
                           }}
                           placeholder="0.00"
-                          className={`w-full bg-background/50 border ${
+                          className={`w-full bg-background border ${
                             errors.sellingPrice
                               ? "border-destructive"
-                              : "border-input"
+                              : "border-border"
                           } rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono`}
                         />
                       </div>
@@ -818,7 +818,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                             setVatRate(selected.rate);
                           }
                         }}
-                        className="w-full bg-background/50 border border-input rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
+                        className="w-full bg-background border border-border rounded-lg px-2.5 h-10 text-xs text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
                       >
                         <option value="">Select Tax Category</option>
                         {taxCategories?.map((tc: any) => (
@@ -860,7 +860,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               )
                             }
                             placeholder="0.00"
-                            className="w-full bg-background/50 border border-input rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                            className="w-full bg-background border border-border rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
                         </div>
                       </div>
@@ -884,7 +884,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               )
                             }
                             placeholder="0.00"
-                            className="w-full bg-background/50 border border-input rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                            className="w-full bg-background border border-border rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
                         </div>
                       </div>
@@ -908,7 +908,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                               )
                             }
                             placeholder="0.00"
-                            className="w-full bg-background/50 border border-input rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                            className="w-full bg-background border border-border rounded-lg pl-7 pr-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                           />
                         </div>
                       </div>
@@ -917,7 +917,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                 </div>
 
                 {/* Dynamic Calculation Sidebar Box */}
-                <div className="bg-background/40 border border-border/60 rounded-lg p-3 flex flex-col justify-between space-y-1.5 self-stretch">
+                <div className="bg-muted/40 border border-border rounded-lg p-3 flex flex-col justify-between space-y-1.5 self-stretch">
                   <div className="flex items-center justify-between text-xs pb-1 border-b border-border">
                     <span className="text-muted-foreground font-medium">
                       Profit & Margin
@@ -953,7 +953,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
             </section>
 
             {/* CARD 3: Inventory Stock Levels */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Boxes className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">
@@ -976,7 +976,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                         )
                       }
                       placeholder="0"
-                      className="w-full bg-background/50 border border-input rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                      className="w-full bg-background border border-border rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                     />
                   </div>
                   <div>
@@ -992,7 +992,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                         )
                       }
                       placeholder="0"
-                      className="w-full bg-background/50 border border-input rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                      className="w-full bg-background border border-border rounded-lg px-3 h-10 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
                     />
                   </div>
                   <div>
@@ -1003,7 +1003,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                         onChange={(e) => setLowStockAlert(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-8 h-4 bg-muted border border-input peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-foreground after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-foreground after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
+                      <div className="w-8 h-4 bg-muted peer-checked:bg-primary border border-border rounded-full peer peer-focus:outline-none after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all after:shadow-xs peer-checked:after:translate-x-4 relative transition-colors"></div>
                       <div>
                         <span className="text-xs text-foreground font-medium block">
                           Low Stock Alert
@@ -1017,7 +1017,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                 </div>
 
                 {/* Summary Breakdown Box */}
-                <div className="bg-background/40 border border-border/60 rounded-lg p-3 flex flex-col justify-between space-y-1.5">
+                <div className="bg-muted/40 border border-border rounded-lg p-3 flex flex-col justify-between space-y-1.5">
                   <span className="text-xs text-muted-foreground font-medium block pb-1 border-b border-border">
                     Stock Summary
                   </span>
@@ -1043,7 +1043,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
           {/* RIGHT COLUMN SIDEBAR CARDS - STICKY WRAPPER */}
           <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-6">
             {/* Product Media Dropzone Card */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl p-4.5 space-y-3 shadow-xs">
+            <section className="bg-card border border-border rounded-xl p-4.5 space-y-3 shadow-sm">
               <div className="flex items-center gap-2 pb-2 border-b border-border">
                 <UploadCloud className="w-4 h-4 text-primary" />
                 <h3 className="text-sm font-semibold text-foreground">
@@ -1051,7 +1051,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                 </h3>
               </div>
 
-              <div className="border-2 border-dashed border-input hover:border-primary/60 rounded-lg p-15 text-center transition-colors cursor-pointer bg-background/30 hover:bg-background/50 group">
+              <div className="border-2 border-dashed border-border hover:border-primary/60 rounded-lg p-8 sm:p-10 text-center transition-colors cursor-pointer bg-muted/20 hover:bg-muted/40 group">
                 <div className="w-18 h-18 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
                   <UploadCloud className="w-8 h-8" />
                 </div>
@@ -1068,7 +1068,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
             </section>
 
             {/* Description Section */}
-            <section className="bg-zinc-900/20 border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-xs">
+            <section className="bg-card border border-border rounded-xl px-5 py-4.5 space-y-4 shadow-sm">
               <div className="flex items-center gap-2 pb-2.5 border-b border-border">
                 <Tag className="w-4 h-4 text-primary" />
                 <h3 className="text-base font-semibold text-foreground">
@@ -1085,7 +1085,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter full product details, specifications, packaging notes, tags, or internal metadata..."
-                  className="w-full bg-background/50 border border-input rounded-lg px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all resize-none"
+                  className="w-full bg-background border border-border rounded-lg px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all resize-none"
                 />
               </div>
             </section>
@@ -1096,7 +1096,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
       {/* ================= FIXED BOTTOM ACTION BAR ================= */}
       <footer
         className={cn(
-          "fixed bottom-0 right-0 h-20 bg-background/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg transition-all duration-300 ease-smooth",
+          "fixed bottom-0 right-0 h-20 bg-card/95 backdrop-blur border-t border-border flex items-center justify-between px-4 sm:px-6 z-30 shadow-lg transition-all duration-300 ease-smooth",
           "left-0 md:left-64",
           sidebarCollapsed && "md:left-16"
         )}
@@ -1113,7 +1113,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+            className="h-10 px-4 text-xs font-medium text-foreground bg-background hover:bg-muted border border-border rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -1121,7 +1121,7 @@ function EditProductForm({ id, item }: { id: string; item: any }) {
             type="button"
             disabled={isSaving}
             onClick={handleSaveProduct}
-            className="px-8 py-4 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-all shadow-sm shadow-primary/20 cursor-pointer flex items-center gap-2"
+            className="h-10 px-6 text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 rounded-lg transition-all shadow-sm shadow-primary/20 cursor-pointer flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             {isSaving ? "Updating..." : "Update Product"}
