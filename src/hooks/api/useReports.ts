@@ -8,6 +8,7 @@ import {
   getSalesReport,
   getBestSellingProducts,
   getPurchaseReport,
+  getInventoryReport,
 } from "@/services/reports.services";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
@@ -98,6 +99,18 @@ export const useGetPurhcaseReport = (filter:any, queryOptions?:any)=>{
   return useQuery<any>({
     queryKey: ["purchase-report", filter],
     queryFn: () => getPurchaseReport(filter),
+    placeholderData: keepPreviousData,
+    ...queryOptions,
+  })
+}
+
+
+// inventory
+
+export const useGetInventoryReport = (filter:any, queryOptions?:any)=>{
+  return useQuery<any>({
+    queryKey: ["inventory-report", filter],
+    queryFn: () => getInventoryReport(filter),
     placeholderData: keepPreviousData,
     ...queryOptions,
   })
