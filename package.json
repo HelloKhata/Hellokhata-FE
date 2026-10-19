@@ -8,7 +8,6 @@
     "start": "next start -p 8200",
     "lint": "eslint ."
   },
-  
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -89,6 +88,7 @@
     "bun-types": "^1.3.4",
     "eslint": "^9",
     "eslint-config-next": "^16.1.1",
+    "puppeteer-core": "^25.14.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
     "typescript": "5.9.3"
