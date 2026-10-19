@@ -14,6 +14,7 @@ import {
   XCircle,
   AlertCircle,
   ShieldAlert,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -188,11 +189,11 @@ export default function InventoryReportPage() {
 
   // api hooks
   const { data: categories, isLoading: categoriesLoading } = useGetItemsCategories();
-  const {data:branches} = useGetBranches();
+  const { data: branches, isLoading: branchesLoading } = useGetBranches();
   
-  const {data: inventoryData,isLoading: stockReportLoading} = useGetInventoryReport(activeFilters,{
+  const { data: inventoryData, isLoading: stockReportLoading } = useGetInventoryReport(activeFilters, {
     enabled: !!activeFilters,
-  })
+  });
   // Pagination states
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -231,7 +232,68 @@ export default function InventoryReportPage() {
 
   // Handle Export
   const handleDownloadExcel = () => {
-  
+    setIsExporting(true);
+    try {
+      if (!inventory || inventory.length === 0) return;
+      const headers = [
+        "#",
+        "Product",
+        "SKU",
+        "Category",
+        "Branch",
+        "In Stock",
+        "Cost Price (BDT)",
+        "Selling Price (BDT)",
+        "Cost Valuation (BDT)",
+        "Status",
+      ];
+
+      const csvRows = [
+        headers.join(","),
+        ...inventory.map((row: any, idx: number) => {
+          const rowNum = row.index ?? (currentPage - 1) * pageSize + idx + 1;
+          const status =
+            row.stockType ||
+            (Number(row.inStock) === 0
+              ? "OUT OF STOCK"
+              : Number(row.inStock) <= Number(row.minStock || 5)
+              ? "LOW STOCK"
+              : "IN STOCK");
+
+          return [
+            rowNum,
+            `"${(row.productName || row.itemName || "—").replace(/"/g, '""')}"`,
+            `"${(row.sku || "—").replace(/"/g, '""')}"`,
+            `"${(row.categoryName || row.category || "—").replace(/"/g, '""')}"`,
+            `"${(row.storeName || row.branch || "—").replace(/"/g, '""')}"`,
+            row.inStock ?? row.qty ?? 0,
+            Number(row.costPrice || 0).toFixed(2),
+            Number(row.sellingPrice || 0).toFixed(2),
+            Number(row.valuation || 0).toFixed(2),
+            `"${status}"`,
+          ].join(",");
+        }),
+      ];
+
+      const blob = new Blob([csvRows.join("\n")], {
+        type: "text/csv;charset=utf-8;",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `Inventory_Report_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export error:", err);
+    } finally {
+      setTimeout(() => setIsExporting(false), 500);
+    }
   };
 
   return (
@@ -251,19 +313,29 @@ export default function InventoryReportPage() {
               {/* Branch */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Branch</label>
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                <Select
+                  value={selectedBranch}
+                  onValueChange={setSelectedBranch}
+                  disabled={branchesLoading}
+                >
                   <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                    <SelectValue placeholder="All Branches" />
+                    <SelectValue placeholder={branchesLoading ? "Loading branches..." : "All Branches"} />
                   </SelectTrigger>
                   <SelectContent className="border-border bg-popover text-popover-foreground">
-                      <SelectItem  value="all">
-                       All Branches
+                    <SelectItem value="all">
+                      All Branches
+                    </SelectItem>
+                    {branchesLoading ? (
+                      <SelectItem value="loading-branch" disabled>
+                        Loading branches...
                       </SelectItem>
-                    {branches?.map((branch:any) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
+                    ) : (
+                      branches?.map((branch: any) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -271,19 +343,29 @@ export default function InventoryReportPage() {
               {/* Category */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Category</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                  disabled={categoriesLoading}
+                >
                   <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                    <SelectValue placeholder="All Categories" />
+                    <SelectValue placeholder={categoriesLoading ? "Loading categories..." : "All Categories"} />
                   </SelectTrigger>
                   <SelectContent className="border-border bg-popover text-popover-foreground">
-                      <SelectItem  value="all">
-                       All Categories
+                    <SelectItem value="all">
+                      All Categories
+                    </SelectItem>
+                    {categoriesLoading ? (
+                      <SelectItem value="loading-category" disabled>
+                        Loading categories...
                       </SelectItem>
-                    {categories?.map((opt:any) => (
-                      <SelectItem key={opt.id} value={opt.id}>
-                        {opt.name}
-                      </SelectItem>
-                    ))}
+                    ) : (
+                      categories?.map((opt: any) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          {opt.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -319,10 +401,15 @@ export default function InventoryReportPage() {
               <button
                 type="button"
                 onClick={handleGenerateReport}
-                className="h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer"
+                disabled={stockReportLoading}
+                className="h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-medium text-sm transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm cursor-pointer"
               >
-                <Sparkles className="h-4 w-4" />
-                <span>Generate Report</span>
+                {stockReportLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                <span>{stockReportLoading ? "Generating..." : "Generate Report"}</span>
               </button>
             </div>
           </div>
@@ -379,10 +466,43 @@ export default function InventoryReportPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-foreground">
-                  {inventory?.length === 0 ? (
+                  {stockReportLoading ? (
+                    <tr>
+                      <td
+                        colSpan={10}
+                        className="px-4 py-16 text-center text-muted-foreground"
+                      >
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                          <p className="text-sm font-medium">
+                            Loading inventory report...
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : !activeFilters ? (
+                    <tr>
+                      <td
+                        colSpan={10}
+                        className="px-4 py-16 text-center text-muted-foreground"
+                      >
+                        <div className="flex flex-col items-center justify-center gap-2 mx-auto">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1">
+                            <Sparkles className="h-6 w-6" />
+                          </div>
+                          <p className="text-sm font-semibold text-foreground">
+                            Ready to generate inventory report
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Select your desired branch, category, and status filters above, then click &ldquo;Generate Report&rdquo;.
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : !inventory || inventory.length === 0 ? (
                     <EmptyState message="No stock records found" />
                   ) : (
-                    inventory?.map((row:any) => {
+                    inventory?.map((row: any) => {
                       return (
                         <tr
                           key={row.id}
@@ -419,18 +539,14 @@ export default function InventoryReportPage() {
                           </td>
                           <td className="px-4 py-3 text-foreground whitespace-nowrap">
                             {formatBDT(row.costPrice)}
-                            {row.costPrice}
                           </td>
                           <td className="px-4 py-3 text-foreground whitespace-nowrap">
                             {formatBDT(row.sellingPrice)}
-                            {row.sellingPrice}
                           </td>
                           <td className="px-4 py-3 font-medium text-emerald-400 whitespace-nowrap">
                             {formatBDT(row.valuation)}
-                            {row.valuation}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            In stock
                             {row.stockType === "IN STOCK" && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 <CheckCircle2 className="h-3 w-3" />

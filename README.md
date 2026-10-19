@@ -1,724 +1,424 @@
 <div align="center">
 
-# 🏪 HelloKhata — SmartStore OS
+# 🏪 HelloKhata (হ্যালো খাতা)
+### Enterprise-Grade, AI-Powered Retail Operating System & ERP for South Asian SMEs
 
-### AI-First Retail Business Operating System for Bangladeshi SMEs
+[![Next.js](https://img.shields.io/badge/Next.js-16.1.6-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![TanStack Query](https://img.shields.io/badge/TanStack_Query-v5-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
+[![Zustand](https://img.shields.io/badge/State-Zustand_v5-4338CA?style=for-the-badge)](https://github.com/pmndrs/zustand)
+[![Port](https://img.shields.io/badge/Dev_Port-8200-0E5B43?style=for-the-badge)](http://localhost:8200)
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-hellokhata.vercel.app-00C896?style=for-the-badge&logo=vercel)](https://hellokhata.vercel.app)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
+**HelloKhata** is an enterprise-ready retail operating system and cloud ERP engineered specifically for modern merchants, wholesalers, and multi-branch retail enterprises across Bangladesh and South Asia. Combining full-spectrum double-entry financial accounting, multi-warehouse batch inventory tracking, an ultra-responsive POS terminal, and a state-machine driven conversational AI engine with native Bengali voice recognition, HelloKhata elevates daily shop floor operations into data-driven commerce.
 
-**The first AI-powered, voice-enabled ERP designed for shop owners in Bangladesh — Bangla-first, offline-capable, and built for the modern SME.**
+[✨ Core Capabilities](#-core-capabilities) • [🏛️ System Architecture](#️-system-architecture) • [📦 Feature Modules](#-feature-modules) • [🤖 AI & Voice Engine](#-ai-and-voice-engine) • [🎨 Design System](#-design-system) • [🚀 Getting Started](#-getting-started) • [⚙️ Configuration](#️-configuration)
 
-[🚀 Live Demo](https://hellokhata.vercel.app) · [📋 Feature Report](FEATURE_ANALYSIS_REPORT.md) · [📝 Changelog](CHANGELOG.md) · [🐛 Report Bug](https://github.com/Maple-Service-Solution-Ltd/hellokhata/issues)
+---
 
 </div>
 
----
+## 📑 Table of Contents
 
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [Design System](#-design-system)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [Data Fetching Layer](#-data-fetching-layer)
+- [Executive Summary](#-executive-summary)
+- [Core Capabilities](#-core-capabilities)
+- [System Architecture](#️-system-architecture)
+- [Deep-Dive Feature Modules](#-deep-dive-feature-modules)
+  - [1. Point of Sale (POS) & Sales Management](#1-point-of-sale-pos--sales-management)
+  - [2. Inventory & Multi-Warehouse Supply Chain](#2-inventory--multi-warehouse-supply-chain)
+  - [3. Digital Khata & Parties (Credit Control)](#3-digital-khata--parties-credit-control)
+  - [4. Double-Entry Accounting & Financial Hub](#4-double-entry-accounting--financial-hub)
+  - [5. HRM & Granular Role-Based Access Control](#5-hrm--granular-role-based-access-control)
+  - [6. BI Analytics & Reporting Suite](#6-bi-analytics--reporting-suite)
+- [AI & Voice Engine Architecture](#-ai-and-voice-engine-architecture)
+  - [Voice Recognition (Bangla + English)](#voice-recognition-bangla--english)
+  - [AI Copilot Drawer](#ai-copilot-drawer)
+  - [Autonomous AI v2 Agent State Machine](#autonomous-ai-v2-agent-state-machine)
+- [Design System & UI Architecture](#-design-system--ui-architecture)
+- [Project Directory Structure](#-project-directory-structure)
+- [State Management & Data Layer](#-state-management--data-layer)
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
-- [Scripts Reference](#-scripts-reference)
-- [Feature Modules](#-feature-modules)
-- [AI Safety & Boundaries](#-ai-safety--boundaries)
-- [Pricing Tiers](#-pricing-tiers)
-- [Keyboard Shortcuts](#-keyboard-shortcuts)
-- [Contributing](#-contributing)
-- [Roadmap](#-roadmap)
-- [License](#-license)
+- [Scripts & Production Deployment](#-scripts--production-deployment)
+- [Enterprise Feature Tiers](#-enterprise-feature-tiers)
+- [Security & Resilience](#-security--resilience)
 
 ---
 
-## 🌟 Overview
+## 🌟 Executive Summary
 
-**HelloKhata** (হ্যালো খাতা) is an AI-first Retail Business Operating System purpose-built for SME shop owners in Bangladesh. It combines traditional accounting and inventory management with a persistent AI Copilot — including full **voice AI support in both Bangla and English**.
+Traditional point-of-sale and accounting tools in emerging markets remain fragmented, desktop-bound, or poorly adapted to local commerce behaviors (such as customer credit "baki/khata", multi-channel mobile payments, and bilingual merchant workflows). 
 
-The system runs in **demo mode out of the box** (no login required), making it ideal for investor demos and quick evaluations. It ships with preloaded customers, inventory, and 90 days of transaction history.
+**HelloKhata** solves this by delivering an end-to-end, high-performance web platform designed with:
 
-> **Frontend-only architecture:** This Next.js application is a pure frontend client. All business logic, data persistence, and authentication are handled by a **separate backend server**. The frontend communicates with the backend exclusively via HTTP API calls managed through TanStack Query.
-
-### Why HelloKhata?
-
-- 🇧🇩 **Bangla-first** — UI, voice commands, and AI responses support Bengali natively
-- 🤖 **AI is not an afterthought** — The AI Copilot is a persistent first-class UI element, not a hidden settings page
-- 📊 **Business Health Score** — Like a credit score, but for your entire business
-- 📵 **Offline-capable** — Queued mutations sync when connectivity is restored
-- 🌿 **Free tier available** — Accessible to early-stage shops with clear upgrade paths
+1. **Bilingual-First Ergonomics:** Full native English and Bengali (`বাংলা`) localization across every dashboard widget, data grid, invoice template, and modal.
+2. **Persistent Multi-Branch Orchestration:** Effortless switching between physical retail counters, wholesale divisions, and regional distribution warehouses with real-time stock transfer workflows.
+3. **Voice-Activated Intelligence:** Direct voice recognition enabling merchants to trigger complex queries (*"কম স্টক পণ্য দেখাও"*, *"Show me today's receivables"*) and generate actions hands-free.
+4. **Resilient Network Performance:** Optimistic UI state updates, offline mutation queuing, and proactive token refresh interceptors engineered for varying network conditions.
 
 ---
 
-## ✨ Key Features
+## ✨ Core Capabilities
 
-### 🤖 AI Copilot (Persistent Drawer)
-A collapsible AI panel always visible on the right side of every page.
-
-- **Brief Tab** — AI-generated daily summary with 3 prioritized action items and impact tags
-- **Chat Tab** — Ask natural language questions about your business: sales trends, stock alerts, customer balances
-- **Actions Tab** — One-click playbooks and quick actions suggested by the AI
-- Toggle with `Ctrl+\`
-
-### 🎙️ Voice AI
-- Click the **mic icon** (top right) or press `Ctrl+M`
-- Supports **Bangla and English** voice commands via Web Speech API
-- Live transcription with animated waveform
-- AI response cards with data tables and suggested next actions
-- Example: *"কম স্টক আইটেম দেখাও"* or *"Show me today's sales"*
-
-### 📊 Business Health Score
-- **0–100 score** with letter grade (A–F)
-- Breakdown across: Profit, Credit Control, Stock Health, Cash Flow, Sales Growth
-- Actionable improvement playbooks with step-by-step guidance
-- Dedicated Health Center page for deep-dive analysis
-
-### 💳 Credit Control
-- Aging buckets: **0–30 / 31–60 / 61–90 / 90+ days**
-- Risk scoring per customer: Low / Medium / High
-- Credit limit usage bars with real-time warnings during sale creation
-- Collection call list sorted by risk priority
-
-### 📦 Inventory Management
-- Multi-tier pricing: **Retail, Wholesale, VIP, Minimum price floors**
-- Customer tier auto-routing (Wholesale customer → Wholesale price automatically)
-- Dead Stock Detector — items unsold for 30/60/90+ days with capital-stuck estimation
-- Bulk CSV import with duplicate SKU detection
-- All stock movements tracked via the backend with full audit trail
-
-### 💼 Sales & Purchases
-- Fast-entry POS-style sale creation with AI margin meter and stock warnings in the side panel
-- Auto-generated invoice numbers: `INV-YYYYMMDD-XXXX`
-- Quotation system with conversion tracking to sales
-- Multi-account payment support: Cash, Bank, Mobile Wallet (bKash / Nagad)
-- Party ledger entries created on the backend automatically on every credit transaction
-
-### 🏢 Multi-Branch Support
-- Branch types: Main, Warehouse, Retail, Wholesale
-- Stock transfers between branches with backend ledger tracking
-- Branch-scoped data fetched from the backend per active branch
-- Branch limits enforced by subscription plan
-
-### ⌨️ Command Palette
-- Press `Ctrl+K` to open
-- Fuzzy search across pages, customers, items, and reports
-- Navigate anywhere or trigger actions without touching the mouse
-
-### 🌐 Internationalization
-- Bangla-first with English fallback
-- Powered by `i18next` + `next-intl`
-
----
-
-## 🛠 Tech Stack
-
-| Layer | Technology | Version |
+| Capability | Engineering Highlights | Business Impact |
 |---|---|---|
-| **Framework** | Next.js (App Router) | ^16.1.6 |
-| **Language** | TypeScript | 5.9.3 |
-| **Styling** | Tailwind CSS | ^4 |
-| **UI Components** | shadcn/ui + Radix UI | latest |
-| **State Management** | Zustand (with persistence) | ^5.0.6 |
-| **Server State / Data Fetching** | TanStack React Query | ^5.82.0 |
-| **Data Tables** | TanStack React Table | ^8.21.3 |
-| **Auth** | NextAuth.js | ^4.24.11 |
-| **Animation** | Framer Motion | ^12.23.2 |
-| **Charts** | Recharts | ^2.15.4 |
-| **Forms** | React Hook Form + Zod | ^7 / ^4 |
-| **Voice** | Web Speech API | Native Browser |
-| **AI SDK** | z-ai-web-dev-sdk | ^0.0.16 |
-| **i18n** | i18next + next-intl | ^25 / ^4 |
-| **Drag & Drop** | dnd-kit | ^6 |
-| **Package Manager** | npm | ^10+ |
-| **Runtime** | Node.js | 20+ |
-| **Reverse Proxy** | Caddy | Caddyfile included |
+| **High-Throughput POS** | Sub-100ms item search, barcode reader integration, live stock validations, split-tender checkout (Cash, Bank, bKash, Nagad). | Minimizes counter queue times and eliminates stock discrepancy at point of sale. |
+| **Batch & Expiry Control** | FIFO stock movement, lot/batch assignment, automatic expiry alerts, inter-warehouse transfers. | Prevents perishable stock losses and ensures traceability in pharmaceutical, FMCG, and electronics retail. |
+| **Digital Credit Khata** | Aging bucketing (0-30, 31-60, 61-90, 90+ days), credit limits, risk scoring, SMS reminders. | Accelerates receivables collection, prevents bad debts, and maintains healthy working capital. |
+| **Double-Entry Accounting** | Comprehensive General Ledger, Preliminary P&L, Trial Balance, Cash/Bank Books, VAT/Tax management. | Provides real-time financial clarity without waiting for end-of-month manual auditing. |
+| **Agentic AI Copilot (v1/v2)** | Transactional state-machine supporting pending action approvals, contextual suggestions, and voice interactions. | Delivers automated business oversight, identifying margin leakage and inventory bottlenecks automatically. |
 
-> **Backend:** All server-side business logic, database operations, authentication, and ledger management are handled by a **separate backend server** (not part of this repository). Configure the backend URL via the `NEXT_PUBLIC_API_URL` environment variable.
+---
+
+## 🏛️ System Architecture
+
+HelloKhata is architected as an **API-decoupled Single Page Application (SPA)** utilizing Next.js 16 App Router for client-side rendering and client routing, backed by an external high-performance RESTful API microservice suite.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                CLIENT RUNTIME (BROWSER)                                 │
+│                                                                                         │
+│  ┌─────────────────────── Next.js 16 (App Router) + React 19 ────────────────────────┐  │
+│  │                                                                                   │  │
+│  │   ┌────────────────────┐   ┌────────────────────┐   ┌─────────────────────────┐   │  │
+│  │   │   App Route Tree   │   │  Radix UI Primitives│  │   AI Copilot & Voice    │   │  │
+│  │   │  (POS, Sales, Fin, │   │  Tailwind CSS v4   │  │  (Web Speech Recognition│   │  │
+│  │   │   HRM, Inventory)  │   │  Executive Themes  │  │   State Machine Client) │   │  │
+│  │   └─────────┬──────────┘   └─────────┬──────────┘   └───────────┬─────────────┘   │  │
+│  │             │                        │                          │                 │  │
+│  │             ▼                        ▼                          ▼                 │  │
+│  │   ┌───────────────────────────────────────────────────────────────────────────┐   │  │
+│  │   │                       CLIENT STATE & CACHING LAYER                        │   │  │
+│  │   │                                                                           │   │  │
+│  │   │  • Zustand Stores: sessionStore, uiStore, branchStore, featureGateStore   │   │  │
+│  │   │  • TanStack React Query v5: Cache invalidation, queries, optimistic muts │   │  │
+│  │   └─────────────────────────────────────┬─────────────────────────────────────┘   │  │
+│  │                                         │                                         │  │
+│  │                                         ▼                                         │  │
+│  │   ┌───────────────────────────────────────────────────────────────────────────┐   │  │
+│  │   │                     SECURE AXIOS TRANSPORT INTERCEPTOR                    │   │  │
+│  │   │                                                                           │   │  │
+│  │   │  • BaseURL routing (NEXT_PUBLIC_API_URL)                                  │   │  │
+│  │   │  • withCredentials: true (HttpOnly session cookies)                       │   │  │
+│  │   │  • 401 Interceptor: Automated queueing + /api/auth/refresh retry loop     │   │  │
+│  │   └─────────────────────────────────────┬─────────────────────────────────────┘   │  │
+│  └─────────────────────────────────────────┼─────────────────────────────────────────┘  │
+└────────────────────────────────────────────┼────────────────────────────────────────────┘
+                                             │ HTTPS REST + Streaming SSE
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                                REMOTE ERP BACKEND API                                   │
+│                     (https://voiceerp.mapleitfirm.com / External)                       │
+│                                                                                         │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  ┌─────────────────┐  │
+│  │  Auth & RBAC     │  │  POS & Inventory │  │ General Ledger & │  │  AI Reasoning & │  │
+│  │  Session Refresh │  │  Batch Engine    │  │ Financial Hub    │  │  Voice Backend  │  │
+│  └──────────────────┘  └──────────────────┘  └──────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📦 Deep-Dive Feature Modules
+
+### 1. Point of Sale (POS) & Sales Management
+- **High-Velocity POS Terminal (`/sales/new`):** Optimized for touchscreens, desktop keyboards, and barcode readers. Features instant product lookups, live unit price adaptation, tax category additions, and discount allocations.
+- **Sales Invoicing & Ledger Entries (`/sales`):** Generates compliant thermal receipts and full-page PDF invoices with customizable headers, branding, and QR/barcode tracking.
+- **Quotations to Invoice Pipeline (`/sales/quotations`):** Drafts customer estimates with configurable expiration dates, convertible to realized sales in a single click.
+- **Sales Returns & Restocking (`/sales/returns`):** Granular return processing that restores inventory counts to specific branches/warehouses while calculating cash refunds or account credit adjustments.
+- **Payment-In Vouchers (`/sales/payment-in`):** Logs partial or full counter settlements with direct mapping to accounts receivable.
+
+### 2. Inventory & Multi-Warehouse Supply Chain
+- **Master Catalog & Variant Matrix (`/inventory`):** Supports item categorization, primary/secondary units of measure, tax classifications, and multi-tier pricing (Retail, Wholesale, Special).
+- **Batch & Serial Lifecycle (`/inventory/batches`):** Complete traceability for lot numbers, manufacturing timestamps, and expiration thresholds.
+- **Warehouse Logistics (`/inventory/warehouse`):** Define unlimited regional warehouses and physical branches with distinct managerial ownership and stock allocations.
+- **Inter-Branch Stock Transfers (`/inventory/stock-transfer`):** Multi-stage transfer management (Initiated → In Transit → Received & Verified) ensuring no shrinkage occurs between dispatch and receipt.
+- **Stock Reconciliations & Adjustments (`/inventory/stock-adjustment`):** Accommodates audit variances, breakage, shrinkage, and surplus discoveries with mandatory reason-logging.
+
+### 3. Digital Khata & Parties (Credit Control)
+- **Comprehensive CRM Hub (`/parties`):** Unified customer and supplier registries tracking contact profiles, billing addresses, credit limits, and current balances.
+- **Aging Analysis Engine:** Segregates outstanding credit into risk-based aging buckets (`0–30 days`, `31–60 days`, `61–90 days`, `90+ days`), highlighting high-exposure accounts.
+- **Direct Settlement Vouchers (`/parties/payment-in`, `/parties/payment-out`):** Simplifies party reconciliations with multi-invoice allocation and automated payment receipts.
+
+### 4. Double-Entry Accounting & Financial Hub
+- **Unified Finance Dashboard (`/finance/overview`):** Live KPI cards tracking gross revenue, cost of goods sold, operating expenditures, net margin, and working capital.
+- **Comprehensive Ledger & Transaction Log (`/finance/transactions`):** Complete chronological audit trail for every cash, bank, and ledger movement across all accounts.
+- **Income & Expense Tracking (`/finance/income`, `/finance/expenses`):** Categorized operational expenditure (OPEX) and miscellaneous revenue entries with branch tagging and receipt attachments.
+- **Bank & Digital Wallet Vault (`/finance/banks`):** Native tracking of conventional bank accounts alongside Bangladeshi Mobile Financial Services (bKash, Nagad, Rocket, Upay) with automated transfer logging.
+- **Receivables & Payables Ledgers (`/finance/receivables`, `/finance/payables`):** Instant balance tracking against debtors and creditors.
+
+### 5. HRM & Granular Role-Based Access Control
+- **Employee Directory (`/hrm/employees`):** Centralized employee records including designation, contact credentials, department assignments, and salary baselines.
+- **Roles & Permissions Matrix (`/hrm/roles-permissions`):** Fine-grained permission assignments defining access policies across POS terminals, report exports, financial adjustments, and administrative settings.
+
+### 6. BI Analytics & Reporting Suite
+- **Inventory Health & Stock Valuation (`/reports/inventory`):** Real-time stock audit engine featuring instant status filtering (`All`, `In Stock`, `Low Stock`, `Out of Stock`), category breakdown, branch scoping, and automated client-side CSV/Excel spreadsheet generation.
+- **Financial Statements Hub (`/reports/finance`):**
+  - Preliminary Profit & Loss (P&L) statements with gross and operating margin breakdowns.
+  - Cash & Bank flow statements.
+  - Receivables and Payables aging summaries.
+  - Multi-range date filters (Today, This Week, This Month, This Quarter, Custom Ranges).
+- **Sales & Purchase Performance Reports (`/reports/sales`, `/reports/purchase`):** Granular analytical views analyzing revenue trends, top-selling SKUs, margin performance, and supplier purchase volume.
+
+---
+
+## 🤖 AI and Voice Engine Architecture
+
+HelloKhata features an integrated Artificial Intelligence engine tailored for rapid retail execution.
+
+### Voice Recognition (Bangla + English)
+Integrated directly via `VoiceModal.tsx` and the Web Speech API:
+- Native parsing of Bengali speech (e.g., *"আজকের বিক্রি কত?"*, *"কম স্টক পণ্য দেখাও"*).
+- Visual live audio waveform feedback during active speech capture.
+- Intelligent intent extraction mapping directly to application filters and routing parameters.
+
+### AI Copilot Drawer
+Accessible across the application via `AIDrawer.tsx` (Hotkey: `Ctrl+\`):
+- **Executive Daily Brief:** AI-synthesized morning rundown identifying critical action items, revenue pace, and immediate risks.
+- **Natural Language Data Inquiries:** Ask direct questions regarding gross margins, slow-moving inventory, and pending collections.
+- **Suggested Playbooks:** Actionable operational recommendations (e.g., clearance discount triggers for 90-day dead stock).
+
+### Autonomous AI v2 Agent State Machine
+Under `NEXT_PUBLIC_AI_V2_ENABLED`, HelloKhata activates the next-generation transactional AI client (`src/services/ai-v2.state-client.ts`):
+- **State-Driven Workflow:** Governed by explicit states (`IDLE`, `LISTENING`, `PROMPT_BUILDING`, `EXECUTING`, `PENDING_ACTION`, `CONFIRMING`, `RECOVERING`).
+- **Human-in-the-Loop Safeguards:** Any irreversible action (creating a bulk draft invoice, approving stock write-offs) generates a signed `PendingAction` contract requiring explicit merchant confirmation.
+- **Stateful Crash Recovery:** Preserves client request tokens across network disruptions, preventing duplicate operations or severed workflows.
 
 ---
 
 ## 🎨 Design System
 
-HelloKhata uses a custom **Elite Dark Design System** — a premium, Stripe-inspired dark theme built for long business sessions.
+HelloKhata utilizes a custom-engineered **Elite SaaS Design System** implemented in [src/app/globals.css](file:///e:/Projects/Hellokhata-FE/src/app/globals.css) with Tailwind CSS v4 and modern CSS variables.
 
-### Color Palette
+### Themes & Color Palettes
 
-| Token | Name | Hex |
-|---|---|---|
-| `--bg` | Deep Midnight Navy | `#0E1117` |
-| `--surface` | Graphite Dark | `#161B22` |
-| `--card` | Elevated Card | `#1C2128` |
-| `--primary` | Emerald Intelligence | `#00C896` |
-| `--secondary` | Royal Indigo | `#5B5FEE` |
-| `--warning` | Soft Amber | `#F5A524` |
-| `--danger` | Muted Crimson | `#E5484D` |
+#### 🌙 Dark Theme (Default — Cinematic Executive)
+Engineered for low eyestrain during prolonged operational hours:
+- **Base Background:** `#0B0F19` (Cinematic Midnight Navy)
+- **Secondary Surfaces & Cards:** `#0D131F` / `#111827`
+- **Primary Brand Accent:** `#0E5B43` (Deep Pine Green)
+- **Financial Metric Accent:** `#0FBF9F` (Vibrant Emerald / Teal)
+- **Borders & Separators:** `rgba(51, 65, 85, 0.6)`
+- **Typography:** `#F1F5F9` (Primary), `#94A3B8` (Muted)
 
-### Typography
-
-- **Primary Font**: Inter / Noto Sans Bengali
-- **KPI Numbers**: 40px Bold
-- **Section Titles**: 18px Semibold
-- **Body Text**: 14–15px Regular
-
-### Animation Principles
-
-- Page transitions: Fade + lift at 200ms — no bounce or overshoot
-- AI drawer: Smooth glide open/close
-- KPI values: Count-up animation (800ms)
-- Voice waveform: Pulse animation during recording
+#### ☀️ Light Theme (Modern High-Contrast Executive)
+Crisp, editorial, and warm:
+- **Base Background:** `#F6F1E5` (Warm Cream)
+- **Secondary Surfaces & Cards:** `#EDE7D8` / `#FFFFFF`
+- **Primary Brand Accent:** `#0E5B43` (Pine Green)
+- **Financial Metric Accent:** `#059669` (Emerald Green)
+- **Text & Contrast:** High-contrast `#0F172A` with `#64748B` muted accents.
 
 ---
 
-## 🏗 Architecture
-
-This is a **frontend-only Next.js application**. It does not contain any backend logic, database connections, or server-side data processing. All data is fetched from and sent to a remote backend server via REST API.
+## 📁 Project Directory Structure
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Browser / Client                            │
-│   Next.js 16 App Router  ·  TanStack Query  ·  Zustand         │
-│                                                                 │
-│  ┌──────────────┐  ┌────────────────┐  ┌─────────────────────┐ │
-│  │  AI Drawer   │  │ Command Palette │  │   Voice Modal       │ │
-│  │ (Persistent) │  │    (Ctrl+K)    │  │   (Web Speech API)  │ │
-│  └──────────────┘  └────────────────┘  └─────────────────────┘ │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │             Data Fetching Layer                         │    │
-│  │  /services      — raw API query functions (axios)       │    │
-│  │  /hooks/api     — TanStack Query hooks (useQuery,       │    │
-│  │                   useMutation) wrapping /services       │    │
-│  └──────────────────────────┬──────────────────────────────┘    │
-└─────────────────────────────┼───────────────────────────────────┘
-                              │ HTTP REST (NEXT_PUBLIC_API_URL)
-┌─────────────────────────────▼───────────────────────────────────┐
-│                  External Backend Server                        │
-│          (Separate repository / deployment)                     │
-│                                                                 │
-│  Business Logic · Database · Auth · Ledger · AI Processing     │
-│  Sales · Purchases · Inventory · Parties · Reports · Branches  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Key Architectural Decisions
-
-- **Frontend-only** — No backend code lives in this repo; all API calls go to `NEXT_PUBLIC_API_URL`
-- **App Router only** — All pages use `app/` directory; no Pages Router
-- **`/services`** holds all raw async functions that call the backend API (using axios)
-- **`/hooks/api`** wraps those service functions in TanStack Query hooks (`useQuery`, `useMutation`, `useInfiniteQuery`)
-- **TanStack Query** owns all server state — caching, background refetch, optimistic updates, and error handling
-- **Zustand** with localStorage persistence handles UI state, offline mutation queue, and demo data
-- **AI safety guards** (rate limiter + confirmation guard + circuit breaker) run client-side before any AI-triggered API call
-
----
-
-## 📁 Project Structure
-
-```
-hellokhata/
-│
+Hellokhata-FE/
+├── public/                       # Static assets, branding icons, manifests
 ├── src/
-│   ├── app/                            # Next.js App Router (pages only)
-│   │   ├── page.tsx                    # Dashboard — the AI Control Room
-│   │   ├── layout.tsx                  # Root layout
-│   │   ├── sales/                      # Sales pages
-│   │   ├── purchases/                  # Purchase pages
-│   │   ├── inventory/                  # Inventory pages
-│   │   ├── customers/                  # Party/customer pages
-│   │   ├── reports/
-│   │   │   ├── credit-aging/           # Aging bucket report
-│   │   │   ├── credit-control/         # Credit control report
-│   │   │   └── ...
-│   │   └── settings/                   # Settings pages
-│   │
-│   ├── services/                       # ⭐ API Query Functions
-│   │   │                               # Raw async functions that call the
-│   │   │                               # backend REST API (via axios).
-│   │   │                               # No TanStack Query logic here —
-│   │   │                               # only plain async data fetchers.
-│   │   ├── sales.service.ts            # getSales(), createSale(), etc.
-│   │   ├── purchases.service.ts        # getPurchases(), createPurchase(), etc.
-│   │   ├── inventory.service.ts        # getItems(), adjustStock(), etc.
-│   │   ├── parties.service.ts          # getParties(), getPartyLedger(), etc.
-│   │   ├── payments.service.ts         # getPayments(), createPayment(), etc.
-│   │   ├── accounts.service.ts         # getAccounts(), createAccount(), etc.
-│   │   ├── quotations.service.ts       # getQuotations(), convertToSale(), etc.
-│   │   ├── branches.service.ts         # getBranches(), transferStock(), etc.
-│   │   ├── reports.service.ts          # getCreditAging(), getHealthScore(), etc.
-│   │   └── ai.service.ts               # sendAIChat(), triggerAIAction(), etc.
-│   │
+│   ├── app/                      # Next.js 16 App Router hierarchy
+│   │   ├── (auth)/               # Authentication routing group
+│   │   │   ├── login/            # Merchant credentials login
+│   │   │   ├── register/         # Merchant onboarding
+│   │   │   ├── forgot-password/  # Password reset initiation
+│   │   │   └── verify-otp/       # Multi-factor / SMS OTP verification
+│   │   ├── (dashboard)/          # Authenticated ERP workspace
+│   │   │   ├── page.tsx          # Executive Command Center Dashboard
+│   │   │   ├── ai/               # Dedicated AI Hub & V2 Agent Workspace
+│   │   │   ├── sales/            # POS Terminal, Invoices, Quotations, Returns
+│   │   │   ├── purchases/        # Purchase Orders, Bills, Vendor Returns
+│   │   │   ├── inventory/        # Catalog, Batches, Warehouses, Adjustments
+│   │   │   ├── parties/          # Customers, Suppliers, Khata Ledgers
+│   │   │   ├── finance/          # Transactions, Income, Expense, Banks, Vault
+│   │   │   ├── hrm/              # Employees, Payroll, Permissions Matrix
+│   │   │   ├── reports/          # Inventory, Finance, Sales, Purchases BI
+│   │   │   ├── reminders/        # Due date and debt collection reminders
+│   │   │   ├── plans/            # Subscription tier management
+│   │   │   └── settings/         # Business profiles, branches, invoice layout
+│   │   ├── globals.css           # Tailwind v4 theme tokens & custom utilities
+│   │   └── layout.tsx            # Root application layout & font loader
+│   ├── components/               # Modular UI component architecture
+│   │   ├── ai/                   # AI Drawer, Voice Modal, V2 Chat components
+│   │   ├── common/               # PageHeader, Table wrappers, Modals, Loaders
+│   │   ├── finance/              # Financial stat cards, ledger grids
+│   │   ├── inventory/            # Barcode cards, batch selectors, stock forms
+│   │   ├── layout/               # Header, Sidebar, BranchSwitcher, CommandPalette
+│   │   ├── reports/              # Interactive chart widgets, tabbed hubs
+│   │   └── ui/                   # Radix UI primitives & custom UI elements
 │   ├── hooks/
-│   │   └── api/                        # ⭐ TanStack Query Hooks
-│   │       │                           # Wraps /services functions with
-│   │       │                           # useQuery / useMutation / useInfiniteQuery.
-│   │       │                           # Components import ONLY from here —
-│   │       │                           # never from /services directly.
-│   │       ├── useSales.ts             # useSalesQuery(), useCreateSaleMutation()
-│   │       ├── usePurchases.ts         # usePurchasesQuery(), useCreatePurchaseMutation()
-│   │       ├── useInventory.ts         # useItemsQuery(), useStockAdjustMutation()
-│   │       ├── useParties.ts           # usePartiesQuery(), usePartyLedgerQuery()
-│   │       ├── usePayments.ts          # usePaymentsQuery(), useCreatePaymentMutation()
-│   │       ├── useAccounts.ts          # useAccountsQuery(), useCreateAccountMutation()
-│   │       ├── useQuotations.ts        # useQuotationsQuery(), useConvertToSaleMutation()
-│   │       ├── useBranches.ts          # useBranchesQuery(), useStockTransferMutation()
-│   │       ├── useReports.ts           # useCreditAgingQuery(), useHealthScoreQuery()
-│   │       └── useAI.ts               # useAIChatMutation(), useAIActionsQuery()
-│   │
-│   ├── components/
-│   │   ├── ai/
-│   │   │   ├── AIDrawer.tsx            # Persistent AI panel (Brief/Chat/Actions)
-│   │   │   └── VoiceModal.tsx          # Voice AI with waveform animation
-│   │   ├── common/
-│   │   │   ├── CommandPalette.tsx      # Ctrl+K fuzzy search
-│   │   │   └── CreditControl.tsx       # Credit aging + risk badges
-│   │   ├── dashboard/
-│   │   │   └── DashboardPage.tsx       # KPI cards, Health Score, Action Dock
-│   │   ├── inventory/
-│   │   │   └── ImportItemsModal.tsx    # CSV import UI
-│   │   ├── layout/
-│   │   │   ├── Sidebar.tsx             # Navigation sidebar
-│   │   │   └── Header.tsx              # Top bar with mic CTA
-│   │   ├── settings/
-│   │   │   ├── BranchManagementPage.tsx
-│   │   │   ├── InvoiceSettingsPage.tsx
-│   │   │   └── DataSettingsPage.tsx
-│   │   └── ui/                         # shadcn/ui base components
-│   │
-│   ├── stores/                         # Zustand state stores
-│   │   ├── demoStore.tsx               # Demo data (50 customers, 120 items)
-│   │   ├── offlineQueueStore.ts        # Offline mutation queue
-│   │   └── auditStore.ts               # Audit log state
-│   │
+│   │   ├── api/                  # TanStack React Query wrappers (26+ hooks)
+│   │   ├── useAppTranslation.ts  # Native Bengali/English localization hook
+│   │   └── use-toast.ts          # Reactive toast dispatcher
 │   ├── lib/
-│   │   ├── axios.ts                    # Axios instance with base URL + auth headers
-│   │   ├── branch-context.ts           # Active branch context utilities
-│   │   ├── pricing/
-│   │   │   └── plans.ts                # Free/Starter/Growth/Intelligence config
-│   │   └── ai/
-│   │       ├── guards/
-│   │       │   └── confirmationGuard.ts  # Draft + confirm/cancel flow
-│   │       ├── security/
-│   │       │   └── rateLimiter.ts        # Token bucket rate limiting
-│   │       └── tools/
-│   │           └── toolExecutor.ts       # Circuit breaker + retry logic
-│   │
-│   └── types/
-│       ├── index.ts                    # All TypeScript interfaces & types
-│       └── ai-control.ts               # AI feature-specific types
-│
-├── public/
-│   └── locales/
-│       ├── bn/translation.json         # Bangla translations
-│       └── en/translation.json         # English translations
-│
-├── download/                           # File download staging
-├── upload/                             # File upload staging
-├── mini-services/                      # Micro-utilities and helpers
-├── examples/
-│   └── websocket/                      # WebSocket usage examples
-├── .zscripts/                          # Internal dev scripts
-│
-├── next.config.ts                      # Next.js configuration
-├── tailwind.config.ts                  # Tailwind configuration
-├── components.json                     # shadcn/ui configuration
-├── Caddyfile                           # Caddy reverse proxy config (production)
-├── .dockerignore
-├── package.json
-├── tsconfig.json
-└── FEATURE_ANALYSIS_REPORT.md          # Detailed feature implementation status
+│   │   ├── api-url.ts            # Base API URL resolvers
+│   │   ├── axios.ts              # Axios instance with 401 refresh interceptor
+│   │   ├── nav-config.ts         # Navigation taxonomy & permission routes
+│   │   └── utils.ts              # Class merging (`cn`) & formatting helpers
+│   ├── services/                 # Pure async HTTP client functions (Axios)
+│   ├── stores/                   # Zustand global stores (Session, UI, Branch, Gate)
+│   └── types/                    # Enterprise TypeScript contracts & schemas
+├── .env                          # Local environment variables
+├── next.config.ts                # Next.js compiler & deployment configurations
+├── package.json                  # Scripts, engine definitions, dependencies
+└── tsconfig.json                 # Strict TypeScript configuration
 ```
 
 ---
 
-## 🔌 Data Fetching Layer
+## ⚡ State Management & Data Layer
 
-This project uses a **two-layer data fetching architecture** to keep API logic, caching, and component code cleanly separated.
+HelloKhata strictly bifurcates state into **Server State** and **Client State**:
 
-### Layer 1 — `/services` (Raw Query Functions)
+### 1. Server State (TanStack React Query v5)
+- All network interactions originate in `/src/services/*.ts` as pure async functions and are consumed via `/src/hooks/api/use*.ts`.
+- Structured query keys (e.g., `['items', branchId]`, `['transactions', dateRange]`) enable precise cache invalidation on mutations.
+- Features automatic background revalidation, stale-while-revalidate data freshness, and optimistic UI transitions.
 
-The `src/services/` directory contains plain async functions that talk directly to the backend REST API using **axios**. These functions have no awareness of React or TanStack Query — they are simple, testable, typed async functions.
+### 2. Client & Session State (Zustand v5)
+- **`sessionStore.ts`:** Manages user profile, active business configuration, authentication state, and token lifecycle.
+- **`branchStore.ts`:** Tracks the globally active branch/warehouse context, ensuring all data fetching is automatically scoped.
+- **`uiStore.ts`:** Controls theme toggling (`light` / `dark`), sidebar expansion, and modal visibility.
+- **`featureGateStore.ts`:** Enforces entitlement boundaries based on active subscription tier.
 
-```ts
-// src/services/sales.service.ts
-import { apiClient } from '@/lib/axios';
-import type { Sale, CreateSalePayload, PaginatedResponse } from '@/types';
-
-export const getSales = async (params?: {
-  page?: number;
-  branchId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}): Promise<PaginatedResponse<Sale>> => {
-  const { data } = await apiClient.get('/sales', { params });
-  return data;
-};
-
-export const createSale = async (payload: CreateSalePayload): Promise<Sale> => {
-  const { data } = await apiClient.post('/sales', payload);
-  return data;
-};
-
-export const getSaleById = async (id: string): Promise<Sale> => {
-  const { data } = await apiClient.get(`/sales/${id}`);
-  return data;
-};
+### 3. Resilient HTTP Interceptors (`src/lib/axios.ts`)
+```typescript
+// Automatic Silent Refresh Interceptor
+client.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      // Queues concurrent requests while /api/auth/refresh executes
+      await executeTokenRefresh();
+      return client(originalRequest);
+    }
+    return Promise.reject(error);
+  }
+);
 ```
-
-```ts
-// src/lib/axios.ts
-import axios from 'axios';
-
-export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-});
-
-// Attach auth token on every request
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-```
-
-### Layer 2 — `/hooks/api` (TanStack Query Hooks)
-
-The `src/hooks/api/` directory wraps service functions with **TanStack Query** (`useQuery`, `useMutation`, `useInfiniteQuery`). This is the only layer components interact with — they never import from `/services` directly.
-
-```ts
-// src/hooks/api/useSales.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSales, createSale, getSaleById } from '@/services/sales.service';
-import type { CreateSalePayload } from '@/types';
-
-// Query keys — centralized for consistent cache invalidation
-export const salesKeys = {
-  all: ['sales'] as const,
-  list: (params?: object) => [...salesKeys.all, 'list', params] as const,
-  detail: (id: string) => [...salesKeys.all, 'detail', id] as const,
-};
-
-// Fetch paginated sales list
-export const useSalesQuery = (params?: {
-  page?: number;
-  branchId?: string;
-  dateFrom?: string;
-  dateTo?: string;
-}) => {
-  return useQuery({
-    queryKey: salesKeys.list(params),
-    queryFn: () => getSales(params),
-  });
-};
-
-// Fetch single sale by ID
-export const useSaleDetailQuery = (id: string) => {
-  return useQuery({
-    queryKey: salesKeys.detail(id),
-    queryFn: () => getSaleById(id),
-    enabled: !!id,
-  });
-};
-
-// Create a new sale — invalidates the sales list cache on success
-export const useCreateSaleMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: CreateSalePayload) => createSale(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: salesKeys.all });
-    },
-  });
-};
-```
-
-**Using the hook in a component:**
-
-```tsx
-// src/components/sales/SalesList.tsx
-import { useSalesQuery } from '@/hooks/api/useSales';
-
-export function SalesList() {
-  const { data, isLoading, isError } = useSalesQuery({ page: 1 });
-
-  if (isLoading) return <Spinner />;
-  if (isError) return <ErrorMessage />;
-
-  return (
-    <ul>
-      {data?.items.map((sale) => (
-        <li key={sale.id}>{sale.invoiceNumber}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-### Convention Rules
-
-- ✅ Components import **only** from `src/hooks/api/`
-- ✅ `src/hooks/api/` imports **only** from `src/services/`
-- ✅ `src/services/` imports **only** from `src/lib/axios` and `src/types/`
-- ❌ Components must **never** import directly from `src/services/`
-- ❌ `src/services/` must **never** contain `useQuery`, `useMutation`, or any React hooks
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+- **Node.js:** `v20.x` or higher (LTS recommended)
+- **Package Manager:** `npm` (v10+) or `bun` / `pnpm`
+- **Backend API:** An active HelloKhata / VoiceERP backend instance
 
-| Tool | Minimum Version |
-|---|---|
-| [Node.js](https://nodejs.org) | 20.x |
-| [npm](https://npmjs.com) | 10+ |
-| Git | any |
+### Installation Steps
 
-### 1. Clone the Repository
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Maple-Service-Solution-Ltd/hellokhata.git
+   cd hellokhata
+   ```
+
+2. **Install project dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the project root:
+   ```env
+   # Remote ERP Backend API base URL (must include /api prefix or trailing slash)
+   NEXT_PUBLIC_API_URL=https://voiceerp.mapleitfirm.com/
+
+   # AI Copilot Feature Flags
+   NEXT_PUBLIC_AI_ENABLED=true
+   NEXT_PUBLIC_AI_V2_ENABLED=false
+   ```
+
+4. **Launch Local Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The development server starts on **port 8200**:
+   👉 Open [http://localhost:8200](http://localhost:8200) in your browser.
+
+---
+
+## ⚙️ Configuration
+
+### Key Environment Variables
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | String | `https://voiceerp.mapleitfirm.com/` | Fully qualified base URL of the remote ERP backend API. |
+| `NEXT_PUBLIC_AI_ENABLED` | Boolean | `false` | Enables the v1 AI Copilot drawer and Voice Modal. |
+| `NEXT_PUBLIC_AI_V2_ENABLED` | Boolean | `false` | Enables the transactional AI v2 Agent state machine client. |
+
+---
+
+## 🛠️ Scripts & Production Deployment
+
+### Available NPM Scripts
 
 ```bash
-git clone https://github.com/Maple-Service-Solution-Ltd/hellokhata.git
-cd hellokhata
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Configure Environment Variables
-
-```bash
-cp .env.example .env.local
-# Fill in your values — see Environment Variables section below
-```
-
-### 4. Start Development Server
-
-```bash
+# Start development server on port 8200
 npm run dev
-```
 
-Open [http://localhost:3000](http://localhost:3000). The app runs in **demo mode by default** — no login required, no backend needed for the UI shell.
-
-### 5. Production Build
-
-```bash
+# Run static TypeScript and Next.js production build
 npm run build
+
+# Start production server on port 8200
 npm run start
+
+# Run ESLint validation across codebase
+npm run lint
 ```
 
----
+### Production Deployment (PM2 / Linux Server)
 
-## 🔐 Environment Variables
-
-Create `.env.local` in the project root:
-
-```env
-# ── Application ──────────────────────────────────────────
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret_here
-
-# ── Backend API ───────────────────────────────────────────
-# URL of the external backend server — all data fetching points here
-NEXT_PUBLIC_API_URL=https://your-backend-server.com/api
-
-# ── AI / LLM ─────────────────────────────────────────────
-# Required for AI Copilot features
-OPENAI_API_KEY=sk-...
-```
-
-> All business data (sales, inventory, customers, reports) is served by the backend at `NEXT_PUBLIC_API_URL`. The app works in demo mode without a live backend — AI features require `OPENAI_API_KEY`.
-
----
-
-## 📜 Scripts Reference
+HelloKhata is preconfigured to bind to port **8200**. For production deployment with PM2:
 
 ```bash
-npm run dev        # Start dev server → http://localhost:3000
-npm run build      # Production build
-npm run start      # Start production server
-npm run lint       # ESLint check across the project
+# 1. Build optimized bundle
+npm run build
+
+# 2. Launch with PM2 process manager
+pm2 start npm --name "hellokhata-fe" -- run start
+
+# 3. Configure automated startup
+pm2 save
+pm2 startup
 ```
 
 ---
 
-## 🧩 Feature Modules
+## 💎 Enterprise Feature Tiers
 
-| Module | Status | Notes |
-|---|---|---|
-| Sales & POS | ✅ Stable | Multi-tier pricing, backend ledger entries |
-| Purchases | ✅ Stable | Stock updates via backend |
-| Inventory | ✅ Stable | CSV import, stock adjustments |
-| Party / CRM | ✅ Stable | Credit tracking, aging buckets |
-| Accounts (Cash/Bank/Wallet) | ✅ Stable | Multi-account, balance from backend |
-| Multi-Branch | ✅ Stable | Stock transfer, branch-scoped API calls |
-| Quotations | ✅ Stable | Quote-to-sale conversion |
-| AI Copilot | ✅ Stable | Brief, Chat, Actions tabs |
-| Voice AI | ✅ Stable | Bangla + English, Web Speech API |
-| Business Health Score | ✅ Stable | 5-component score with playbooks |
-| Credit Control | ✅ Stable | Aging, risk scoring, collection list |
-| Command Palette | ✅ Stable | Fuzzy search, `Ctrl+K` |
-| PDF Invoice Export | 🚧 Planned | Not yet implemented |
-| Sales / Purchase Returns | 🚧 Planned | Pending backend support |
-| Soft Delete / Undo | 🚧 Planned | Pending backend support |
-| SMS / WhatsApp Reminders | 🚧 Planned | No integration yet |
-| Offline Service Worker | 🚧 Partial | Zustand queue ready, SW pending |
+Subscription access is governed by `src/stores/featureGateStore.ts`:
 
-See [FEATURE_ANALYSIS_REPORT.md](FEATURE_ANALYSIS_REPORT.md) for the full implementation breakdown with severity ratings across 12 feature areas.
+| Feature Set | Free (৳0) | Starter | Growth | Intelligence (Pro) |
+|---|:---:|:---:|:---:|:---:|
+| **POS & Quick Sales** | ✅ Included | ✅ Included | ✅ Included | ✅ Included |
+| **Catalog & Basic Items** | Up to 100 SKUs | Unlimited | Unlimited | Unlimited |
+| **Data Export (CSV / Excel)** | ❌ | ✅ Included | ✅ Included | ✅ Included |
+| **Dead Stock & Aging Alerts** | ❌ | ✅ Included | ✅ Included | ✅ Included |
+| **Multi-Branch Operations** | 1 Branch | 1 Branch | Up to 5 Branches | Unlimited |
+| **Batch & Expiry Logistics** | ❌ | ❌ | ✅ Included | ✅ Included |
+| **Voice AI Recognition** | ❌ | ❌ | Basic Queries | Full Autonomous Copilot |
+| **Agentic AI v2 Assistant** | ❌ | ❌ | ❌ | ✅ Included |
 
 ---
 
-## 🛡 AI Safety & Boundaries
+## 🔒 Security & Resilience
 
-The AI layer is hardened with multiple client-side safety mechanisms before any request is sent to the backend.
-
-### Confirmation Guard (`src/lib/ai/guards/confirmationGuard.ts`)
-- Every AI write action generates a **draft hash** before execution
-- The user must confirm with a recognized word (Bangla or English) before the action fires
-- Drafts expire after **5 minutes** via TTL
-- Cross-business security check prevents execution in the wrong context
-
-### Rate Limiter — Token Bucket (`src/lib/ai/security/rateLimiter.ts`)
-
-| Operation | Limit |
-|---|---|
-| AI Chat | 20 requests / minute |
-| Write Operations | 10 / minute |
-| LLM Generation | 30 / minute |
-
-### Circuit Breaker — Tool Executor (`src/lib/ai/tools/toolExecutor.ts`)
-- Automatic retry with **exponential backoff**
-- Per-tool timeout handling
-- Circuit opens after repeated failures to prevent cascade failures
-
-### Plan-Based AI Limits
-
-| Plan | AI Chats / Day |
-|---|---|
-| Free | 3 |
-| Starter | 15 |
-| Growth | 50 |
-| Intelligence | Unlimited |
-
----
-
-## 💰 Pricing Tiers
-
-| Feature | Free | Starter | Growth | Intelligence |
-|---|---|---|---|---|
-| Branches | 1 | 1 | 3 | Unlimited |
-| AI Chats / Day | 3 | 15 | 50 | Unlimited |
-| Users | 1 | 3 | 10 | Unlimited |
-| Reports | Basic | Standard | Advanced | Full |
-| Voice AI | ❌ | ✅ | ✅ | ✅ |
-| Multi-Branch Stock | ❌ | ❌ | ✅ | ✅ |
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|---|---|
-| `Ctrl+K` | Open Command Palette |
-| `Ctrl+M` | Open Voice AI |
-| `Ctrl+\` | Toggle AI Drawer |
-| `Esc` | Close modals / palette |
-| `↑` / `↓` | Navigate Command Palette items |
-| `Enter` | Select in Command Palette |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these guidelines to keep the codebase consistent.
-
-### Branch Naming
-
-| Type | Pattern | Example |
-|---|---|---|
-| Feature | `feat/short-description` | `feat/pdf-invoice-export` |
-| Bug Fix | `fix/short-description` | `fix/credit-aging-calc` |
-| Docs | `docs/short-description` | `docs/update-env-reference` |
-| Refactor | `refactor/short-description` | `refactor/ai-drawer-state` |
-
-### Workflow
-
-1. Fork the repo and create your branch from `main`
-2. Write your code following the conventions below
-3. Run `npm run lint` and fix all warnings
-4. Open a Pull Request with a clear title and description linking the related issue
-
-### Code Conventions
-
-- All code is **TypeScript** — avoid `any` without an inline comment explaining why
-- **Always add new query functions to `/services`** and wrap them in a hook inside `/hooks/api` — never fetch directly inside components
-- Components must **never** import from `src/services/` directly — always use `src/hooks/api/`
-- Use **TanStack Query** for all server state — no `useEffect + fetch` patterns anywhere
-- All client state lives in **Zustand stores** — not `useState` for server-derived data
-- All AI write operations must pass through `confirmationGuard` and `rateLimiter` before hitting the API
-- New Bangla UI strings must have matching entries in `public/locales/bn/translation.json`
-
-### Commit Message Format
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: add PDF invoice generation with Bangla support
-fix: correct credit aging bucket 90+ day calculation
-docs: add data fetching layer explanation to README
-refactor: extract voice modal into standalone component
-chore: update TanStack Query to 5.83
-```
-
-### Pull Request Checklist
-
-- [ ] No TypeScript errors (`tsc --noEmit`)
-- [ ] Linting passes (`npm run lint`)
-- [ ] New API calls added to `/services`, wrapped in `/hooks/api`
-- [ ] Components only import from `hooks/api`, not from `services` directly
-- [ ] New Bangla strings added to `bn/translation.json`
-- [ ] PR description explains **what** changed and **why**
-- [ ] Related issue linked in the PR body
-
----
-
-## 🗺 Roadmap
-
-### In Progress
-- [ ] PDF invoice generation (A4 / A5, Bengali + English templates)
-- [ ] Sales Return & Purchase Return UI (pending backend endpoints)
-- [ ] Service Worker for true offline-first background sync
-
-### Planned
-- [ ] Soft delete + Undo (pending backend support)
-- [ ] SMS / WhatsApp payment reminders (bKash-integrated)
-- [ ] Unit conversion system (box → pieces, kg → grams)
-- [ ] Batch / expiry date tracking for pharmacies & food shops
-- [ ] Cash drawer open/close session tracking
-- [ ] In-app support chat / help center
-- [ ] Excel (XLSX) import support alongside CSV
-- [ ] Account transfer UI between Cash / Bank / Wallet
-
----
-
-## 📄 License
-
-Proprietary — © Maple Service Solution Ltd. All rights reserved.
+- **HttpOnly Cookie Authentication:** Session tokens are secured via `withCredentials: true`, safeguarding authentication credentials from client-side script inspection.
+- **Automatic Token Rotation:** Silent 401 refresh interception ensures zero session disruption for active floor staff during cashier shifts.
+- **Client-Side Safe Parsing:** Form submissions and query parameters are validated with `Zod` and `Ajv` to prevent unexpected input states.
+- **Bilingual Fault Tolerance:** Missing translation tokens automatically fall back to standardized English strings, guaranteeing zero blank labels or interface disruption.
 
 ---
 
 <div align="center">
 
-Built with ❤️ in Bangladesh by [Maple Service Solution Ltd.](https://github.com/Maple-Service-Solution-Ltd)
-
-**হ্যালো খাতা** — আপনার ব্যবসার AI সঙ্গী
+**Built with pride by Maple Service Solution Ltd.**  
+*Empowering South Asian Retailers with Modern, Intelligent Commerce Systems.*
 
 </div>
