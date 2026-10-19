@@ -108,7 +108,7 @@ export default function PurchaseReportPage() {
   const { isBangla } = useAppTranslation();
   const initialDates = getInitialDateRange();
 
-  // Filter States
+  // 1. DRAFT FORM INPUT STATES (Only updated when typing / selecting)
   const [startDate, setStartDate] = useState(initialDates.start);
   const [endDate, setEndDate] = useState(initialDates.end);
   const [selectedStore, setSelectedStore] = useState("");
@@ -124,6 +124,9 @@ export default function PurchaseReportPage() {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // 2. ACTIVE QUERY FILTERS (Snapshot set ONLY on "Generate Report" or pagination)
+  const [activeFilters, setActiveFilters] = useState<any>(null);
 
   // Debounce supplier search query
   useEffect(() => {
@@ -149,28 +152,22 @@ export default function PurchaseReportPage() {
     };
   }, []);
 
-  // API Data: Branches & Suppliers
+  // Auxiliary API Data: Branches & Suppliers
   const { data: branches, isLoading: isBranchesLoading } = useGetBranches();
   const { data: partiesData = [], isLoading: isLoadingParties } = useParties({
     type: "supplier",
     search: debouncedSupplierSearch || undefined,
   });
 
-  // API Data: Real-time Purchase Report
+  // 3. CONTROLLED QUERY HOOK
+  // Bound strictly to activeFilters with enabled: !!activeFilters
   const {
     data: purchaseReportData,
-    refetch: refetchReport,
     isLoading: isLoadingPurchaseReport,
     isFetching: isFetchingPurchaseReport,
-  } = useGetPurhcaseReport({
-    startDate,
-    endDate,
-    branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
-    supplierId: selectedSupplier === "all" || !selectedSupplier ? undefined : selectedSupplier,
-    paymentStatus: selectedPaymentStatus === "all" ? undefined : selectedPaymentStatus || undefined,
-    page: currentPage,
-    limit: pageSize,
-  },{ enabled:false});
+  } = useGetPurhcaseReport(activeFilters, {
+    enabled: Boolean(activeFilters),
+  });
 
   const supplierParties: any[] = Array.isArray(partiesData)
     ? partiesData
@@ -189,7 +186,6 @@ export default function PurchaseReportPage() {
       setSupplierSearchQuery("");
     }
     setShowSupplierSuggestions(false);
-    setCurrentPage(1);
   };
 
   const branchList = Array.isArray(branches)
@@ -209,16 +205,39 @@ export default function PurchaseReportPage() {
   const totalPages =
     meta?.totalPages ?? Math.max(1, Math.ceil(totalEntries / pageSize));
 
-  // Handle Generate Report
+  // 4. ACTION HANDLERS
+  // Snapshots current form input state into activeFilters
   const handleGenerateReport = () => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      refetchReport();
+    setCurrentPage(1);
+    setActiveFilters({
+      startDate,
+      endDate,
+      branchId: selectedStore === "all" ? undefined : selectedStore || undefined,
+      supplierId:
+        selectedSupplier === "all" || !selectedSupplier
+          ? undefined
+          : selectedSupplier,
+      paymentStatus:
+        selectedPaymentStatus === "all"
+          ? undefined
+          : selectedPaymentStatus || undefined,
+      page: 1,
+      limit: pageSize,
+    });
+  };
+
+  // Handles page navigation while keeping filters stable
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (activeFilters) {
+      setActiveFilters((prev: any) => ({
+        ...prev,
+        page: newPage,
+      }));
     }
   };
 
-  // Handle Reset Filter
+  // Handle Reset Filter: resets draft form controls without wiping current screen
   const handleResetFilter = () => {
     const dates = getInitialDateRange();
     setStartDate(dates.start);
@@ -229,11 +248,6 @@ export default function PurchaseReportPage() {
     setSupplierSearchQuery("");
     setShowSupplierSuggestions(false);
     setSelectedPaymentStatus("");
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      refetchReport();
-    }
   };
 
   // Handle Export Excel / CSV
@@ -326,20 +340,14 @@ export default function PurchaseReportPage() {
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setStartDate(e.target.value)}
                 className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
               <span className="text-muted-foreground px-2 select-none">→</span>
               <input
                 type="date"
                 value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setEndDate(e.target.value)}
                 className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
               />
             </div>
@@ -350,13 +358,7 @@ export default function PurchaseReportPage() {
             <label className="text-xs font-semibold text-foreground">
               Branch
             </label>
-            <Select
-              value={selectedStore}
-              onValueChange={(val) => {
-                setSelectedStore(val);
-                setCurrentPage(1);
-              }}
-            >
+            <Select value={selectedStore} onValueChange={setSelectedStore}>
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
@@ -400,7 +402,7 @@ export default function PurchaseReportPage() {
                 value={
                   showSupplierSuggestions
                     ? supplierSearchQuery
-                    : (selectedSupplierName || "All")
+                    : selectedSupplierName || "All"
                 }
                 onChange={(e) => {
                   setSupplierSearchQuery(e.target.value);
@@ -514,10 +516,7 @@ export default function PurchaseReportPage() {
             </label>
             <Select
               value={selectedPaymentStatus}
-              onValueChange={(val) => {
-                setSelectedPaymentStatus(val);
-                setCurrentPage(1);
-              }}
+              onValueChange={setSelectedPaymentStatus}
             >
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
                 <SelectValue placeholder="Select Payment Status" />
@@ -573,7 +572,9 @@ export default function PurchaseReportPage() {
                 Total Purchases
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatKpiNumber(summary?.totalPurchases ?? totalEntries)}
+                {activeFilters
+                  ? formatKpiNumber(summary?.totalPurchases ?? totalEntries)
+                  : "0"}
               </p>
             </div>
           </div>
@@ -590,7 +591,9 @@ export default function PurchaseReportPage() {
                 Total Grand Total
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(summary?.totalGrandTotal ?? 0)}
+                {activeFilters
+                  ? `৳${formatKpiNumber(summary?.totalGrandTotal ?? 0)}`
+                  : "৳0"}
               </p>
             </div>
           </div>
@@ -607,7 +610,9 @@ export default function PurchaseReportPage() {
                 Total Paid Amount
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(summary?.totalPaidAmount ?? 0)}
+                {activeFilters
+                  ? `৳${formatKpiNumber(summary?.totalPaidAmount ?? 0)}`
+                  : "৳0"}
               </p>
             </div>
           </div>
@@ -624,7 +629,9 @@ export default function PurchaseReportPage() {
                 Total Due Amount
               </p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{formatKpiNumber(summary?.totalDueAmount ?? 0)}
+                {activeFilters
+                  ? `৳${formatKpiNumber(summary?.totalDueAmount ?? 0)}`
+                  : "৳0"}
               </p>
             </div>
           </div>
@@ -650,7 +657,7 @@ export default function PurchaseReportPage() {
             <button
               type="button"
               onClick={handleDownloadExcel}
-              disabled={isExporting}
+              disabled={isExporting || purchaseData.length === 0}
               className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
@@ -660,7 +667,8 @@ export default function PurchaseReportPage() {
             <button
               type="button"
               onClick={handlePrintReport}
-              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              disabled={purchaseData.length === 0}
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print Report</span>
@@ -688,7 +696,28 @@ export default function PurchaseReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-foreground">
-              {isLoadingPurchaseReport ? (
+              {!activeFilters ? (
+                /* Initial First Load Prompt */
+                <tr>
+                  <td
+                    colSpan={12}
+                    className="px-4 py-16 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 mx-auto">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1">
+                        <Sparkles className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Ready to generate purchase report
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Select your desired date range and filters above, then click &ldquo;Generate Report&rdquo; to fetch the latest purchase records.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : isLoadingPurchaseReport ? (
+                /* Loading State */
                 <tr>
                   <td
                     colSpan={12}
@@ -703,6 +732,7 @@ export default function PurchaseReportPage() {
                   </td>
                 </tr>
               ) : purchaseData.length === 0 ? (
+                /* Empty State */
                 <tr>
                   <td
                     colSpan={12}
@@ -720,6 +750,7 @@ export default function PurchaseReportPage() {
                   </td>
                 </tr>
               ) : (
+                /* Render Data Rows */
                 purchaseData.map((row: any, idx: number) => {
                   const rowNumber =
                     row.index ?? (currentPage - 1) * pageSize + idx + 1;
@@ -840,12 +871,12 @@ export default function PurchaseReportPage() {
         </div>
 
         {/* Reusable Pagination */}
-        {totalPages > 1 && (
+        {activeFilters && totalPages > 1 && (
           <div className="px-6 py-4 border-t border-border print:hidden">
             <PaginationHelper
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              onPageChange={handlePageChange}
               isBangla={isBangla}
             />
           </div>

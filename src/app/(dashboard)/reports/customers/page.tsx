@@ -14,8 +14,6 @@ import {
   Sparkles,
   Package,
   Users,
-  Trophy,
-  Medal,
   FileText,
 } from "lucide-react";
 import {
@@ -32,447 +30,206 @@ import { PageHeader } from "@/components/common";
 // TYPES & MOCK DATA
 // ============================================================================
 
-export interface SalesReportRow {
+export interface CustomerReportRow {
   id: string;
-  invoiceNo: string;
-  customerName: string;
-  customerId: string;
-  grandTotal: number;
-  payableTotal: number;
-  paidAmount: number;
-  dueAmount: number;
-  changeAmount: number;
-  store: string;
-  storeId: string;
-  unitsSold: number;
-  status: "Completed" | "Pending" | "Processing" | "Cancelled";
-  paymentStatus: "Paid" | "Partial" | "Due";
-  createdAt: string;
-  isoDate: string;
+  customer: string;
+  totalOrders: number;
+  totalOrderAmount: number;
+  totalPaid: number;
+  totalDue: number;
+  lastOrderDate: string;
+  lastOrderDateIso: string;
+  phone: string;
+  email: string;
+  address: string;
+  currentBalance: number;
+  storeName: string;
 }
 
-const INITIAL_MOCK_DATA: SalesReportRow[] = [
+const CUSTOMER_REPORT_MOCK: CustomerReportRow[] = [
   {
-    id: "sale-1",
-    invoiceNo: "INV-2026-0045",
-    customerName: "Rahim Enterprise",
-    customerId: "cust-1",
-    grandTotal: 25400.0,
-    payableTotal: 25000.0,
-    paidAmount: 25000.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 42,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "08 Oct 2026, 11:30 AM",
-    isoDate: "2026-10-08",
+    id: "cmv9971vd000f01n3bemmgbxg",
+    customer: "Sweet Ali",
+    totalOrders: 1,
+    totalOrderAmount: 75,
+    totalPaid: 75,
+    totalDue: 0,
+    lastOrderDate: "2026-10-15",
+    lastOrderDateIso: "2026-10-15T08:05:46.725Z",
+    phone: "01727724844",
+    email: "sweetali0520@gmail.com",
+    address: "-",
+    currentBalance: 0,
+    storeName: "Main Branch",
   },
   {
-    id: "sale-2",
-    invoiceNo: "INV-2026-0044",
-    customerName: "Karim Trading Co.",
-    customerId: "cust-2",
-    grandTotal: 18200.0,
-    payableTotal: 18000.0,
-    paidAmount: 10000.0,
-    dueAmount: 8000.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 28,
-    status: "Completed",
-    paymentStatus: "Partial",
-    createdAt: "08 Oct 2026, 10:15 AM",
-    isoDate: "2026-10-08",
+    id: "cmv9971vd000f01n3bemmgbx1",
+    customer: "Rahim Enterprise",
+    totalOrders: 38,
+    totalOrderAmount: 61200,
+    totalPaid: 48700,
+    totalDue: 12500,
+    lastOrderDate: "2026-10-14",
+    lastOrderDateIso: "2026-10-14T11:20:15.000Z",
+    phone: "01819234567",
+    email: "rahim.enterprise@gmail.com",
+    address: "Mirpur-10, Dhaka",
+    currentBalance: 12500,
+    storeName: "Main Branch",
   },
   {
-    id: "sale-3",
-    invoiceNo: "INV-2026-0043",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 3450.0,
-    payableTotal: 3450.0,
-    paidAmount: 3500.0,
-    dueAmount: 0.0,
-    changeAmount: 50.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 6,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "07 Oct 2026, 08:45 PM",
-    isoDate: "2026-10-07",
+    id: "cmv9971vd000f01n3bemmgbx2",
+    customer: "Karim Trading Co.",
+    totalOrders: 24,
+    totalOrderAmount: 37290,
+    totalPaid: 29290,
+    totalDue: 8000,
+    lastOrderDate: "2026-10-13",
+    lastOrderDateIso: "2026-10-13T15:45:00.000Z",
+    phone: "01711987654",
+    email: "karim.trade@yahoo.com",
+    address: "Gulshan-1, Dhaka",
+    currentBalance: 8000,
+    storeName: "Gulshan Flagship Store",
   },
   {
-    id: "sale-4",
-    invoiceNo: "INV-2026-0042",
-    customerName: "Bengal Superstore",
-    customerId: "cust-3",
-    grandTotal: 45600.0,
-    payableTotal: 44800.0,
-    paidAmount: 44800.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 94,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "07 Oct 2026, 06:10 PM",
-    isoDate: "2026-10-07",
+    id: "cmv9971vd000f01n3bemmgbx3",
+    customer: "Bengal Superstore",
+    totalOrders: 29,
+    totalOrderAmount: 48650,
+    totalPaid: 48650,
+    totalDue: 0,
+    lastOrderDate: "2026-10-12",
+    lastOrderDateIso: "2026-10-12T09:30:20.000Z",
+    phone: "01912345678",
+    email: "bengal.super@gmail.com",
+    address: "Dhanmondi 27, Dhaka",
+    currentBalance: 0,
+    storeName: "Dhanmondi Hub",
   },
   {
-    id: "sale-5",
-    invoiceNo: "INV-2026-0041",
-    customerName: "Apex Retail",
-    customerId: "cust-4",
-    grandTotal: 12800.0,
-    payableTotal: 12800.0,
-    paidAmount: 0.0,
-    dueAmount: 12800.0,
-    changeAmount: 0.0,
-    store: "Uttara Outlet",
-    storeId: "store-uttara",
-    unitsSold: 18,
-    status: "Pending",
-    paymentStatus: "Due",
-    createdAt: "07 Oct 2026, 03:20 PM",
-    isoDate: "2026-10-07",
+    id: "cmv9971vd000f01n3bemmgbx4",
+    customer: "Apex Retail",
+    totalOrders: 18,
+    totalOrderAmount: 24500,
+    totalPaid: 18000,
+    totalDue: 6500,
+    lastOrderDate: "2026-10-10",
+    lastOrderDateIso: "2026-10-10T14:15:30.000Z",
+    phone: "01678123456",
+    email: "apex.retail@gmail.com",
+    address: "Sector 3, Uttara",
+    currentBalance: 6500,
+    storeName: "Uttara Outlet",
   },
   {
-    id: "sale-6",
-    invoiceNo: "INV-2026-0040",
-    customerName: "Green Valley Agro",
-    customerId: "cust-5",
-    grandTotal: 32150.0,
-    payableTotal: 31500.0,
-    paidAmount: 20000.0,
-    dueAmount: 11500.0,
-    changeAmount: 0.0,
-    store: "Chittagong Central",
-    storeId: "store-ctg",
-    unitsSold: 55,
-    status: "Completed",
-    paymentStatus: "Partial",
-    createdAt: "06 Oct 2026, 05:40 PM",
-    isoDate: "2026-10-06",
+    id: "cmv9971vd000f01n3bemmgbx5",
+    customer: "Green Valley Agro",
+    totalOrders: 14,
+    totalOrderAmount: 32150,
+    totalPaid: 32150,
+    totalDue: 0,
+    lastOrderDate: "2026-10-09",
+    lastOrderDateIso: "2026-10-09T17:10:00.000Z",
+    phone: "01552345678",
+    email: "greenvalley@agro.com",
+    address: "GEC Circle, Chittagong",
+    currentBalance: 0,
+    storeName: "Chittagong Central",
   },
   {
-    id: "sale-7",
-    invoiceNo: "INV-2026-0039",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 1850.0,
-    payableTotal: 1850.0,
-    paidAmount: 2000.0,
-    dueAmount: 0.0,
-    changeAmount: 150.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 3,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "06 Oct 2026, 02:15 PM",
-    isoDate: "2026-10-06",
+    id: "cmv9971vd000f01n3bemmgbx6",
+    customer: "Modern Tech Solutions",
+    totalOrders: 26,
+    totalOrderAmount: 43120,
+    totalPaid: 43120,
+    totalDue: 0,
+    lastOrderDate: "2026-10-08",
+    lastOrderDateIso: "2026-10-08T12:00:00.000Z",
+    phone: "01733445566",
+    email: "info@moderntech.com.bd",
+    address: "Motijheel C/A, Dhaka",
+    currentBalance: 0,
+    storeName: "Main Branch",
   },
   {
-    id: "sale-8",
-    invoiceNo: "INV-2026-0038",
-    customerName: "Modern Tech Solutions",
-    customerId: "cust-6",
-    grandTotal: 56000.0,
-    payableTotal: 55000.0,
-    paidAmount: 55000.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 110,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "05 Oct 2026, 04:50 PM",
-    isoDate: "2026-10-05",
+    id: "cmv9971vd000f01n3bemmgbx7",
+    customer: "Dhaka Grocers",
+    totalOrders: 22,
+    totalOrderAmount: 28900,
+    totalPaid: 23900,
+    totalDue: 5000,
+    lastOrderDate: "2026-10-07",
+    lastOrderDateIso: "2026-10-07T16:40:10.000Z",
+    phone: "01822334455",
+    email: "dhaka.grocers@gmail.com",
+    address: "Banani, Dhaka",
+    currentBalance: 5000,
+    storeName: "Gulshan Flagship Store",
   },
   {
-    id: "sale-9",
-    invoiceNo: "INV-2026-0037",
-    customerName: "Dhaka Grocers",
-    customerId: "cust-7",
-    grandTotal: 9400.0,
-    payableTotal: 9200.0,
-    paidAmount: 0.0,
-    dueAmount: 9200.0,
-    changeAmount: 0.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 14,
-    status: "Cancelled",
-    paymentStatus: "Due",
-    createdAt: "05 Oct 2026, 12:30 PM",
-    isoDate: "2026-10-05",
+    id: "cmv9971vd000f01n3bemmgbx8",
+    customer: "Padma Distributions",
+    totalOrders: 34,
+    totalOrderAmount: 54870,
+    totalPaid: 54870,
+    totalDue: 0,
+    lastOrderDate: "2026-10-06",
+    lastOrderDateIso: "2026-10-06T11:15:00.000Z",
+    phone: "01933445566",
+    email: "padma.dist@gmail.com",
+    address: "Kawran Bazar, Dhaka",
+    currentBalance: 0,
+    storeName: "Main Branch",
   },
   {
-    id: "sale-10",
-    invoiceNo: "INV-2026-0036",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 5750.0,
-    payableTotal: 5750.0,
-    paidAmount: 5750.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Uttara Outlet",
-    storeId: "store-uttara",
-    unitsSold: 9,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "04 Oct 2026, 07:15 PM",
-    isoDate: "2026-10-04",
-  },
-  {
-    id: "sale-11",
-    invoiceNo: "INV-2026-0035",
-    customerName: "Padma Distributions",
-    customerId: "cust-8",
-    grandTotal: 68300.0,
-    payableTotal: 66500.0,
-    paidAmount: 66500.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Chittagong Central",
-    storeId: "store-ctg",
-    unitsSold: 135,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "04 Oct 2026, 01:20 PM",
-    isoDate: "2026-10-04",
-  },
-  {
-    id: "sale-12",
-    invoiceNo: "INV-2026-0034",
-    customerName: "Prime Pharma",
-    customerId: "cust-9",
-    grandTotal: 28900.0,
-    payableTotal: 28000.0,
-    paidAmount: 15000.0,
-    dueAmount: 13000.0,
-    changeAmount: 0.0,
-    store: "Gulshan Flagship Store",
-    storeId: "store-gulshan",
-    unitsSold: 45,
-    status: "Processing",
-    paymentStatus: "Partial",
-    createdAt: "03 Oct 2026, 09:45 AM",
-    isoDate: "2026-10-03",
-  },
-  {
-    id: "sale-13",
-    invoiceNo: "INV-2026-0033",
-    customerName: "Star Stationery",
-    customerId: "cust-10",
-    grandTotal: 7650.0,
-    payableTotal: 7500.0,
-    paidAmount: 7500.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Dhanmondi Hub",
-    storeId: "store-dhanmondi",
-    unitsSold: 22,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "02 Oct 2026, 03:30 PM",
-    isoDate: "2026-10-02",
-  },
-  {
-    id: "sale-14",
-    invoiceNo: "INV-2026-0032",
-    customerName: "Walk-in Customer",
-    customerId: "cust-walkin",
-    grandTotal: 4100.0,
-    payableTotal: 4100.0,
-    paidAmount: 4100.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 8,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "01 Oct 2026, 04:10 PM",
-    isoDate: "2026-10-01",
-  },
-  {
-    id: "sale-15",
-    invoiceNo: "INV-2026-0031",
-    customerName: "Sylhet Wholesale Hub",
-    customerId: "cust-11",
-    grandTotal: 39500.0,
-    payableTotal: 38800.0,
-    paidAmount: 38800.0,
-    dueAmount: 0.0,
-    changeAmount: 0.0,
-    store: "Main Branch (Dhaka)",
-    storeId: "store-main",
-    unitsSold: 76,
-    status: "Completed",
-    paymentStatus: "Paid",
-    createdAt: "01 Oct 2026, 11:00 AM",
-    isoDate: "2026-10-01",
+    id: "cmv9971vd000f01n3bemmgbx9",
+    customer: "Prime Pharma",
+    totalOrders: 16,
+    totalOrderAmount: 19840,
+    totalPaid: 15000,
+    totalDue: 4840,
+    lastOrderDate: "2026-10-05",
+    lastOrderDateIso: "2026-10-05T13:25:00.000Z",
+    phone: "01611223344",
+    email: "prime.pharma@gmail.com",
+    address: "Uttara Sector 7",
+    currentBalance: 4840,
+    storeName: "Uttara Outlet",
   },
 ];
 
 // Available Filter Options
 const STORE_OPTIONS = [
   { value: "all", label: "Choose Store" },
-  { value: "store-main", label: "Main Branch (Dhaka)" },
-  { value: "store-gulshan", label: "Gulshan Flagship Store" },
-  { value: "store-dhanmondi", label: "Dhanmondi Hub" },
-  { value: "store-uttara", label: "Uttara Outlet" },
-  { value: "store-ctg", label: "Chittagong Central" },
+  { value: "Main Branch", label: "Main Branch" },
+  { value: "Gulshan Flagship Store", label: "Gulshan Flagship Store" },
+  { value: "Dhanmondi Hub", label: "Dhanmondi Hub" },
+  { value: "Uttara Outlet", label: "Uttara Outlet" },
+  { value: "Chittagong Central", label: "Chittagong Central" },
 ];
 
 const CUSTOMER_OPTIONS = [
   { value: "all", label: "Select Customer" },
-  { value: "cust-walkin", label: "Walk-in Customer" },
-  { value: "cust-1", label: "Rahim Enterprise" },
-  { value: "cust-2", label: "Karim Trading Co." },
-  { value: "cust-3", label: "Bengal Superstore" },
-  { value: "cust-4", label: "Apex Retail" },
-  { value: "cust-5", label: "Green Valley Agro" },
-  { value: "cust-6", label: "Modern Tech Solutions" },
-  { value: "cust-7", label: "Dhaka Grocers" },
-  { value: "cust-8", label: "Padma Distributions" },
-  { value: "cust-9", label: "Prime Pharma" },
-  { value: "cust-10", label: "Star Stationery" },
-  { value: "cust-11", label: "Sylhet Wholesale Hub" },
+  { value: "Sweet Ali", label: "Sweet Ali" },
+  { value: "Rahim Enterprise", label: "Rahim Enterprise" },
+  { value: "Karim Trading Co.", label: "Karim Trading Co." },
+  { value: "Bengal Superstore", label: "Bengal Superstore" },
+  { value: "Apex Retail", label: "Apex Retail" },
+  { value: "Green Valley Agro", label: "Green Valley Agro" },
+  { value: "Modern Tech Solutions", label: "Modern Tech Solutions" },
+  { value: "Dhaka Grocers", label: "Dhaka Grocers" },
+  { value: "Padma Distributions", label: "Padma Distributions" },
+  { value: "Prime Pharma", label: "Prime Pharma" },
 ];
 
-// ============================================================================
-// TOP CUSTOMERS MOCK DATA
-// ============================================================================
-
-export interface TopCustomer {
-  rank: number;
-  id: string;
-  customerName: string;
-  customerCode: string;
-  category: string;
-  ordersCount: number;
-  totalSales: number;
-  outstandingDue: number;
-  avgOrderValue: number;
-  growthRate: number;
-}
-
-const TOP_CUSTOMERS_MOCK: TopCustomer[] = [
-  {
-    rank: 1,
-    id: "cust-1",
-    customerName: "Rahim Enterprise",
-    customerCode: "CUS-RAH-01",
-    category: "Retail",
-    ordersCount: 38,
-    totalSales: 612000,
-    outstandingDue: 12500,
-    avgOrderValue: 16105,
-    growthRate: 14.6,
-  },
-  {
-    rank: 2,
-    id: "cust-8",
-    customerName: "Padma Distributions",
-    customerCode: "CUS-PAD-08",
-    category: "Wholesale",
-    ordersCount: 34,
-    totalSales: 548700,
-    outstandingDue: 0,
-    avgOrderValue: 16138,
-    growthRate: 12.1,
-  },
-  {
-    rank: 3,
-    id: "cust-3",
-    customerName: "Bengal Superstore",
-    customerCode: "CUS-BEN-03",
-    category: "Retail",
-    ordersCount: 29,
-    totalSales: 486500,
-    outstandingDue: 24000,
-    avgOrderValue: 16776,
-    growthRate: 9.8,
-  },
-  {
-    rank: 4,
-    id: "cust-6",
-    customerName: "Modern Tech Solutions",
-    customerCode: "CUS-MTS-06",
-    category: "Corporate",
-    ordersCount: 26,
-    totalSales: 431200,
-    outstandingDue: 0,
-    avgOrderValue: 16585,
-    growthRate: 18.4,
-  },
-  {
-    rank: 5,
-    id: "cust-2",
-    customerName: "Karim Trading Co.",
-    customerCode: "CUS-KAR-02",
-    category: "Wholesale",
-    ordersCount: 24,
-    totalSales: 372900,
-    outstandingDue: 46500,
-    avgOrderValue: 15538,
-    growthRate: 5.3,
-  },
-  {
-    rank: 6,
-    id: "cust-11",
-    customerName: "Sylhet Wholesale Hub",
-    customerCode: "CUS-SYL-11",
-    category: "Wholesale",
-    ordersCount: 21,
-    totalSales: 318600,
-    outstandingDue: 18900,
-    avgOrderValue: 15171,
-    growthRate: 3.7,
-  },
-  {
-    rank: 7,
-    id: "cust-5",
-    customerName: "Green Valley Agro",
-    customerCode: "CUS-GVA-05",
-    category: "Agro & Foods",
-    ordersCount: 18,
-    totalSales: 245300,
-    outstandingDue: 11500,
-    avgOrderValue: 13628,
-    growthRate: -2.4,
-  },
-  {
-    rank: 8,
-    id: "cust-9",
-    customerName: "Prime Pharma",
-    customerCode: "CUS-PRP-09",
-    category: "Pharmacy",
-    ordersCount: 16,
-    totalSales: 198400,
-    outstandingDue: 32000,
-    avgOrderValue: 12400,
-    growthRate: -6.1,
-  },
-];
-
-const TC_CATEGORY_OPTIONS = [
-  { value: "all", label: "All Categories" },
-  { value: "Retail", label: "Retail" },
-  { value: "Wholesale", label: "Wholesale" },
-  { value: "Corporate", label: "Corporate" },
-  { value: "Agro & Foods", label: "Agro & Foods" },
-  { value: "Pharmacy", label: "Pharmacy" },
+const TABLE_STORE_FILTER_OPTIONS = [
+  { value: "all", label: "All Stores" },
+  { value: "Main Branch", label: "Main Branch" },
+  { value: "Gulshan Flagship Store", label: "Gulshan Flagship Store" },
+  { value: "Dhanmondi Hub", label: "Dhanmondi Hub" },
+  { value: "Uttara Outlet", label: "Uttara Outlet" },
+  { value: "Chittagong Central", label: "Chittagong Central" },
 ];
 
 // ============================================================================
@@ -480,7 +237,7 @@ const TC_CATEGORY_OPTIONS = [
 // ============================================================================
 
 const formatBDT = (amount: number) => {
-  return `৳${amount.toLocaleString("en-IN", {
+  return `৳${Number(amount || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -493,71 +250,70 @@ const formatBDT = (amount: number) => {
 export default function CustomerReportPage() {
   // Filter States
   const [startDate, setStartDate] = useState("2026-10-01");
-  const [endDate, setEndDate] = useState("2026-10-08");
+  const [endDate, setEndDate] = useState("2026-10-15");
   const [selectedStore, setSelectedStore] = useState("all");
   const [selectedCustomer, setSelectedCustomer] = useState("all");
 
   // Applied Filters State (Updated when "Generate Report" is clicked)
   const [appliedFilters, setAppliedFilters] = useState({
     startDate: "2026-10-01",
-    endDate: "2026-10-08",
+    endDate: "2026-10-15",
     store: "all",
     customer: "all",
   });
 
   // Customer Report table filter
-  const [tcCategoryFilter, setTcCategoryFilter] = useState("all");
+  const [tcStoreFilter, setTcStoreFilter] = useState("all");
   const [tcPageSize, setTcPageSize] = useState(10);
   const [tcCurrentPage, setTcCurrentPage] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
 
-  const filteredTopCustomers = useMemo(() => {
-    if (tcCategoryFilter === "all") return TOP_CUSTOMERS_MOCK;
-    return TOP_CUSTOMERS_MOCK.filter((c) => c.category === tcCategoryFilter);
-  }, [tcCategoryFilter]);
-
-  const tcTotalEntries = filteredTopCustomers.length;
-  const tcTotalPages = Math.max(1, Math.ceil(tcTotalEntries / tcPageSize));
-  const paginatedTopCustomers = useMemo(() => {
-    const start = (tcCurrentPage - 1) * tcPageSize;
-    return filteredTopCustomers.slice(start, start + tcPageSize);
-  }, [filteredTopCustomers, tcCurrentPage, tcPageSize]);
-
-  // Filtered Sales Rows (drives the Customer Report KPIs)
-  const filteredData = useMemo(() => {
-    return INITIAL_MOCK_DATA.filter((item) => {
-      if (appliedFilters.startDate && item.isoDate < appliedFilters.startDate) {
+  // Filtered Customers based on Top Filter & Table Store Filter
+  const filteredCustomers = useMemo(() => {
+    return CUSTOMER_REPORT_MOCK.filter((c) => {
+      // Date filter based on lastOrderDate
+      if (appliedFilters.startDate && c.lastOrderDate < appliedFilters.startDate) {
         return false;
       }
-      if (appliedFilters.endDate && item.isoDate > appliedFilters.endDate) {
+      if (appliedFilters.endDate && c.lastOrderDate > appliedFilters.endDate) {
         return false;
       }
-      if (
-        appliedFilters.store !== "all" &&
-        item.storeId !== appliedFilters.store
-      ) {
+      // Store filter from top filter card
+      if (appliedFilters.store !== "all" && c.storeName !== appliedFilters.store) {
         return false;
       }
+      // Customer filter from top filter card
       if (
         appliedFilters.customer !== "all" &&
-        item.customerId !== appliedFilters.customer
+        c.customer !== appliedFilters.customer
       ) {
+        return false;
+      }
+      // Table-level store dropdown filter
+      if (tcStoreFilter !== "all" && c.storeName !== tcStoreFilter) {
         return false;
       }
       return true;
     });
-  }, [appliedFilters]);
+  }, [appliedFilters, tcStoreFilter]);
 
-  // Aggregate Metrics for Customer Report KPI Cards (respects applied filters)
+  const tcTotalEntries = filteredCustomers.length;
+  const tcTotalPages = Math.max(1, Math.ceil(tcTotalEntries / tcPageSize));
+  const paginatedCustomers = useMemo(() => {
+    const start = (tcCurrentPage - 1) * tcPageSize;
+    return filteredCustomers.slice(start, start + tcPageSize);
+  }, [filteredCustomers, tcCurrentPage, tcPageSize]);
+
+  // Aggregate Metrics for Customer Report KPI Cards
   const customerReportKpis = useMemo(() => {
-    const totalAmount = filteredData.reduce((s, r) => s + r.grandTotal, 0);
-    const totalPaid = filteredData.reduce((s, r) => s + r.paidAmount, 0);
-    const totalDue = filteredData.reduce((s, r) => s + r.dueAmount, 0);
-    const totalItems = filteredData.reduce((s, r) => s + r.unitsSold, 0);
-    const totalOrders = filteredData.length;
-    const uniqueCustomers = new Set(filteredData.map((r) => r.customerId)).size;
-    return { totalAmount, totalPaid, totalDue, totalItems, totalOrders, uniqueCustomers };
-  }, [filteredData]);
+    const totalAmount = filteredCustomers.reduce((s, r) => s + r.totalOrderAmount, 0);
+    const totalPaid = filteredCustomers.reduce((s, r) => s + r.totalPaid, 0);
+    const totalDue = filteredCustomers.reduce((s, r) => s + r.totalDue, 0);
+    const totalOrders = filteredCustomers.reduce((s, r) => s + r.totalOrders, 0);
+    const totalBalance = filteredCustomers.reduce((s, r) => s + r.currentBalance, 0);
+    const uniqueCustomers = filteredCustomers.length;
+    return { totalAmount, totalPaid, totalDue, totalOrders, totalBalance, uniqueCustomers };
+  }, [filteredCustomers]);
 
   // Handle Generate Report
   const handleGenerateReport = () => {
@@ -573,14 +329,14 @@ export default function CustomerReportPage() {
   // Handle Reset Filter
   const handleResetFilter = () => {
     setStartDate("2026-10-01");
-    setEndDate("2026-10-08");
+    setEndDate("2026-10-15");
     setSelectedStore("all");
     setSelectedCustomer("all");
-    setTcCategoryFilter("all");
+    setTcStoreFilter("all");
 
     setAppliedFilters({
       startDate: "2026-10-01",
-      endDate: "2026-10-08",
+      endDate: "2026-10-15",
       store: "all",
       customer: "all",
     });
@@ -592,30 +348,36 @@ export default function CustomerReportPage() {
     setIsExporting(true);
     try {
       const headers = [
-        "Rank",
-        "Customer Name",
-        "Code",
-        "Category",
-        "Orders",
-        "Total Sales",
-        "Outstanding Due",
-        "Avg. Order",
-        "Growth",
+        "#",
+        "Customer",
+        "Phone",
+        "Email",
+        "Address",
+        "Store / Branch",
+        "Total Orders",
+        "Total Order Amount",
+        "Total Paid",
+        "Total Due",
+        "Current Balance",
+        "Last Order Date",
       ];
 
       const csvRows = [
         headers.join(","),
-        ...filteredTopCustomers.map((customer) =>
+        ...filteredCustomers.map((customer, idx) =>
           [
-            customer.rank,
-            `"${customer.customerName}"`,
-            `"${customer.customerCode}"`,
-            `"${customer.category}"`,
-            customer.ordersCount,
-            customer.totalSales,
-            customer.outstandingDue,
-            customer.avgOrderValue,
-            customer.growthRate,
+            idx + 1,
+            `"${customer.customer}"`,
+            `"${customer.phone || ""}"`,
+            `"${customer.email || ""}"`,
+            `"${customer.address || ""}"`,
+            `"${customer.storeName || ""}"`,
+            customer.totalOrders,
+            Number(customer.totalOrderAmount || 0).toFixed(2),
+            Number(customer.totalPaid || 0).toFixed(2),
+            Number(customer.totalDue || 0).toFixed(2),
+            Number(customer.currentBalance || 0).toFixed(2),
+            `"${customer.lastOrderDate || ""}"`,
           ].join(",")
         ),
       ];
@@ -760,11 +522,12 @@ export default function CustomerReportPage() {
             <div className="min-w-0 space-y-0.5">
               <p className="text-xs font-semibold text-muted-foreground truncate">Total Amount</p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{customerReportKpis.totalAmount.toLocaleString("en-IN")}
+                {formatBDT(customerReportKpis.totalAmount)}
               </p>
             </div>
           </div>
         </div>
+
         <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-emerald-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -773,11 +536,12 @@ export default function CustomerReportPage() {
             <div className="min-w-0 space-y-0.5">
               <p className="text-xs font-semibold text-muted-foreground truncate">Total Paid</p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{customerReportKpis.totalPaid.toLocaleString("en-IN")}
+                {formatBDT(customerReportKpis.totalPaid)}
               </p>
             </div>
           </div>
         </div>
+
         <div className="relative overflow-hidden rounded-2xl border border-rose-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-rose-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -786,24 +550,26 @@ export default function CustomerReportPage() {
             <div className="min-w-0 space-y-0.5">
               <p className="text-xs font-semibold text-muted-foreground truncate">Total Due</p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                ৳{customerReportKpis.totalDue.toLocaleString("en-IN")}
+                {formatBDT(customerReportKpis.totalDue)}
               </p>
             </div>
           </div>
         </div>
+
         <div className="relative overflow-hidden rounded-2xl border border-teal-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-teal-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-sm">
               <Package className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Items</p>
+              <p className="text-xs font-semibold text-muted-foreground truncate">Total Balance</p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {customerReportKpis.totalItems.toLocaleString("en-IN")}
+                {formatBDT(customerReportKpis.totalBalance)}
               </p>
             </div>
           </div>
         </div>
+
         <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -817,13 +583,14 @@ export default function CustomerReportPage() {
             </div>
           </div>
         </div>
+
         <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-violet-500/40 hover:-translate-y-0.5">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-xl bg-violet-500 flex items-center justify-center text-white shrink-0 shadow-sm">
               <Users className="h-6 w-6" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Unique Customers</p>
+              <p className="text-xs font-semibold text-muted-foreground truncate">Customers</p>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
                 {customerReportKpis.uniqueCustomers.toLocaleString("en-IN")}
               </p>
@@ -842,12 +609,12 @@ export default function CustomerReportPage() {
             <h2 className="text-base font-bold text-foreground tracking-tight">Customer Report</h2>
           </div>
           <div className="flex items-center gap-3">
-            <Select value={tcCategoryFilter} onValueChange={(v) => { setTcCategoryFilter(v); setTcCurrentPage(1); }}>
-              <SelectTrigger className="h-9 w-[160px] rounded-md border-input bg-background text-foreground text-xs">
-                <SelectValue placeholder="All Categories" />
+            <Select value={tcStoreFilter} onValueChange={(v) => { setTcStoreFilter(v); setTcCurrentPage(1); }}>
+              <SelectTrigger className="h-9 w-[170px] rounded-md border-input bg-background text-foreground text-xs">
+                <SelectValue placeholder="All Stores" />
               </SelectTrigger>
               <SelectContent className="border-border bg-popover text-popover-foreground">
-                {TC_CATEGORY_OPTIONS.map((opt) => (
+                {TABLE_STORE_FILTER_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -877,21 +644,22 @@ export default function CustomerReportPage() {
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[11px] sm:text-xs font-semibold tracking-wider uppercase">
-                <th className="px-4 py-3.5 whitespace-nowrap">Rank</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Customer Name</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Code</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Category</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Orders</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Total Sales</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Outstanding Due</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Avg. Order</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Growth</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">#</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Customer</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Phone</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Store / Branch</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Total Orders</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Total Order Amount</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Total Paid</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Total Due</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Current Balance</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Last Order Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-foreground">
-              {paginatedTopCustomers.length === 0 ? (
+              {paginatedCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-muted-foreground" />
                       <p className="text-sm font-medium">No customers found</p>
@@ -899,75 +667,86 @@ export default function CustomerReportPage() {
                   </td>
                 </tr>
               ) : (
-                paginatedTopCustomers.map((customer) => {
-                  const isPositiveGrowth = customer.growthRate >= 0;
+                paginatedCustomers.map((customer, idx) => {
                   return (
-                    <tr key={customer.id} className="hover:bg-muted/40 transition-colors">
-                      {/* Rank */}
+                    <tr key={customer.id} className="hover:bg-muted/40 transition-colors group">
+                      {/* # */}
+                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
+                        {(tcCurrentPage - 1) * tcPageSize + idx + 1}
+                      </td>
+
+                      {/* Customer & Email */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {customer.rank === 1 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                            <Trophy className="h-3 w-3" />#1
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground text-xs sm:text-sm">
+                            {customer.customer}
                           </span>
-                        )}
-                        {customer.rank === 2 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-foreground border border-border">
-                            <Medal className="h-3 w-3" />#2
-                          </span>
-                        )}
-                        {customer.rank === 3 && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-700/15 text-orange-400 border border-orange-700/30">
-                            <Medal className="h-3 w-3" />#3
-                          </span>
-                        )}
-                        {customer.rank > 3 && (
-                          <span className="font-mono text-muted-foreground text-xs">#{customer.rank}</span>
-                        )}
+                          {customer.email && customer.email !== "-" && (
+                            <span className="text-[11px] text-muted-foreground font-mono">
+                              {customer.email}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      {/* Customer Name */}
-                      <td className="px-4 py-3 font-semibold text-foreground whitespace-nowrap max-w-[240px] truncate">
-                        {customer.customerName}
-                      </td>
-                      {/* Code */}
+
+                      {/* Phone */}
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                        {customer.customerCode}
+                        {customer.phone || "—"}
                       </td>
-                      {/* Category */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                          {customer.category}
-                        </span>
+
+                      {/* Store / Branch */}
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap text-xs">
+                        {customer.storeName || "—"}
                       </td>
-                      {/* Orders */}
-                      <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap">
-                        {customer.ordersCount.toLocaleString()}
+
+                      {/* Total Orders */}
+                      <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap text-xs">
+                        {customer.totalOrders}
                       </td>
-                      {/* Total Sales */}
-                      <td className="px-4 py-3 font-medium text-emerald-400 whitespace-nowrap">
-                        {formatBDT(customer.totalSales)}
+
+                      {/* Total Order Amount */}
+                      <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap text-xs">
+                        {formatBDT(customer.totalOrderAmount)}
                       </td>
-                      {/* Outstanding Due */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={cn(
-                          "font-semibold",
-                          customer.outstandingDue > 0 ? "text-rose-400" : "text-muted-foreground"
-                        )}>
-                          {formatBDT(customer.outstandingDue)}
-                        </span>
+
+                      {/* Total Paid */}
+                      <td className="px-4 py-3 font-medium text-emerald-500 whitespace-nowrap text-xs">
+                        {formatBDT(customer.totalPaid)}
                       </td>
-                      {/* Avg Order */}
-                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
-                        {formatBDT(customer.avgOrderValue)}
+
+                      {/* Total Due */}
+                      <td className="px-4 py-3 whitespace-nowrap text-xs">
+                        {customer.totalDue > 0 ? (
+                          <span className="font-semibold text-rose-500">
+                            {formatBDT(customer.totalDue)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-medium">
+                            {formatBDT(0)}
+                          </span>
+                        )}
                       </td>
-                      {/* Growth Rate */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={cn(
-                          "inline-flex items-center gap-1 text-xs font-semibold",
-                          isPositiveGrowth ? "text-emerald-400" : "text-rose-400"
-                        )}>
-                          {isPositiveGrowth ? "▲" : "▼"}
-                          {Math.abs(customer.growthRate)}%
-                        </span>
+
+                      {/* Current Balance */}
+                      <td className="px-4 py-3 whitespace-nowrap text-xs">
+                        {customer.currentBalance > 0 ? (
+                          <span className="font-semibold text-rose-500">
+                            {formatBDT(customer.currentBalance)}
+                          </span>
+                        ) : customer.currentBalance < 0 ? (
+                          <span className="font-semibold text-emerald-500">
+                            {formatBDT(Math.abs(customer.currentBalance))} (Adv)
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground font-medium">
+                            {formatBDT(0)}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Last Order Date */}
+                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                        {customer.lastOrderDate || "—"}
                       </td>
                     </tr>
                   );
