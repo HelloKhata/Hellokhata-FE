@@ -53,3 +53,8 @@ export const getPurchaseReport = async( filters?:any) =>{
   const res = await client.get("/api/reports-new/purchase-report", { params: filters });
   return res.data;
 };
+
+export const getInventoryReport = async(filters:any) => {
+  const res = await client.get("/api/reports-new/stock-report", { params: filters });
+  return res.data;
+}

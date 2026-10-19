@@ -33,5 +33,5 @@ jobs:
             npm run build
 
             # 5. Reload app with 
-            pm2 reload hello-khata-frontend || pm2 start npm --name "hello-khata-frontend" -- start -- -p 3000
+            pm2 reload hello-khata-frontend || pm2 start npm --name "hello-khata-frontend" -- start -- -p 8200
             pm2 save
