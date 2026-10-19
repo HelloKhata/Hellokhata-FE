@@ -1,294 +1,397 @@
-// Hello Khata OS - Accounting & Finance Reports Master Hub (Premium Glass Edition)
-// হ্যালো খাতা - হিসাব ও অর্থায়ন রিপোর্টস মাস্টার হাব (প্রিমিয়াম গ্লাস কালার সংস্করণ)
+// HelloKhata - Finance & Accounting Reports Master Hub
+// হ্যালো খাতা - হিসাব ও অর্থায়ন রিপোর্টস মাস্টার হাব
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   TrendingUp,
+  TrendingDown,
   Wallet,
-  Scale,
-  Percent,
-  Activity,
-  History,
-  AlertCircle,
+  Receipt,
+  CreditCard,
   FileSpreadsheet,
   Download,
-  BookOpen,
+  Printer,
+  LayoutDashboard,
+  Layers,
+  ArrowRightLeft,
+  Calendar,
+  Building2,
+  CheckCircle2,
 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
-import { FinanceReportHeader } from '@/components/reports/finance/FinanceReportHeader';
-import { FinancialHealthSummary } from '@/components/reports/finance/FinancialHealthSummary';
-import { MasterFinancialReportsExplorer } from '@/components/reports/finance/MasterFinancialReportsExplorer';
-import { ContextualFinancialInsight } from '@/components/reports/finance/ContextualFinancialInsight';
-import { FinancialAlertsSection } from '@/components/reports/finance/FinancialAlertsSection';
-import { FinancialPerformanceChart } from '@/components/reports/finance/FinancialPerformanceChart';
-import { CashFlowMovement } from '@/components/reports/finance/CashFlowMovement';
-import { DuesAgingSection } from '@/components/reports/finance/DuesAgingSection';
-import { BalanceSheetSnapshot } from '@/components/reports/finance/BalanceSheetSnapshot';
-import { ExpenseIntelligence } from '@/components/reports/finance/ExpenseIntelligence';
-import { RecentFinancialActivity } from '@/components/reports/finance/RecentFinancialActivity';
-import { StatutoryPdfPacketModal } from '@/components/reports/finance/StatutoryPdfPacketModal';
-// import { exportMultiSheetFinancialWorkbook } from '@/lib/export/financial-excel-export';
+import { PageHeader } from '@/components/common';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import {
-  MOCK_FINANCE_METRICS,
-  MOCK_PERFORMANCE_DAILY,
-  MOCK_PERFORMANCE_WEEKLY,
-  MOCK_PERFORMANCE_MONTHLY,
-  MOCK_PERFORMANCE_QUARTERLY,
-  MOCK_PERFORMANCE_YEARLY,
-  MOCK_CASH_MOVEMENT,
-  MOCK_RECEIVABLES_DATA,
-  MOCK_PAYABLES_DATA,
-  MOCK_BALANCE_SHEET_DATA,
-  MOCK_EXPENSE_CATEGORIES,
-  MOCK_FINANCIAL_ALERTS,
-  MOCK_RECENT_TRANSACTIONS,
-} from '@/components/reports/finance/mock-data';
+// API Hooks
+import { useGetPaymentMethodStatus, useGetPaymentMethods, useGetDepositsAndWithdrawls } from '@/hooks/api/usePaymentMethod';
+import { usePartyStats, useParties } from '@/hooks/api/useParties';
+import { useExpenseSummary, useGetExpenseCategories } from '@/hooks/api/useExpense';
+import { useGetTransactions, useGetIncomeCateogories } from '@/hooks/api/useFinance';
+import { useGetSalesReportSummary, useGetPurhcaseReport } from '@/hooks/api/useReports';
+import { useGetBranches } from '@/hooks/api/useBranches';
 
-export default function FinanceReportsPage() {
+// Report Tabs
+import { FinanceOverviewTab } from '@/components/reports/finance/FinanceOverviewTab';
+import { IncomeExpenseTab } from '@/components/reports/finance/IncomeExpenseTab';
+import { CashBankTab } from '@/components/reports/finance/CashBankTab';
+import { ReceivablesTab } from '@/components/reports/finance/ReceivablesTab';
+import { PayablesTab } from '@/components/reports/finance/PayablesTab';
+import { PreliminaryPnLTab } from '@/components/reports/finance/PreliminaryPnLTab';
+import { FinanceDateFilter, DateRangePreset } from '@/components/reports/finance/FinanceDateFilter';
+
+export type FinanceTabKey = 'overview' | 'income-expense' | 'cash-bank' | 'receivables' | 'payables' | 'profit-loss';
+
+function FinanceReportsContent() {
   const { isBangla } = useAppTranslation();
   const { formatCurrency } = useCurrency();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Filters State
-  const [dateRange, setDateRange] = useState('this_month');
-  const [comparePeriod, setComparePeriod] = useState('prev_period');
-  const [selectedBranch, setSelectedBranch] = useState('all');
-  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
-  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<'performance' | 'cashflow' | 'aging' | 'balancesheet'>('performance');
-  const [statutoryPdfOpen, setStatutoryPdfOpen] = useState(false);
+  // Tab State
+  const initialTab = (searchParams.get('tab') as FinanceTabKey) || 'overview';
+  const [activeTab, setActiveTab] = useState<FinanceTabKey>(initialTab);
 
-  // Branch list
-  const branches = useMemo(() => [
-    { id: 'branch-1', name: 'Main Branch (Dhanmondi)' },
-    { id: 'branch-2', name: 'Gulshan Corporate Branch' },
-    { id: 'branch-3', name: 'Uttara Retail Outlet' },
-    { id: 'branch-4', name: 'Chittagong Hub' },
-  ], []);
-
-  // Performance Chart Data according to selected timeframe
-  const chartData = useMemo(() => {
-    switch (timeframe) {
-      case 'daily':
-        return MOCK_PERFORMANCE_DAILY;
-      case 'weekly':
-        return MOCK_PERFORMANCE_WEEKLY;
-      case 'quarterly':
-        return MOCK_PERFORMANCE_QUARTERLY;
-      case 'yearly':
-        return MOCK_PERFORMANCE_YEARLY;
-      case 'monthly':
-      default:
-        return MOCK_PERFORMANCE_MONTHLY;
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as FinanceTabKey;
+    if (tabParam && ['overview', 'income-expense', 'cash-bank', 'receivables', 'payables', 'profit-loss'].includes(tabParam)) {
+      setActiveTab(tabParam);
     }
-  }, [timeframe]);
+  }, [searchParams]);
 
-  // Export handler
-  const handleExport = (type: 'excel' | 'pdf' | 'print') => {
-    if (type === 'excel') {
-      // exportMultiSheetFinancialWorkbook();
-      toast.success(isBangla ? 'মাল্টি-শীট এক্সেল ওয়ার্কবুক প্রস্তুত ও ডাউনলোড সম্পন্ন!' : 'Downloaded Multi-Sheet Financial Model (.xlsx)!');
-    } else if (type === 'pdf') {
-      setStatutoryPdfOpen(true);
-      toast.success(isBangla ? 'সংবিধিবদ্ধ আর্থিক বিবরণী প্যাকেট প্রস্তুত' : 'Statutory Financial Packet ready for review & PDF');
-    } else {
-      window.print();
+  const handleTabChange = (tab: FinanceTabKey) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`/reports/finance?${params.toString()}`, { scroll: false });
+  };
+
+  // Date Filter State
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('this_month');
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('all');
+
+  // Search & Pagination States
+  const [txnSearch, setTxnSearch] = useState('');
+  const [txnFlow, setTxnFlow] = useState('all');
+  const [txnPage, setTxnPage] = useState(1);
+
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerPage, setCustomerPage] = useState(1);
+
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [supplierPage, setSupplierPage] = useState(1);
+
+  // Preset Date Handlers
+  const handlePresetChange = (preset: DateRangePreset) => {
+    setDatePreset(preset);
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (preset === 'today') {
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'this_week') {
+      const firstDay = new Date(now.setDate(now.getDate() - now.getDay()));
+      setStartDate(firstDay.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    } else if (preset === 'this_month') {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      setStartDate(first.toISOString().split('T')[0]);
+      setEndDate(todayStr);
+    } else if (preset === 'last_month') {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      setStartDate(first.toISOString().split('T')[0]);
+      setEndDate(last.toISOString().split('T')[0]);
     }
   };
 
-  return (
-    <div className="relative min-h-screen bg-background p-4 sm:p-6 lg:p-8 max-w-[1560px] mx-auto space-y-6 overflow-hidden">
-      {/* Ambient Glass Glow Orbs */}
-      <div className="pointer-events-none absolute -top-24 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
-      <div className="pointer-events-none absolute top-1/3 right-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
-      <div className="pointer-events-none absolute bottom-20 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+  // API Queries
+  const { data: branches = [] } = useGetBranches();
+  const { data: paymentStats, isLoading: isLoadingPaymentStats } = useGetPaymentMethodStatus();
+  const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = useGetPaymentMethods();
+  const { data: depositsWithdrawals = [], isLoading: isLoadingDeposits } = useGetDepositsAndWithdrawls();
+  const { data: partyStats, isLoading: isLoadingPartyStats } = usePartyStats();
 
-      {/* ========================================================================= */}
-      {/* 1. HEADER (Compact, Action-Oriented Control Bar)                          */}
-      {/* ========================================================================= */}
-      <FinanceReportHeader
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        comparePeriod={comparePeriod}
-        onComparePeriodChange={setComparePeriod}
+  const { data: customerParties = [], isLoading: isLoadingCustomers } = useParties({
+    type: 'customer',
+    balanceType: 'receivable',
+    search: customerSearch.trim() || undefined,
+    page: customerPage,
+    limit: 20,
+  });
+
+  const { data: supplierParties = [], isLoading: isLoadingSuppliers } = useParties({
+    type: 'supplier',
+    balanceType: 'payable',
+    search: supplierSearch.trim() || undefined,
+    page: supplierPage,
+    limit: 20,
+  });
+
+  const { data: expenseSummary, isLoading: isLoadingExpenseSummary } = useExpenseSummary();
+  const { data: expenseCategories = [] } = useGetExpenseCategories();
+
+  const { data: salesReportSummary, isLoading: isLoadingSalesSummary } = useGetSalesReportSummary({
+    branchId: selectedBranch === 'all' ? undefined : selectedBranch,
+    startDate,
+    endDate,
+  });
+
+  const { data: purchaseReportData, isLoading: isLoadingPurchaseReport } = useGetPurhcaseReport({
+    branchId: selectedBranch === 'all' ? undefined : selectedBranch,
+    page: 1,
+    limit: 1,
+  });
+
+  const { data: transactionsData, isLoading: isLoadingTxns } = useGetTransactions({
+    branchId: selectedBranch === 'all' ? undefined : selectedBranch,
+    flow: txnFlow === 'all' ? undefined : txnFlow,
+    search: txnSearch.trim() || undefined,
+    page: txnPage,
+    limit: 12,
+  });
+
+  // Client-safe CSV Download Helper
+  const downloadCsv = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    try {
+      const csvContent =
+        'data:text/csv;charset=utf-8,' +
+        [
+          headers.join(','),
+          ...rows.map((r) =>
+            r.map((field) => `"${String(field ?? '').replace(/"/g, '""')}"`).join(',')
+          ),
+        ].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(isBangla ? 'রিপোর্ট CSV ডাউনলোড সম্পন্ন!' : 'Report exported as CSV successfully!');
+    } catch {
+      toast.error(isBangla ? 'CSV এক্সপোর্ট করা যায়নি' : 'Failed to export CSV');
+    }
+  };
+
+  // CSV Export Handlers for Tabs
+  const exportTransactionsCsv = () => {
+    const list = transactionsData?.data || [];
+    const headers = ['Date', 'Description', 'Party', 'Flow', 'Account', 'Amount'];
+    const rows = list.map((t: any) => [
+      t.date ? new Date(t.date).toISOString().split('T')[0] : '',
+      t.title || t.description || 'Transaction',
+      t.partyName || '',
+      t.flow || '',
+      t.accountName || t.mode || '',
+      t.amount || 0,
+    ]);
+    downloadCsv('finance-transactions-report', headers, rows);
+  };
+
+  const exportCustomersCsv = () => {
+    const headers = ['Customer Name', 'Phone', 'Branch', 'Due Amount'];
+    const rows = customerParties.map((c: any) => [
+      c.name || '',
+      c.phone || '',
+      c.storeName || '',
+      Math.abs(Number(c.currentBalance || c.totalDue || 0)),
+    ]);
+    downloadCsv('customer-receivables-report', headers, rows);
+  };
+
+  const exportSuppliersCsv = () => {
+    const headers = ['Supplier Name', 'Phone', 'Branch', 'Payable Amount'];
+    const rows = supplierParties.map((s: any) => [
+      s.name || '',
+      s.phone || '',
+      s.storeName || '',
+      Math.abs(Number(s.currentBalance || s.totalDue || 0)),
+    ]);
+    downloadCsv('supplier-payables-report', headers, rows);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Tab definitions
+  const tabs: { key: FinanceTabKey; labelEn: string; labelBn: string; icon: React.ElementType }[] = [
+    { key: 'overview', labelEn: 'Overview', labelBn: 'সারসংক্ষেপ', icon: LayoutDashboard },
+    { key: 'income-expense', labelEn: 'Income & Expense', labelBn: 'আয় ও ব্যয়', icon: TrendingUp },
+    { key: 'cash-bank', labelEn: 'Cash & Bank', labelBn: 'নগদ ও ব্যাংক', icon: Wallet },
+    { key: 'receivables', labelEn: 'Receivables', labelBn: 'গ্রাহক পাওনা', icon: Receipt },
+    { key: 'payables', labelEn: 'Payables', labelBn: 'সরবরাহকারী দেনা', icon: CreditCard },
+    { key: 'profit-loss', labelEn: 'Profit & Loss', labelBn: 'লাভ-ক্ষতি বিবরণী', icon: FileSpreadsheet },
+  ];
+
+  return (
+    <div className="space-y-6 pb-12 max-w-[1560px] mx-auto">
+      {/* 1. Page Header */}
+      <PageHeader
+        title={isBangla ? 'অর্থায়ন ও আর্থিক বিবরণী' : 'Finance & Financial Reports'}
+        subtitle={
+          isBangla
+            ? 'ব্যবসায়ের নগদ তারল্য, আয়-ব্যয়, বকেয়া এবং পরিচালন মার্জিনের সমন্বিত বিবরণী'
+            : 'Comprehensive business liquidity, income, expenses, receivables, and operational margins'
+        }
+        showBack
+        fallbackHref="/finance"
+      />
+
+      {/* 2. Global Filter Bar: Presets, Dates, Branch, Print */}
+      <FinanceDateFilter
+        preset={datePreset}
+        onPresetChange={handlePresetChange}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
         selectedBranch={selectedBranch}
         onBranchChange={setSelectedBranch}
         branches={branches}
-        onExport={handleExport}
-        isBangla={isBangla}
+        onPrint={handlePrint}
       />
 
-      {/* ========================================================================= */}
-      {/* 2. EXECUTIVE FINANCIAL HEALTH STRIP (Unified Coherent Numbers)            */}
-      {/* ========================================================================= */}
-      <FinancialHealthSummary
-        metrics={MOCK_FINANCE_METRICS}
-        isBangla={isBangla}
-      />
+      {/* 3. Navigation Tabs Controller */}
+      <div className="border-b border-border/70 pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
 
-      {/* ========================================================================= */}
-      {/* 3. ⭐ PRIMARY MAIN SECTION: FINANCIAL & ACCOUNTING REPORTS EXPLORER       */}
-      {/*    Direct Access to Statutory & Operational Accounting Statements         */}
-      {/* ========================================================================= */}
-      <MasterFinancialReportsExplorer
-        isBangla={isBangla}
-      />
-
-      {/* ========================================================================= */}
-      {/* 4. DEEP-DIVE FINANCIAL INTELLIGENCE & ANALYTICS WORKSPACE                 */}
-      {/* ========================================================================= */}
-      <div className="space-y-4 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/70 pb-3">
-          <div>
-            <h3 className="text-base font-bold text-foreground">
-              {isBangla ? 'আর্থিক বিশ্লেষণ ও পারফরম্যান্স গতিধারা' : 'Financial Intelligence & Deep Dive'}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {isBangla
-                ? 'রাজস্ব, নগদ তারল্য, মেয়াদোত্তীর্ণ দেনা-পাওনা এবং ব্যালেন্স শিটের বিশদ পর্যালোচনা'
-                : 'Operational cash movement, credit aging buckets, and financial performance trends'}
-            </p>
-          </div>
-
-          {/* Analytics Glass Tabs Controller */}
-          <div className="flex items-center bg-card/80 backdrop-blur-xl p-1 rounded-2xl border border-white/20 dark:border-white/10 shadow-sm overflow-x-auto self-start sm:self-auto scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setActiveAnalyticsTab('performance')}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5',
-                activeAnalyticsTab === 'performance'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-500/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{isBangla ? 'আয় ও মুনাফা' : 'Performance & P&L'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveAnalyticsTab('cashflow')}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5',
-                activeAnalyticsTab === 'cashflow'
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold shadow-md shadow-blue-500/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              <span>{isBangla ? 'ক্যাশ ফ্লো ও লেনদেন' : 'Cash Flow & Activity'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveAnalyticsTab('aging')}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5',
-                activeAnalyticsTab === 'aging'
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white font-bold shadow-md shadow-amber-500/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <Percent className="w-3.5 h-3.5" />
-              <span>{isBangla ? 'বকেয়া ও সতর্কতা' : 'Dues & Alerts'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveAnalyticsTab('balancesheet')}
-              className={cn(
-                'px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5',
-                activeAnalyticsTab === 'balancesheet'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-md shadow-purple-500/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              )}
-            >
-              <Scale className="w-3.5 h-3.5" />
-              <span>{isBangla ? 'ব্যালেন্স শিট ও খরচ' : 'Balance Sheet & Costs'}</span>
-            </button>
-          </div>
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => handleTabChange(tab.key)}
+                className={cn(
+                  'px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2',
+                  isActive
+                    ? 'bg-primary text-primary-foreground font-bold shadow-md shadow-primary/20'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{isBangla ? tab.labelBn : tab.labelEn}</span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* TAB CONTENT 1: PERFORMANCE & REVENUE */}
-        {activeAnalyticsTab === 'performance' && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <ContextualFinancialInsight
-              insightText="Operating expenses are 5.1% higher than last period, primarily due to seasonal transport and electricity tariffs. Net profit margin remains healthy at 26.1%."
-              insightTextBn="গত মাসের তুলনায় পরিচালন ব্যয় ৫.১% বৃদ্ধি পেয়েছে, মূলত বিদ্যুৎ বিল ও পরিবহনের কারণে। তবুও নিট মুনাফা মার্জিন ২৬.১% এ শক্তিশালী অবস্থানে রয়েছে।"
-              detailsHref="/finance/reports/profit-loss"
-              isBangla={isBangla}
-            />
-
-            <FinancialPerformanceChart
-              data={chartData}
-              timeframe={timeframe}
-              onTimeframeChange={setTimeframe}
-              isBangla={isBangla}
-            />
-          </div>
-        )}
-
-        {/* TAB CONTENT 2: CASH FLOW & RECENT TRANSACTIONS */}
-        {activeAnalyticsTab === 'cashflow' && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <CashFlowMovement
-              data={MOCK_CASH_MOVEMENT}
-              isBangla={isBangla}
-            />
-
-            <RecentFinancialActivity
-              transactions={MOCK_RECENT_TRANSACTIONS}
-              isBangla={isBangla}
-            />
-          </div>
-        )}
-
-        {/* TAB CONTENT 3: DUES & AGING + FINANCIAL ALERTS */}
-        {activeAnalyticsTab === 'aging' && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <FinancialAlertsSection
-              alerts={MOCK_FINANCIAL_ALERTS}
-              isBangla={isBangla}
-            />
-
-            <DuesAgingSection
-              receivables={MOCK_RECEIVABLES_DATA}
-              payables={MOCK_PAYABLES_DATA}
-              isBangla={isBangla}
-            />
-          </div>
-        )}
-
-        {/* TAB CONTENT 4: BALANCE SHEET & EXPENSE INTELLIGENCE */}
-        {activeAnalyticsTab === 'balancesheet' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 animate-in fade-in duration-200">
-            <BalanceSheetSnapshot
-              assets={MOCK_BALANCE_SHEET_DATA.assets}
-              liabilities={MOCK_BALANCE_SHEET_DATA.liabilities}
-              equity={MOCK_BALANCE_SHEET_DATA.equity}
-              isBangla={isBangla}
-            />
-
-            <ExpenseIntelligence
-              categories={MOCK_EXPENSE_CATEGORIES}
-              totalExpenses={MOCK_FINANCE_METRICS.expenses}
-              isBangla={isBangla}
-            />
-          </div>
-        )}
       </div>
 
-      {/* STATUTORY FINANCIAL REPORT PACKET MODAL */}
-      <StatutoryPdfPacketModal
-        open={statutoryPdfOpen}
-        onOpenChange={setStatutoryPdfOpen}
-        isBangla={isBangla}
-      />
+      {/* 4. Tab Panels */}
+      <div className="pt-1">
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === 'overview' && (
+          <FinanceOverviewTab
+            stats={paymentStats}
+            partyStats={partyStats}
+            expenseSummary={expenseSummary}
+            salesSummary={salesReportSummary}
+            recentTransactions={transactionsData?.data || []}
+            isLoading={isLoadingPaymentStats || isLoadingPartyStats || isLoadingSalesSummary}
+            onNavigateTab={handleTabChange}
+          />
+        )}
+
+        {/* TAB 2: INCOME & EXPENSE REPORT */}
+        {activeTab === 'income-expense' && (
+          <IncomeExpenseTab
+            transactions={transactionsData?.data || []}
+            meta={transactionsData?.meta || { totalPages: 1, totalIn: 0, totalOut: 0 }}
+            categories={expenseCategories}
+            isLoading={isLoadingTxns}
+            currentPage={txnPage}
+            onPageChange={setTxnPage}
+            flowFilter={txnFlow}
+            onFlowFilterChange={setTxnFlow}
+            searchTerm={txnSearch}
+            onSearchChange={setTxnSearch}
+            onExportCsv={exportTransactionsCsv}
+          />
+        )}
+
+        {/* TAB 3: CASH & BANK REPORT */}
+        {activeTab === 'cash-bank' && (
+          <CashBankTab
+            stats={paymentStats}
+            accounts={paymentAccounts}
+            transfers={depositsWithdrawals}
+            isLoadingAccounts={isLoadingAccounts}
+            isLoadingTransfers={isLoadingDeposits}
+          />
+        )}
+
+        {/* TAB 4: RECEIVABLES REPORT */}
+        {activeTab === 'receivables' && (
+          <ReceivablesTab
+            partyStats={partyStats}
+            customers={customerParties}
+            isLoading={isLoadingCustomers || isLoadingPartyStats}
+            searchTerm={customerSearch}
+            onSearchChange={setCustomerSearch}
+            currentPage={customerPage}
+            onPageChange={setCustomerPage}
+            onExportCsv={exportCustomersCsv}
+          />
+        )}
+
+        {/* TAB 5: PAYABLES REPORT */}
+        {activeTab === 'payables' && (
+          <PayablesTab
+            partyStats={partyStats}
+            suppliers={supplierParties}
+            isLoading={isLoadingSuppliers || isLoadingPartyStats}
+            searchTerm={supplierSearch}
+            onSearchChange={setSupplierSearch}
+            currentPage={supplierPage}
+            onPageChange={setSupplierPage}
+            onExportCsv={exportSuppliersCsv}
+          />
+        )}
+
+        {/* TAB 6: PRELIMINARY PROFIT & LOSS */}
+        {activeTab === 'profit-loss' && (
+          <PreliminaryPnLTab
+            salesSummary={salesReportSummary}
+            purchaseSummary={purchaseReportData?.summary}
+            expenseSummary={expenseSummary}
+            isLoading={isLoadingSalesSummary || isLoadingExpenseSummary}
+            onPrint={handlePrint}
+          />
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function FinanceReportsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 space-y-4 max-w-[1560px] mx-auto">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-12 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+        </div>
+      </div>
+    }>
+      <FinanceReportsContent />
+    </Suspense>
   );
 }
