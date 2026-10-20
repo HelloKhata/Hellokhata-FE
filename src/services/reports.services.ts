@@ -54,7 +54,32 @@ export const getPurchaseReport = async( filters?:any) =>{
   return res.data;
 };
 
+// inventory
 export const getInventoryReport = async(filters:any) => {
   const res = await client.get("/api/reports-new/stock-report", { params: filters });
   return res.data;
+};
+
+// customer
+export const getCustomerReport = async(filters:any) => {
+  const res = await client.get("/api/reports-new/customer-report", { params: filters });
+  return res.data;
 }
+
+// supplier
+export const getSupplierReport = async(filters:any) => {
+  const res = await client.get("/api/reports-new/supplier-report", { params: filters });
+  return res.data;
+};
+
+// expense
+export const getExpenseReport = async(filters?: any) => {
+  const res = await client.get("/api/reports-new/expense-report", { params: filters });
+  return res.data;
+};
+
+// income
+export const getIncomeReport = async(filters?: any) => {
+  const res = await client.get("/api/reports-new/income-report", { params: filters });
+  return res.data;
+};

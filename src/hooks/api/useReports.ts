@@ -9,6 +9,10 @@ import {
   getBestSellingProducts,
   getPurchaseReport,
   getInventoryReport,
+  getCustomerReport,
+  getSupplierReport,
+  getExpenseReport,
+  getIncomeReport,
 } from "@/services/reports.services";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
@@ -114,4 +118,48 @@ export const useGetInventoryReport = (filter:any, queryOptions?:any)=>{
     placeholderData: keepPreviousData,
     ...queryOptions,
   })
-}
+};
+
+// customer 
+
+export const useGetCustomerReport = (filter:any, queryOptions?:any)=>{
+  return useQuery<any>({
+    queryKey: ["customer-report", filter],
+    queryFn: () => getCustomerReport(filter),
+    placeholderData: keepPreviousData,
+    ...queryOptions,
+  })
+};
+
+// supplier
+
+export const useGetSupplierReport = (filter:any, queryOptions?:any)=>{
+  return useQuery<any>({
+    queryKey: ["supplier-report", filter],
+    queryFn: () => getSupplierReport(filter),
+    placeholderData: keepPreviousData,
+    ...queryOptions,
+  })
+};
+
+// expense
+
+export const useGetExpenseReport = (filter?: any, queryOptions?: any) => {
+  return useQuery<any>({
+    queryKey: ["expense-report", filter],
+    queryFn: () => getExpenseReport(filter),
+    placeholderData: keepPreviousData,
+    ...queryOptions,
+  });
+};
+
+// income
+
+export const useGetIncomeReport = (filter?: any, queryOptions?: any) => {
+  return useQuery<any>({
+    queryKey: ["income-report", filter],
+    queryFn: () => getIncomeReport(filter),
+    placeholderData: keepPreviousData,
+    ...queryOptions,
+  });
+};

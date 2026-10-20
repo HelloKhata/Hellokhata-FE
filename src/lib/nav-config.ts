@@ -342,12 +342,12 @@ export const navGroups: NavItem[] = [
         labelKey: "Inventory",
         labelBn: "ইনভেন্টরি",
       },
-      {
-        page: "/reports/finance",
-        icon: BadgeDollarSign,
-        labelKey: "Finance",
-        labelBn: "ফাইনান্স",
-      },
+      // {
+      //   page: "/reports/finance",
+      //   icon: BadgeDollarSign,
+      //   labelKey: "Finance",
+      //   labelBn: "ফাইনান্স",
+      // },
       {
         page: "/reports/customers",
         icon: Users,
@@ -359,6 +359,18 @@ export const navGroups: NavItem[] = [
         icon: Users,
         labelKey: "Suppliers",
         labelBn: "সরবরাহকারী",
+      },
+      {
+        page: "/reports/income",
+        icon: TrendingUp,
+        labelKey: "Income Report",
+        labelBn: "আয় রিপোর্ট",
+      },
+      {
+        page: "/reports/expense",
+        icon: TrendingDown,
+        labelKey: "Expense Report",
+        labelBn: "ব্যয় রিপোর্ট",
       },
       // {
       //   page: "/reports/branches",
