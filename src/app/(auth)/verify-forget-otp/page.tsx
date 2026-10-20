@@ -25,7 +25,6 @@ function VerifyOtpContent() {
     // Retrieve phone and OTP from store (fallback for query parameters)
     const { phone: storedPhone, otp: storedOtp } = useForgotPasswordStore();
 
-    const [demoOTP, setDemoOTP] = useState(storedOtp);
     const [otp, setOtp] = useState("");
 
     const verifyForgetOTP = useVerifyForgetOTP();
@@ -171,21 +170,6 @@ function VerifyOtpContent() {
                                     />
                                 </div>
                             </div>
-
-                            {demoOTP && (
-                                <p
-                                    className="text-xs md:text-sm text-center whitespace-nowrap shrink-0 animate-pulse"
-                                    style={{ color: "#64748B" }}
-                                >
-                                    Demo OTP:{" "}
-                                    <span
-                                        className="font-mono font-bold"
-                                        style={{ color: "#0E5B43" }}
-                                    >
-                                        {demoOTP}
-                                    </span>
-                                </p>
-                            )}
 
                             <Button
                                 type="submit"

@@ -26,9 +26,7 @@ function VerifyOtpContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const phone = searchParams.get("phone") || "";
-    const initialOtp = searchParams.get("otp") || "";
-
-    const [demoOTP, setDemoOTP] = useState(initialOtp);
+ 
     const [countdown, setCountdown] = useState(60);
     const [otp, setOtp] = useState("");
 
@@ -86,7 +84,6 @@ function VerifyOtpContent() {
         resendOTP.mutate(obj, {
             onSuccess: (data) => {
                 if (data.success) {
-                    setDemoOTP(data.data.otp);
                     setCountdown(60);
                     toast.success("OTP has been resent successfully!");
                 } else {
@@ -215,21 +212,6 @@ function VerifyOtpContent() {
                                     />
                                 </div>
                             </div>
-
-                            {demoOTP && (
-                                <p
-                                    className="text-xs md:text-sm text-center whitespace-nowrap shrink-0 animate-pulse"
-                                    style={{ color: "#64748B" }}
-                                >
-                                    Demo OTP:{" "}
-                                    <span
-                                        className="font-mono font-bold"
-                                        style={{ color: "#0E5B43" }}
-                                    >
-                                        {demoOTP}
-                                    </span>
-                                </p>
-                            )}
 
                             <Button
                                 type="submit"
