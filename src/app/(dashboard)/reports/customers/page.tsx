@@ -833,61 +833,17 @@ export default function CustomerReportPage() {
           </table>
         </div>
 
-        {/* Customer Report Pagination */}
-        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Show</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(val) => {
-                const newSize = Number(val);
-                setPageSize(newSize);
-                setCurrentPage(1);
-                if (activeFilters) {
-                  setActiveFilters((prev: any) => ({
-                    ...prev,
-                    limit: newSize,
-                    page: 1,
-                  }));
-                }
-              }}
-            >
-              <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            <span>
-              Showing{" "}
-              <strong className="text-foreground">
-                {totalEntries === 0
-                  ? 0
-                  : (currentPage - 1) * pageSize + 1}
-              </strong>{" "}
-              to{" "}
-              <strong className="text-foreground">
-                {Math.min(currentPage * pageSize, totalEntries)}
-              </strong>{" "}
-              of <strong className="text-foreground">{totalEntries}</strong> customers
-            </span>
+        {/* Reusable Pagination */}
+        {activeFilters && totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-border print:hidden">
+            <PaginationHelper
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              isBangla={isBangla}
+            />
           </div>
-
-          {activeFilters && totalPages > 1 && (
-            <div className="print:hidden">
-              <PaginationHelper
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                isBangla={isBangla}
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
