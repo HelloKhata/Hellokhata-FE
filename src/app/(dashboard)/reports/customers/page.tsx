@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Calendar,
   Download,
   Printer,
   RotateCcw,
   TrendingUp,
   CreditCard,
   Truck,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   Package,
   Users,
+  User,
+  UserCheck,
+  Check,
+  Search,
+  Loader2,
   FileText,
 } from "lucide-react";
 import {
@@ -25,222 +27,53 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/common";
+import { PaginationHelper } from "@/components/shared/PaginationHelper";
+import { useAppTranslation } from "@/hooks/useAppTranslation";
+import { useGetBranches } from "@/hooks/api/useBranches";
+import { useParties } from "@/hooks/api/useParties";
+import { useGetCustomerReport } from "@/hooks/api/useReports";
 
 // ============================================================================
-// TYPES & MOCK DATA
+// TYPES
 // ============================================================================
 
 export interface CustomerReportRow {
+  index?: number;
   id: string;
   customer: string;
+  reference?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  storeName?: string;
+  branchName?: string;
   totalOrders: number;
   totalOrderAmount: number;
   totalPaid: number;
   totalDue: number;
-  lastOrderDate: string;
-  lastOrderDateIso: string;
-  phone: string;
-  email: string;
-  address: string;
   currentBalance: number;
-  storeName: string;
+  lastOrderDate?: string;
+  lastOrderDateIso?: string | null;
 }
-
-const CUSTOMER_REPORT_MOCK: CustomerReportRow[] = [
-  {
-    id: "cmv9971vd000f01n3bemmgbxg",
-    customer: "Sweet Ali",
-    totalOrders: 1,
-    totalOrderAmount: 75,
-    totalPaid: 75,
-    totalDue: 0,
-    lastOrderDate: "2026-10-15",
-    lastOrderDateIso: "2026-10-15T08:05:46.725Z",
-    phone: "01727724844",
-    email: "sweetali0520@gmail.com",
-    address: "-",
-    currentBalance: 0,
-    storeName: "Main Branch",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx1",
-    customer: "Rahim Enterprise",
-    totalOrders: 38,
-    totalOrderAmount: 61200,
-    totalPaid: 48700,
-    totalDue: 12500,
-    lastOrderDate: "2026-10-14",
-    lastOrderDateIso: "2026-10-14T11:20:15.000Z",
-    phone: "01819234567",
-    email: "rahim.enterprise@gmail.com",
-    address: "Mirpur-10, Dhaka",
-    currentBalance: 12500,
-    storeName: "Main Branch",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx2",
-    customer: "Karim Trading Co.",
-    totalOrders: 24,
-    totalOrderAmount: 37290,
-    totalPaid: 29290,
-    totalDue: 8000,
-    lastOrderDate: "2026-10-13",
-    lastOrderDateIso: "2026-10-13T15:45:00.000Z",
-    phone: "01711987654",
-    email: "karim.trade@yahoo.com",
-    address: "Gulshan-1, Dhaka",
-    currentBalance: 8000,
-    storeName: "Gulshan Flagship Store",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx3",
-    customer: "Bengal Superstore",
-    totalOrders: 29,
-    totalOrderAmount: 48650,
-    totalPaid: 48650,
-    totalDue: 0,
-    lastOrderDate: "2026-10-12",
-    lastOrderDateIso: "2026-10-12T09:30:20.000Z",
-    phone: "01912345678",
-    email: "bengal.super@gmail.com",
-    address: "Dhanmondi 27, Dhaka",
-    currentBalance: 0,
-    storeName: "Dhanmondi Hub",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx4",
-    customer: "Apex Retail",
-    totalOrders: 18,
-    totalOrderAmount: 24500,
-    totalPaid: 18000,
-    totalDue: 6500,
-    lastOrderDate: "2026-10-10",
-    lastOrderDateIso: "2026-10-10T14:15:30.000Z",
-    phone: "01678123456",
-    email: "apex.retail@gmail.com",
-    address: "Sector 3, Uttara",
-    currentBalance: 6500,
-    storeName: "Uttara Outlet",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx5",
-    customer: "Green Valley Agro",
-    totalOrders: 14,
-    totalOrderAmount: 32150,
-    totalPaid: 32150,
-    totalDue: 0,
-    lastOrderDate: "2026-10-09",
-    lastOrderDateIso: "2026-10-09T17:10:00.000Z",
-    phone: "01552345678",
-    email: "greenvalley@agro.com",
-    address: "GEC Circle, Chittagong",
-    currentBalance: 0,
-    storeName: "Chittagong Central",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx6",
-    customer: "Modern Tech Solutions",
-    totalOrders: 26,
-    totalOrderAmount: 43120,
-    totalPaid: 43120,
-    totalDue: 0,
-    lastOrderDate: "2026-10-08",
-    lastOrderDateIso: "2026-10-08T12:00:00.000Z",
-    phone: "01733445566",
-    email: "info@moderntech.com.bd",
-    address: "Motijheel C/A, Dhaka",
-    currentBalance: 0,
-    storeName: "Main Branch",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx7",
-    customer: "Dhaka Grocers",
-    totalOrders: 22,
-    totalOrderAmount: 28900,
-    totalPaid: 23900,
-    totalDue: 5000,
-    lastOrderDate: "2026-10-07",
-    lastOrderDateIso: "2026-10-07T16:40:10.000Z",
-    phone: "01822334455",
-    email: "dhaka.grocers@gmail.com",
-    address: "Banani, Dhaka",
-    currentBalance: 5000,
-    storeName: "Gulshan Flagship Store",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx8",
-    customer: "Padma Distributions",
-    totalOrders: 34,
-    totalOrderAmount: 54870,
-    totalPaid: 54870,
-    totalDue: 0,
-    lastOrderDate: "2026-10-06",
-    lastOrderDateIso: "2026-10-06T11:15:00.000Z",
-    phone: "01933445566",
-    email: "padma.dist@gmail.com",
-    address: "Kawran Bazar, Dhaka",
-    currentBalance: 0,
-    storeName: "Main Branch",
-  },
-  {
-    id: "cmv9971vd000f01n3bemmgbx9",
-    customer: "Prime Pharma",
-    totalOrders: 16,
-    totalOrderAmount: 19840,
-    totalPaid: 15000,
-    totalDue: 4840,
-    lastOrderDate: "2026-10-05",
-    lastOrderDateIso: "2026-10-05T13:25:00.000Z",
-    phone: "01611223344",
-    email: "prime.pharma@gmail.com",
-    address: "Uttara Sector 7",
-    currentBalance: 4840,
-    storeName: "Uttara Outlet",
-  },
-];
-
-// Available Filter Options
-const STORE_OPTIONS = [
-  { value: "all", label: "Choose Store" },
-  { value: "Main Branch", label: "Main Branch" },
-  { value: "Gulshan Flagship Store", label: "Gulshan Flagship Store" },
-  { value: "Dhanmondi Hub", label: "Dhanmondi Hub" },
-  { value: "Uttara Outlet", label: "Uttara Outlet" },
-  { value: "Chittagong Central", label: "Chittagong Central" },
-];
-
-const CUSTOMER_OPTIONS = [
-  { value: "all", label: "Select Customer" },
-  { value: "Sweet Ali", label: "Sweet Ali" },
-  { value: "Rahim Enterprise", label: "Rahim Enterprise" },
-  { value: "Karim Trading Co.", label: "Karim Trading Co." },
-  { value: "Bengal Superstore", label: "Bengal Superstore" },
-  { value: "Apex Retail", label: "Apex Retail" },
-  { value: "Green Valley Agro", label: "Green Valley Agro" },
-  { value: "Modern Tech Solutions", label: "Modern Tech Solutions" },
-  { value: "Dhaka Grocers", label: "Dhaka Grocers" },
-  { value: "Padma Distributions", label: "Padma Distributions" },
-  { value: "Prime Pharma", label: "Prime Pharma" },
-];
-
-const TABLE_STORE_FILTER_OPTIONS = [
-  { value: "all", label: "All Stores" },
-  { value: "Main Branch", label: "Main Branch" },
-  { value: "Gulshan Flagship Store", label: "Gulshan Flagship Store" },
-  { value: "Dhanmondi Hub", label: "Dhanmondi Hub" },
-  { value: "Uttara Outlet", label: "Uttara Outlet" },
-  { value: "Chittagong Central", label: "Chittagong Central" },
-];
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-const formatBDT = (amount: number) => {
-  return `৳${Number(amount || 0).toLocaleString("en-IN", {
+const formatBDT = (amount: number = 0) => {
+  const num = Number(amount) || 0;
+  return `৳${num.toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+};
+
+const formatKpiNumber = (amount: number = 0) => {
+  const num = Number(amount) || 0;
+  return num.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 };
 
 // ============================================================================
@@ -248,112 +81,157 @@ const formatBDT = (amount: number) => {
 // ============================================================================
 
 export default function CustomerReportPage() {
-  // Filter States
-  const [startDate, setStartDate] = useState("2026-10-01");
-  const [endDate, setEndDate] = useState("2026-10-15");
-  const [selectedStore, setSelectedStore] = useState("all");
-  const [selectedCustomer, setSelectedCustomer] = useState("all");
+  const { isBangla } = useAppTranslation();
 
-  // Applied Filters State (Updated when "Generate Report" is clicked)
-  const [appliedFilters, setAppliedFilters] = useState({
-    startDate: "2026-10-01",
-    endDate: "2026-10-15",
-    store: "all",
-    customer: "all",
+  // 1. DRAFT FORM INPUT STATES
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState("all");
+  const [selectedCustomerName, setSelectedCustomerName] = useState("All");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Table Pagination State
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // 2. ACTIVE QUERY FILTERS (Set ONLY on Generate Report or pagination)
+  const [activeFilters, setActiveFilters] = useState<any>(null);
+
+  // Debounce customer search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearchQuery]);
+
+  // Click outside to close customer suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        customerDropdownRef.current &&
+        !customerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Auxiliary API Data: Branches & Customers
+  const { data: branches, isLoading: isBranchesLoading } = useGetBranches();
+  const { data: partiesData = [], isLoading: isLoadingParties } = useParties({
+    type: "customer",
+    search: debouncedCustomerSearch || undefined,
+    includeWalkIn: true,
   });
 
-  // Customer Report table filter
-  const [tcStoreFilter, setTcStoreFilter] = useState("all");
-  const [tcPageSize, setTcPageSize] = useState(10);
-  const [tcCurrentPage, setTcCurrentPage] = useState(1);
-  const [isExporting, setIsExporting] = useState(false);
+  // Controlled Report Hook
+  const {
+    data: customerReportData,
+    isLoading: isLoadingCustomerReport,
+    isFetching: isFetchingCustomerReport,
+  } = useGetCustomerReport(activeFilters, {
+    enabled: Boolean(activeFilters),
+  });
 
-  // Filtered Customers based on Top Filter & Table Store Filter
-  const filteredCustomers = useMemo(() => {
-    return CUSTOMER_REPORT_MOCK.filter((c) => {
-      // Date filter based on lastOrderDate
-      if (appliedFilters.startDate && c.lastOrderDate < appliedFilters.startDate) {
-        return false;
-      }
-      if (appliedFilters.endDate && c.lastOrderDate > appliedFilters.endDate) {
-        return false;
-      }
-      // Store filter from top filter card
-      if (appliedFilters.store !== "all" && c.storeName !== appliedFilters.store) {
-        return false;
-      }
-      // Customer filter from top filter card
-      if (
-        appliedFilters.customer !== "all" &&
-        c.customer !== appliedFilters.customer
-      ) {
-        return false;
-      }
-      // Table-level store dropdown filter
-      if (tcStoreFilter !== "all" && c.storeName !== tcStoreFilter) {
-        return false;
-      }
-      return true;
-    });
-  }, [appliedFilters, tcStoreFilter]);
+  const branchList = Array.isArray(branches)
+    ? branches
+    : Array.isArray((branches as any)?.data)
+    ? (branches as any).data
+    : Array.isArray((branches as any)?.branches)
+    ? (branches as any).branches
+    : [];
 
-  const tcTotalEntries = filteredCustomers.length;
-  const tcTotalPages = Math.max(1, Math.ceil(tcTotalEntries / tcPageSize));
-  const paginatedCustomers = useMemo(() => {
-    const start = (tcCurrentPage - 1) * tcPageSize;
-    return filteredCustomers.slice(start, start + tcPageSize);
-  }, [filteredCustomers, tcCurrentPage, tcPageSize]);
+  const customerParties: any[] = Array.isArray(partiesData)
+    ? partiesData
+    : Array.isArray((partiesData as any)?.data)
+    ? (partiesData as any).data
+    : [];
 
-  // Aggregate Metrics for Customer Report KPI Cards
-  const customerReportKpis = useMemo(() => {
-    const totalAmount = filteredCustomers.reduce((s, r) => s + r.totalOrderAmount, 0);
-    const totalPaid = filteredCustomers.reduce((s, r) => s + r.totalPaid, 0);
-    const totalDue = filteredCustomers.reduce((s, r) => s + r.totalDue, 0);
-    const totalOrders = filteredCustomers.reduce((s, r) => s + r.totalOrders, 0);
-    const totalBalance = filteredCustomers.reduce((s, r) => s + r.currentBalance, 0);
-    const uniqueCustomers = filteredCustomers.length;
-    return { totalAmount, totalPaid, totalDue, totalOrders, totalBalance, uniqueCustomers };
-  }, [filteredCustomers]);
+  const handleSelectCustomer = (party: any) => {
+    if (!party || party === "all" || party.id === "all") {
+      setSelectedCustomer("all");
+      setSelectedCustomerName("All");
+      setCustomerSearchQuery("");
+    } else if (party === "walk-in" || party.id === "walk-in" || party.isWalkIn) {
+      const walkIn = customerParties.find(
+        (p: any) =>
+          p.isWalkIn ||
+          p.id === "walk-in" ||
+          p.name?.toLowerCase().includes("walk-in")
+      );
+      setSelectedCustomer(walkIn?.id || walkIn?._id || "walk-in");
+      setSelectedCustomerName("Walk-in Customer");
+      setCustomerSearchQuery("");
+    } else {
+      setSelectedCustomer(party.id || party._id);
+      setSelectedCustomerName(party.name);
+      setCustomerSearchQuery("");
+    }
+    setShowCustomerSuggestions(false);
+  };
 
-  // Handle Generate Report
+  const customersList: CustomerReportRow[] = customerReportData?.data || [];
+  const summary = customerReportData?.summary;
+  const meta = customerReportData?.meta;
+
+  const totalEntries = meta?.total ?? customersList.length;
+  const totalPages =
+    meta?.totalPages ?? Math.max(1, Math.ceil(totalEntries / pageSize));
+
+  // 3. ACTION HANDLERS
   const handleGenerateReport = () => {
-    setAppliedFilters({
-      startDate,
-      endDate,
-      store: selectedStore,
-      customer: selectedCustomer,
+    setCurrentPage(1);
+    setActiveFilters({
+      branchId:
+        selectedBranch === "all" ? undefined : selectedBranch || undefined,
+      customerId:
+        selectedCustomer === "all" || !selectedCustomer
+          ? undefined
+          : selectedCustomer,
+      page: 1,
+      limit: pageSize,
     });
-    setTcCurrentPage(1);
   };
 
-  // Handle Reset Filter
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (activeFilters) {
+      setActiveFilters((prev: any) => ({
+        ...prev,
+        page: newPage,
+      }));
+    }
+  };
+
   const handleResetFilter = () => {
-    setStartDate("2026-10-01");
-    setEndDate("2026-10-15");
-    setSelectedStore("all");
+    setSelectedBranch("");
     setSelectedCustomer("all");
-    setTcStoreFilter("all");
-
-    setAppliedFilters({
-      startDate: "2026-10-01",
-      endDate: "2026-10-15",
-      store: "all",
-      customer: "all",
-    });
-    setTcCurrentPage(1);
+    setSelectedCustomerName("All");
+    setCustomerSearchQuery("");
+    setShowCustomerSuggestions(false);
   };
 
-  // Handle Export Excel / CSV (Customer Report table)
+  // Handle Export Excel / CSV
   const handleDownloadExcel = () => {
     setIsExporting(true);
     try {
+      if (!customersList || customersList.length === 0) return;
+
       const headers = [
         "#",
         "Customer",
-        "Phone",
+        "Phone / Reference",
         "Email",
         "Address",
-        "Store / Branch",
+        "Branch",
         "Total Orders",
         "Total Order Amount",
         "Total Paid",
@@ -364,22 +242,24 @@ export default function CustomerReportPage() {
 
       const csvRows = [
         headers.join(","),
-        ...filteredCustomers.map((customer, idx) =>
-          [
-            idx + 1,
-            `"${customer.customer}"`,
-            `"${customer.phone || ""}"`,
-            `"${customer.email || ""}"`,
-            `"${customer.address || ""}"`,
-            `"${customer.storeName || ""}"`,
-            customer.totalOrders,
+        ...customersList.map((customer, idx) => {
+          const rowNum =
+            customer.index ?? (currentPage - 1) * pageSize + idx + 1;
+          return [
+            rowNum,
+            `"${(customer.customer || "—").replace(/"/g, '""')}"`,
+            `"${(customer.phone || customer.reference || "").replace(/"/g, '""')}"`,
+            `"${(customer.email || "").replace(/"/g, '""')}"`,
+            `"${(customer.address || "").replace(/"/g, '""')}"`,
+            `"${(customer.storeName || customer.branchName || "—").replace(/"/g, '""')}"`,
+            customer.totalOrders ?? 0,
             Number(customer.totalOrderAmount || 0).toFixed(2),
             Number(customer.totalPaid || 0).toFixed(2),
             Number(customer.totalDue || 0).toFixed(2),
             Number(customer.currentBalance || 0).toFixed(2),
-            `"${customer.lastOrderDate || ""}"`,
-          ].join(",")
-        ),
+            `"${customer.lastOrderDate || "—"}"`,
+          ].join(",");
+        }),
       ];
 
       const blob = new Blob([csvRows.join("\n")], {
@@ -402,7 +282,6 @@ export default function CustomerReportPage() {
     }
   };
 
-  // Handle Print Report
   const handlePrintReport = () => {
     window.print();
   };
@@ -414,77 +293,202 @@ export default function CustomerReportPage() {
       {/* ================================================================== */}
       <PageHeader
         title="Customer Reports"
-        subtitle="Manage and analyse your customer sales data"
+        subtitle="Manage and analyse your customer sales and order data"
         showBack
       />
 
       {/* ================================================================== */}
       {/* 2. FILTER CARD                                                     */}
       {/* ================================================================== */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Row 1: Choose Date */}
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Branch Filter */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Choose Date
+              Branch
             </label>
-            <div className="relative flex items-center h-10 rounded-lg border border-input bg-background px-3 transition-colors focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
-              />
-              <span className="text-muted-foreground px-2 select-none">→</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-transparent text-xs sm:text-sm text-foreground outline-none cursor-pointer"
-              />
-              <Calendar className="h-4 w-4 text-muted-foreground shrink-0 ml-1.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Row 1: Store */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Store
-            </label>
-            <Select value={selectedStore} onValueChange={setSelectedStore}>
+            <Select
+              value={selectedBranch}
+              onValueChange={setSelectedBranch}
+            >
               <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Choose Store" />
+                <SelectValue placeholder="Select Branch" />
               </SelectTrigger>
               <SelectContent className="border-border bg-popover text-popover-foreground">
-                {STORE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                <SelectItem value="all">All Branches</SelectItem>
+                {branchList.length > 0 ? (
+                  branchList.map((branch: any) => (
+                    <SelectItem
+                      key={branch.id || branch._id}
+                      value={String(branch.id || branch._id || branch.name)}
+                    >
+                      {branch.name}
+                    </SelectItem>
+                  ))
+                ) : isBranchesLoading ? (
+                  <SelectItem value="loading" disabled>
+                    Loading branches...
                   </SelectItem>
-                ))}
+                ) : null}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Row 1: Customer */}
-          <div className="space-y-1.5">
+          {/* Customer Filter */}
+          <div ref={customerDropdownRef} className="space-y-1.5 relative">
             <label className="text-xs font-semibold text-foreground">
               Customer
             </label>
-            <Select
-              value={selectedCustomer}
-              onValueChange={setSelectedCustomer}
-            >
-              <SelectTrigger className="w-full h-10 rounded-lg border-input bg-background text-foreground text-sm focus:border-primary/60 focus:ring-1 focus:ring-primary/20">
-                <SelectValue placeholder="Select Customer" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                {CUSTOMER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <input
+                type="text"
+                value={
+                  showCustomerSuggestions
+                    ? customerSearchQuery
+                    : selectedCustomerName || "All"
+                }
+                onChange={(e) => {
+                  setCustomerSearchQuery(e.target.value);
+                  if (!showCustomerSuggestions) setShowCustomerSuggestions(true);
+                }}
+                onFocus={() => {
+                  setShowCustomerSuggestions(true);
+                }}
+                placeholder="Search customer / phone..."
+                className="w-full h-10 rounded-lg border border-input bg-background px-3 pr-8 text-xs sm:text-sm text-foreground outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground"
+              />
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                {selectedCustomer && selectedCustomer !== "all" && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectCustomer("all");
+                    }}
+                    className="h-4 w-4 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center text-[10px] cursor-pointer"
+                    title="Clear customer filter"
+                  >
+                    ×
+                  </button>
+                )}
+                <Search className="h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+
+              {/* Suggestions dropdown list */}
+              {showCustomerSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover shadow-xl z-50 divide-y divide-border">
+                  {/* Option 1: All Customers */}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                      (selectedCustomer === "all" || !selectedCustomer) &&
+                        "bg-primary/10 text-primary font-medium"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectCustomer("all");
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">
+                        All
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                        Default
+                      </span>
+                    </div>
+                    {(selectedCustomer === "all" || !selectedCustomer) && (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+
+                  {/* Option 2: Walk-in Customer */}
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                      (selectedCustomer === "walk-in" ||
+                        selectedCustomerName === "Walk-in Customer") &&
+                        "bg-primary/10 text-primary font-medium"
+                    )}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectCustomer("walk-in");
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">
+                        Walk-in Customer
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                        Walk-in
+                      </span>
+                    </div>
+                    {(selectedCustomer === "walk-in" ||
+                      selectedCustomerName === "Walk-in Customer") && (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    )}
+                  </button>
+
+                  {/* Option 3: Search / Registered Customers */}
+                  {isLoadingParties ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      <span>Loading customers...</span>
+                    </div>
+                  ) : customerParties.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      No customers found
+                    </div>
+                  ) : (
+                    customerParties
+                      .filter(
+                        (p: any) =>
+                          !p.isWalkIn &&
+                          !p.name?.toLowerCase().includes("walk-in") &&
+                          !p.name?.toLowerCase().includes("walking") &&
+                          p.id !== "walk-in" &&
+                          p._id !== "walk-in"
+                      )
+                      .map((party: any) => {
+                        const partyId = party.id || party._id;
+                        const isSelected = selectedCustomer === partyId;
+                        return (
+                          <button
+                            key={partyId}
+                            type="button"
+                            className={cn(
+                              "w-full text-left p-2.5 hover:bg-muted/80 text-xs transition-colors flex items-center justify-between cursor-pointer",
+                              isSelected && "bg-primary/10 text-primary font-medium"
+                            )}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectCustomer(party);
+                            }}
+                          >
+                            <div className="flex flex-col min-w-0 pr-2">
+                              <span className="font-semibold text-foreground truncate">
+                                {party.name}
+                              </span>
+                              {party.phone && (
+                                <span className="text-[11px] text-muted-foreground font-mono">
+                                  {party.phone}
+                                </span>
+                              )}
+                            </div>
+                            {isSelected && (
+                              <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-2" />
+                            )}
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -511,88 +515,118 @@ export default function CustomerReportPage() {
       </div>
 
       {/* ================================================================== */}
-      {/* 3. CUSTOMER REPORT KPI CARDS                                       */}
+      {/* 3. SIX KPI CARDS (Matching Backend Summary)                        */}
       {/* ================================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-indigo-500/40 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <TrendingUp className="h-6 w-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Total Order Amount */}
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-indigo-500/40 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <TrendingUp className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Amount</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatBDT(customerReportKpis.totalAmount)}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Total Amount
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatBDT(summary?.totalOrderAmount ?? 0)
+                  : "৳0.00"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-emerald-500/40 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <CreditCard className="h-6 w-6" />
+        {/* Total Paid */}
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-emerald-500/40 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <CreditCard className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Paid</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatBDT(customerReportKpis.totalPaid)}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Total Paid
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatBDT(summary?.totalPaid ?? 0)
+                  : "৳0.00"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-rose-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-rose-500/40 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <Truck className="h-6 w-6" />
+        {/* Total Due */}
+        <div className="relative overflow-hidden rounded-2xl border border-rose-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-rose-500/40 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-rose-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Truck className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Due</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatBDT(customerReportKpis.totalDue)}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Total Due
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatBDT(summary?.totalDue ?? 0)
+                  : "৳0.00"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-teal-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-teal-500/40 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <Package className="h-6 w-6" />
+        {/* Total Orders */}
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <FileText className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Balance</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {formatBDT(customerReportKpis.totalBalance)}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Total Orders
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatKpiNumber(summary?.totalOrders ?? 0)
+                  : "0"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-amber-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-amber-500/45 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <FileText className="h-6 w-6" />
+        {/* Total Customers */}
+        <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-violet-500/40 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-violet-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <Users className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Total Orders</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {customerReportKpis.totalOrders.toLocaleString("en-IN")}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Total Customers
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatKpiNumber(summary?.totalCustomers ?? totalEntries)
+                  : "0"}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-card p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-violet-500/40 hover:-translate-y-0.5">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-violet-500 flex items-center justify-center text-white shrink-0 shadow-sm">
-              <Users className="h-6 w-6" />
+        {/* Active Customers */}
+        <div className="relative overflow-hidden rounded-2xl border border-teal-500/25 bg-card p-4 shadow-sm transition-all duration-200 hover:border-teal-500/40 hover:-translate-y-0.5">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-teal-500 flex items-center justify-center text-white shrink-0 shadow-sm">
+              <UserCheck className="h-5 w-5" />
             </div>
             <div className="min-w-0 space-y-0.5">
-              <p className="text-xs font-semibold text-muted-foreground truncate">Customers</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {customerReportKpis.uniqueCustomers.toLocaleString("en-IN")}
+              <p className="text-xs font-semibold text-muted-foreground truncate">
+                Active Customers
+              </p>
+              <p className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">
+                {activeFilters
+                  ? formatKpiNumber(summary?.activeCustomers ?? 0)
+                  : "0"}
               </p>
             </div>
           </div>
@@ -600,38 +634,36 @@ export default function CustomerReportPage() {
       </div>
 
       {/* ================================================================== */}
-      {/* 4. CUSTOMER REPORT TABLE CARD                                      */}
+      {/* 4. CUSTOMER REPORT DATA TABLE CARD                                 */}
       {/* ================================================================== */}
       <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        {/* Table Header */}
+        {/* Table Header Bar */}
         <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/40">
-          <div className="flex items-center gap-3">
-            <h2 className="text-base font-bold text-foreground tracking-tight">Customer Report</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-foreground tracking-tight">
+              Customer Report
+            </h2>
+            {isFetchingCustomerReport && !isLoadingCustomerReport && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <Select value={tcStoreFilter} onValueChange={(v) => { setTcStoreFilter(v); setTcCurrentPage(1); }}>
-              <SelectTrigger className="h-9 w-[170px] rounded-md border-input bg-background text-foreground text-xs">
-                <SelectValue placeholder="All Stores" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                {TABLE_STORE_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="flex items-center gap-2.5 print:hidden">
             <button
               type="button"
               onClick={handleDownloadExcel}
-              disabled={isExporting}
+              disabled={isExporting || customersList.length === 0}
               className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Download className="h-3.5 w-3.5" />
-              <span>{isExporting ? "Exporting..." : "Export"}</span>
+              <span>{isExporting ? "Exporting..." : "Download Excel"}</span>
             </button>
+
             <button
               type="button"
               onClick={handlePrintReport}
-              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              disabled={customersList.length === 0}
+              className="h-9 px-3.5 rounded-lg border border-border bg-background hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print Report</span>
@@ -639,7 +671,7 @@ export default function CustomerReportPage() {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
@@ -647,7 +679,7 @@ export default function CustomerReportPage() {
                 <th className="px-4 py-3.5 whitespace-nowrap">#</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Customer</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Phone</th>
-                <th className="px-4 py-3.5 whitespace-nowrap">Store / Branch</th>
+                <th className="px-4 py-3.5 whitespace-nowrap">Branch</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Total Orders</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Total Order Amount</th>
                 <th className="px-4 py-3.5 whitespace-nowrap">Total Paid</th>
@@ -657,9 +689,48 @@ export default function CustomerReportPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-foreground">
-              {paginatedCustomers.length === 0 ? (
+              {!activeFilters ? (
+                /* Initial State Before Generating Report */
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
+                  <td
+                    colSpan={10}
+                    className="px-4 py-16 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 mx-auto">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-1">
+                        <Sparkles className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Ready to generate customer report
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Select a branch or customer filter above, then click &quot;Generate Report&quot; to fetch the latest analytics.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : isLoadingCustomerReport ? (
+                /* Loading State */
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="px-4 py-16 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                      <p className="text-sm font-medium">
+                        Loading customer report...
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : customersList.length === 0 ? (
+                /* Empty Results State */
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="px-4 py-16 text-center text-muted-foreground"
+                  >
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-muted-foreground" />
                       <p className="text-sm font-medium">No customers found</p>
@@ -667,12 +738,18 @@ export default function CustomerReportPage() {
                   </td>
                 </tr>
               ) : (
-                paginatedCustomers.map((customer, idx) => {
+                /* Data Rows */
+                customersList.map((customer, idx) => {
+                  const rowNum =
+                    customer.index ?? (currentPage - 1) * pageSize + idx + 1;
                   return (
-                    <tr key={customer.id} className="hover:bg-muted/40 transition-colors group">
+                    <tr
+                      key={customer.id || idx}
+                      className="hover:bg-muted/40 transition-colors group"
+                    >
                       {/* # */}
                       <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-muted-foreground">
-                        {(tcCurrentPage - 1) * tcPageSize + idx + 1}
+                        {rowNum}
                       </td>
 
                       {/* Customer & Email */}
@@ -689,19 +766,19 @@ export default function CustomerReportPage() {
                         </div>
                       </td>
 
-                      {/* Phone */}
+                      {/* Phone / Reference */}
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                        {customer.phone || "—"}
+                        {customer.phone || customer.reference || "—"}
                       </td>
 
-                      {/* Store / Branch */}
+                      {/* Branch */}
                       <td className="px-4 py-3 text-foreground whitespace-nowrap text-xs">
-                        {customer.storeName || "—"}
+                        {customer.storeName || customer.branchName || "—"}
                       </td>
 
                       {/* Total Orders */}
                       <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap text-xs">
-                        {customer.totalOrders}
+                        {customer.totalOrders ?? 0}
                       </td>
 
                       {/* Total Order Amount */}
@@ -716,7 +793,7 @@ export default function CustomerReportPage() {
 
                       {/* Total Due */}
                       <td className="px-4 py-3 whitespace-nowrap text-xs">
-                        {customer.totalDue > 0 ? (
+                        {(customer.totalDue ?? 0) > 0 ? (
                           <span className="font-semibold text-rose-500">
                             {formatBDT(customer.totalDue)}
                           </span>
@@ -729,11 +806,11 @@ export default function CustomerReportPage() {
 
                       {/* Current Balance */}
                       <td className="px-4 py-3 whitespace-nowrap text-xs">
-                        {customer.currentBalance > 0 ? (
+                        {(customer.currentBalance ?? 0) > 0 ? (
                           <span className="font-semibold text-rose-500">
                             {formatBDT(customer.currentBalance)}
                           </span>
-                        ) : customer.currentBalance < 0 ? (
+                        ) : (customer.currentBalance ?? 0) < 0 ? (
                           <span className="font-semibold text-emerald-500">
                             {formatBDT(Math.abs(customer.currentBalance))} (Adv)
                           </span>
@@ -761,8 +838,19 @@ export default function CustomerReportPage() {
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Show</span>
             <Select
-              value={String(tcPageSize)}
-              onValueChange={(val) => { setTcPageSize(Number(val)); setTcCurrentPage(1); }}
+              value={String(pageSize)}
+              onValueChange={(val) => {
+                const newSize = Number(val);
+                setPageSize(newSize);
+                setCurrentPage(1);
+                if (activeFilters) {
+                  setActiveFilters((prev: any) => ({
+                    ...prev,
+                    limit: newSize,
+                    page: 1,
+                  }));
+                }
+              }}
             >
               <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
                 <SelectValue placeholder="10" />
@@ -771,49 +859,34 @@ export default function CustomerReportPage() {
                 <SelectItem value="5">5</SelectItem>
                 <SelectItem value="10">10</SelectItem>
                 <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
             <span>
               Showing{" "}
-              <strong className="text-foreground">{tcTotalEntries === 0 ? 0 : (tcCurrentPage - 1) * tcPageSize + 1}</strong>{" "}
+              <strong className="text-foreground">
+                {totalEntries === 0
+                  ? 0
+                  : (currentPage - 1) * pageSize + 1}
+              </strong>{" "}
               to{" "}
-              <strong className="text-foreground">{Math.min(tcCurrentPage * tcPageSize, tcTotalEntries)}</strong>{" "}
-              of <strong className="text-foreground">{tcTotalEntries}</strong> customers
+              <strong className="text-foreground">
+                {Math.min(currentPage * pageSize, totalEntries)}
+              </strong>{" "}
+              of <strong className="text-foreground">{totalEntries}</strong> customers
             </span>
           </div>
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setTcCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={tcCurrentPage <= 1}
-              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            {Array.from({ length: tcTotalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setTcCurrentPage(page)}
-                className={cn(
-                  "h-8 w-8 rounded-md text-xs font-semibold transition-all duration-150 cursor-pointer flex items-center justify-center",
-                  tcCurrentPage === page
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "border border-border bg-background text-foreground hover:bg-muted"
-                )}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setTcCurrentPage((p) => Math.min(tcTotalPages, p + 1))}
-              disabled={tcCurrentPage >= tcTotalPages}
-              className="h-8 w-8 rounded-md border border-border bg-background hover:bg-muted text-foreground disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors cursor-pointer"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+
+          {activeFilters && totalPages > 1 && (
+            <div className="print:hidden">
+              <PaginationHelper
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                isBangla={isBangla}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

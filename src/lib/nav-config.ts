@@ -342,12 +342,12 @@ export const navGroups: NavItem[] = [
         labelKey: "Inventory",
         labelBn: "ইনভেন্টরি",
       },
-      {
-        page: "/reports/finance",
-        icon: BadgeDollarSign,
-        labelKey: "Finance",
-        labelBn: "ফাইনান্স",
-      },
+      // {
+      //   page: "/reports/finance",
+      //   icon: BadgeDollarSign,
+      //   labelKey: "Finance",
+      //   labelBn: "ফাইনান্স",
+      // },
       {
         page: "/reports/customers",
         icon: Users,
