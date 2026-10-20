@@ -9,7 +9,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Sparkles,
-  Search,
   Loader2,
   FileText,
 } from "lucide-react";
@@ -118,7 +117,6 @@ export default function IncomeReportPage() {
   const [endDate, setEndDate] = useState(initialDates.end);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Table Pagination State
   const [pageSize, setPageSize] = useState<number>(10);
@@ -142,6 +140,7 @@ export default function IncomeReportPage() {
     enabled: Boolean(activeFilters),
   });
 
+  console.log("incomeReportData", incomeReportData);
   const branchList = Array.isArray(branches)
     ? branches
     : Array.isArray((branches as any)?.data)
@@ -174,7 +173,6 @@ export default function IncomeReportPage() {
         selectedBranch === "all" ? undefined : selectedBranch || undefined,
       categoryId:
         selectedCategory === "all" ? undefined : selectedCategory || undefined,
-      search: searchQuery.trim() || undefined,
       page: 1,
       limit: pageSize,
     });
@@ -196,7 +194,6 @@ export default function IncomeReportPage() {
     setEndDate(dates.end);
     setSelectedBranch("");
     setSelectedCategory("all");
-    setSearchQuery("");
   };
 
   // Handle Export Excel / CSV
@@ -282,7 +279,7 @@ export default function IncomeReportPage() {
       {/* 2. FILTER CARD                                                     */}
       {/* ================================================================== */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Choose Date */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
@@ -364,23 +361,6 @@ export default function IncomeReportPage() {
                 ) : null}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Search Term */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Search
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search name, description..."
-                className="w-full h-10 rounded-lg border border-input bg-background px-3 pr-9 text-xs sm:text-sm text-foreground outline-none transition-colors focus:border-primary/60 focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground"
-              />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
           </div>
         </div>
 
@@ -660,61 +640,17 @@ export default function IncomeReportPage() {
           </table>
         </div>
 
-        {/* Income Report Pagination */}
-        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Show</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(val) => {
-                const newSize = Number(val);
-                setPageSize(newSize);
-                setCurrentPage(1);
-                if (activeFilters) {
-                  setActiveFilters((prev: any) => ({
-                    ...prev,
-                    limit: newSize,
-                    page: 1,
-                  }));
-                }
-              }}
-            >
-              <SelectTrigger className="h-8 w-[72px] rounded-md border-input bg-background text-foreground text-xs">
-                <SelectValue placeholder="10" />
-              </SelectTrigger>
-              <SelectContent className="border-border bg-popover text-popover-foreground">
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            <span>
-              Showing{" "}
-              <strong className="text-foreground">
-                {totalEntries === 0
-                  ? 0
-                  : (currentPage - 1) * pageSize + 1}
-              </strong>{" "}
-              to{" "}
-              <strong className="text-foreground">
-                {Math.min(currentPage * pageSize, totalEntries)}
-              </strong>{" "}
-              of <strong className="text-foreground">{totalEntries}</strong> records
-            </span>
+        {/* Reusable Pagination */}
+        {activeFilters && totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-border print:hidden">
+            <PaginationHelper
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              isBangla={isBangla}
+            />
           </div>
-
-          {activeFilters && totalPages > 1 && (
-            <div className="print:hidden">
-              <PaginationHelper
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                isBangla={isBangla}
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
