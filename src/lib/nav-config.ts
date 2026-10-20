@@ -360,6 +360,18 @@ export const navGroups: NavItem[] = [
         labelKey: "Suppliers",
         labelBn: "সরবরাহকারী",
       },
+      {
+        page: "/reports/income",
+        icon: TrendingUp,
+        labelKey: "Income Report",
+        labelBn: "আয় রিপোর্ট",
+      },
+      {
+        page: "/reports/expense",
+        icon: TrendingDown,
+        labelKey: "Expense Report",
+        labelBn: "ব্যয় রিপোর্ট",
+      },
       // {
       //   page: "/reports/branches",
       //   icon: Building2,

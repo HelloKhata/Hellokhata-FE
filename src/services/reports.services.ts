@@ -71,3 +71,15 @@ export const getSupplierReport = async(filters:any) => {
   const res = await client.get("/api/reports-new/supplier-report", { params: filters });
   return res.data;
 };
+
+// expense
+export const getExpenseReport = async(filters?: any) => {
+  const res = await client.get("/api/reports-new/expense-report", { params: filters });
+  return res.data;
+};
+
+// income
+export const getIncomeReport = async(filters?: any) => {
+  const res = await client.get("/api/reports-new/income-report", { params: filters });
+  return res.data;
+};
