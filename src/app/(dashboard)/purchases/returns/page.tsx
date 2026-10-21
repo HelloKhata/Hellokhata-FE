@@ -418,7 +418,6 @@ export default function PurchaseReturnsPage() {
                               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted dark:text-[#718296] dark:hover:text-white dark:hover:bg-[#202738] transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log("Print Return");
                               }}
                             >
                               <Printer className="h-4 w-4" />

@@ -31,7 +31,6 @@ export const useCreatePaymentOut = () => {
 
 
 export const useGetPaymentById = (id: string) => {
-    console.log('id from useGetPaymentById', id)
     return useQuery({
         queryKey: ["payment", id],
         queryFn: () => getPaymentById(id),

@@ -77,7 +77,6 @@ export default function RemindersPage() {
   const { mutate: deleteReminder, isPending: isDeleting } = useDeleteReminder();
   // Helper to determine if a reminder is completed (past date or explicit property)
 
-  console.log("reminders", reminders);
   const isCompleted = (r: any) => {
     if (r.completed === true || r.status === "completed") return true;
     return new Date(r.dateTime) <= new Date();

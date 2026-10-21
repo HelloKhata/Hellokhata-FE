@@ -15,8 +15,7 @@ const NotificatoinProvider = ({ children }: { children: React.ReactNode }) => {
 
     eventSource.onmessage = (event) => {
       try {
-        const notification = JSON.parse(event.data);
-        console.log(notification);
+        const notification = JSON.parse(event.data); 
         toast(`🔔 ${notification.title}\n${notification.message}`);
       } catch (error) {
         console.error("Parse error:", error);
@@ -25,7 +24,6 @@ const NotificatoinProvider = ({ children }: { children: React.ReactNode }) => {
 
     eventSource.onerror = (error) => {
       console.error("❌ SSE error:", error);
-      console.log("State:", eventSource.readyState);
     };
 
     return () => {

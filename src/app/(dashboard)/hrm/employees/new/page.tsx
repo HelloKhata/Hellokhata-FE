@@ -17,11 +17,6 @@ import {
   Trash2,
   AlertCircle,
   ShieldCheck,
-  CreditCard,
-  Landmark,
-  Smartphone,
-  Info,
-  Camera,
   RefreshCw,
   Upload,
   Trophy,
@@ -249,7 +244,6 @@ export default function AddEmployeePage() {
       payrollRemarks: notesVal.trim(),
     };
 
-    console.log(payload)
     createEmployee(payload, {
       onSuccess: () => {
         toast.success(

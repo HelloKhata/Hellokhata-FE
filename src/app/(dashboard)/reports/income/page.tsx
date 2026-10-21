@@ -140,7 +140,6 @@ export default function IncomeReportPage() {
     enabled: Boolean(activeFilters),
   });
 
-  console.log("incomeReportData", incomeReportData);
   const branchList = Array.isArray(branches)
     ? branches
     : Array.isArray((branches as any)?.data)

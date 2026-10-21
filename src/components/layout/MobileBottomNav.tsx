@@ -205,6 +205,11 @@ export function MobileBottomNav() {
       .filter(Boolean) as typeof navGroups;
   }, [searchQuery]);
 
+  // Only render on homepage ('/')
+  if (pathname !== '/') {
+    return null;
+  }
+
   return (
     <>
       {/* ========================================================================= */}

@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileBottomNav } from './MobileBottomNav';
@@ -18,6 +19,8 @@ interface AppLayoutProps {
 const emptySubscribe = () => () => {};
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
   const { sidebarCollapsed, mobileMenuOpen, setMobileMenuOpen, aiDrawerCollapsed } = useUiStore();
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -94,15 +97,20 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Sticky Header */}
         <Header />
 
-        {/* Main Content with bottom padding on mobile to accommodate 2-layer MobileBottomNav */}
-        <main className="md:mt-16 p-4 md:p-6 lg:p-8 pb-32 md:pb-8 animate-fade-in min-h-[calc(100vh-4rem)]">
+        {/* Main Content with bottom padding on mobile to accommodate 2-layer MobileBottomNav only on homepage */}
+        <main
+          className={cn(
+            'md:mt-16 p-4 md:p-6 lg:p-8 animate-fade-in min-h-[calc(100vh-4rem)]',
+            isHomePage ? 'pb-32 md:pb-8' : 'pb-6 md:pb-8'
+          )}
+        >
           {children}
         </main>
 
       </div>
 
-      {/* Mobile Bottom Navigation (Mobile/Tablet only) */}
-      <MobileBottomNav />
+      {/* Mobile Bottom Navigation (Mobile/Tablet only - visible only on homepage) */}
+      {isHomePage && <MobileBottomNav />}
     </>
   );
 }

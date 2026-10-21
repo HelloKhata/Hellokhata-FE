@@ -135,7 +135,6 @@ export function AddReminderModal({
 
     // Combine date and time to ISO 8601 string
     const match = time.match(/^(\d{2}):(\d{2})\s(AM|PM)$/i);
-    console.log("Time match:", match);
     let hour = 12;
     let minute = 0;
     if (match) {
@@ -165,7 +164,6 @@ export function AddReminderModal({
         { id: reminderId, data: payload },
         {
           onSuccess: (data) => {
-            console.log("Reminder updated:", data);
             toast.success(
               isBangla
                 ? "রিমাইন্ডার সফলভাবে আপডেট করা হয়েছে"
@@ -178,7 +176,6 @@ export function AddReminderModal({
     } else {
       createReminder(payload, {
         onSuccess: (data) => {
-          console.log("Reminder created:", data);
           toast.success(
             isBangla
               ? "রিমাইন্ডার সফলভাবে তৈরি হয়েছে"

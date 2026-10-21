@@ -207,8 +207,6 @@ export default function ExpensePageContent() {
   const uploadExpenseImageMutation = useUploadExpenseImage();
   const deleteExpenseMutation = useDeletExpense();
 
-  console.log('categories',expenseCategories)  
-  // console.log('accounts: ', accounts); 
   const [categoryToDelete, setCategoryToDelete] = useState<any | null>(null);
   const [isDeleteCategoryOpen, setIsDeleteCategoryOpen] = useState(false);
 
@@ -515,7 +513,6 @@ const UTILITY_TYPES = [
 
   const handleConfirmDeleteCategory = () => {
     if (!categoryToDelete) return;
-    console.log()
     deleteExpenseCategory(categoryToDelete.id, {
       onSuccess: () => {
         toast({
@@ -541,7 +538,7 @@ const UTILITY_TYPES = [
   };
 
   const handleDeleteExpense = async (expId: string) => {
-    console.log()
+    // console.log()
   };
 
   const copyVoucherCode = (code: string) => {
