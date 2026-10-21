@@ -49,6 +49,7 @@ import {
 import { useAppTranslation, useCurrency } from '@/hooks/useAppTranslation';
 import { useBranchStore } from '@/stores/branchStore';
 import { cn } from '@/lib/utils';
+import { useDashboardStats } from '@/hooks/api/useDashboard';
 
 const STATIC_BRANCHES = [
   { id: 'main', name: 'Main Branch', code: 'MAIN', isDefault: true, isActive: true },
@@ -319,7 +320,10 @@ export default function ReportsDashboardPage() {
   const { currentBranchId, setCurrentBranch, viewAllBranches, setViewAllBranches } = useBranchStore();
   const branches = STATIC_BRANCHES;
 
-  // State
+  const {data:dashboardStats, isLoading:isLoadingDashboardStats}= useDashboardStats();
+  
+   console.log('dashboardStats',dashboardStats, isLoadingDashboardStats)
+    // State
   const [dateRange, setDateRange] = useState<DateRangeOption>('7d');
   const [activePerformanceTab, setActivePerformanceTab] = useState<PerformanceTab>('revenue');
   const [performancePeriod, setPerformancePeriod] = useState<PerformancePeriod>('weekly');
