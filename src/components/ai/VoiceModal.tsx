@@ -100,11 +100,9 @@ function LegacyVoiceModal({ isOpen, onClose }: VoiceModalProps) {
         recognitionRef.current.onerror = (event) => {
           // "no-speech" and "aborted" are common and not real errors
           if (event.error === 'no-speech' || event.error === 'aborted') {
-            console.log('Speech recognition ended:', event.error);
             setIsListening(false);
             return;
           }
-          console.error('Speech recognition error:', event.error);
           setError(event.error);
           setIsListening(false);
         };

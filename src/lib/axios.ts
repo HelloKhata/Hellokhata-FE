@@ -22,13 +22,6 @@ const processQueue = (error: any, success = false) => {
 client.interceptors.response.use(
   (res) => res,
   async (error) => {
-    console.log(
-      "Request:",
-      error.config?.method?.toUpperCase(),
-      error.config?.url,
-    );
-    console.log("Status:", error.response?.status);
-    console.log("Response:", error.response?.data);
     const originalRequest = error.config;
     const message = error.response?.data?.message || "Something went wrong!";
 
@@ -71,7 +64,6 @@ client.interceptors.response.use(
       }
     }
 
-    console.log("error", error.response?.data);
     toast.error(message);
     return Promise.reject(error);
   },

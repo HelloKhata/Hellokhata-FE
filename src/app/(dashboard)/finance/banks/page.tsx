@@ -11,7 +11,6 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
-  Building2,
   Landmark,
   Wallet,
   Plus,
@@ -23,10 +22,8 @@ import {
   Phone,
   TrendingUp,
   TrendingDown,
-  ChevronDown,
   ArrowUpRight,
   ArrowDownLeft,
-  ArrowLeftRight,
   ShieldCheck,
   CreditCard,
   Eye,
@@ -314,7 +311,7 @@ export default function FinanceBankWalletsPage() {
   };
 
   const handleDeleteAccount = (id: string) => {
-   console.log(id)
+  //  console.log(id)
   };
 
   const handleQuickTransfer = (e: React.FormEvent) => {

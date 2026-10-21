@@ -322,7 +322,6 @@ export default function ReportsDashboardPage() {
 
   const {data:dashboardStats, isLoading:isLoadingDashboardStats}= useDashboardStats();
   
-   console.log('dashboardStats',dashboardStats, isLoadingDashboardStats)
     // State
   const [dateRange, setDateRange] = useState<DateRangeOption>('7d');
   const [activePerformanceTab, setActivePerformanceTab] = useState<PerformanceTab>('revenue');

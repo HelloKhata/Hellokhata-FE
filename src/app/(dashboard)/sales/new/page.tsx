@@ -70,7 +70,14 @@ import { useParties } from "@/hooks/api/useParties";
 import { useCreateSales } from "@/hooks/api/useSales";
 import { useGetOffers } from "@/hooks/api/useOffers";
 import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
-import { Offer, POSAppliedOffer, calculateBogoOffer, calculatePercentageOffer, calculateFlatOffer, calculateBundleOffer } from "@/types/offer.types";
+import {
+  Offer,
+  POSAppliedOffer,
+  calculateBogoOffer,
+  calculatePercentageOffer,
+  calculateFlatOffer,
+  calculateBundleOffer,
+} from "@/types/offer.types";
 import Image from "next/image";
 
 interface PaymentRow {
@@ -84,9 +91,33 @@ interface PaymentRow {
 }
 
 const METHODS = [
-  { id: "cash", label: "Cash", icon: Banknote, accent: "var(--emerald-500)", colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10", borderClass: "border-emerald-500/20" },
-  { id: "bank", label: "Bank/Card", icon: CreditCard, accent: "var(--blue-500)", colorClass: "text-blue-500", bgClass: "bg-blue-500/10", borderClass: "border-blue-500/20" },
-  { id: "mobile_banking", label: "Mobile Banking", icon: Smartphone, accent: "var(--orange-500)", colorClass: "text-orange-500", bgClass: "bg-orange-500/10", borderClass: "border-orange-500/20" },
+  {
+    id: "cash",
+    label: "Cash",
+    icon: Banknote,
+    accent: "var(--emerald-500)",
+    colorClass: "text-emerald-500",
+    bgClass: "bg-emerald-500/10",
+    borderClass: "border-emerald-500/20",
+  },
+  {
+    id: "bank",
+    label: "Bank/Card",
+    icon: CreditCard,
+    accent: "var(--blue-500)",
+    colorClass: "text-blue-500",
+    bgClass: "bg-blue-500/10",
+    borderClass: "border-blue-500/20",
+  },
+  {
+    id: "mobile_banking",
+    label: "Mobile Banking",
+    icon: Smartphone,
+    accent: "var(--orange-500)",
+    colorClass: "text-orange-500",
+    bgClass: "bg-orange-500/10",
+    borderClass: "border-orange-500/20",
+  },
 ];
 
 interface BillingItemRow {
@@ -112,7 +143,6 @@ interface BillingItemRow {
   offerSavings: number;
 }
 
-
 function NewSaleContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,7 +161,7 @@ function NewSaleContent() {
   const [showProductSuggestions, setShowProductSuggestions] = useState(false);
   const [invoiceDate, setInvoiceDate] = useState<Date>(new Date());
 
-    // Form State
+  // Form State
   const [selectedParty, setSelectedParty] = useState<any>(null);
   const [selectedPartyId, setSelectedPartyId] = useState<string>(partyIdParam);
 
@@ -143,19 +173,18 @@ function NewSaleContent() {
     return () => clearTimeout(timer);
   }, [phoneSearchQuery]);
 
-
-
   // Batch selection in search suggestion dropdown
-  const [selectedProductForBatch, setSelectedProductForBatch] = useState<any>(null);
-
+  const [selectedProductForBatch, setSelectedProductForBatch] =
+    useState<any>(null);
 
   const [splitMode, setSplitMode] = useState(false);
   const [activeSplitMethod, setActiveSplitMethod] = useState<string>("cash");
 
-
-
   // New Fields (VAT, Additional Charge)
-  const [vatConfig, setVatConfig] = useState<{ type: "flat" | "percent"; value: number }>({
+  const [vatConfig, setVatConfig] = useState<{
+    type: "flat" | "percent";
+    value: number;
+  }>({
     type: "flat",
     value: 0,
   });
@@ -173,32 +202,50 @@ function NewSaleContent() {
 
   // Mobile UX States
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isMobileCustomerModalOpen, setIsMobileCustomerModalOpen] = useState(false);
+  const [isMobileCustomerModalOpen, setIsMobileCustomerModalOpen] =
+    useState(false);
   const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
   const [mobileCustomerSearch, setMobileCustomerSearch] = useState("");
   const [mobileProductSearch, setMobileProductSearch] = useState("");
-  const [modalQuantities, setModalQuantities] = useState<Record<string, number>>({});
-  const [editingItemForPrice, setEditingItemForPrice] = useState<BillingItemRow | null>(null);
+  const [modalQuantities, setModalQuantities] = useState<
+    Record<string, number>
+  >({});
+  const [editingItemForPrice, setEditingItemForPrice] =
+    useState<BillingItemRow | null>(null);
   const [tempNewPrice, setTempNewPrice] = useState<string>("");
-  const [mobileDiscountType, setMobileDiscountType] = useState<"fixed" | "percent">("fixed");
+  const [mobileDiscountType, setMobileDiscountType] = useState<
+    "fixed" | "percent"
+  >("fixed");
   const [mobileDiscountValue, setMobileDiscountValue] = useState<string>("");
 
-  const { data: items } = useGetItems({ search: productSearchQuery || mobileProductSearch, page: 1, limit: 100 });
+  const { data: items } = useGetItems({
+    search: productSearchQuery || mobileProductSearch,
+    page: 1,
+    limit: 100,
+  });
 
   const { data: batchesData, isLoading: loadingBatches } = useGetItemBatches(
     selectedProductForBatch?.id || "",
-    { enabled: !!selectedProductForBatch?.id }
+    { enabled: !!selectedProductForBatch?.id },
   );
-const itemsBatches = batchesData?.batches;
-  const { data: partiesData = [] } = useParties({type:'customer',search:debouncedPartySearchQuery,includeWalkIn:true, page: 1, limit: 100});
+  const itemsBatches = batchesData?.batches;
+  const { data: partiesData = [] } = useParties({
+    type: "customer",
+    search: debouncedPartySearchQuery,
+    includeWalkIn: true,
+    page: 1,
+    limit: 100,
+  });
   const { data: paymentMethods = [] } = useGetPaymentMethods();
 
   // Fetch active offers for auto-detection
   const { data: offersData } = useGetOffers({ status: "active" });
   const activeOffers: Offer[] = offersData?.data || [];
 
-    const parties = useMemo(() => {
-    return Array.isArray(partiesData) ? partiesData : (partiesData as any)?.data || [];
+  const parties = useMemo(() => {
+    return Array.isArray(partiesData)
+      ? partiesData
+      : (partiesData as any)?.data || [];
   }, [partiesData]);
 
   // Find active offer for a product+batch combination
@@ -208,18 +255,17 @@ const itemsBatches = batchesData?.batches;
       (o) =>
         o.productId === itemId &&
         o.status === "active" &&
-        (!o.batchId || !batchNo || o.batchId === batchNo)
+        (!o.batchId || !batchNo || o.batchId === batchNo),
     );
     return match || null;
   };
 
- 
   const accounts = useMemo(() => {
     return paymentMethods.map((pm: any) => ({
       id: pm.id,
-      name: pm.name || pm.bankName || pm.provider || '',
+      name: pm.name || pm.bankName || pm.provider || "",
       balance: pm.currentBalance || pm.openingBalance || 0,
-      type: pm.type
+      type: pm.type,
     }));
   }, [paymentMethods]);
 
@@ -237,9 +283,11 @@ const itemsBatches = batchesData?.batches;
       date: new Date(),
     },
   ]);
-  
+
   // Default customer name fallback
-  const defaultCustomerName = isBangla ? "ওয়াকিং কাস্টমার" : "Walking Customer";
+  const defaultCustomerName = isBangla
+    ? "ওয়াকিং কাস্টমার"
+    : "Walking Customer";
 
   // Handle selecting party
   const handleSelectParty = (party: any) => {
@@ -280,9 +328,12 @@ const itemsBatches = batchesData?.batches;
     }
   };
 
-  // Calculations 
+  // Calculations
   const rawSubtotal = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    return selectedItems.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
   }, [selectedItems]);
 
   const totalDiscount = useMemo(() => {
@@ -290,7 +341,10 @@ const itemsBatches = batchesData?.batches;
   }, [selectedItems]);
 
   const totalOfferSavings = useMemo(() => {
-    return selectedItems.reduce((sum, item) => sum + (item.offerSavings || 0), 0);
+    return selectedItems.reduce(
+      (sum, item) => sum + (item.offerSavings || 0),
+      0,
+    );
   }, [selectedItems]);
 
   const subtotalAfterDiscount = useMemo(() => {
@@ -305,7 +359,11 @@ const itemsBatches = batchesData?.batches;
     if (vatConfig.type === "flat") {
       return vatConfig.value;
     } else {
-      return parseFloat((subtotalAfterDiscount * (vatConfig.value / 100)).toFixed(2)) || 0;
+      return (
+        parseFloat(
+          (subtotalAfterDiscount * (vatConfig.value / 100)).toFixed(2),
+        ) || 0
+      );
     }
   }, [vatConfig, subtotalAfterDiscount]);
 
@@ -314,7 +372,10 @@ const itemsBatches = batchesData?.batches;
   }, [additionalCharge]);
 
   const grandTotal = useMemo(() => {
-    return Math.max(0, subtotalAfterDiscount + totalTax + vatVal + additionalChargeVal);
+    return Math.max(
+      0,
+      subtotalAfterDiscount + totalTax + vatVal + additionalChargeVal,
+    );
   }, [subtotalAfterDiscount, totalTax, vatVal, additionalChargeVal]);
 
   // Mobile specific discount, payable amount, and list filters
@@ -330,26 +391,43 @@ const itemsBatches = batchesData?.batches;
   }, [mobileDiscountType, mobileDiscountValue, rawSubtotal]);
 
   const mobilePayableTotal = useMemo(() => {
-    return Math.max(0, rawSubtotal - mobileDiscountAmount + totalTax + vatVal + additionalChargeVal);
-  }, [rawSubtotal, mobileDiscountAmount, totalTax, vatVal, additionalChargeVal]);
+    return Math.max(
+      0,
+      rawSubtotal -
+        mobileDiscountAmount +
+        totalTax +
+        vatVal +
+        additionalChargeVal,
+    );
+  }, [
+    rawSubtotal,
+    mobileDiscountAmount,
+    totalTax,
+    vatVal,
+    additionalChargeVal,
+  ]);
 
   const mobileFilteredProducts = useMemo(() => {
-    const list = Array.isArray(items) ? items : (items as any)?.data || (items as any)?.items || [];
+    const list = Array.isArray(items)
+      ? items
+      : (items as any)?.data || (items as any)?.items || [];
     if (!mobileProductSearch.trim()) return list;
     const q = mobileProductSearch.toLowerCase().trim();
-    return list.filter((p: any) =>
-      (p.name && p.name.toLowerCase().includes(q)) ||
-      (p.sku && p.sku.toLowerCase().includes(q)) ||
-      (p.barcode && p.barcode.toLowerCase().includes(q))
+    return list.filter(
+      (p: any) =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.barcode && p.barcode.toLowerCase().includes(q)),
     );
   }, [items, mobileProductSearch]);
 
   const mobileFilteredParties = useMemo(() => {
     if (!mobileCustomerSearch.trim()) return parties;
     const q = mobileCustomerSearch.toLowerCase().trim();
-    return parties.filter((p: any) =>
-      (p.name && p.name.toLowerCase().includes(q)) ||
-      (p.phone && p.phone.toLowerCase().includes(q))
+    return parties.filter(
+      (p: any) =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.phone && p.phone.toLowerCase().includes(q)),
     );
   }, [parties, mobileCustomerSearch]);
 
@@ -361,9 +439,17 @@ const itemsBatches = batchesData?.batches;
     return Math.max(0, grandTotal - totalPaid);
   }, [grandTotal, totalPaid]);
 
+  const effectiveGrandTotal = useMemo(() => {
+    return mobileDiscountAmount > 0 ? mobilePayableTotal : grandTotal;
+  }, [mobileDiscountAmount, mobilePayableTotal, grandTotal]);
+
+  const effectiveDue = useMemo(() => {
+    return Math.max(0, parseFloat((effectiveGrandTotal - totalPaid).toFixed(2)));
+  }, [effectiveGrandTotal, totalPaid]);
+
   const changeReturned = useMemo(() => {
-    return Math.max(0, totalPaid - grandTotal);
-  }, [totalPaid, grandTotal]);
+    return Math.max(0, totalPaid - effectiveGrandTotal);
+  }, [totalPaid, effectiveGrandTotal]);
 
   // Validation & Warnings
   const [paymentWarning, setPaymentWarning] = useState<string | null>(null);
@@ -427,21 +513,26 @@ const itemsBatches = batchesData?.batches;
           transactionId: "",
           amount: 0,
           date: new Date(),
-        }
+        },
       ]);
     }
     setSplitMode(!splitMode);
   };
 
-  const handlePaymentFieldChange = (id: string, field: keyof PaymentRow, value: any) => {
+  const handlePaymentFieldChange = (
+    id: string,
+    field: keyof PaymentRow,
+    value: any,
+  ) => {
     if (field === "amount") {
-      const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
+      const numValue =
+        typeof value === "number" ? value : parseFloat(value) || 0;
 
       if (numValue < 0) {
         setPaymentWarning(
           isBangla
             ? "পরিশোধের পরিমাণ ঋণাত্মক হতে পারে না"
-            : "Paid amount cannot be negative"
+            : "Paid amount cannot be negative",
         );
         return;
       }
@@ -451,13 +542,18 @@ const itemsBatches = batchesData?.batches;
         .filter((p) => p.id !== id)
         .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-      const maxAllowed = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
+      const maxLimit =
+        effectiveGrandTotal > 0 ? effectiveGrandTotal : grandTotal;
+      const maxAllowed = Math.max(
+        0,
+        parseFloat((maxLimit - otherPaymentsTotal).toFixed(2)),
+      );
 
       if (numValue > maxAllowed) {
         setPaymentWarning(
           isBangla
             ? `পরিশোধের পরিমাণ সর্বমোট টাকার বেশি হতে পারবে না (সর্বোচ্চ: ${formatCurrency(maxAllowed)})`
-            : `Paid amount cannot exceed grand total (Max allowed: ${formatCurrency(maxAllowed)})`
+            : `Paid amount cannot exceed grand total (Max allowed: ${formatCurrency(maxAllowed)})`,
         );
         return; // The input field cannot receive data when exceeded
       } else {
@@ -474,7 +570,7 @@ const itemsBatches = batchesData?.batches;
           };
         }
         return p;
-      })
+      }),
     );
   };
 
@@ -489,7 +585,7 @@ const itemsBatches = batchesData?.batches;
     return parseFloat((taxableAmount * (taxRate / 100)).toFixed(2)) || 0;
   };
 
-    // Calculate Row Total helper
+  // Calculate Row Total helper
   const calculateRowTotal = (
     qty: number,
     price: number,
@@ -497,26 +593,28 @@ const itemsBatches = batchesData?.batches;
   ) => {
     return Math.max(0, qty * price - flatDiscount);
   };
-  
+
   // Add Product to Table with chosen batch
   const handleSelectBatchAndAdd = (product: any, batch?: any) => {
     if (!product) return;
     const batchNo = batch?.batchNumber || batch?.batchNo || batch?.name || "";
-    const price = batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
+    const price =
+      batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
     const costPrice = batch?.costPrice || product.costPrice || 0;
     const taxRate = Number(
       batch?.taxRate ??
-      batch?.taxPercent ??
-      product?.taxRate ??
-      product?.taxPercent ??
-      product?.taxCategory?.rate ??
-      product?.tax ??
-      0
+        batch?.taxPercent ??
+        product?.taxRate ??
+        product?.taxPercent ??
+        product?.taxCategory?.rate ??
+        product?.tax ??
+        0,
     );
 
     setSelectedItems((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.itemId === product.id && (item.batchNo || "") === batchNo
+        (item) =>
+          item.itemId === product.id && (item.batchNo || "") === batchNo,
       );
 
       if (existingIndex > -1) {
@@ -526,7 +624,12 @@ const itemsBatches = batchesData?.batches;
             const flatDiscount = item.discountFlat || 0;
             const total = calculateRowTotal(newQty, price, flatDiscount);
             const rowTaxRate = item.taxRate ?? taxRate;
-            const taxAmount = calculateItemTaxAmount(newQty, price, flatDiscount, rowTaxRate);
+            const taxAmount = calculateItemTaxAmount(
+              newQty,
+              price,
+              flatDiscount,
+              rowTaxRate,
+            );
 
             const offer = findActiveOffer(product.id, batchNo);
             let appliedOffer: POSAppliedOffer | null = null;
@@ -686,9 +789,16 @@ const itemsBatches = batchesData?.batches;
 
   // Auto-add product if it has 1 or fewer batches
   useEffect(() => {
-    if (selectedProductForBatch && !loadingBatches && itemsBatches !== undefined) {
+    if (
+      selectedProductForBatch &&
+      !loadingBatches &&
+      itemsBatches !== undefined
+    ) {
       if (itemsBatches.length <= 1) {
-        handleSelectBatchAndAdd(selectedProductForBatch, itemsBatches[0] || null);
+        handleSelectBatchAndAdd(
+          selectedProductForBatch,
+          itemsBatches[0] || null,
+        );
       }
     }
   }, [selectedProductForBatch, itemsBatches, loadingBatches]);
@@ -697,8 +807,6 @@ const itemsBatches = batchesData?.batches;
   const removeItemRow = (id: string) => {
     setSelectedItems((prev) => prev.filter((item) => item.id !== id));
   };
-
-
 
   // Handle Quantity Change
   const handleQuantityChange = (id: string, val: string) => {
@@ -712,7 +820,12 @@ const itemsBatches = batchesData?.batches;
               (price * qty * (item.discountPercent / 100)).toFixed(2),
             ) || 0;
           const total = calculateRowTotal(qty, price, flat);
-          const taxAmount = calculateItemTaxAmount(qty, price, flat, item.taxRate || 0);
+          const taxAmount = calculateItemTaxAmount(
+            qty,
+            price,
+            flat,
+            item.taxRate || 0,
+          );
 
           // Recalculate offer with new quantity
           let appliedOffer: POSAppliedOffer | null = null;
@@ -724,35 +837,35 @@ const itemsBatches = batchesData?.batches;
             const offer = findActiveOffer(item.itemId, item.batchNo);
             if (offer) {
               switch (offer.type) {
-                case 'bogo':
+                case "bogo":
                   appliedOffer = calculateBogoOffer(
                     qty,
                     offer.bogoConfig?.buyQuantity || 1,
                     offer.bogoConfig?.freeQuantity || 1,
-                    price
+                    price,
                   );
                   break;
-                case 'percentage':
+                case "percentage":
                   appliedOffer = calculatePercentageOffer(
                     qty,
                     offer.percentageConfig?.percentage || 0,
-                    price
+                    price,
                   );
                   break;
-                case 'flat':
+                case "flat":
                   appliedOffer = calculateFlatOffer(
                     qty,
                     offer.flatConfig?.amount || 0,
-                    offer.flatConfig?.scope || 'per_unit',
-                    price
+                    offer.flatConfig?.scope || "per_unit",
+                    price,
                   );
                   break;
-                case 'bundle':
+                case "bundle":
                   appliedOffer = calculateBundleOffer(
                     qty,
                     offer.bundleConfig?.bundleQuantity || 2,
                     offer.bundleConfig?.bundlePrice || 0,
-                    price
+                    price,
                   );
                   break;
               }
@@ -794,7 +907,12 @@ const itemsBatches = batchesData?.batches;
               (rate * qty * (item.discountPercent / 100)).toFixed(2),
             ) || 0;
           const total = calculateRowTotal(qty, rate, flat);
-          const taxAmount = calculateItemTaxAmount(qty, rate, flat, item.taxRate || 0);
+          const taxAmount = calculateItemTaxAmount(
+            qty,
+            rate,
+            flat,
+            item.taxRate || 0,
+          );
           return {
             ...item,
             unitPrice: rate,
@@ -808,7 +926,6 @@ const itemsBatches = batchesData?.batches;
     );
   };
 
-
   // Modal Actions
   const saveVat = () => {
     const val = parseFloat(tempVatValue) || 0;
@@ -817,24 +934,30 @@ const itemsBatches = batchesData?.batches;
   };
 
   // Handle adding product from mobile modal with specified quantity
-  const handleAddProductFromModal = (product: any, qtyToAdd: number = 1, batch?: any) => {
+  const handleAddProductFromModal = (
+    product: any,
+    qtyToAdd: number = 1,
+    batch?: any,
+  ) => {
     if (!product) return;
     const batchNo = batch?.batchNumber || batch?.batchNo || batch?.name || "";
-    const price = batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
+    const price =
+      batch?.sellingPrice || batch?.unitPrice || product.sellingPrice || 0;
     const costPrice = batch?.costPrice || product.costPrice || 0;
     const taxRate = Number(
       batch?.taxRate ??
-      batch?.taxPercent ??
-      product?.taxRate ??
-      product?.taxPercent ??
-      product?.taxCategory?.rate ??
-      product?.tax ??
-      0
+        batch?.taxPercent ??
+        product?.taxRate ??
+        product?.taxPercent ??
+        product?.taxCategory?.rate ??
+        product?.tax ??
+        0,
     );
 
     setSelectedItems((prev) => {
       const existingIndex = prev.findIndex(
-        (item) => item.itemId === product.id && (item.batchNo || "") === batchNo
+        (item) =>
+          item.itemId === product.id && (item.batchNo || "") === batchNo,
       );
 
       if (existingIndex > -1) {
@@ -844,7 +967,12 @@ const itemsBatches = batchesData?.batches;
             const flatDiscount = item.discountFlat || 0;
             const total = calculateRowTotal(newQty, price, flatDiscount);
             const rowTaxRate = item.taxRate ?? taxRate;
-            const taxAmount = calculateItemTaxAmount(newQty, price, flatDiscount, rowTaxRate);
+            const taxAmount = calculateItemTaxAmount(
+              newQty,
+              price,
+              flatDiscount,
+              rowTaxRate,
+            );
 
             return {
               ...item,
@@ -861,7 +989,12 @@ const itemsBatches = batchesData?.batches;
 
       const flatDiscount = 0;
       const total = calculateRowTotal(qtyToAdd, price, flatDiscount);
-      const initialTaxAmount = calculateItemTaxAmount(qtyToAdd, price, 0, taxRate);
+      const initialTaxAmount = calculateItemTaxAmount(
+        qtyToAdd,
+        price,
+        0,
+        taxRate,
+      );
 
       const newItemRow: BillingItemRow = {
         id: Math.random().toString(),
@@ -894,7 +1027,7 @@ const itemsBatches = batchesData?.batches;
     });
 
     toast.success(
-      isBangla ? `${product.name} যোগ করা হয়েছে` : `Added ${product.name}`
+      isBangla ? `${product.name} যোগ করা হয়েছে` : `Added ${product.name}`,
     );
   };
 
@@ -909,12 +1042,16 @@ const itemsBatches = batchesData?.batches;
       return;
     }
 
-    const effectiveDiscount = mobileDiscountAmount > 0 ? mobileDiscountAmount : totalDiscount;
-    const effectiveTotal = mobilePayableTotal > 0 ? mobilePayableTotal : grandTotal;
+    const effectiveDiscount =
+      mobileDiscountAmount > 0 ? mobileDiscountAmount : totalDiscount;
+    const effectiveTotal =
+      mobilePayableTotal > 0 ? mobilePayableTotal : grandTotal;
 
-    if (totalPaid > effectiveTotal && payments.some(p => p.amount > 0)) {
+    if (totalPaid > effectiveTotal && payments.some((p) => p.amount > 0)) {
       toast.error(
-        isBangla ? "পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না" : "Paid amount cannot exceed grand total",
+        isBangla
+          ? "পরিশোধিত পরিমাণ মোট পরিমাণের চেয়ে বেশি হতে পারে না"
+          : "Paid amount cannot exceed grand total",
       );
       return;
     }
@@ -923,13 +1060,17 @@ const itemsBatches = batchesData?.batches;
     const effectivePayments =
       paymentList.length > 0
         ? paymentList.map((p) => ({
-            paymentId: p.accountId || (accounts.find((a: any) => a.type === p.method)?.id) || p.id,
+            paymentId:
+              p.accountId ||
+              accounts.find((a: any) => a.type === p.method)?.id ||
+              p.id,
             paymentType: p.method,
             amount: p.amount || 0,
           }))
         : [
             {
-              paymentId: accounts.find((a: any) => a.type === "cash")?.id || "cash",
+              paymentId:
+                accounts.find((a: any) => a.type === "cash")?.id || "cash",
               paymentType: "cash",
               amount: effectiveTotal,
             },
@@ -1017,9 +1158,9 @@ const itemsBatches = batchesData?.batches;
                           src={product.imageUrl}
                           alt={product.name}
                           width={32}
-                          height={32} 
+                          height={32}
                           className="h-8 w-8 object-cover"
-                          onError={()=> '"/images/image.png"'}
+                          onError={() => '"/images/image.png"'}
                         />
                       </div>
                       <div className="min-w-0">
@@ -1029,12 +1170,26 @@ const itemsBatches = batchesData?.batches;
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[10px] text-muted-foreground">
                           <span>SKU: {product.sku || "-"}</span>
                           <span>•</span>
-                          <span>Stock: {product.currentStock} {product.unit || ""}</span>
-                          {Number(product.taxRate ?? product.taxPercent ?? product.tax ?? 0) > 0 && (
+                          <span>
+                            Stock: {product.currentStock} {product.unit || ""}
+                          </span>
+                          {Number(
+                            product.taxRate ??
+                              product.taxPercent ??
+                              product.tax ??
+                              0,
+                          ) > 0 && (
                             <>
                               <span>•</span>
                               <span className="text-amber-600 dark:text-amber-400 font-medium">
-                                Tax: {Number(product.taxRate ?? product.taxPercent ?? product.tax ?? 0)}%
+                                Tax:{" "}
+                                {Number(
+                                  product.taxRate ??
+                                    product.taxPercent ??
+                                    product.tax ??
+                                    0,
+                                )}
+                                %
                               </span>
                             </>
                           )}
@@ -1066,7 +1221,9 @@ const itemsBatches = batchesData?.batches;
                     className="flex items-center gap-1 font-medium text-primary hover:underline hover:text-primary-hover cursor-pointer"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
-                    <span>{isBangla ? "পণ্য তালিকায় ফিরুন" : "Back to products"}</span>
+                    <span>
+                      {isBangla ? "পণ্য তালিকায় ফিরুন" : "Back to products"}
+                    </span>
                   </button>
                   <span className="font-semibold text-foreground truncate max-w-[150px]">
                     {selectedProductForBatch.name}
@@ -1081,15 +1238,30 @@ const itemsBatches = batchesData?.batches;
                   {loadingBatches ? (
                     <div className="p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span>{isBangla ? "ব্যাচ লোড হচ্ছে..." : "Loading batches..."}</span>
+                      <span>
+                        {isBangla ? "ব্যাচ লোড হচ্ছে..." : "Loading batches..."}
+                      </span>
                     </div>
-                  ) : (itemsBatches && itemsBatches.length > 0) ? (
+                  ) : itemsBatches && itemsBatches.length > 0 ? (
                     itemsBatches.map((batch: any) => {
                       const bNo = batch?.batchNumber;
                       const stock = batch.quantity;
-                      const price = batch.sellingPrice || batch.unitPrice || selectedProductForBatch.sellingPrice || 0;
-                      const expiry = batch.expiryDate ? format(new Date(batch.expiryDate), "dd MMM yyyy") : null;
-                      const bTax = Number(batch?.taxRate ?? batch?.taxPercent ?? selectedProductForBatch?.taxRate ?? selectedProductForBatch?.taxPercent ?? selectedProductForBatch?.tax ?? 0);
+                      const price =
+                        batch.sellingPrice ||
+                        batch.unitPrice ||
+                        selectedProductForBatch.sellingPrice ||
+                        0;
+                      const expiry = batch.expiryDate
+                        ? format(new Date(batch.expiryDate), "dd MMM yyyy")
+                        : null;
+                      const bTax = Number(
+                        batch?.taxRate ??
+                          batch?.taxPercent ??
+                          selectedProductForBatch?.taxRate ??
+                          selectedProductForBatch?.taxPercent ??
+                          selectedProductForBatch?.tax ??
+                          0,
+                      );
 
                       return (
                         <button
@@ -1098,7 +1270,10 @@ const itemsBatches = batchesData?.batches;
                           className="w-full text-left p-2.5 hover:bg-muted/80 transition-colors flex items-center justify-between text-xs group cursor-pointer"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            handleSelectBatchAndAdd(selectedProductForBatch, batch);
+                            handleSelectBatchAndAdd(
+                              selectedProductForBatch,
+                              batch,
+                            );
                           }}
                         >
                           <div className="space-y-0.5 min-w-0">
@@ -1115,7 +1290,10 @@ const itemsBatches = batchesData?.batches;
                             <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                               {stock !== undefined && (
                                 <span>
-                                  {isBangla ? "স্টক" : "Stock"}: <strong className="text-foreground">{stock}</strong>
+                                  {isBangla ? "স্টক" : "Stock"}:{" "}
+                                  <strong className="text-foreground">
+                                    {stock}
+                                  </strong>
                                 </span>
                               )}
                               {expiry && (
@@ -1144,7 +1322,9 @@ const itemsBatches = batchesData?.batches;
                     })
                   ) : (
                     <div className="p-3 text-center text-xs text-muted-foreground">
-                      {isBangla ? "কোনো ব্যাচ পাওয়া যায়নি" : "No batches found"}
+                      {isBangla
+                        ? "কোনো ব্যাচ পাওয়া যায়নি"
+                        : "No batches found"}
                     </div>
                   )}
 
@@ -1157,7 +1337,9 @@ const itemsBatches = batchesData?.batches;
                       handleSelectBatchAndAdd(selectedProductForBatch, null);
                     }}
                   >
-                    {isBangla ? "+ ব্যাচ ছাড়া যোগ করুন" : "+ Add without specific batch"}
+                    {isBangla
+                      ? "+ ব্যাচ ছাড়া যোগ করুন"
+                      : "+ Add without specific batch"}
                   </button>
                 </div>
               </div>
@@ -1181,15 +1363,11 @@ const itemsBatches = batchesData?.batches;
           fallbackHref="/sales"
         />
 
-
         <div className="w-full lg:flex-[3] min-w-0 space-y-4 sm:space-y-6">
-          
           {/* Row 1 Layout: Search Product, Select Party, Party Phone Number, Invoice Date */}
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 items-end bg-card border border-border/50 rounded-xl p-3.5 sm:p-5 shadow-sm">
             {/* 1. Search Product (Search Or Scan Bar Code) - Desktop & Mid Screens */}
-            <div className="hidden md:block">
-              {renderProductSearchField()}
-            </div>
+            <div className="hidden md:block">{renderProductSearchField()}</div>
 
             {/* 2. Customer Phone Number (Searches customer by phone) */}
             <div className="relative space-y-2">
@@ -1205,14 +1383,16 @@ const itemsBatches = batchesData?.batches;
               </div>
               <div className="relative">
                 <Input
-                  value={selectedParty ? (selectedParty.phone || "") : phoneSearchQuery}
+                  value={
+                    selectedParty ? selectedParty.phone || "" : phoneSearchQuery
+                  }
                   onChange={(e) => {
                     handlePhoneChange(e.target.value);
                     setShowPartySuggestions(true);
                   }}
                   onFocus={() => setShowPartySuggestions(true)}
                   onBlur={() => {
-                    setShowPartySuggestions(false)
+                    setShowPartySuggestions(false);
                   }}
                   placeholder={isBangla ? "ফোন নম্বর..." : "Search phone..."}
                   className="pr-9 h-11 bg-background/50 border-input text-xs font-mono focus-visible:ring-1"
@@ -1263,7 +1443,9 @@ const itemsBatches = batchesData?.batches;
               </div>
               <div className="relative">
                 <Input
-                  value={selectedParty ? selectedParty.name : defaultCustomerName}
+                  value={
+                    selectedParty ? selectedParty.name : defaultCustomerName
+                  }
                   disabled
                   className="pr-9 h-11 border-input text-xs cursor-not-allowed  font-medium select-none"
                 />
@@ -1274,8 +1456,6 @@ const itemsBatches = batchesData?.batches;
                 )}
               </div>
             </div>
-
-           
 
             {/* 4. Invoice Date */}
             <div className="space-y-2">
@@ -1305,407 +1485,417 @@ const itemsBatches = batchesData?.batches;
           </div>
         </div>
 
-
-      {/* 75% / 25% Split Layout Container */}
-      <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start w-full">
-        
-        {/* left side */}
-        {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
+        {/* 75% / 25% Split Layout Container */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start w-full">
+          {/* left side */}
+          {/* Row 3 Layout: Notes, Attachments — stacked vertically */}
           <div className="w-full flex flex-col gap-4 sm:gap-5 bg-card border border-border/50 rounded-xl p-3.5 sm:p-5 shadow-sm">
             {/* Row 2: Billing Items Table (Desktop & Mid Screens) */}
-          <div className="hidden md:block w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="px-4 py-3 w-[5%] text-xs font-semibold uppercase">
-                    {isBangla ? "ক্রমিক" : "S.N."}
-                  </TableHead>
-                  <TableHead className="px-3 py-3 w-[5%] text-xs font-semibold uppercase">
-                    {/* Thumbnail Image column */}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[35%] text-xs font-semibold uppercase">
-                    {isBangla ? "প্রোডাক্ট" : "Product"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
-                    {isBangla ? "দর" : "Rate"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
-                    {isBangla ? "পরিমাণ" : "Quantity"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[13%] text-xs font-semibold uppercase">
-                    {isBangla ? "ট্যাক্স" : "Tax"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[10%] text-right text-xs font-semibold uppercase">
-                    {isBangla ? "মোট" : "Amount"}
-                  </TableHead>
-                  <TableHead className="px-4 py-3 w-[5%] text-right text-xs font-semibold uppercase">
-                  
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-border">
-                {selectedItems.filter((i) => i.itemId).length === 0 ? (
+            <div className="hidden md:block w-full border border-border rounded-xl bg-card overflow-x-auto shadow-sm">
+              <Table>
+                <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="px-4 py-12 text-center text-muted-foreground text-xs"
-                    >
-                      <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
-                        <Package className="h-5 w-5" />
-                      </div>
-                      <p className="font-semibold text-foreground text-xs mb-1">
-                        {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mx-auto">
-                        {isBangla
-                          ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই বিক্রয়ে যুক্ত করুন।"
-                          : "Search or scan products from the search box above to add them to this sale."}
-                      </p>
-                    </TableCell>
+                    <TableHead className="px-4 py-3 w-[5%] text-xs font-semibold uppercase">
+                      {isBangla ? "ক্রমিক" : "S.N."}
+                    </TableHead>
+                    <TableHead className="px-3 py-3 w-[5%] text-xs font-semibold uppercase">
+                      {/* Thumbnail Image column */}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[35%] text-xs font-semibold uppercase">
+                      {isBangla ? "প্রোডাক্ট" : "Product"}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[15%] text-xs font-semibold uppercase">
+                      {isBangla ? "দর" : "Rate"}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[12%] text-xs font-semibold uppercase">
+                      {isBangla ? "পরিমাণ" : "Quantity"}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[13%] text-xs font-semibold uppercase">
+                      {isBangla ? "ট্যাক্স" : "Tax"}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[10%] text-right text-xs font-semibold uppercase">
+                      {isBangla ? "মোট" : "Amount"}
+                    </TableHead>
+                    <TableHead className="px-4 py-3 w-[5%] text-right text-xs font-semibold uppercase"></TableHead>
                   </TableRow>
-                ) : (
-                  selectedItems
-                    .filter((i) => i.itemId)
-                    .map((item, idx) => (
-                      <TableRow
-                        key={item.id}
-                        className="hover:bg-muted/10 transition-colors"
+                </TableHeader>
+                <TableBody className="divide-y divide-border">
+                  {selectedItems.filter((i) => i.itemId).length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="px-4 py-12 text-center text-muted-foreground text-xs"
                       >
-                        {/* SN */}
-                        <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
-                          {idx + 1}
-                        </TableCell>
+                        <div className="h-10 w-10 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <p className="font-semibold text-foreground text-xs mb-1">
+                          {isBangla
+                            ? "কোনো পণ্য যোগ করা হয়নি"
+                            : "No items added yet"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mx-auto">
+                          {isBangla
+                            ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই বিক্রয়ে যুক্ত করুন।"
+                            : "Search or scan products from the search box above to add them to this sale."}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    selectedItems
+                      .filter((i) => i.itemId)
+                      .map((item, idx) => (
+                        <TableRow
+                          key={item.id}
+                          className="hover:bg-muted/10 transition-colors"
+                        >
+                          {/* SN */}
+                          <TableCell className="px-4 py-4 font-bold text-amber-500 align-middle">
+                            {idx + 1}
+                          </TableCell>
 
-                        {/* Product Thumbnail */}
-                        <TableCell className="px-3 py-3 align-middle">
-                          <div className="h-8 w-8 rounded overflow-hidden bg-muted flex items-center justify-center border border-border/80">
-                            <Image
-                              src={item.imageUrl || "/images/image.png"}
-                              alt={item.itemName || "Product"}
-                              width={32}
-                              height={32}
-                              className="h-8 w-8 object-cover"
-                            />
-                          </div>
-                        </TableCell>
-
-                        {/* Product Name */}
-                        <TableCell className="px-4 py-3 align-middle font-medium">
-                          {item.itemName ? (
-                            <div>
-                              <p className="font-semibold text-foreground text-sm">
-                                {item.itemName}
-                              </p>
-                              {item.batchNo && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
-                                  Batch: {item.batchNo}
-                                </span>
-                              )}
-                              {item.appliedOffer && (
-                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
-                                    <Sparkles className="h-2.5 w-2.5" />
-                                    {item.appliedOffer.title}
-                                  </span>
-                                  {item.freeQuantity > 0 && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                                      <Gift className="h-2.5 w-2.5" />
-                                      {item.freeQuantity} Free
-                                    </span>
-                                  )}
-                                  <span className="text-[10px] text-emerald-400 font-semibold">
-                                    Saved: ৳{(item.offerSavings || 0).toFixed(2)}
-                                  </span>
-                                </div>
-                              )}
+                          {/* Product Thumbnail */}
+                          <TableCell className="px-3 py-3 align-middle">
+                            <div className="h-8 w-8 rounded overflow-hidden bg-muted flex items-center justify-center border border-border/80">
+                              <Image
+                                src={item.imageUrl || "/images/image.png"}
+                                alt={item.itemName || "Product"}
+                                width={32}
+                                height={32}
+                                className="h-8 w-8 object-cover"
+                              />
                             </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">
-                              {isBangla ? "উপরে পণ্য সার্চ করুন" : "Select product above"}
-                            </span>
-                          )}
-                        </TableCell>
+                          </TableCell>
 
-                        {/* Rate */}
-                        <TableCell className="px-4 py-3 align-middle">
-                          <div className="relative flex items-center">
-                            <span className="absolute left-3 text-xs text-muted-foreground font-medium">
-                              Tk.
-                            </span>
+                          {/* Product Name */}
+                          <TableCell className="px-4 py-3 align-middle font-medium">
+                            {item.itemName ? (
+                              <div>
+                                <p className="font-semibold text-foreground text-sm">
+                                  {item.itemName}
+                                </p>
+                                {item.batchNo && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60 mt-0.5">
+                                    Batch: {item.batchNo}
+                                  </span>
+                                )}
+                                {item.appliedOffer && (
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                                      <Sparkles className="h-2.5 w-2.5" />
+                                      {item.appliedOffer.title}
+                                    </span>
+                                    {item.freeQuantity > 0 && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                        <Gift className="h-2.5 w-2.5" />
+                                        {item.freeQuantity} Free
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-emerald-400 font-semibold">
+                                      Saved: ৳
+                                      {(item.offerSavings || 0).toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">
+                                {isBangla
+                                  ? "উপরে পণ্য সার্চ করুন"
+                                  : "Select product above"}
+                              </span>
+                            )}
+                          </TableCell>
+
+                          {/* Rate */}
+                          <TableCell className="px-4 py-3 align-middle">
+                            <div className="relative flex items-center">
+                              <span className="absolute left-3 text-xs text-muted-foreground font-medium">
+                                Tk.
+                              </span>
+                              <Input
+                                type="number"
+                                value={item.unitPrice || ""}
+                                onChange={(e) =>
+                                  handleRateChange(item.id, e.target.value)
+                                }
+                                className="pl-9 bg-background/30 h-9 border-input focus:ring-1 focus-visible:ring-1"
+                                min="0"
+                              />
+                            </div>
+                          </TableCell>
+
+                          {/* Quantity */}
+                          <TableCell className="px-4 py-3 align-middle">
                             <Input
                               type="number"
-                              value={item.unitPrice || ""}
+                              value={item.quantity || ""}
                               onChange={(e) =>
-                                handleRateChange(item.id, e.target.value)
+                                handleQuantityChange(item.id, e.target.value)
                               }
-                              className="pl-9 bg-background/30 h-9 border-input focus:ring-1 focus-visible:ring-1"
-                              min="0"
+                              className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
+                              min="1"
                             />
-                          </div>
-                        </TableCell>
+                          </TableCell>
 
-                        {/* Quantity */}
-                        <TableCell className="px-4 py-3 align-middle">
-                          <Input
-                            type="number"
-                            value={item.quantity || ""}
-                            onChange={(e) =>
-                              handleQuantityChange(item.id, e.target.value)
-                            }
-                            className="bg-background/30 h-9 text-center border-input focus:ring-1 focus-visible:ring-1"
-                            min="1"
-                          />
-                        </TableCell>
+                          {/* Tax Column */}
+                          <TableCell className="px-4 py-3 align-middle">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-foreground">
+                                {item.taxRate || 0}%
+                              </span>
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                Tk. {(item.taxAmount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </TableCell>
 
-                        {/* Tax Column */}
-                        <TableCell className="px-4 py-3 align-middle">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-foreground">
-                              {item.taxRate || 0}%
-                            </span>
-                            <span className="text-[11px] text-muted-foreground font-medium">
-                              Tk. {(item.taxAmount || 0).toFixed(2)}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        {/* Amount & Action */}
-                        <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
-                          <div className="flex items-center justify-end gap-3">
-                            <span className="font-semibold text-foreground text-sm">
-                              Tk. {item.total.toFixed(2)}
-                            </span>
-                            
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 align-middle">
-                          <button
-                            type="button"
-                            onClick={() => removeItemRow(item.id)}
-                            className="text-muted-foreground hover:text-red-500 transition-colors p-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-
-            {/* Table Bottom Add Action */}
-            <div className="flex justify-end items-center px-6 py-4 bg-muted/10 border-t border-border">
-              <div className="flex items-center gap-8">
-                <span className="text-sm text-muted-foreground font-medium">
-                  {isBangla ? "উপমোট" : "Sub Total"}
-                </span>
-                <span className="font-bold text-foreground text-base">
-                  Tk. {subtotalAfterDiscount.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Product Cards View (< md screens) */}
-          <div className="md:hidden space-y-3">
-            {/* Search Product Field on Top of Products Card in Small Devices */}
-            <div className="pb-1">
-              {renderProductSearchField()}
-            </div>
-
-            {selectedItems.filter((i) => i.itemId).length === 0 ? (
-              <div className="border border-border/60 rounded-xl bg-card p-6 text-center shadow-xs">
-                <div className="h-11 w-11 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2.5">
-                  <Package className="h-5 w-5" />
-                </div>
-                <p className="font-semibold text-foreground text-sm mb-1">
-                  {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
-                </p>
-                <p className="text-xs text-muted-foreground md:max-w-xs mx-auto">
-                  {isBangla
-                    ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই বিক্রয়ে যুক্ত করুন।"
-                    : "Search or scan products from the search box above to add them to this sale."}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {/* Product count & subtotal header badge */}
-                <div className="flex items-center justify-between px-1 text-xs text-muted-foreground font-medium">
-                  <span>
-                    {isBangla ? "পণ্য তালিকা" : "Selected Items"} ({selectedItems.filter((i) => i.itemId).length})
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {isBangla ? "উপমোট" : "Subtotal"}: Tk. {subtotalAfterDiscount.toFixed(2)}
-                  </span>
-                </div>
-
-                {selectedItems
-                  .filter((i) => i.itemId)
-                  .map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className="bg-card hover:bg-card/90 border border-border/70 rounded-xl p-3.5 shadow-xs space-y-3 transition-colors"
-                    >
-                      {/* Top Row: Thumbnail + Item info + Delete Button */}
-                      <div className="flex items-start gap-3">
-                        {/* Product Thumbnail with S.N. badge */}
-                        <div className="relative shrink-0">
-                          <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border/80">
-                            <Image
-                              src={item.imageUrl || "/images/image.png"}
-                              alt={item.itemName || "Product"}
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 object-cover"
-                            />
-                          </div>
-                          <span className="absolute -top-1.5 -left-1.5 h-4.5 min-w-4.5 px-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center justify-center">
-                            {idx + 1}
-                          </span>
-                        </div>
-
-                        {/* Title & tags */}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-foreground text-sm leading-tight break-words">
-                              {item.itemName}
-                            </h4>
+                          {/* Amount & Action */}
+                          <TableCell className="px-4 py-3 align-middle text-right font-medium text-foreground">
+                            <div className="flex items-center justify-end gap-3">
+                              <span className="font-semibold text-foreground text-sm">
+                                Tk. {item.total.toFixed(2)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-3 align-middle">
                             <button
                               type="button"
                               onClick={() => removeItemRow(item.id)}
-                              className="text-muted-foreground hover:text-red-500 active:text-red-600 transition-colors p-1.5 -mr-1.5 -mt-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer shrink-0"
-                              title={isBangla ? "মুছে ফেলুন" : "Remove"}
+                              className="text-muted-foreground hover:text-red-500 transition-colors p-1"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
-                          </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
 
-                          {/* Batch tag */}
-                          {item.batchNo && (
-                            <div className="mt-1">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60">
-                                Batch: {item.batchNo}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Offer Tags */}
-                          {item.appliedOffer && (
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
-                                <Sparkles className="h-2.5 w-2.5" />
-                                {item.appliedOffer.title}
-                              </span>
-                              {item.freeQuantity > 0 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
-                                  <Gift className="h-2.5 w-2.5" />
-                                  {item.freeQuantity} Free
-                                </span>
-                              )}
-                              <span className="text-[10px] text-emerald-400 font-semibold">
-                                Saved: ৳{(item.offerSavings || 0).toFixed(2)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Middle Row: Rate input & Quantity Stepper */}
-                      <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-border/40">
-                        {/* Rate (Price) */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-medium text-muted-foreground block">
-                            {isBangla ? "দর (একক মূল্য)" : "Rate (Unit Price)"}
-                          </label>
-                          <div className="relative flex items-center">
-                            <span className="absolute left-2.5 text-xs text-muted-foreground font-medium select-none pointer-events-none">
-                              Tk.
-                            </span>
-                            <Input
-                              type="number"
-                              value={item.unitPrice || ""}
-                              onChange={(e) => handleRateChange(item.id, e.target.value)}
-                              className="pl-8 h-9 text-xs font-semibold bg-background/50 border-input focus:ring-1 focus-visible:ring-1"
-                              min="0"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Quantity with + / - buttons */}
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-medium text-muted-foreground block">
-                            {isBangla ? "পরিমাণ" : "Quantity"}
-                          </label>
-                          <div className="flex items-center h-9 bg-background/50 border border-input rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-primary focus-within:border-primary">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newQty = Math.max(1, (item.quantity || 1) - 1);
-                                handleQuantityChange(item.id, String(newQty));
-                              }}
-                              disabled={item.quantity <= 1}
-                              className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/80 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center cursor-pointer shrink-0"
-                              aria-label="Decrease quantity"
-                            >
-                              <Minus className="h-3.5 w-3.5" />
-                            </button>
-                            <input
-                              type="number"
-                              value={item.quantity || ""}
-                              onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                              className="w-full text-center text-xs font-bold bg-transparent outline-none py-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              min="1"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newQty = (item.quantity || 0) + 1;
-                                handleQuantityChange(item.id, String(newQty));
-                              }}
-                              className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/80 transition-colors flex items-center justify-center cursor-pointer shrink-0"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bottom Row: Tax Info & Total Amount */}
-                      <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
-                        <div className="text-[11px] text-muted-foreground">
-                          <span>
-                            {isBangla ? "ট্যাক্স" : "Tax"}:{" "}
-                            <strong className="text-foreground font-semibold">
-                              {item.taxRate || 0}%
-                            </strong>
-                            {item.taxAmount > 0 && ` (Tk. ${item.taxAmount.toFixed(2)})`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-muted-foreground font-medium">
-                            {isBangla ? "মোট" : "Total"}:
-                          </span>
-                          <span className="font-bold text-primary text-sm font-mono">
-                            Tk. {item.total.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                {/* Mobile Subtotal Card */}
-                <div className="flex justify-between items-center px-4 py-3 bg-muted/20 rounded-xl border border-border/60">
-                  <span className="text-xs text-muted-foreground font-medium">
+              {/* Table Bottom Add Action */}
+              <div className="flex justify-end items-center px-6 py-4 bg-muted/10 border-t border-border">
+                <div className="flex items-center gap-8">
+                  <span className="text-sm text-muted-foreground font-medium">
                     {isBangla ? "উপমোট" : "Sub Total"}
                   </span>
-                  <span className="font-bold text-foreground text-sm font-mono">
+                  <span className="font-bold text-foreground text-base">
                     Tk. {subtotalAfterDiscount.toFixed(2)}
                   </span>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+
+            {/* Mobile Product Cards View (< md screens) */}
+            <div className="md:hidden space-y-3">
+              {/* Search Product Field on Top of Products Card in Small Devices */}
+              <div className="pb-1">{renderProductSearchField()}</div>
+
+              {selectedItems.filter((i) => i.itemId).length === 0 ? (
+                <div className="border border-border/60 rounded-xl bg-card p-6 text-center shadow-xs">
+                  <div className="h-11 w-11 rounded-full bg-muted/60 flex items-center justify-center mx-auto text-muted-foreground mb-2.5">
+                    <Package className="h-5 w-5" />
+                  </div>
+                  <p className="font-semibold text-foreground text-sm mb-1">
+                    {isBangla ? "কোনো পণ্য যোগ করা হয়নি" : "No items added yet"}
+                  </p>
+                  <p className="text-xs text-muted-foreground md:max-w-xs mx-auto">
+                    {isBangla
+                      ? "উপরের সার্চ বক্স থেকে পণ্য সার্চ বা বারকোড স্ক্যান করে এই বিক্রয়ে যুক্ত করুন।"
+                      : "Search or scan products from the search box above to add them to this sale."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Product count & subtotal header badge */}
+                  <div className="flex items-center justify-between px-1 text-xs text-muted-foreground font-medium">
+                    <span>
+                      {isBangla ? "পণ্য তালিকা" : "Selected Items"} (
+                      {selectedItems.filter((i) => i.itemId).length})
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {isBangla ? "উপমোট" : "Subtotal"}: Tk.{" "}
+                      {subtotalAfterDiscount.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {selectedItems
+                    .filter((i) => i.itemId)
+                    .map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className="bg-card hover:bg-card/90 border border-border/70 rounded-xl p-3.5 shadow-xs space-y-3 transition-colors"
+                      >
+                        {/* Top Row: Thumbnail + Item info + Delete Button */}
+                        <div className="flex items-start gap-3">
+                          {/* Product Thumbnail with S.N. badge */}
+                          <div className="relative shrink-0">
+                            <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border/80">
+                              <Image
+                                src={item.imageUrl || "/images/image.png"}
+                                alt={item.itemName || "Product"}
+                                width={48}
+                                height={48}
+                                className="h-12 w-12 object-cover"
+                              />
+                            </div>
+                            <span className="absolute -top-1.5 -left-1.5 h-4.5 min-w-4.5 px-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-[10px] font-bold flex items-center justify-center">
+                              {idx + 1}
+                            </span>
+                          </div>
+
+                          {/* Title & tags */}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-foreground text-sm leading-tight break-words">
+                                {item.itemName}
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => removeItemRow(item.id)}
+                                className="text-muted-foreground hover:text-red-500 active:text-red-600 transition-colors p-1.5 -mr-1.5 -mt-1.5 rounded-lg hover:bg-red-500/10 cursor-pointer shrink-0"
+                                title={isBangla ? "মুছে ফেলুন" : "Remove"}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+
+                            {/* Batch tag */}
+                            {item.batchNo && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono border border-border/60">
+                                  Batch: {item.batchNo}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Offer Tags */}
+                            {item.appliedOffer && (
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-bold">
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  {item.appliedOffer.title}
+                                </span>
+                                {item.freeQuantity > 0 && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                                    <Gift className="h-2.5 w-2.5" />
+                                    {item.freeQuantity} Free
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-emerald-400 font-semibold">
+                                  Saved: ৳{(item.offerSavings || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Middle Row: Rate input & Quantity Stepper */}
+                        <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-border/40">
+                          {/* Rate (Price) */}
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-medium text-muted-foreground block">
+                              {isBangla
+                                ? "দর (একক মূল্য)"
+                                : "Rate (Unit Price)"}
+                            </label>
+                            <div className="relative flex items-center">
+                              <span className="absolute left-2.5 text-xs text-muted-foreground font-medium select-none pointer-events-none">
+                                Tk.
+                              </span>
+                              <Input
+                                type="number"
+                                value={item.unitPrice || ""}
+                                onChange={(e) =>
+                                  handleRateChange(item.id, e.target.value)
+                                }
+                                className="pl-8 h-9 text-xs font-semibold bg-background/50 border-input focus:ring-1 focus-visible:ring-1"
+                                min="0"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Quantity with + / - buttons */}
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-medium text-muted-foreground block">
+                              {isBangla ? "পরিমাণ" : "Quantity"}
+                            </label>
+                            <div className="flex items-center h-9 bg-background/50 border border-input rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-primary focus-within:border-primary">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newQty = Math.max(
+                                    1,
+                                    (item.quantity || 1) - 1,
+                                  );
+                                  handleQuantityChange(item.id, String(newQty));
+                                }}
+                                disabled={item.quantity <= 1}
+                                className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/80 disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <input
+                                type="number"
+                                value={item.quantity || ""}
+                                onChange={(e) =>
+                                  handleQuantityChange(item.id, e.target.value)
+                                }
+                                className="w-full text-center text-xs font-bold bg-transparent outline-none py-1 min-w-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                min="1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newQty = (item.quantity || 0) + 1;
+                                  handleQuantityChange(item.id, String(newQty));
+                                }}
+                                className="h-full px-2.5 text-muted-foreground hover:text-foreground active:bg-muted/80 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom Row: Tax Info & Total Amount */}
+                        <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                          <div className="text-[11px] text-muted-foreground">
+                            <span>
+                              {isBangla ? "ট্যাক্স" : "Tax"}:{" "}
+                              <strong className="text-foreground font-semibold">
+                                {item.taxRate || 0}%
+                              </strong>
+                              {item.taxAmount > 0 &&
+                                ` (Tk. ${item.taxAmount.toFixed(2)})`}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] text-muted-foreground font-medium">
+                              {isBangla ? "মোট" : "Total"}:
+                            </span>
+                            <span className="font-bold text-primary text-sm font-mono">
+                              Tk. {item.total.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                  {/* Mobile Subtotal Card */}
+                  <div className="flex justify-between items-center px-4 py-3 bg-muted/20 rounded-xl border border-border/60">
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {isBangla ? "উপমোট" : "Sub Total"}
+                    </span>
+                    <span className="font-bold text-foreground text-sm font-mono">
+                      Tk. {subtotalAfterDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Notes Section */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
@@ -1722,421 +1912,563 @@ const itemsBatches = batchesData?.batches;
             </div>
           </div>
 
-        {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
-        <div className="w-full lg:flex-[1] lg:min-w-[460px] lg:max-w-[320px] lg:sticky lg:top-6">
-          <div className="bg-card border border-border/80 rounded-2xl shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
-            <h2 className="text-lg font-bold tracking-tight text-foreground border-b border-border/50 pb-2">
-              {isBangla ? "অর্ডার সারাংশ" : "Order Summary"}
-            </h2>
+          {/* Right Side: Sticky Order Details Card (25% on Desktop) */}
+          <div className="w-full lg:flex-[1] lg:min-w-[460px] lg:max-w-[320px] lg:sticky lg:top-6">
+            <div className="bg-card border border-border/80 rounded-2xl shadow-md p-4 sm:p-6 space-y-4 sm:space-y-5">
+              <h2 className="text-lg font-bold tracking-tight text-foreground border-b border-border/50 pb-2">
+                {isBangla ? "অর্ডার সারাংশ" : "Order Summary"}
+              </h2>
 
-            {/* Financial Details */}
-            <div className="space-y-3">
-              {/* Subtotal */}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
-                <span className="text-foreground">Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {/* Financial Details */}
+              <div className="space-y-3">
+                {/* Subtotal */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">
+                    {isBangla ? "উপমোট" : "Subtotal"}
+                  </span>
+                  <span className="text-foreground">
+                    Tk.{" "}
+                    {rawSubtotal.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+
+                {/* Discount */}
+                <div className="flex justify-between items-center text-sm font-medium">
+                  <span className="text-muted-foreground">
+                    {isBangla ? "ছাড়" : "Discount"}
+                  </span>
+                  <span className="text-amber-600 dark:text-amber-500 font-medium">
+                    -Tk.{" "}
+                    {totalDiscount.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+
+                {/* Offer Savings */}
+                {totalOfferSavings > 0 && (
+                  <div className="flex justify-between items-center text-sm font-medium bg-purple-500/5 -mx-2 px-2 py-1 rounded-lg border border-purple-500/10">
+                    <span className="text-purple-500 flex items-center gap-1.5 text-xs font-semibold">
+                      <Sparkles className="h-3 w-3" />
+                      {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
+                    </span>
+                    <span className="text-purple-400 font-bold text-xs">
+                      -Tk.{" "}
+                      {totalOfferSavings.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Total Tax Display Row */}
+                <div className="flex justify-between items-center text-sm font-medium py-0.5">
+                  <span className="text-muted-foreground">
+                    {isBangla ? "মোট ট্যাক্স" : "Total Tax"}
+                  </span>
+                  <span className="text-foreground text-xs font-semibold">
+                    Tk.{" "}
+                    {totalTax.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+
+                {/* Additional Charge Input */}
+                <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">
+                      {isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {isBangla
+                        ? "শিপিং, ডেলিভারি ইত্যাদি"
+                        : "Shipping, Delivery etc."}
+                    </span>
+                  </div>
+                  <div className="relative w-28">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">
+                      Tk.
+                    </span>
+                    <Input
+                      type="number"
+                      value={additionalCharge}
+                      onChange={(e) => setAdditionalCharge(e.target.value)}
+                      className="pl-6 pr-1 h-8 text-right text-xs bg-background/50 border-input rounded-md focus-visible:ring-1"
+                      min="0"
+                    />
+                  </div>
+                </div>
               </div>
-            
-              {/* Discount */}
-              <div className="flex justify-between items-center text-sm font-medium">
-                <span className="text-muted-foreground">{isBangla ? "ছাড়" : "Discount"}</span>
-                <span className="text-amber-600 dark:text-amber-500 font-medium">-Tk. {totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {/* total */}
+              <div className="flex items-center justify-between py-1">
+                <span className="text-base text-foreground">
+                  {isBangla ? "মোট" : " Total"}
+                </span>
+                <span className="text-md font-medium text-primary">
+                  Tk.{" "}
+                  {rawSubtotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
               </div>
 
-              {/* Offer Savings */}
-              {totalOfferSavings > 0 && (
-                <div className="flex justify-between items-center text-sm font-medium bg-purple-500/5 -mx-2 px-2 py-1 rounded-lg border border-purple-500/10">
-                  <span className="text-purple-500 flex items-center gap-1.5 text-xs font-semibold">
-                    <Sparkles className="h-3 w-3" />
-                    {isBangla ? "অফার সাশ্রয়" : "Offer Savings"}
-                  </span>
-                  <span className="text-purple-400 font-bold text-xs">
-                    -Tk. {totalOfferSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+              {/* overall discount */}
+              {/* <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-1">
+                <span className="text-sm text-muted-foreground font-medium shrink-0">
+                  {" "}
+                  Discount:
+                </span>
+                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      value={0}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      onChange={(e) => console.log(e.target.value)}
+                      className="w-16 h-9 bg-background/30 pr-5 text-right border-input"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium pointer-events-none">
+                      %
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium pointer-events-none">
+                      Tk.
+                    </span>
+                    <Input
+                      type="number"
+                      value="0"
+                      placeholder="0"
+                      onChange={(e) => console.log(e.target.value)}
+                      min="0"
+                      className="w-20 h-9 bg-background/30 pl-7 pr-2 text-right border-input"
+                    />
+                  </div>
+                </div>
+              </div> */}
+              {/* Total Amount Output */}
+              <div className="flex items-center justify-between py-1">
+                <span className="text-base font-bold text-foreground">
+                  {isBangla ? "সর্বমোট" : "Grand Total"}
+                </span>
+                <span className="text-lg font-extrabold text-primary">
+                  Tk.{" "}
+                  {grandTotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
+              <hr className="border-border/60" />
+
+              {/* Payment Info Section */}
+              <div className="">
+                <div className="flex items-center justify-end gap-2 border-b border-border pb-2.5">
+                  <div className="flex items-center gap-2 group">
+                    <Label
+                      htmlFor="split-mode"
+                      className="text-muted-foreground text-xs cursor-pointer"
+                    >
+                      {isBangla
+                        ? "একাধিক পদ্ধতি ব্যবহার করুন"
+                        : "Split across multiple methods"}
+                    </Label>
+                    <Switch
+                      id="split-mode"
+                      checked={splitMode}
+                      onCheckedChange={toggleSplitMode}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-2">
+                  {(() => {
+                    const activePayment = splitMode
+                      ? payments.find((p) => p.method === activeSplitMethod) ||
+                        payments[0]
+                      : payments[0];
+
+                    if (!activePayment) return null;
+                    const p = activePayment;
+                    const otherPaymentsTotal = payments
+                      .filter((pay) => pay.id !== p.id)
+                      .reduce((sum, pay) => sum + (pay.amount || 0), 0);
+                    const maxAllowedForActive = Math.max(
+                      0,
+                      parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)),
+                    );
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors"
+                      >
+                        {/* Method chips */}
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          {METHODS.map((m) => {
+                            const Icon = m.icon;
+                            const active = splitMode
+                              ? activeSplitMethod === m.id
+                              : p.method === m.id;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  setPaymentWarning(null);
+                                  if (splitMode) {
+                                    setActiveSplitMethod(m.id);
+                                  } else {
+                                    handlePaymentFieldChange(
+                                      p.id,
+                                      "method",
+                                      m.id,
+                                    );
+                                  }
+                                }}
+                                className={cn(
+                                  "flex flex-col items-center gap-1.5 py-2.5 sm:py-3 px-1 sm:px-2 rounded-xl border transition-all cursor-pointer",
+                                  active
+                                    ? cn(m.bgClass, m.borderClass)
+                                    : "border-border/60 bg-transparent hover:bg-muted/30",
+                                )}
+                              >
+                                <Icon
+                                  size={18}
+                                  className={
+                                    active
+                                      ? m.colorClass
+                                      : "text-muted-foreground"
+                                  }
+                                  strokeWidth={2}
+                                />
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-medium leading-tight text-center",
+                                    active
+                                      ? m.colorClass
+                                      : "text-muted-foreground",
+                                  )}
+                                >
+                                  {m.label}
+                                  {splitMode &&
+                                    (() => {
+                                      const splitP = payments.find(
+                                        (pay) => pay.method === m.id,
+                                      );
+                                      return splitP && splitP.amount > 0 ? (
+                                        <span className="block mt-0.5 font-bold text-foreground text-[11px]">
+                                          Tk.{splitP.amount}
+                                        </span>
+                                      ) : null;
+                                    })()}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Common Amount Input (Rendered alone if method is somehow missing, though should be covered below) */}
+                        {!["cash", "bank", "mobile_banking"].includes(
+                          p.method,
+                        ) && (
+                          <div className="mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">
+                                {"\u09F3"}
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={maxAllowedForActive}
+                                step="any"
+                                value={p.amount || ""}
+                                onChange={(e) =>
+                                  handlePaymentFieldChange(
+                                    p.id,
+                                    "amount",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Fields for Cash */}
+                        {p.method === "cash" && (
+                          <div className="mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">
+                                {"\u09F3"}
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={maxAllowedForActive}
+                                step="any"
+                                value={p.amount || ""}
+                                onChange={(e) =>
+                                  handlePaymentFieldChange(
+                                    p.id,
+                                    "amount",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Fields for Bank */}
+                        {p.method === "bank" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3">
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
+                              <span className="text-muted-foreground text-sm mr-1.5">
+                                {"\u09F3"}
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={maxAllowedForActive}
+                                step="any"
+                                value={p.amount || ""}
+                                onChange={(e) =>
+                                  handlePaymentFieldChange(
+                                    p.id,
+                                    "amount",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                            <Select
+                              value={p.accountId}
+                              onValueChange={(val) =>
+                                handlePaymentFieldChange(p.id, "accountId", val)
+                              }
+                            >
+                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                                <SelectValue
+                                  placeholder={
+                                    isBangla
+                                      ? "অ্যাকাউন্ট নির্বাচন করুন"
+                                      : "Select Account"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {accounts
+                                  .filter((a: any) => a.type === "bank")
+                                  .map((acc: any) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                      {acc.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Fields for Mobile Banking */}
+                        {p.method === "mobile_banking" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3">
+                            <Select
+                              value={p.accountId}
+                              onValueChange={(val) =>
+                                handlePaymentFieldChange(p.id, "accountId", val)
+                              }
+                            >
+                              <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
+                                <SelectValue
+                                  placeholder={
+                                    isBangla
+                                      ? "অ্যাকাউন্ট নির্বাচন করুন"
+                                      : "Select Account"
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {accounts
+                                  .filter(
+                                    (a: any) => a.type === "mobile_banking",
+                                  )
+                                  .map((acc: any) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                      {acc.name} (Tk.{acc.balance})
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
+                              <span className="text-muted-foreground text-sm mr-1.5">
+                                {"\u09F3"}
+                              </span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={maxAllowedForActive}
+                                step="any"
+                                value={p.amount || ""}
+                                onChange={(e) =>
+                                  handlePaymentFieldChange(
+                                    p.id,
+                                    "amount",
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                }
+                                className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
+                                placeholder={isBangla ? "পরিমাণ" : "Amount"}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={p.transactionId}
+                              onChange={(e) =>
+                                handlePaymentFieldChange(
+                                  p.id,
+                                  "transactionId",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder={
+                                isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"
+                              }
+                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                            />
+                            <input
+                              type="text"
+                              value={p.reference}
+                              onChange={(e) =>
+                                handlePaymentFieldChange(
+                                  p.id,
+                                  "reference",
+                                  e.target.value,
+                                )
+                              }
+                              placeholder={
+                                isBangla ? "রেফারেন্স" : "Ref no (optional)"
+                              }
+                              className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
+                            />
+                          </div>
+                        )}
+
+                        {/* Warning below payment method */}
+                        {currentWarning && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg mt-1 animate-in fade-in duration-150">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{currentWarning}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {splitMode && payments.some((p) => p.amount > 0) && (
+                <div className="pt-2 pb-1 space-y-1.5">
+                  {payments
+                    .filter((p) => p.amount > 0)
+                    .map((p) => {
+                      const methodLabel =
+                        METHODS.find((m) => m.id === p.method)?.label ||
+                        p.method;
+                      const accountName = accounts.find(
+                        (a: any) => String(a.id) === String(p.accountId),
+                      )?.name;
+                      return (
+                        <div
+                          key={p.id}
+                          className="flex justify-between items-center text-xs text-muted-foreground"
+                        >
+                          <span>
+                            {methodLabel}{" "}
+                            {accountName ? `(${accountName})` : ""}
+                          </span>
+                          <span>{formatCurrency(p.amount)}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
 
-              {/* Total Tax Display Row */}
-              <div className="flex justify-between items-center text-sm font-medium py-0.5">
-                <span className="text-muted-foreground">{isBangla ? "মোট ট্যাক্স" : "Total Tax"}</span>
-                <span className="text-foreground text-xs font-semibold">
-                  Tk. {totalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
+                <span>{isBangla ? "পরিশোধিত" : "Paid Amount"}</span>
+                <span className="font-bold text-foreground">
+                  {formatCurrency(totalPaid)}
                 </span>
               </div>
 
-              {/* VAT Display Row */}
-              {/* <div className="flex justify-between items-center text-sm font-medium py-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">{isBangla ? "ভ্যাট" : "VAT"}</span>
-                  <button
-                    type="button"
-                    onClick={openEditVat}
-                    className="text-primary hover:text-primary-hover p-0.5 rounded hover:bg-primary/10 transition-colors"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
+              {due > 0 && (
+                <div className="flex justify-between items-center text-rose-500 font-bold">
+                  <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
+                  <span>{formatCurrency(due)}</span>
                 </div>
-                <span className="text-foreground text-xs font-semibold">
-                  {vatConfig.type === "percent"
-                    ? `${vatConfig.value}% (Tk. ${vatVal.toFixed(2)})`
-                    : `Tk. ${vatVal.toFixed(2)}`}
-                </span>
-              </div> */}
+              )}
 
-              {/* Additional Charge Input */}
-              <div className="flex items-center justify-between gap-2 py-1.5 border-t border-border/20 border-b border-border/40 pb-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">{isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}</span>
-                  <span className="text-[10px] text-muted-foreground">{isBangla ? "শিপিং, ডেলিভারি ইত্যাদি" : "Shipping, Delivery etc."}</span>
+              {changeReturned > 0 && (
+                <div className="flex justify-between items-center text-blue-500 font-bold">
+                  <span>{isBangla ? "ফেরত (Change)" : "Change Return"}</span>
+                  <span>{formatCurrency(changeReturned)}</span>
                 </div>
-                <div className="relative w-28">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium">Tk.</span>
-                  <Input
-                    type="number"
-                    value={additionalCharge}
-                    onChange={(e) => setAdditionalCharge(e.target.value)}
-                    className="pl-6 pr-1 h-8 text-right text-xs bg-background/50 border-input rounded-md focus-visible:ring-1"
-                    min="0"
-                  />
-                </div>
+              )}
+              <hr className="border-border/60 pt-1" />
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2.5 sm:gap-3">
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isPending || isPaidAmountExceeded}
+                  className="w-full h-11 sm:h-10 text-sm bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-sm"
+                >
+                  {isPending ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      {isBangla ? "সংরক্ষণ হচ্ছে..." : "Saving..."}
+                    </span>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      {isBangla ? "বিক্রি সম্পন্ন করুন" : "Complete Sale"}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="w-full h-11 sm:h-10 text-sm border-input hover:bg-muted"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  {isBangla ? "বাতিল" : "Cancel"}
+                </Button>
               </div>
-            </div>
-          {/* total */}
-             <div className="flex items-center justify-between py-1">
-              <span className="text-base text-foreground">
-                {isBangla ? "মোট" : " Total"}
-              </span>
-              <span className="text-md font-medium text-primary">
-                Tk. {rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* overall discount */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-1">
-               <span className="text-sm text-muted-foreground font-medium shrink-0"> Discount:</span>
-               <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
-  {/* Percentage */}
-  <div className="relative">
-    <Input
-      type="number"
-      value={0}
-      placeholder="0"
-      min="0"
-      max="100"
-      onChange={(e)=> console.log(e.target.value)}
-      className="w-16 h-9 bg-background/30 pr-5 text-right border-input"
-    />
-    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium pointer-events-none">
-      %
-    </span>
-  </div>
-
-  {/* Flat Amount */}
-  <div className="relative">
-    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium pointer-events-none">
-      Tk.
-    </span>
-    <Input
-      type="number"
-      value="0"
-      placeholder="0"
-      onChange={(e)=> console.log(e.target.value)}
-      min="0"
-      className="w-20 h-9 bg-background/30 pl-7 pr-2 text-right border-input"
-    />
-  </div>
-</div>
-            </div>
-            {/* Total Amount Output */}
-            <div className="flex items-center justify-between py-1">
-              <span className="text-base font-bold text-foreground">
-                {isBangla ? "সর্বমোট" : "Grand Total"}
-              </span>
-              <span className="text-lg font-extrabold text-primary">
-                Tk. {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            <hr className="border-border/60" />
-
-            {/* Payment Info Section */}
-            <div className="">
-              <div className="flex items-center justify-end gap-2 border-b border-border pb-2.5">
-                <div className="flex items-center gap-2 group">
-                  <Label htmlFor="split-mode" className="text-muted-foreground text-xs cursor-pointer">
-                    {isBangla ? "একাধিক পদ্ধতি ব্যবহার করুন" : "Split across multiple methods"}
-                  </Label>
-                  <Switch
-                    id="split-mode"
-                    checked={splitMode}
-                    onCheckedChange={toggleSplitMode}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-2">
-                {(() => {
-                  const activePayment = splitMode
-                    ? payments.find(p => p.method === activeSplitMethod) || payments[0]
-                    : payments[0];
-                  
-                  if (!activePayment) return null;
-                  const p = activePayment;
-                  const otherPaymentsTotal = payments
-                    .filter((pay) => pay.id !== p.id)
-                    .reduce((sum, pay) => sum + (pay.amount || 0), 0);
-                  const maxAllowedForActive = Math.max(0, parseFloat((grandTotal - otherPaymentsTotal).toFixed(2)));
-
-                  return (
-                    <div key={p.id} className="bg-background/30 p-4 border border-border/60 rounded-xl transition-colors">
-                      {/* Method chips */}
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        {METHODS.map((m) => {
-                          const Icon = m.icon;
-                          const active = splitMode ? activeSplitMethod === m.id : p.method === m.id;
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => {
-                                setPaymentWarning(null);
-                                if (splitMode) {
-                                  setActiveSplitMethod(m.id);
-                                } else {
-                                  handlePaymentFieldChange(p.id, "method", m.id);
-                                }
-                              }}
-                              className={cn(
-                                "flex flex-col items-center gap-1.5 py-2.5 sm:py-3 px-1 sm:px-2 rounded-xl border transition-all cursor-pointer",
-                                active ? cn(m.bgClass, m.borderClass) : "border-border/60 bg-transparent hover:bg-muted/30"
-                              )}
-                            >
-                              <Icon size={18} className={active ? m.colorClass : "text-muted-foreground"} strokeWidth={2} />
-                              <span
-                                className={cn(
-                                  "text-[10px] font-medium leading-tight text-center",
-                                  active ? m.colorClass : "text-muted-foreground"
-                                )}
-                              >
-                                {m.label}
-                                {splitMode && (() => {
-                                  const splitP = payments.find(pay => pay.method === m.id);
-                                  return splitP && splitP.amount > 0 ? (
-                                    <span className="block mt-0.5 font-bold text-foreground text-[11px]">
-                                      Tk.{splitP.amount}
-                                    </span>
-                                  ) : null;
-                                })()}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Common Amount Input (Rendered alone if method is somehow missing, though should be covered below) */}
-                      {!["cash", "bank", "mobile_banking"].includes(p.method) && (
-                        <div className="mb-3">
-                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
-                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={maxAllowedForActive}
-                              step="any"
-                              value={p.amount || ""}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
-                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fields for Cash */}
-                      {p.method === "cash" && (
-                        <div className="mb-3">
-                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
-                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={maxAllowedForActive}
-                              step="any"
-                              value={p.amount || ""}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
-                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fields for Bank */}
-                      {p.method === "bank" && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3">
-                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary">
-                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={maxAllowedForActive}
-                              step="any"
-                              value={p.amount || ""}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
-                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
-                            />
-                          </div>
-                          <Select
-                            value={p.accountId}
-                            onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
-                          >
-                            <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
-                              <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {accounts.filter((a: any) => a.type === 'bank').map((acc: any) => (
-                                <SelectItem key={acc.id} value={acc.id}>
-                                  {acc.name}  
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      {/* Fields for Mobile Banking */}
-                      {p.method === "mobile_banking" && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-3">
-                          <Select
-                            value={p.accountId}
-                            onValueChange={(val) => handlePaymentFieldChange(p.id, "accountId", val)}
-                          >
-                            <SelectTrigger className="h-10 text-xs bg-background/50 border-input w-full rounded-xl">
-                              <SelectValue placeholder={isBangla ? "অ্যাকাউন্ট নির্বাচন করুন" : "Select Account"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {accounts.filter((a: any) => a.type === 'mobile_banking').map((acc: any) => (
-                                <SelectItem key={acc.id} value={acc.id}>
-                                  {acc.name} (Tk.{acc.balance})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <div className="flex items-center bg-background/50 rounded-xl border border-border/60 px-3.5 py-2 focus-within:border-primary h-10">
-                            <span className="text-muted-foreground text-sm mr-1.5">{"\u09F3"}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={maxAllowedForActive}
-                              step="any"
-                              value={p.amount || ""}
-                              onChange={(e) => handlePaymentFieldChange(p.id, "amount", parseFloat(e.target.value) || 0)}
-                              className="bg-transparent text-foreground text-sm font-mono outline-none w-full"
-                              placeholder={isBangla ? "পরিমাণ" : "Amount"}
-                            />
-                          </div>
-                          <input
-                            type="text"
-                            value={p.transactionId}
-                            onChange={(e) => handlePaymentFieldChange(p.id, "transactionId", e.target.value)}
-                            placeholder={isBangla ? "লেনদেন আইডি" : "TXN ID (optional)"}
-                            className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                          />
-                          <input
-                            type="text"
-                            value={p.reference}
-                            onChange={(e) => handlePaymentFieldChange(p.id, "reference", e.target.value)}
-                            placeholder={isBangla ? "রেফারেন্স" : "Ref no (optional)"}
-                            className="w-full h-10 bg-background/50 rounded-xl border border-border/60 px-3.5 py-2.5 text-foreground text-xs outline-none placeholder:text-muted-foreground focus:border-primary"
-                          />
-                        </div>
-                      )}
-
-                      {/* Warning below payment method */}
-                      {currentWarning && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg mt-1 animate-in fade-in duration-150">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{currentWarning}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            {splitMode && payments.some(p => p.amount > 0) && (
-              <div className="pt-2 pb-1 space-y-1.5">
-                {payments.filter(p => p.amount > 0).map((p) => {
-                  const methodLabel = METHODS.find(m => m.id === p.method)?.label || p.method;
-                  const accountName = accounts.find((a: any) => String(a.id) === String(p.accountId))?.name;
-                  return (
-                    <div key={p.id} className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>{methodLabel} {accountName ? `(${accountName})` : ''}</span>
-                      <span>{formatCurrency(p.amount)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-border/40 mt-1.5">
-              <span>{isBangla ? "পরিশোধিত" : "Paid Amount"}</span>
-              <span className="font-bold text-foreground">{formatCurrency(totalPaid)}</span>
-            </div>
-
-            {due > 0 && (
-              <div className="flex justify-between items-center text-rose-500 font-bold">
-                <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}</span>
-                <span>{formatCurrency(due)}</span>
-              </div>
-            )}
-
-            {changeReturned > 0 && (
-              <div className="flex justify-between items-center text-blue-500 font-bold">
-                <span>{isBangla ? "ফেরত (Change)" : "Change Return"}</span>
-                <span>{formatCurrency(changeReturned)}</span>
-              </div>
-            )}
-            <hr className="border-border/60 pt-1" />
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-2.5 sm:gap-3">
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isPending || isPaidAmountExceeded}
-                className="w-full h-11 sm:h-10 text-sm bg-primary hover:bg-primary/95 text-primary-foreground font-semibold shadow-sm"
-              >
-                {isPending ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                    {isBangla ? "সংরক্ষণ হচ্ছে..." : "Saving..."}
-                  </span>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    {isBangla ? "বিক্রি সম্পন্ন করুন" : "Complete Sale"}
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                className="w-full h-11 sm:h-10 text-sm border-input hover:bg-muted"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {isBangla ? "বাতিল" : "Cancel"}
-              </Button>
             </div>
           </div>
         </div>
-
       </div>
-    </div>
-    {/* End Desktop & Tablet View */}
+      {/* End Desktop & Tablet View */}
 
       {/* ========================================================= */}
       {/* MOBILE VIEW (< md) - MATCHING EXACT SCREENSHOT UX FLOW    */}
@@ -2206,10 +2538,42 @@ const itemsBatches = batchesData?.batches;
                   xmlns="http://www.w3.org/2000/svg"
                   className="drop-shadow-xs"
                 >
-                  <rect x="22" y="18" width="56" height="45" rx="5" fill="#E2E8F0" className="dark:fill-muted" />
-                  <rect x="28" y="24" width="44" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
-                  <rect x="28" y="32" width="44" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
-                  <rect x="28" y="40" width="28" height="4" rx="2" fill="#CBD5E1" className="dark:fill-muted-foreground/30" />
+                  <rect
+                    x="22"
+                    y="18"
+                    width="56"
+                    height="45"
+                    rx="5"
+                    fill="#E2E8F0"
+                    className="dark:fill-muted"
+                  />
+                  <rect
+                    x="28"
+                    y="24"
+                    width="44"
+                    height="4"
+                    rx="2"
+                    fill="#CBD5E1"
+                    className="dark:fill-muted-foreground/30"
+                  />
+                  <rect
+                    x="28"
+                    y="32"
+                    width="44"
+                    height="4"
+                    rx="2"
+                    fill="#CBD5E1"
+                    className="dark:fill-muted-foreground/30"
+                  />
+                  <rect
+                    x="28"
+                    y="40"
+                    width="28"
+                    height="4"
+                    rx="2"
+                    fill="#CBD5E1"
+                    className="dark:fill-muted-foreground/30"
+                  />
                   <path
                     d="M15 35H32L38 47H62L68 35H85V64C85 67.3137 82.3137 70 79 70H21C17.6863 70 15 67.3137 15 64V35Z"
                     fill="#CBD5E1"
@@ -2220,10 +2584,34 @@ const itemsBatches = batchesData?.batches;
                     fill="#94A3B8"
                     className="dark:fill-muted"
                   />
-                  <circle cx="75" cy="18" r="11" fill="#CBD5E1" className="dark:fill-muted" />
-                  <circle cx="70" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
-                  <circle cx="75" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
-                  <circle cx="80" cy="18" r="1.5" fill="#64748B" className="dark:fill-muted-foreground" />
+                  <circle
+                    cx="75"
+                    cy="18"
+                    r="11"
+                    fill="#CBD5E1"
+                    className="dark:fill-muted"
+                  />
+                  <circle
+                    cx="70"
+                    cy="18"
+                    r="1.5"
+                    fill="#64748B"
+                    className="dark:fill-muted-foreground"
+                  />
+                  <circle
+                    cx="75"
+                    cy="18"
+                    r="1.5"
+                    fill="#64748B"
+                    className="dark:fill-muted-foreground"
+                  />
+                  <circle
+                    cx="80"
+                    cy="18"
+                    r="1.5"
+                    fill="#64748B"
+                    className="dark:fill-muted-foreground"
+                  />
                 </svg>
               </div>
               <h4 className="text-sm font-semibold text-muted-foreground mb-6">
@@ -2235,7 +2623,9 @@ const itemsBatches = batchesData?.batches;
                 className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary hover:bg-primary/10 active:bg-primary/20 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
               >
                 <Plus className="h-4 w-4" />
-                <span>{isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}</span>
+                <span>
+                  {isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}
+                </span>
               </button>
             </div>
           ) : (
@@ -2273,7 +2663,8 @@ const itemsBatches = batchesData?.batches;
                           </span>
                           {item.batchNo && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                              Batch <Info className="h-3 w-3 inline text-blue-500" />
+                              Batch{" "}
+                              <Info className="h-3 w-3 inline text-blue-500" />
                             </span>
                           )}
                         </div>
@@ -2302,7 +2693,10 @@ const itemsBatches = batchesData?.batches;
                         <button
                           type="button"
                           onClick={() => {
-                            const newQty = Math.max(1, (item.quantity || 1) - 1);
+                            const newQty = Math.max(
+                              1,
+                              (item.quantity || 1) - 1,
+                            );
                             handleQuantityChange(item.id, String(newQty));
                           }}
                           className="px-2.5 h-full text-muted-foreground hover:text-foreground active:bg-muted/60 transition-colors"
@@ -2332,7 +2726,9 @@ const itemsBatches = batchesData?.batches;
                         }}
                         className="text-blue-500 hover:text-blue-600 text-xs font-medium hover:underline transition-colors"
                       >
-                        {isBangla ? "বিক্রয় মূল্য পরিবর্তন করুন" : "Update Selling Price"}
+                        {isBangla
+                          ? "বিক্রয় মূল্য পরিবর্তন করুন"
+                          : "Update Selling Price"}
                       </button>
                     </div>
                   </div>
@@ -2345,7 +2741,9 @@ const itemsBatches = batchesData?.batches;
                 className="w-full py-2.5 px-4 rounded-xl border border-primary text-primary hover:bg-primary/10 active:bg-primary/20 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs mt-3"
               >
                 <Plus className="h-4 w-4" />
-                <span>{isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}</span>
+                <span>
+                  {isBangla ? "পণ্য নির্বাচন করুন" : "Select Product"}
+                </span>
               </button>
             </div>
           )}
@@ -2353,12 +2751,18 @@ const itemsBatches = batchesData?.batches;
 
         {/* Fixed Sticky Bottom Checkout Bar (Visible when items selected) */}
         {selectedItems.filter((i) => i.itemId).length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 p-3.5 pb-safe space-y-2.5 shadow-xl">
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/80 p-3.5 pb-safe space-y-2 shadow-xl">
             {/* Subtotal Row */}
             <div className="flex items-center justify-between text-xs sm:text-sm font-medium">
-              <span className="text-muted-foreground">{isBangla ? "উপমোট" : "Subtotal"}</span>
+              <span className="text-muted-foreground">
+                {isBangla ? "উপমোট" : "Subtotal"}
+              </span>
               <span className="text-foreground font-bold">
-                ৳{rawSubtotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                ৳
+                {rawSubtotal.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             </div>
 
@@ -2366,14 +2770,20 @@ const itemsBatches = batchesData?.batches;
             <div className="grid grid-cols-2 gap-2.5">
               <Select
                 value={mobileDiscountType}
-                onValueChange={(val: "fixed" | "percent") => setMobileDiscountType(val)}
+                onValueChange={(val: "fixed" | "percent") =>
+                  setMobileDiscountType(val)
+                }
               >
                 <SelectTrigger className="h-10 text-xs bg-background/60 border-input font-medium">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">{isBangla ? "নির্দিষ্ট (Fixed)" : "Fixed"}</SelectItem>
-                  <SelectItem value="percent">{isBangla ? "শতকরা (%)" : "Percentage"}</SelectItem>
+                  <SelectItem value="fixed">
+                    {isBangla ? "নির্দিষ্ট (Fixed)" : "Fixed"}
+                  </SelectItem>
+                  <SelectItem value="percent">
+                    {isBangla ? "শতকরা (%)" : "Percentage"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -2387,14 +2797,53 @@ const itemsBatches = batchesData?.batches;
               />
             </div>
 
+            {/* Additional Charge & Total Tax Row */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+              <span>
+                {isBangla ? "ট্যাক্স" : "Tax"}:{" "}
+                <strong className="text-foreground font-semibold">
+                  ৳{totalTax.toFixed(2)}
+                </strong>
+              </span>
+              <span>
+                {isBangla ? "অতিরিক্ত চার্জ" : "Add. Charge"}:{" "}
+                <strong className="text-foreground font-semibold">
+                  ৳{additionalChargeVal.toFixed(2)}
+                </strong>
+              </span>
+            </div>
+
             {/* Total Payable Amount Row */}
             <div className="flex items-center justify-between pt-0.5 text-sm font-bold">
               <span className="text-primary">
                 {isBangla ? "মোট পরিশোধযোগ্য পরিমাণ" : "Total Payable Amount"}
               </span>
               <span className="text-primary text-base font-extrabold">
-                ৳{mobilePayableTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                ৳
+                {mobilePayableTotal.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
               </span>
+            </div>
+
+            {/* Paid Amount and Due Amount (if due) */}
+            <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40 font-medium">
+              <span className="text-muted-foreground">
+                {isBangla ? "পরিশোধিত" : "Paid"}:{" "}
+                <strong className="text-foreground font-bold font-mono">
+                  {formatCurrency(totalPaid)}
+                </strong>
+              </span>
+              {effectiveDue > 0 ? (
+                <span className="text-rose-500 font-bold font-mono">
+                  {isBangla ? "বাকি" : "Due"}: {formatCurrency(effectiveDue)}
+                </span>
+              ) : (
+                <span className="text-emerald-500 font-medium text-[11px]">
+                  {isBangla ? "কোনো বাকি নেই" : "No Due"}
+                </span>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -2411,7 +2860,10 @@ const itemsBatches = batchesData?.batches;
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isPending || selectedItems.filter((i) => i.itemId).length === 0}
+                disabled={
+                  isPending ||
+                  selectedItems.filter((i) => i.itemId).length === 0
+                }
                 className="h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-xs sm:text-sm shadow-sm disabled:opacity-50"
               >
                 {isPending ? (
@@ -2455,7 +2907,11 @@ const itemsBatches = batchesData?.batches;
             <button
               type="button"
               onClick={() =>
-                toast.info(isBangla ? "বারকোড স্ক্যানার সক্রিয় আছে" : "Barcode scanner is ready")
+                toast.info(
+                  isBangla
+                    ? "বারকোড স্ক্যানার সক্রিয় আছে"
+                    : "Barcode scanner is ready",
+                )
               }
               className="h-11 w-11 rounded-xl border border-input bg-background/60 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 shadow-2xs"
               title="Barcode Scanner"
@@ -2469,13 +2925,16 @@ const itemsBatches = batchesData?.batches;
             {mobileFilteredProducts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-xs">
                 <Package className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p>{isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No products found"}</p>
+                <p>
+                  {isBangla ? "কোনো পণ্য পাওয়া যায়নি" : "No products found"}
+                </p>
               </div>
             ) : (
               mobileFilteredProducts.map((prod: any) => {
                 const qty = modalQuantities[prod.id] || 1;
                 const price = prod.sellingPrice || prod.unitPrice || 0;
-                const stock = prod.stock ?? prod.currentStock ?? prod.quantity ?? 0;
+                const stock =
+                  prod.stock ?? prod.currentStock ?? prod.quantity ?? 0;
                 const unit = prod.unit || "pc";
 
                 return (
@@ -2546,7 +3005,8 @@ const itemsBatches = batchesData?.batches;
 
                       {/* Price */}
                       <div className="text-xs font-semibold text-foreground">
-                        Price: <span className="text-primary font-bold">৳{price}</span>
+                        Price:{" "}
+                        <span className="text-primary font-bold">৳{price}</span>
                       </div>
 
                       {/* Orange + Button */}
@@ -2578,7 +3038,10 @@ const itemsBatches = batchesData?.batches;
       </Dialog>
 
       {/* Customer Select Modal */}
-      <Dialog open={isMobileCustomerModalOpen} onOpenChange={setIsMobileCustomerModalOpen}>
+      <Dialog
+        open={isMobileCustomerModalOpen}
+        onOpenChange={setIsMobileCustomerModalOpen}
+      >
         <DialogContent className="max-w-md p-5 max-h-[85vh] overflow-y-auto space-y-3.5 text-foreground">
           <DialogHeader>
             <DialogTitle className="font-bold text-base">
@@ -2591,7 +3054,11 @@ const itemsBatches = batchesData?.batches;
             <Input
               value={mobileCustomerSearch}
               onChange={(e) => setMobileCustomerSearch(e.target.value)}
-              placeholder={isBangla ? "নাম বা ফোন নম্বর দিয়ে খুঁজুন..." : "Search by name or phone..."}
+              placeholder={
+                isBangla
+                  ? "নাম বা ফোন নম্বর দিয়ে খুঁজুন..."
+                  : "Search by name or phone..."
+              }
               className="pl-9 h-10 text-xs bg-background/60"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2610,7 +3077,7 @@ const itemsBatches = batchesData?.batches;
               "w-full text-left p-3 rounded-xl border transition-colors flex items-center justify-between text-xs",
               !selectedParty
                 ? "border-primary bg-primary/10 text-primary font-bold"
-                : "border-border/60 hover:bg-muted/50"
+                : "border-border/60 hover:bg-muted/50",
             )}
           >
             <div className="flex items-center gap-2.5">
@@ -2639,16 +3106,21 @@ const itemsBatches = batchesData?.batches;
                 }}
                 className={cn(
                   "w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center justify-between text-xs",
-                  selectedParty?.id === party.id && "bg-primary/10 font-semibold text-primary"
+                  selectedParty?.id === party.id &&
+                    "bg-primary/10 font-semibold text-primary",
                 )}
               >
                 <div>
                   <p className="font-semibold text-foreground">{party.name}</p>
                   {party.phone && (
-                    <p className="text-[10px] text-muted-foreground font-mono">{party.phone}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">
+                      {party.phone}
+                    </p>
                   )}
                 </div>
-                {selectedParty?.id === party.id && <Check className="h-4 w-4 text-primary" />}
+                {selectedParty?.id === party.id && (
+                  <Check className="h-4 w-4 text-primary" />
+                )}
               </button>
             ))}
           </div>
@@ -2663,7 +3135,9 @@ const itemsBatches = batchesData?.batches;
         <DialogContent className="max-w-sm p-5 space-y-4 text-foreground">
           <DialogHeader>
             <DialogTitle className="font-bold text-base">
-              {isBangla ? "বিক্রয় মূল্য পরিবর্তন করুন" : "Update Selling Price"}
+              {isBangla
+                ? "বিক্রয় মূল্য পরিবর্তন করুন"
+                : "Update Selling Price"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -2700,7 +3174,9 @@ const itemsBatches = batchesData?.batches;
                   handleRateChange(editingItemForPrice.id, tempNewPrice);
                   setEditingItemForPrice(null);
                   toast.success(
-                    isBangla ? "বিক্রয় মূল্য আপডেট হয়েছে" : "Selling price updated"
+                    isBangla
+                      ? "বিক্রয় মূল্য আপডেট হয়েছে"
+                      : "Selling price updated",
                   );
                 }
               }}
@@ -2714,10 +3190,12 @@ const itemsBatches = batchesData?.batches;
 
       {/* More Options & Payment Dialog */}
       <Dialog open={isMoreModalOpen} onOpenChange={setIsMoreModalOpen}>
-        <DialogContent className="max-w-md p-5 max-h-[85vh] overflow-y-auto space-y-4 text-foreground">
+        <DialogContent className="w-[94vw] sm:max-w-md max-w-[94vw] min-w-0 p-5 bg-card text-foreground border border-border shadow-2xl rounded-2xl max-h-[85vh] overflow-y-auto space-y-4">
           <DialogHeader>
-            <DialogTitle className="font-bold text-base">
-              {isBangla ? "অতিরিক্ত বিকল্প ও পেমেন্ট" : "More Options & Payment"}
+            <DialogTitle className="font-bold text-base text-foreground">
+              {isBangla
+                ? "অতিরিক্ত বিকল্প ও পেমেন্ট"
+                : "More Options & Payment"}
             </DialogTitle>
           </DialogHeader>
 
@@ -2728,7 +3206,7 @@ const itemsBatches = batchesData?.batches;
                 {isBangla ? "পেমেন্ট পদ্ধতি" : "Payment Method"}
               </Label>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-[11px] text-muted-foreground font-medium">
                   {isBangla ? "বিভক্ত পেমেন্ট" : "Split Mode"}
                 </span>
                 <Switch checked={splitMode} onCheckedChange={toggleSplitMode} />
@@ -2750,18 +3228,33 @@ const itemsBatches = batchesData?.batches;
                       if (splitMode) {
                         setActiveSplitMethod(m.id);
                       } else {
-                        handlePaymentFieldChange(payments[0].id, "method", m.id);
+                        handlePaymentFieldChange(
+                          payments[0].id,
+                          "method",
+                          m.id,
+                        );
                       }
                     }}
                     className={cn(
-                      "flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold gap-1 transition-all",
+                      "flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold gap-1 transition-all cursor-pointer",
                       active
-                        ? "border-primary bg-primary/10 text-primary shadow-2xs"
-                        : "border-border/60 bg-background/50 text-muted-foreground hover:bg-muted/50"
+                        ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/40 shadow-xs"
+                        : "border-border bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground",
                     )}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{m.label}</span>
+                    {splitMode &&
+                      (() => {
+                        const splitP = payments.find(
+                          (pay) => pay.method === m.id,
+                        );
+                        return splitP && splitP.amount > 0 ? (
+                          <span className="text-[10px] font-bold text-primary">
+                            ৳{splitP.amount}
+                          </span>
+                        ) : null;
+                      })()}
                   </button>
                 );
               })}
@@ -2770,28 +3263,39 @@ const itemsBatches = batchesData?.batches;
             {/* Active payment fields */}
             {(() => {
               const activePayment = splitMode
-                ? payments.find((p) => p.method === activeSplitMethod) || payments[0]
+                ? payments.find((p) => p.method === activeSplitMethod) ||
+                  payments[0]
                 : payments[0];
               if (!activePayment) return null;
 
               return (
-                <div className="bg-muted/30 p-3 rounded-xl border border-border/60 space-y-2.5">
+                <div className="bg-muted/40 dark:bg-muted/20 p-3.5 rounded-xl border border-border space-y-3">
                   {/* Account selection if bank or mobile */}
                   {activePayment.method !== "cash" && (
-                    <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">
                         {isBangla ? "হিসাব নির্বাচন করুন" : "Select Account"}
                       </Label>
                       <Select
                         value={activePayment.accountId}
                         onValueChange={(val) =>
-                          handlePaymentFieldChange(activePayment.id, "accountId", val)
+                          handlePaymentFieldChange(
+                            activePayment.id,
+                            "accountId",
+                            val,
+                          )
                         }
                       >
-                        <SelectTrigger className="h-9 text-xs bg-background/60">
-                          <SelectValue placeholder="Choose account" />
+                        <SelectTrigger className="h-10 text-xs bg-background text-foreground border-input shadow-xs">
+                          <SelectValue
+                            placeholder={
+                              isBangla
+                                ? "অ্যাকাউন্ট নির্বাচন করুন"
+                                : "Choose account"
+                            }
+                          />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-card text-card-foreground border-border">
                           {accounts
                             .filter((a: any) => a.type === activePayment.method)
                             .map((acc: any) => (
@@ -2806,9 +3310,11 @@ const itemsBatches = batchesData?.batches;
 
                   {/* Transaction ID if bank or mobile */}
                   {activePayment.method !== "cash" && (
-                    <div className="space-y-1">
-                      <Label className="text-[11px] text-muted-foreground">
-                        {isBangla ? "লেনদেন আইডি / রেফারেন্স" : "Transaction ID / Reference"}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground">
+                        {isBangla
+                          ? "লেনদেন আইডি / রেফারেন্স"
+                          : "Transaction ID / Reference"}
                       </Label>
                       <Input
                         value={activePayment.transactionId || ""}
@@ -2816,35 +3322,69 @@ const itemsBatches = batchesData?.batches;
                           handlePaymentFieldChange(
                             activePayment.id,
                             "transactionId",
-                            e.target.value
+                            e.target.value,
                           )
                         }
                         placeholder="TRX-12345"
-                        className="h-9 text-xs bg-background/60"
+                        className="h-10 text-xs bg-background text-foreground border-input shadow-xs placeholder:text-muted-foreground"
                       />
                     </div>
                   )}
 
-                  {/* Amount */}
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">
-                      {isBangla ? "পরিশোধিত টাকা" : "Paid Amount"}
-                    </Label>
+                  {/* Amount with Quick Full Pay Button */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium text-foreground">
+                        {isBangla ? "পরিশোধিত টাকা" : "Paid Amount"}
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const otherPayments = payments
+                            .filter((p) => p.id !== activePayment.id)
+                            .reduce((sum, p) => sum + (p.amount || 0), 0);
+                          const remainingPayable = Math.max(
+                            0,
+                            parseFloat(
+                              (effectiveGrandTotal - otherPayments).toFixed(2),
+                            ),
+                          );
+                          handlePaymentFieldChange(
+                            activePayment.id,
+                            "amount",
+                            remainingPayable,
+                          );
+                        }}
+                        className="text-[11px] text-primary hover:underline font-semibold cursor-pointer"
+                      >
+                        {isBangla ? "সম্পূর্ণ টাকা (Full)" : "Pay Full"}
+                      </button>
+                    </div>
                     <div className="relative">
-                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">
                         ৳
                       </span>
                       <Input
                         type="number"
                         value={activePayment.amount || ""}
                         onChange={(e) =>
-                          handlePaymentFieldChange(activePayment.id, "amount", e.target.value)
+                          handlePaymentFieldChange(
+                            activePayment.id,
+                            "amount",
+                            e.target.value,
+                          )
                         }
                         placeholder="0"
-                        className="pl-7 h-9 text-xs font-bold bg-background/60"
+                        className="pl-8 h-10 text-xs font-bold bg-background text-foreground border-input shadow-xs"
                         min="0"
                       />
                     </div>
+                    {currentWarning && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg mt-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{currentWarning}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -2852,12 +3392,14 @@ const itemsBatches = batchesData?.batches;
           </div>
 
           {/* Additional Charges */}
-          <div className="space-y-1.5 pt-1 border-t border-border/40">
+          <div className="space-y-1.5 pt-2 border-t border-border">
             <Label className="text-xs font-semibold text-foreground">
-              {isBangla ? "অতিরিক্ত চার্জ (ডেলিভারি / শিপিং)" : "Additional Charge (Delivery/Shipping)"}
+              {isBangla
+                ? "অতিরিক্ত চার্জ (ডেলিভারি / শিপিং)"
+                : "Additional Charge (Delivery/Shipping)"}
             </Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
                 ৳
               </span>
               <Input
@@ -2865,58 +3407,135 @@ const itemsBatches = batchesData?.batches;
                 value={additionalCharge}
                 onChange={(e) => setAdditionalCharge(e.target.value)}
                 placeholder="0"
-                className="pl-8 h-9 text-xs font-medium bg-background/60"
+                className="pl-8 h-10 text-xs font-semibold bg-background text-foreground border-input shadow-xs"
                 min="0"
               />
             </div>
           </div>
 
-          {/* VAT Toggle & Edit */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/40">
-            <div>
-              <p className="text-xs font-semibold text-foreground">
-                {isBangla ? "ভ্যাট" : "VAT"}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                {vatConfig.type === "percent"
-                  ? `${vatConfig.value}% (৳${vatVal.toFixed(2)})`
-                  : `৳${vatVal.toFixed(2)}`}
-              </p>
+          {/* VAT Section (Interactive Inline) */}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-foreground">
+                {isBangla ? "ভ্যাট (VAT)" : "VAT (Tax)"}
+              </Label>
+              <span className="text-xs font-bold text-foreground font-mono">
+                ৳{vatVal.toFixed(2)}
+              </span>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setTempVatType(vatConfig.type);
-                setTempVatValue(String(vatConfig.value));
-                setIsEditVatOpen(true);
-              }}
-              className="h-8 text-xs font-semibold"
-            >
-              <Pencil className="h-3 w-3 mr-1" />
-              {isBangla ? "পরিবর্তন" : "Edit"}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex rounded-lg border border-border p-0.5 bg-muted/40">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVatConfig((prev) => ({ ...prev, type: "percent" }))
+                  }
+                  className={cn(
+                    "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                    vatConfig.type === "percent"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {isBangla ? "শতকরা (%)" : "Percentage (%)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVatConfig((prev) => ({ ...prev, type: "flat" }))
+                  }
+                  className={cn(
+                    "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                    vatConfig.type === "flat"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {isBangla ? "নির্দিষ্ট (৳)" : "Flat (৳)"}
+                </button>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                  {vatConfig.type === "percent" ? "%" : "৳"}
+                </span>
+                <Input
+                  type="number"
+                  value={vatConfig.value || ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setVatConfig((prev) => ({ ...prev, value: val }));
+                  }}
+                  placeholder="0"
+                  className="pl-8 h-10 text-xs font-bold bg-background text-foreground border-input shadow-xs"
+                  min="0"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Notes Section */}
-          <div className="space-y-1.5 pt-1 border-t border-border/40">
+          <div className="space-y-1.5 pt-2 border-t border-border">
             <Label className="text-xs font-semibold text-foreground">
               {isBangla ? "নোট বা মন্তব্য" : "Notes or Remarks"}
             </Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={isBangla ? "নোট লিখুন..." : "Enter note or description..."}
-              className="min-h-[80px] bg-background/60 text-xs resize-none"
+              placeholder={
+                isBangla ? "নোট লিখুন..." : "Enter note or description..."
+              }
+              className="min-h-[75px] bg-background text-foreground border-input text-xs resize-none placeholder:text-muted-foreground shadow-xs"
             />
+          </div>
+
+          {/* Order Summary Strip in More Modal */}
+          <div className="bg-muted/40 dark:bg-muted/20 p-3.5 rounded-xl border border-border space-y-2 text-xs">
+            <div className="flex justify-between items-center text-muted-foreground">
+              <span>{isBangla ? "মোট ট্যাক্স" : "Total Tax"}:</span>
+              <span className="font-semibold text-foreground">
+                ৳{totalTax.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <span>{isBangla ? "অতিরিক্ত চার্জ" : "Additional Charge"}:</span>
+              <span className="font-semibold text-foreground">
+                ৳{additionalChargeVal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground border-t border-border/40 pt-1.5">
+              <span className="font-medium text-foreground">
+                {isBangla ? "সর্বমোট টাকা" : "Total Payable"}:
+              </span>
+              <span className="font-extrabold text-primary font-mono text-sm">
+                ৳{effectiveGrandTotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-muted-foreground">
+              <span>{isBangla ? "পরিশোধিত টাকা" : "Paid Amount"}:</span>
+              <span className="font-bold text-foreground font-mono">
+                {formatCurrency(totalPaid)}
+              </span>
+            </div>
+            {effectiveDue > 0 ? (
+              <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-bold border-t border-border/40 pt-1.5">
+                <span>{isBangla ? "বাকি পরিমাণ" : "Due Amount"}:</span>
+                <span className="font-mono text-sm">
+                  {formatCurrency(effectiveDue)}
+                </span>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-semibold border-t border-border/40 pt-1.5">
+                <span>{isBangla ? "অবস্থা" : "Status"}:</span>
+                <span>{isBangla ? "সম্পূর্ণ পরিশোধিত" : "Fully Paid"}</span>
+              </div>
+            )}
           </div>
 
           {/* Done Button */}
           <Button
             type="button"
             onClick={() => setIsMoreModalOpen(false)}
-            className="w-full h-10 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
+            className="w-full h-11 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-sm rounded-xl shadow-xs"
           >
             {isBangla ? "সম্পন্ন" : "Done"}
           </Button>
@@ -2929,7 +3548,7 @@ const itemsBatches = batchesData?.batches;
               {isBangla ? "ভ্যাট পরিবর্তন করুন" : "Edit VAT"}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -2994,8 +3613,6 @@ const itemsBatches = batchesData?.batches;
           </div>
         </DialogContent>
       </Dialog>
-
-
     </div>
   );
 }

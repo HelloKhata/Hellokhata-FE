@@ -148,7 +148,6 @@ function NewPurchaseContent() {
   const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
  
   const { data: searchItems = [] } = useGetItems({ page: 1, limit: 10,search: topProductSearchQuery });
-  console.log('searchItems',searchItems)
   const { data: suppliers } = useParties({ type: "supplier",search: supplierSearchQuery });
   const { data: brnaches = [] } = useGetBranches();
 
