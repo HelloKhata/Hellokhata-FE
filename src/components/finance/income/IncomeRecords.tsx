@@ -21,6 +21,8 @@ import {
   Calendar,
   Loader2,
   ExternalLink,
+  Plus,
+  Download,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui/premium";
 import {
@@ -30,6 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -49,6 +57,7 @@ export interface IncomeRecordsProps {
   incomeCategories?: any[];
   onDeleteIncome?: (incId: string) => void;
   isBangla: boolean;
+  onOpenNewIncome?: () => void;
 }
 
 export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
@@ -56,6 +65,7 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
   incomeCategories,
   onDeleteIncome,
   isBangla,
+  onOpenNewIncome,
 }) => {
   const { toast } = useToast();
   
@@ -260,6 +270,50 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
     }
   };
 
+  const handleExportCSV = () => {
+    if (!filteredIncomes || filteredIncomes.length === 0) {
+      toast({
+        title: isBangla ? "কোন তথ্য নেই" : "No data to export",
+        description: isBangla ? "ডাউনলোড করার মত কোন রেকর্ড নেই" : "No records available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    const headers = [
+      isBangla ? "ভাউচার" : "Voucher",
+      isBangla ? "তারিখ" : "Date",
+      isBangla ? "বিবরণ" : "Description",
+      isBangla ? "শাখা" : "Branch",
+      isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method",
+      isBangla ? "পরিমাণ (৳)" : "Amount (BDT)",
+    ];
+    const rows = filteredIncomes.map((inc: any) => [
+      inc.voucherCode,
+      isBangla ? inc.dateBn : inc.dateEn,
+      `"${((isBangla ? inc.titleBn : inc.titleEn) + ' - ' + (isBangla ? inc.subtitleBn : inc.subtitleEn)).replace(/"/g, '""')}"`,
+      `"${inc.branch.replace(/"/g, '""')}"`,
+      inc.paymentMethod,
+      inc.amount,
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [headers.join(","), ...rows.map((e: any[]) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `income-records-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: isBangla ? "ডাউনলোড সম্পন্ন" : "Download Complete",
+      description: isBangla
+        ? "আয়ের তালিকা সফলভাবে ডাউনলোড হয়েছে।"
+        : "Income list downloaded successfully.",
+    });
+  };
+
   return (
     <div className="flex flex-col lg:flex-row min-h-[550px] items-stretch overflow-hidden gap-6">
       {/* -------------------------------------------------------------
@@ -275,20 +329,20 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
       >
         <div className="rounded-2xl border border-border/80 bg-card/95 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col h-full flex-1">
           {/* List Header */}
-          <div className="p-5 pb-4 border-b border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/10">
-            <div className="space-y-0.5">
+          <div className="p-3.5 sm:p-5 pb-3 sm:pb-4 border-b border-border/80 flex flex-row items-center justify-between gap-2 bg-muted/10">
+            <div className="space-y-0.5 min-w-0">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-emerald-400" />
-                <h3 className="text-base font-bold text-foreground">
+                <TrendingUp className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-emerald-400 shrink-0" />
+                <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
                   {isBangla
                     ? `আয়ের তালিকা (${toBnNum(filteredIncomes.length)})`
                     : `Income Records (${filteredIncomes.length})`}
                 </h3>
                 {isLoadingIncome && (
-                  <Loader2 className="h-4 w-4 animate-spin text-emerald-500 ml-1" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-emerald-500 ml-1 shrink-0" />
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] sm:text-xs text-muted-foreground hidden sm:block">
                 {isBangla
                   ? "বিস্তারিত দেখতে তালিকায় ক্লিক করুন"
                   : "Click any item to view full details"}
@@ -296,17 +350,29 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
             </div>
 
             {!selectedIncome && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => window.print()}
-                  className="h-8 text-xs rounded-xl gap-1.5 cursor-pointer"
+                  className="hidden md:flex h-8 text-xs rounded-xl gap-1.5 cursor-pointer px-2.5 sm:px-3"
+                  title={isBangla ? "প্রিন্ট" : "Print"}
                 >
                   <Printer className="h-3.5 w-3.5" />
                   <span>{isBangla ? "প্রিন্ট" : "Print"}</span>
                 </Button>
+                {onOpenNewIncome && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={onOpenNewIncome}
+                    className="md:hidden h-8 text-xs rounded-xl gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-xs font-semibold px-2.5 sm:px-3"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>{isBangla ? "নতুন আয়" : "New Income"}</span>
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -410,36 +476,225 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                 </p>
               </div>
             ) : (
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border/80 bg-muted/30 text-muted-foreground font-semibold text-[11px]">
-                    <th className="py-3 px-3.5">
-                      {isBangla ? "ভাউচার ও বিবরণ" : "Voucher & Item"}
-                    </th>
-                    {!selectedIncome && (
-                      <>
-                        <th className="py-3 px-3.5 whitespace-nowrap">
-                          {isBangla ? "শাখা" : "Branch"}
+              <>
+                {/* Desktop View: Full Table (md and up) */}
+                <div className="hidden md:block">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border/80 bg-muted/30 text-muted-foreground font-semibold text-[11px]">
+                        <th className="py-3 px-3.5">
+                          {isBangla ? "ভাউচার ও বিবরণ" : "Voucher & Item"}
                         </th>
-                        <th className="py-3 px-3.5 whitespace-nowrap">
-                          {isBangla ? "পদ্ধতি" : "Method"}
+                        {!selectedIncome && (
+                          <>
+                            <th className="py-3 px-3.5 whitespace-nowrap">
+                              {isBangla ? "শাখা" : "Branch"}
+                            </th>
+                            <th className="py-3 px-3.5 whitespace-nowrap">
+                              {isBangla ? "পদ্ধতি" : "Method"}
+                            </th>
+                            <th className="py-3 px-3.5 whitespace-nowrap">
+                              {isBangla ? "সংযুক্তি" : "Attachment"}
+                            </th>
+                          </>
+                        )}
+                        <th className="py-3 px-3.5 text-right">
+                          {isBangla ? "পরিমাণ" : "Amount"}
                         </th>
-                        <th className="py-3 px-3.5 whitespace-nowrap">
-                          {isBangla ? "সংযুক্তি" : "Attachment"}
-                        </th>
-                      </>
-                    )}
-                    <th className="py-3 px-3.5 text-right">
-                      {isBangla ? "পরিমাণ" : "Amount"}
-                    </th>
-                    {!selectedIncome && (
-                      <th className="py-3 px-3.5 text-right">
-                        {isBangla ? "অ্যাকশন" : "Action"}
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
+                        {!selectedIncome && (
+                          <th className="py-3 px-3.5 text-right">
+                            {isBangla ? "অ্যাকশন" : "Action"}
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {filteredIncomes.map((inc) => {
+                        const isSelected = selectedIncome?.id === inc.id;
+                        const methodKey = inc.paymentMethod.toLowerCase();
+                        const payInfo =
+                          PAYMENT_METHOD_MAP[methodKey] || {
+                            en: inc.paymentMethod,
+                            bn: inc.paymentMethod,
+                            badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                          };
+
+                        return (
+                          <tr
+                            key={inc.id}
+                            onClick={() => setSelectedIncome(inc)}
+                            className={cn(
+                              "hover:bg-muted/30 transition-colors cursor-pointer group",
+                              isSelected
+                                ? "bg-emerald-500/10 border-l-2 border-emerald-500"
+                                : ""
+                            )}
+                          >
+                            {/* Voucher & Description */}
+                            <td className="py-3 px-3.5 align-middle">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={cn(
+                                    "p-2 rounded-xl shrink-0 border",
+                                    inc.bgColor
+                                  )}
+                                >
+                                  {React.createElement(inc.icon, {
+                                    className: "h-4 w-4",
+                                  })}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-mono font-bold text-foreground text-xs leading-tight group-hover:text-emerald-400 transition-colors">
+                                      {inc.voucherCode}
+                                    </p>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      • {isBangla ? inc.titleBn : inc.titleEn}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">
+                                    {isBangla ? inc.subtitleBn : inc.subtitleEn}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5 font-mono">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    <span>
+                                      {isBangla ? inc.dateBn : inc.dateEn}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Additional Full Width Columns when NOT Split */}
+                            {!selectedIncome && (
+                              <>
+                                <td className="py-3 px-3.5 align-middle whitespace-nowrap">
+                                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    <Building2 className="h-3 w-3 text-muted-foreground/70" />
+                                    {inc.branch}
+                                  </span>
+                                </td>
+
+                                <td className="py-3 px-3.5 align-middle whitespace-nowrap">
+                                  <span
+                                    className={cn(
+                                      "px-2 py-0.5 rounded text-[10px] font-medium border capitalize",
+                                      payInfo.badgeColor
+                                    )}
+                                  >
+                                    {isBangla ? payInfo.bn : payInfo.en}
+                                  </span>
+                                </td>
+
+                                <td
+                                  className="py-3 px-3.5 align-middle whitespace-nowrap"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {inc.attachmentName ? (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 cursor-pointer"
+                                      onClick={() => handleOpenReceipt(inc)}
+                                    >
+                                      <Paperclip className="h-3 w-3" />
+                                      <span className="max-w-[85px] truncate">
+                                        {inc.attachmentName}
+                                      </span>
+                                      {inc.receiptUrl && (
+                                        <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-70" />
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] text-muted-foreground/60">
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                              </>
+                            )}
+
+                            {/* Amount */}
+                            <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
+                              <span className="font-mono font-bold text-emerald-400 text-xs">
+                                {isBangla
+                                  ? `+৳${toBnNum(inc.amount.toLocaleString())}`
+                                  : `+৳${inc.amount.toLocaleString()}`}
+                              </span>
+                            </td>
+
+                            {/* Actions (Only in Full-Width Mode) */}
+                            {!selectedIncome && (
+                              <td
+                                className="py-3 px-3.5 align-middle text-right whitespace-nowrap"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-md cursor-pointer"
+                                    onClick={() => setSelectedIncome(inc)}
+                                    title={
+                                      isBangla ? "বিস্তারিত দেখুন" : "View Details"
+                                    }
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={isDeleting}
+                                    className="h-7 w-7 text-muted-foreground hover:text-rose-400 rounded-md cursor-pointer"
+                                    onClick={() => handleDelete(inc.id)}
+                                    title={isBangla ? "মুছে ফেলুন" : "Delete"}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View: List Cards (md:hidden) */}
+                <div className="md:hidden">
+                  {/* Top of List Bar: Download Button */}
+                  <div className="px-3.5 py-2 bg-muted/20 border-b border-border/60 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      {isBangla
+                        ? `মোট রেকর্ড: ${toBnNum(filteredIncomes.length)}`
+                        : `Total Records: ${filteredIncomes.length}`}
+                    </span>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs rounded-lg gap-1.5 cursor-pointer px-2.5 bg-card border-border/80 hover:bg-muted/50 text-foreground shadow-2xs font-medium"
+                        >
+                          <Download className="h-3.5 w-3.5 text-emerald-500" />
+                          <span>{isBangla ? "ডাউনলোড" : "Download"}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-card border-border shadow-lg">
+                        <DropdownMenuItem onClick={handleExportCSV} className="cursor-pointer py-2">
+                          <Download className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          <span>{isBangla ? "CSV ফাইল ডাউনলোড (.csv)" : "Download CSV (.csv)"}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.print()} className="cursor-pointer py-2">
+                          <Printer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          <span>{isBangla ? "PDF / প্রিন্ট কপি" : "Print / PDF Document"}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="divide-y divide-border/60">
                   {filteredIncomes.map((inc) => {
                     const isSelected = selectedIncome?.id === inc.id;
                     const methodKey = inc.paymentMethod.toLowerCase();
@@ -449,21 +704,39 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                         bn: inc.paymentMethod,
                         badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                       };
+                    const dateStr = isBangla ? inc.dateBn : inc.dateEn;
+                    const title = isBangla ? inc.titleBn : inc.titleEn;
+                    const subtitle = isBangla ? inc.subtitleBn : inc.subtitleEn;
 
                     return (
-                      <tr
+                      <div
                         key={inc.id}
                         onClick={() => setSelectedIncome(inc)}
                         className={cn(
-                          "hover:bg-muted/30 transition-colors cursor-pointer group",
-                          isSelected
-                            ? "bg-emerald-500/10 border-l-2 border-emerald-500"
-                            : ""
+                          "p-3.5 hover:bg-muted/10 active:bg-muted/20 transition-colors cursor-pointer space-y-2",
+                          isSelected ? "bg-emerald-500/10 border-l-2 border-emerald-500" : ""
                         )}
                       >
-                        {/* Voucher & Description */}
-                        <td className="py-3 px-3.5 align-middle">
-                          <div className="flex items-center gap-2.5">
+                        {/* Top: Date & Voucher Code */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                              {dateStr}
+                            </span>
+                            <span className="text-muted-foreground/40 text-xs">•</span>
+                            <span className="font-mono font-bold text-emerald-400 text-xs truncate">
+                              {inc.voucherCode}
+                            </span>
+                          </div>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded border border-border/40 shrink-0">
+                            <Building2 className="h-2.5 w-2.5 text-muted-foreground/70" />
+                            <span className="truncate max-w-[100px]">{inc.branch}</span>
+                          </span>
+                        </div>
+
+                        {/* Middle: Icon, Category Name, Subtitle & Amount */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <div
                               className={cn(
                                 "p-2 rounded-xl shrink-0 border",
@@ -471,123 +744,83 @@ export const IncomeRecords: React.FC<IncomeRecordsProps> = ({
                               )}
                             >
                               {React.createElement(inc.icon, {
-                                className: "h-4 w-4",
+                                className: "h-3.5 w-3.5",
                               })}
                             </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="font-mono font-bold text-foreground text-xs leading-tight group-hover:text-emerald-400 transition-colors">
-                                  {inc.voucherCode}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-foreground text-xs truncate">
+                                {title}
+                              </p>
+                              {subtitle && subtitle !== "—" && (
+                                <p className="text-[11px] text-muted-foreground truncate" title={subtitle}>
+                                  {subtitle}
                                 </p>
-                                <span className="text-[10px] text-muted-foreground">
-                                  • {isBangla ? inc.titleBn : inc.titleEn}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">
-                                {isBangla ? inc.subtitleBn : inc.subtitleEn}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground/80 flex items-center gap-1 mt-0.5 font-mono">
-                                <Clock className="h-2.5 w-2.5" />
-                                <span>
-                                  {isBangla ? inc.dateBn : inc.dateEn}
-                                </span>
-                              </p>
+                              )}
                             </div>
                           </div>
-                        </td>
 
-                        {/* Additional Full Width Columns when NOT Split */}
-                        {!selectedIncome && (
-                          <>
-                            <td className="py-3 px-3.5 align-middle whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <Building2 className="h-3 w-3 text-muted-foreground/70" />
-                                {inc.branch}
-                              </span>
-                            </td>
+                          <div className="text-right shrink-0">
+                            <span className="font-mono font-bold text-sm text-emerald-400 whitespace-nowrap">
+                              {isBangla
+                                ? `+৳${toBnNum(inc.amount.toLocaleString())}`
+                                : `+৳${inc.amount.toLocaleString()}`}
+                            </span>
+                          </div>
+                        </div>
 
-                            <td className="py-3 px-3.5 align-middle whitespace-nowrap">
-                              <span
-                                className={cn(
-                                  "px-2 py-0.5 rounded text-[10px] font-medium border capitalize",
-                                  payInfo.badgeColor
-                                )}
-                              >
-                                {isBangla ? payInfo.bn : payInfo.en}
-                              </span>
-                            </td>
-
-                            <td
-                              className="py-3 px-3.5 align-middle whitespace-nowrap"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {inc.attachmentName ? (
-                                <span
-                                  className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 cursor-pointer"
-                                  onClick={() => handleOpenReceipt(inc)}
-                                >
-                                  <Paperclip className="h-3 w-3" />
-                                  <span className="max-w-[85px] truncate">
-                                    {inc.attachmentName}
-                                  </span>
-                                  {inc.receiptUrl && (
-                                    <ExternalLink className="h-2.5 w-2.5 ml-0.5 opacity-70" />
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="text-[11px] text-muted-foreground/60">
-                                  —
-                                </span>
+                        {/* Bottom: Payment Method & Actions */}
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.2 rounded text-[10px] font-medium border capitalize shrink-0",
+                                payInfo.badgeColor
                               )}
-                            </td>
-                          </>
-                        )}
-
-                        {/* Amount */}
-                        <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
-                          <span className="font-mono font-bold text-emerald-400 text-xs">
-                            {isBangla
-                              ? `+৳${toBnNum(inc.amount.toLocaleString())}`
-                              : `+৳${inc.amount.toLocaleString()}`}
-                          </span>
-                        </td>
-
-                        {/* Actions (Only in Full-Width Mode) */}
-                        {!selectedIncome && (
-                          <td
-                            className="py-3 px-3.5 align-middle text-right whitespace-nowrap"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-md cursor-pointer"
-                                onClick={() => setSelectedIncome(inc)}
-                                title={
-                                  isBangla ? "বিস্তারিত দেখুন" : "View Details"
-                                }
+                            >
+                              {isBangla ? payInfo.bn : payInfo.en}
+                            </span>
+                            {inc.attachmentName && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 truncate"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenReceipt(inc);
+                                }}
                               >
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                disabled={isDeleting}
-                                className="h-7 w-7 text-muted-foreground hover:text-rose-400 rounded-md cursor-pointer"
-                                onClick={() => handleDelete(inc.id)}
-                                title={isBangla ? "মুছে ফেলুন" : "Delete"}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </td>
-                        )}
-                      </tr>
+                                <Paperclip className="h-2.5 w-2.5 shrink-0" />
+                                <span className="max-w-[90px] truncate">{inc.attachmentName}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setSelectedIncome(inc)}
+                              className="h-6 w-6 text-emerald-400 hover:bg-emerald-500/10"
+                              title={isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              disabled={isDeleting}
+                              onClick={() => handleDelete(inc.id)}
+                              className="h-6 w-6 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10"
+                              title={isBangla ? "মুছে ফেলুন" : "Delete"}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            </>
             )}
           </div>
         </div>

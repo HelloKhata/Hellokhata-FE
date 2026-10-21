@@ -12,7 +12,15 @@ import {
   ChevronDown,
   Info,
   TrendingUp,
+  Plus,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +72,9 @@ export default function IncomePageContent() {
   // Incomes State (fallback or local)
   const [incomes, setIncomes] = useState<IncomeRecord[]>(INITIAL_INCOME_RECORDS);
   const [dateRange, setDateRange] = useState("Jul 23, 2026 - Aug 22, 2026");
+
+  // Mobile Record New Income Modal
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
 
 
   // Modals State
@@ -246,7 +257,7 @@ export default function IncomePageContent() {
             : "Track, manage and analyze your business revenues & income"}
           showBack
           actions={
-            <div className="flex items-center flex-wrap gap-2.5">
+            <div className="hidden md:flex items-center flex-wrap gap-2.5">
               {/* Date Range Picker Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -324,50 +335,50 @@ export default function IncomePageContent() {
         />
 
         {/* =========================================================================
-            2. TOP STATS CARDS (4 METRICS IN ROW)
+            2. TOP STATS CARDS (4 METRICS IN ROW ON DESKTOP, 2 ROWS ON MOBILE)
            ========================================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {/* Card 1: Total Today */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                <TrendingUp className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "আজকের মোট আয়" : incomeSum?.today?.label || "Today's Income"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground truncate">
+                <span className="truncate">{isBangla ? "আজকের মোট আয়" : incomeSum?.today?.label || "Today's Income"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "আজকে এন্ট্রি করা মোট আয়" : "Income recorded today"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight truncate">
                 {isBangla
                   ? `৳${toBnNum((incomeSum?.today?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(incomeSum?.today?.total ?? 0).toLocaleString()}.00`}
               </p>
               <p
                 className={cn(
-                  "text-[11px] font-semibold flex items-center gap-1",
+                  "text-[9px] sm:text-[11px] font-semibold flex items-center gap-1 truncate",
                   (incomeSum?.today?.change ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"
                 )}
               >
-                <span>
+                <span className="truncate">
                   {isBangla
-                    ? `${incomeSum?.today?.changeLabel === "vs Yesterday" ? "গতকালের চেয়ে" : incomeSum?.today?.changeLabel || "গতকালের চেয়ে"} ${(incomeSum?.today?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.today?.change ?? 0)}%`
+                    ? `${incomeSum?.today?.changeLabel === "vs Yesterday" ? "গতকালের চেয়ে" : incomeSum?.today?.changeLabel || "গতকালের চেয়ে"} ${(incomeSum?.today?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.today?.change ?? 0)}%`
                     : `${incomeSum?.today?.changeLabel || "vs Yesterday"} ${(incomeSum?.today?.change ?? 0) >= 0 ? "+" : ""}${incomeSum?.today?.change ?? 0}%`}
                 </span>
                 <span>{(incomeSum?.today?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
             </div>
 
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 w-20 sm:w-28 h-8 sm:h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-emerald-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]">
                 <path d="M 5,34 Q 25,28 45,18 T 75,12 T 95,6" strokeLinecap="round" />
               </svg>
@@ -376,46 +387,46 @@ export default function IncomePageContent() {
           </div>
 
           {/* Card 2: Total This Month */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-sky-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-sky-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/20">
-                <Calendar className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/20">
+                <Calendar className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই মাসের মোট আয়" : incomeSum?.thisMonth?.label || "This Month"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground truncate">
+                <span className="truncate">{isBangla ? "এই মাসের মোট আয়" : incomeSum?.thisMonth?.label || "This Month"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "চলতি মাসের সর্বমোট আয়" : "Income recorded in current month"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight truncate">
                 {isBangla
                   ? `৳${toBnNum((incomeSum?.thisMonth?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(incomeSum?.thisMonth?.total ?? 0).toLocaleString()}.00`}
               </p>
               <p
                 className={cn(
-                  "text-[11px] font-semibold flex items-center gap-1",
+                  "text-[9px] sm:text-[11px] font-semibold flex items-center gap-1 truncate",
                   (incomeSum?.thisMonth?.change ?? 0) >= 0 ? "text-emerald-400" : "text-rose-400"
                 )}
               >
-                <span>
+                <span className="truncate">
                   {isBangla
-                    ? `${incomeSum?.thisMonth?.changeLabel === "vs Last Month" ? "গত মাসের চেয়ে" : incomeSum?.thisMonth?.changeLabel || "গত মাসের চেয়ে"} ${(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.thisMonth?.change ?? 0)}%`
+                    ? `${incomeSum?.thisMonth?.changeLabel === "vs Last Month" ? "গত মাসের চেয়ে" : incomeSum?.thisMonth?.changeLabel || "গত মাসের চেয়ে"} ${(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(incomeSum?.thisMonth?.change ?? 0)}%`
                     : `${incomeSum?.thisMonth?.changeLabel || "vs Last Month"} ${(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${incomeSum?.thisMonth?.change ?? 0}%`}
                 </span>
                 <span>{(incomeSum?.thisMonth?.change ?? 0) >= 0 ? "↑" : "↓"}</span>
               </p>
             </div>
 
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 w-20 sm:w-28 h-8 sm:h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-sky-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
                 <path d="M 5,28 Q 30,32 50,18 T 75,14 T 95,8" strokeLinecap="round" />
               </svg>
@@ -424,41 +435,40 @@ export default function IncomePageContent() {
           </div>
 
           {/* Card 3: Total This Year / All Time */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-purple-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-purple-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
-                <BarChart3 className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "সর্বমোট আয়" : incomeSum?.allTime?.label || "Total Income"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground truncate">
+                <span className="truncate">{isBangla ? "সর্বমোট আয়" : incomeSum?.allTime?.label || "Total Income"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "সর্বমোট আদায়কৃত আয়" : "All-time total income revenue"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight truncate">
                 {isBangla
                   ? `৳${toBnNum((incomeSum?.allTime?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(incomeSum?.allTime?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono">
-                <span>
+              <p className="text-[9px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono truncate">
+                <span className="truncate">
                   {isBangla
                     ? `গড়: ৳${toBnNum((incomeSum?.allTime?.avgIncome ?? 0).toLocaleString())}`
                     : `Avg: ৳${(incomeSum?.allTime?.avgIncome ?? 0).toLocaleString()}`}
                 </span>
-                <span>•</span>
               </p>
             </div>
 
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 w-20 sm:w-28 h-8 sm:h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-purple-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(192,132,252,0.4)]">
                 <path d="M 5,35 Q 30,22 50,26 T 75,14 T 95,4" strokeLinecap="round" />
               </svg>
@@ -467,32 +477,32 @@ export default function IncomePageContent() {
           </div>
 
           {/* Card 4: Total Entries / Count */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                <FileText className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                <FileText className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "মোট এন্ট্রি সংখ্যা" : "Total Entries"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground truncate">
+                <span className="truncate">{isBangla ? "মোট এন্ট্রি সংখ্যা" : "Total Entries"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "দাখিলকৃত মোট আয় ভাউচার সংখ্যা" : "Number of income vouchers entered"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight truncate">
                 {isBangla
                   ? toBnNum(incomeSum?.allTime?.count ?? 0)
                   : (incomeSum?.allTime?.count ?? 0)}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>
+              <p className="text-[9px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1 truncate">
+                <span className="truncate">
                   {isBangla
                     ? `এই মাসে +${toBnNum(incomeSum?.thisMonth?.count ?? 0)}টি`
                     : `This month: +${incomeSum?.thisMonth?.count ?? 0}`}
@@ -501,7 +511,7 @@ export default function IncomePageContent() {
               </p>
             </div>
 
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 w-20 sm:w-28 h-8 sm:h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-amber-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
                 <path d="M 5,32 Q 25,25 45,28 T 75,15 T 95,6" strokeLinecap="round" />
               </svg>
@@ -512,8 +522,9 @@ export default function IncomePageContent() {
 
         {/* =========================================================================
             3. MIDDLE SECTION (LEFT: RECORD NEW INCOME | RIGHT: CATEGORIES & OVERVIEW)
+            Desktop only: on small devices, overview card is hidden and record form is in a modal
            ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: Record New Income Form Component (Col Span 7) */}
           <div className="lg:col-span-7">
             <RecordNewIncome
@@ -521,6 +532,7 @@ export default function IncomePageContent() {
               loadingCategories={loadingCategories}
               branches={branches}
               isBangla={isBangla}
+              onOpenAddCategory={handleOpenAddCategory}
             />
           </div>
 
@@ -547,7 +559,32 @@ export default function IncomePageContent() {
           incomeCategories={incomeCategories}
           onDeleteIncome={handleDeleteIncome}
           isBangla={isBangla}
+          onOpenNewIncome={() => setIsRecordModalOpen(true)}
         />
+
+
+        {/* =========================================================================
+            5. MODALS & DIALOGS (Add, Edit, View All, Delete Confirmation & Mobile Record)
+           ========================================================================= */}
+        {/* Record New Income Modal for Small Devices */}
+        <Dialog open={isRecordModalOpen} onOpenChange={setIsRecordModalOpen}>
+          <DialogContent className="max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl bg-card border-border">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-base font-bold flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                <span>{isBangla ? "নতুন আয় রেকর্ড করুন" : "Record New Income"}</span>
+              </DialogTitle>
+            </DialogHeader>
+            <RecordNewIncome
+              incomeCategories={incomeCategories}
+              loadingCategories={loadingCategories}
+              branches={branches}
+              isBangla={isBangla}
+              onOpenAddCategory={handleOpenAddCategory}
+              onSuccess={() => setIsRecordModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
 
 
         {/* =========================================================================

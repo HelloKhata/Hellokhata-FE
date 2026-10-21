@@ -8,6 +8,7 @@ import {
   Loader2,
   Upload,
   Camera,
+  Plus,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui/premium";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,8 @@ interface RecordNewIncomeProps {
   loadingCategories?: boolean;
   branches?: { id?: string; name: string }[];
   isBangla: boolean;
+  onOpenAddCategory?: () => void;
+  onSuccess?: () => void;
 }
 
 export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
@@ -43,6 +46,8 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
   loadingCategories,
   branches = [],
   isBangla,
+  onOpenAddCategory,
+  onSuccess,
 }) => {
   const { toast } = useToast();
 
@@ -108,6 +113,7 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
       variant: "default",
     });   
     handleCancelForm();
+    onSuccess?.();
    }})
   };
 
@@ -200,10 +206,22 @@ export const RecordNewIncome: React.FC<RecordNewIncomeProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Category Dropdown */}
         <div className="space-y-1.5 w-full">
-          <Label className="text-xs font-semibold text-muted-foreground">
-            {isBangla ? "ক্যাটাগরি" : "Category"}{" "}
-            <span className="text-destructive">*</span>
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold text-muted-foreground">
+              {isBangla ? "ক্যাটাগরি" : "Category"}{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            {onOpenAddCategory && (
+              <button
+                type="button"
+                onClick={onOpenAddCategory}
+                className="text-[11px] font-semibold text-emerald-500 hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                <span>{isBangla ? "ক্যাটাগরি যোগ করুন" : "Add Category"}</span>
+              </button>
+            )}
+          </div>
           <Select
             value={selectedCategoryId}
             onValueChange={setSelectedCategoryId}
