@@ -149,7 +149,7 @@ export default function FinanceTransactionsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 1. Breadcrumbs Header */}
       <PageHeader
         title={isBangla ? 'লেনদেন খাতা রেজিস্টার' : 'Transactions Ledger'}
@@ -159,18 +159,18 @@ export default function FinanceTransactionsPage() {
         showBack
         fallbackHref="/finance"
         actions={
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
             <Button
               variant="outline"
               size="sm"
               onClick={() => refetch()}
               disabled={isFetching}
-              className="gap-1.5 text-xs h-9"
+              className="gap-1.5 text-xs h-8 sm:h-9"
             >
               <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
               <span>{isBangla ? 'রিফ্রেশ' : 'Refresh'}</span>
             </Button>
-            <Button variant="outline" onClick={() => handleExport('Excel')} className="gap-1.5 text-xs h-9">
+            <Button variant="outline" size="sm" onClick={() => handleExport('Excel')} className="gap-1.5 text-xs h-8 sm:h-9">
               <Download className="h-3.5 w-3.5" />
               <span>{isBangla ? 'এক্সপোর্ট' : 'Export'}</span>
             </Button>
@@ -179,12 +179,12 @@ export default function FinanceTransactionsPage() {
       />
 
       {/* 2. Dynamic Summary Cards (Liquidity Overview) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {isLoadingStats ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 rounded-2xl bg-muted/30 animate-pulse border border-border/40"
+              className="h-20 sm:h-28 rounded-xl sm:rounded-2xl bg-muted/30 animate-pulse border border-border/40"
             />
           ))
         ) : (
@@ -196,9 +196,11 @@ export default function FinanceTransactionsPage() {
               prefix="৳"
               subtext={`${activeAccounts} accounts active`}
               subtextBn={`${activeAccounts} টি অ্যাকাউন্ট সক্রিয়`}
-              icon={<Coins className="h-5 w-5" />}
+              icon={<Coins className="h-4 w-4 sm:h-5 sm:w-5" />}
               iconColor="emerald"
               isBangla={isBangla}
+              compactOnMobile
+              className="p-2.5 sm:p-5 rounded-xl sm:rounded-2xl"
             />
             <KPICard
               title="Cash Vault"
@@ -207,9 +209,11 @@ export default function FinanceTransactionsPage() {
               prefix="৳"
               subtext="Physical cash"
               subtextBn="নগদ তহবিল"
-              icon={<Banknote className="h-5 w-5" />}
+              icon={<Banknote className="h-4 w-4 sm:h-5 sm:w-5" />}
               iconColor="warning"
               isBangla={isBangla}
+              compactOnMobile
+              className="p-2.5 sm:p-5 rounded-xl sm:rounded-2xl"
             />
             <KPICard
               title="Bank Balance"
@@ -218,9 +222,11 @@ export default function FinanceTransactionsPage() {
               prefix="৳"
               subtext="Bank accounts"
               subtextBn="ব্যাংক হিসাব"
-              icon={<Landmark className="h-5 w-5" />}
+              icon={<Landmark className="h-4 w-4 sm:h-5 sm:w-5" />}
               iconColor="indigo"
               isBangla={isBangla}
+              compactOnMobile
+              className="p-2.5 sm:p-5 rounded-xl sm:rounded-2xl"
             />
             <KPICard
               title="Wallet Balance"
@@ -229,17 +235,20 @@ export default function FinanceTransactionsPage() {
               prefix="৳"
               subtext="Mobile banking"
               subtextBn="মোবাইল ব্যাংকিং"
-              icon={<Wallet className="h-5 w-5" />}
+              icon={<Wallet className="h-4 w-4 sm:h-5 sm:w-5" />}
               iconColor="indigo"
               isBangla={isBangla}
+              compactOnMobile
+              className="p-2.5 sm:p-5 rounded-xl sm:rounded-2xl"
             />
           </>
         )}
       </div>
 
       {/* 3. Filters Bar */}
-      <div className="bg-card border border-border/50 rounded-xl p-4 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-3">
+      <div className="bg-card border border-border/50 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3">
+          {/* Row 1 on mobile: Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground shrink-0" />
             <Input
@@ -250,52 +259,59 @@ export default function FinanceTransactionsPage() {
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-xs sm:text-sm h-9 sm:h-10"
             />
           </div>
 
-          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-             <SelectTrigger className="w-full md:w-[140px]">
-               <SelectValue placeholder={isBangla ? "শাখা" : "Branch"} />
-             </SelectTrigger>
-             <SelectContent>
+          {/* Branch (Desktop only) */}
+          <div className="hidden md:block">
+            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder={isBangla ? "শাখা" : "Branch"} />
+              </SelectTrigger>
+              <SelectContent>
                 <SelectItem value="all">{isBangla ? "সব শাখা" : "All Branches"}</SelectItem>
                 {branches?.map((b: any) => (
-                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
-             </SelectContent>
-          </Select>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={selectedFlow} onValueChange={setSelectedFlow}>
-             <SelectTrigger className="w-full md:w-[140px]">
-               <SelectValue placeholder={isBangla ? "ফ্লো" : "Flow"} />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">{isBangla ? "সব ফ্লো" : "All Flows"}</SelectItem>
-               <SelectItem value="IN">{isBangla ? 'ইনফ্লো (IN)' : 'Inflow (IN)'}</SelectItem>
-               <SelectItem value="OUT">{isBangla ? 'আউটফ্লো (OUT)' : 'Outflow (OUT)'}</SelectItem>
-             </SelectContent>
-          </Select>
+          {/* Row 2 on mobile: Flow and Type side-by-side */}
+          <div className="grid grid-cols-2 md:flex md:items-center gap-2.5 sm:gap-3">
+            <Select value={selectedFlow} onValueChange={setSelectedFlow}>
+              <SelectTrigger className="w-full md:w-[140px] text-xs sm:text-sm h-9 sm:h-10">
+                <SelectValue placeholder={isBangla ? "ফ্লো" : "Flow"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isBangla ? "সব ফ্লো" : "All Flows"}</SelectItem>
+                <SelectItem value="IN">{isBangla ? 'ইনফ্লো (IN)' : 'Inflow (IN)'}</SelectItem>
+                <SelectItem value="OUT">{isBangla ? 'আউটফ্লো (OUT)' : 'Outflow (OUT)'}</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="w-full md:w-[160px]">
-              <SelectValue placeholder={isBangla ? "ধরণ" : "Type"} />
-            </SelectTrigger>
-            <SelectContent>
-               <SelectItem value="all">{isBangla ? 'সব ধরণ' : 'All Types'}</SelectItem>
-               <SelectItem value="INCOME">{isBangla ? 'আয় (Income)' : 'Income'}</SelectItem>
-               <SelectItem value="EXPENSE">{isBangla ? 'ব্যয় (Expense)' : 'Expense'}</SelectItem>
-               <SelectItem value="PAYMENT">{isBangla ? 'পেমেন্ট (Payment)' : 'Payment'}</SelectItem>
-               <SelectItem value="PAYMENT_IN">{isBangla ? 'পেমেন্ট গ্রহণ (Payment In)' : 'Payment In'}</SelectItem>
-               <SelectItem value="PAYMENT_OUT">{isBangla ? 'পেমেন্ট প্রদান (Payment Out)' : 'Payment Out'}</SelectItem>
-               <SelectItem value="SALE">{isBangla ? 'বিক্রয় (Sale)' : 'Sale'}</SelectItem>
-               <SelectItem value="PURCHASE">{isBangla ? 'ক্রয় (Purchase)' : 'Purchase'}</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-full md:w-[160px] text-xs sm:text-sm h-9 sm:h-10">
+                <SelectValue placeholder={isBangla ? "ধরণ" : "Type"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{isBangla ? 'সব ধরণ' : 'All Types'}</SelectItem>
+                <SelectItem value="INCOME">{isBangla ? 'আয় (Income)' : 'Income'}</SelectItem>
+                <SelectItem value="EXPENSE">{isBangla ? 'ব্যয় (Expense)' : 'Expense'}</SelectItem>
+                <SelectItem value="PAYMENT">{isBangla ? 'পেমেন্ট (Payment)' : 'Payment'}</SelectItem>
+                <SelectItem value="PAYMENT_IN">{isBangla ? 'পেমেন্ট গ্রহণ (Payment In)' : 'Payment In'}</SelectItem>
+                <SelectItem value="PAYMENT_OUT">{isBangla ? 'পেমেন্ট প্রদান (Payment Out)' : 'Payment Out'}</SelectItem>
+                <SelectItem value="SALE">{isBangla ? 'বিক্রয় (Sale)' : 'Sale'}</SelectItem>
+                <SelectItem value="PURCHASE">{isBangla ? 'ক্রয় (Purchase)' : 'Purchase'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
+          {/* Date (Desktop only) */}
           <button
             type="button"
-            className="flex items-center gap-2 border border-input rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted shrink-0 cursor-pointer h-10"
+            className="hidden md:flex items-center gap-2 border border-input rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted shrink-0 cursor-pointer h-10"
           >
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="whitespace-nowrap">
@@ -305,9 +321,10 @@ export default function FinanceTransactionsPage() {
         </div>
       </div>
 
-      {/* 4. Table view registry */}
+      {/* 4. Table view registry (Desktop: Table, Mobile: List Cards) */}
       <Card className="border-border/50 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Desktop View: Full Table (md and up) */}
+        <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader className="bg-muted/30 border-b border-border/20 text-muted-foreground font-semibold">
               <TableRow>
@@ -414,9 +431,143 @@ export default function FinanceTransactionsPage() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Mobile View: List Cards (md:hidden) */}
+        <div className="md:hidden">
+          {isLoading ? (
+            <div className="p-3 space-y-2.5">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-border/40 p-3 bg-card/60 space-y-2 animate-pulse"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="h-3 w-24 bg-muted/70 rounded" />
+                    <div className="h-4 w-16 bg-muted/70 rounded-md" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-32 bg-muted/70 rounded" />
+                    <div className="h-4 w-18 bg-muted/70 rounded" />
+                  </div>
+                  <div className="h-2.5 w-40 bg-muted/50 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : isError ? (
+            <div className="p-6 text-center text-rose-500">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <p className="text-xs font-medium">
+                  {isBangla ? 'লেনদেন লোড করতে সমস্যা হয়েছে।' : 'Failed to load transactions.'}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="h-8 text-xs">
+                  {isBangla ? 'পুনরায় চেষ্টা করুন' : 'Retry'}
+                </Button>
+              </div>
+            </div>
+          ) : transactionsList.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground font-medium text-xs">
+              {isBangla ? 'কোনো লেনদেন এন্ট্রি পাওয়া যায়নি।' : 'No financial transaction records found.'}
+            </div>
+          ) : (
+            <div className="divide-y divide-border/20">
+              {transactionsList.map((txn) => {
+                const isInflow = txn.flow === 'IN' || ['INCOME', 'SALE', 'PAYMENT_IN'].includes(txn.transactionType?.toUpperCase());
+                const accountName = txn.categoryName || txn.title || txn.accountId || '-';
+                const description = txn.description || txn.title || '-';
+                const party = txn.partyName || txn.reference || '-';
+                const method = txn.mode || '-';
+
+                return (
+                  <div
+                    key={txn.id}
+                    onClick={() => handleOpenDetails(txn)}
+                    className="p-3 sm:p-3.5 hover:bg-muted/10 active:bg-muted/20 transition-colors cursor-pointer space-y-2"
+                  >
+                    {/* Top Row: Date, ID, Type badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                          {formatDate(txn.date)}
+                        </span>
+                        <span className="text-muted-foreground/40 text-xs">•</span>
+                        <span className="font-mono font-bold text-primary text-xs truncate" title={txn.id}>
+                          #{txn.id.length > 10 ? txn.id.slice(-8) : txn.id}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-[9px] py-0.5 px-2 rounded-md border-transparent font-bold uppercase shrink-0',
+                          isInflow
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500'
+                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        )}
+                      >
+                        {txn.transactionType}
+                      </Badge>
+                    </div>
+
+                    {/* Middle Row: Title/Account & Amount */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-foreground text-xs truncate">
+                          {accountName}
+                        </p>
+                        {description && description !== '-' && description !== accountName && (
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={description}>
+                            {description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={cn(
+                          'font-mono font-bold text-xs sm:text-sm whitespace-nowrap',
+                          isInflow ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                        )}>
+                          {isInflow ? `+${formatCurrency(txn.amount)}` : `-${formatCurrency(txn.amount)}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Party & Method & Eye Action */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/10 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {party !== '-' && (
+                          <span className="truncate max-w-[130px] font-medium text-foreground/80">
+                            {party}
+                          </span>
+                        )}
+                        {party !== '-' && method !== '-' && (
+                          <span className="text-muted-foreground/40">•</span>
+                        )}
+                        {method !== '-' && (
+                          <span className="px-1.5 py-0.5 rounded bg-muted/50 text-[10px] font-medium shrink-0">
+                            {method}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDetails(txn);
+                        }}
+                        className="h-6 w-6 text-primary hover:bg-primary/10 shrink-0"
+                        title={isBangla ? 'বিস্তারিত দেখুন' : 'View Details'}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
         
         {totalPages > 1 && (
-          <div className="p-4 border-t border-border">
+          <div className="p-3 sm:p-4 border-t border-border">
             <PaginationHelper
               currentPage={currentPage}
               totalPages={totalPages}
@@ -429,7 +580,7 @@ export default function FinanceTransactionsPage() {
 
       {/* 5. Transaction Details dialog popup */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] max-w-[95vw] rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />

@@ -19,6 +19,7 @@ import {
 } from "@/hooks/api/useExpense";
 import { useGetBranches } from "@/hooks/api/useBranches";
 import { useGetPaymentMethods } from "@/hooks/api/usePaymentMethod";
+import { RecordNewExpense } from "@/components/finance/expenses/RecordNewExpense";
 import {
   Calendar,
   Download,
@@ -200,7 +201,6 @@ export default function ExpensePageContent() {
     categoryId: tableCategoryFilter !== "all" ? tableCategoryFilter : undefined,
   });
 
-  const { mutate: createExpense, isPending: isSubmitting } = useCreateExpense();
   const { mutate: createExpenseCategory, isPending: isCreatingCategory } = useCreateExpenseCategories();
   const { mutate: updateExpenseCategory, isPending: isUpdatingCategory } = useUpdateExpenseCategory();
   const { mutate: deleteExpenseCategory, isPending: isDeletingCategory } = useDeleteExpenseCategory();
@@ -216,35 +216,9 @@ export default function ExpensePageContent() {
   // Selected Expense for Split Layout Detail Panel
   const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
 
-// Utility Types List
-const UTILITY_TYPES = [
-  { value: "electricity", labelEn: "Electricity", labelBn: "বিদ্যুৎ" },
-  { value: "gas", labelEn: "Gas", labelBn: "গ্যাস" },
-  { value: "internet", labelEn: "Internet", labelBn: "ইন্টারনেট" },
-  { value: "water", labelEn: "Water", labelBn: "পানি" },
-  { value: "other", labelEn: "Other / ETC", labelBn: "অন্যান্য (ETC)" },
-];
-
-  // Form State
-  const [payeeName, setPayeeName] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"paid" | "partial" | "unpaid">("paid");
-  const [dueAmount, setDueAmount] = useState("");
-  const [amount, setAmount] = useState("");
-  const [entryDate, setEntryDate] = useState<Date>(new Date());
-  const [employeeName, setEmployeeName] = useState("");
-  const [utilityType, setUtilityType] = useState("electricity");
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-  const [selectedAccountId, setSelectedAccountId] = useState("");
-  const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [expenseNote, setExpenseNote] = useState("");
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
-  const [recurringDueDate, setRecurringDueDate] = useState<Date>(new Date());
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
-
 
   // Modals State
+  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [categoryFormNameEn, setCategoryFormNameEn] = useState("");
@@ -253,165 +227,6 @@ const UTILITY_TYPES = [
   const [categoryFormIcon, setCategoryFormIcon] = useState("zap");
   const [isViewAllCategoriesOpen, setIsViewAllCategoriesOpen] = useState(false);
 
-  // Selected Category Object & Type Helpers (directly from API)
-  const selectedCategoryObj = expenseCategories?.find((c: any) => c.id === selectedCategoryId);
-  const isSalaryCategory = Boolean(
-    selectedCategoryObj &&
-      ((selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("salary") ||
-        (selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("wage") ||
-        (selectedCategoryObj.nameBn || "").includes("বেতন"))
-  );
-  const isUtilityCategory = Boolean(
-    selectedCategoryObj &&
-      ((selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("util") ||
-        (selectedCategoryObj.name || selectedCategoryObj.nameEn || "").toLowerCase().includes("bill") ||
-        (selectedCategoryObj.nameBn || "").includes("ইউটিলিটি"))
-  );
-
-  // Form Submit
-  const handleSaveExpense = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedCategoryId) {
-      toast({
-        title: isBangla ? "ক্যাটাগরি নির্বাচন করুন" : "Select Category",
-        description: isBangla ? "অনুগ্রহ করে একটি ব্যয় ক্যাটাগরি বেছে নিন।" : "Please select an expense category.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (isSalaryCategory && !employeeName.trim()) {
-      toast({
-        title: isBangla ? "কর্মচারীর নাম আবশ্যক" : "Employee Name Required",
-        description: isBangla ? "বেতন ব্যয়ের জন্য কর্মচারীর নাম লিখুন।" : "Please enter the employee's name for salary expense.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!amount || parseFloat(amount) <= 0) {
-      toast({
-        title: isBangla ? "সঠিক পরিমাণ দিন" : "Invalid Amount",
-        description: isBangla ? "অনুগ্রহ করে ব্যয়ের পরিমাণ লিখুন।" : "Please enter a valid expense amount.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (paymentStatus === "partial" && (!dueAmount || parseFloat(dueAmount) < 0)) {
-      toast({
-        title: isBangla ? "বকেয়া পরিমাণ দিন" : "Enter Due Amount",
-        description: isBangla ? "আংশিক পরিশোধের ক্ষেত্রে বকেয়া পরিমাণ লিখুন।" : "Please enter the due amount for partial payment.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!selectedAccountId) {
-      toast({
-        title: isBangla ? "পেমেন্ট মাধ্যম নির্বাচন করুন" : "Select Payment Account",
-        description: isBangla ? "অনুগ্রহ করে পেমেন্ট অ্যাকাউন্ট বেছে নিন।" : "Please select a payment method / account.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!selectedBranchId) {
-      toast({
-        title: isBangla ? "শাখা নির্বাচন করুন" : "Select Branch",
-        description: isBangla ? "অনুগ্রহ করে একটি ব্রাঞ্চ বেছে নিন।" : "Please select a branch.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const parsedAmount = parseFloat(amount);
-    const parsedDueAmount =
-      paymentStatus === "partial"
-        ? parseFloat(dueAmount) || 0
-        : paymentStatus === "unpaid"
-        ? parsedAmount
-        : 0;
-    const formattedDate = format(entryDate, "yyyy-MM-dd");
-
-    // Construct description / details
-    let generatedDescription = expenseNote.trim();
-    if (isSalaryCategory && employeeName.trim()) {
-      generatedDescription = generatedDescription
-        ? `${generatedDescription} | ${employeeName.trim()}`
-        : `Salary - ${employeeName.trim()}`;
-    } else if (isUtilityCategory) {
-      const utilObj = UTILITY_TYPES.find((u) => u.value === utilityType);
-      const utilName = isBangla ? utilObj?.labelBn : utilObj?.labelEn;
-      generatedDescription = generatedDescription
-        ? `${generatedDescription} | ${utilName || utilityType}`
-        : `Utility - ${utilName || utilityType}`;
-    }
-
-    // Determine effective payee
-    const effectivePayee = isSalaryCategory
-      ? employeeName.trim()
-      : isUtilityCategory
-      ? undefined
-      : payeeName.trim() || undefined;
-
-    // 2. Prepare payload exactly matching the API schema
-    const payload: any = {
-      categoryId: selectedCategoryId,
-      accountId: selectedAccountId,
-      branchId: selectedBranchId,
-      amount: parsedAmount,
-      // status: paymentStatus,
-      // ...(paymentStatus === "partial" ? { dueAmount: parsedDueAmount } : {}),
-      // ...(effectivePayee ? { payeeName: effectivePayee } : {}),
-      // ...(isSalaryCategory ? { employeeName: employeeName.trim() } : {}),
-      // ...(isUtilityCategory ? { utilityType } : {}),
-      description: generatedDescription || selectedCategoryObj?.nameEn || undefined,
-      date: formattedDate,
-    };
-    
-    // 3. Call create expense API mutation
-    createExpense(payload, {
-      onSuccess: () => {
-        const catName = isBangla
-          ? selectedCategoryObj?.nameBn || "ব্যয়"
-          : selectedCategoryObj?.nameEn || "Expense";
-        toast({
-          title: isBangla ? "ব্যয় সফলভাবে সংরক্ষিত হয়েছে" : "Expense Recorded",
-          description: isBangla
-            ? `৳${toBnNum(parsedAmount.toLocaleString())} (${catName})`
-            : `৳${parsedAmount.toLocaleString()} under ${catName}`,
-        });
-        handleCancelForm();
-      },
-      onError: (err: any) => {
-        toast({
-          title: isBangla ? "ব্যয় সংরক্ষণ ব্যর্থ হয়েছে" : "Failed to record expense",
-          description:
-            err?.response?.data?.message ||
-            err?.message ||
-            (isBangla ? "অনুগ্রহ করে আবার চেষ্টা করুন" : "Please try again."),
-          variant: "destructive",
-        });
-      },
-    });
-  };
-
-  const handleCancelForm = () => {
-    setPayeeName("");
-    setAmount("");
-    setPaymentStatus("paid");
-    setDueAmount("");
-    setEntryDate(new Date());
-    setEmployeeName("");
-    setUtilityType("electricity");
-    setExpenseNote("");
-    setReceiptFile(null);
-    setAttachmentName(null);
-    setIsRecurring(false);
-    setRecurringDueDate(new Date());
-  };
 
   // Category Add/Edit Actions
   const handleOpenAddCategory = () => {
@@ -549,6 +364,52 @@ const UTILITY_TYPES = [
     });
   };
 
+  const handleExportExpensesCSV = () => {
+    if (!expenses || expenses.length === 0) {
+      toast({
+        title: isBangla ? "কোন তথ্য নেই" : "No data to export",
+        description: isBangla ? "ডাউনলোড করার মত কোন রেকর্ড নেই" : "No records available to download",
+        variant: "destructive",
+      });
+      return;
+    }
+    const headers = [
+      isBangla ? "ভাউচার" : "Voucher",
+      isBangla ? "তারিখ" : "Date",
+      isBangla ? "খাত" : "Category",
+      isBangla ? "বিবরণ" : "Description",
+      isBangla ? "শাখা" : "Branch",
+      isBangla ? "পেমেন্ট পদ্ধতি" : "Payment Method",
+      isBangla ? "পরিমাণ (৳)" : "Amount (BDT)",
+    ];
+    const rows = expenses.map((exp: any) => [
+      exp.voucherCode || (exp.id ? `EXP-${exp.id.slice(-6).toUpperCase()}` : "EXP-0000"),
+      exp.date || (exp.createdAt ? format(new Date(exp.createdAt), "yyyy-MM-dd") : ""),
+      `"${((exp.category?.nameBn || exp.category?.name || "Expense")).replace(/"/g, '""')}"`,
+      `"${((exp.description || exp.note || "")).replace(/"/g, '""')}"`,
+      `"${((exp.branch?.name || "Main Branch")).replace(/"/g, '""')}"`,
+      exp.account?.name || exp.paymentMethod || "cash",
+      typeof exp.amount === "number" ? exp.amount : parseFloat(exp.amount) || 0,
+    ]);
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [headers.join(","), ...rows.map((e: any[]) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `expense-records-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: isBangla ? "ডাউনলোড সম্পন্ন" : "Download Complete",
+      description: isBangla
+        ? "ব্যয় তালিকা সফলভাবে ডাউনলোড হয়েছে।"
+        : "Expense records downloaded successfully.",
+    });
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-6 mx-auto pb-24 text-foreground">
@@ -562,7 +423,7 @@ const UTILITY_TYPES = [
             : "Track, manage and analyze your business expenses"}
           showBack
           actions={
-            <div className="flex items-center flex-wrap gap-2.5">
+            <div className="hidden md:flex items-center flex-wrap gap-2.5">
               {/* Date Range Picker Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -638,39 +499,39 @@ const UTILITY_TYPES = [
         {/* =========================================================================
             2. TOP STATS CARDS (4 METRICS IN ROW)
            ========================================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {/* Card 1: Total Today */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                <Receipt className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                <Receipt className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "আজকের মোট ব্যয়" : expenseSummary?.today?.label || "Today's Expense"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground">
+                <span className="truncate">{isBangla ? "আজকের মোট ব্যয়" : expenseSummary?.today?.label || "Today's Expense"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "আজকে এন্ট্রি করা মোট খরচ" : "Expenses recorded today"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
                   ? `৳${toBnNum((expenseSummary?.today?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(expenseSummary?.today?.total ?? 0).toLocaleString()}.00`}
               </p>
               <p
                 className={cn(
-                  "text-[11px] font-semibold flex items-center gap-1",
+                  "text-[10px] sm:text-[11px] font-semibold flex items-center gap-1",
                   (expenseSummary?.today?.change ?? 0) <= 0 ? "text-emerald-400" : "text-rose-400"
                 )}
               >
-                <span>
+                <span className="truncate">
                   {isBangla
                     ? `${expenseSummary?.today?.changeLabel === "vs Yesterday" ? "গতকালের চেয়ে" : expenseSummary?.today?.changeLabel || "গতকালের চেয়ে"} ${(expenseSummary?.today?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(expenseSummary?.today?.change ?? 0)}%`
                     : `${expenseSummary?.today?.changeLabel || "vs Yesterday"} ${(expenseSummary?.today?.change ?? 0) >= 0 ? "+" : ""}${expenseSummary?.today?.change ?? 0}%`}
@@ -680,7 +541,7 @@ const UTILITY_TYPES = [
             </div> 
 
             {/* Sparkline Wave */}
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-emerald-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]">
                 <path d="M 5,32 Q 25,28 45,18 T 75,14 T 95,8" strokeLinecap="round" />
               </svg>
@@ -689,37 +550,37 @@ const UTILITY_TYPES = [
           </div>
 
           {/* Card 2: Total This Month */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-sky-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-sky-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/20">
-                <Calendar className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-sky-500/15 text-sky-400 border border-sky-500/20">
+                <Calendar className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "এই মাসের মোট ব্যয়" : expenseSummary?.thisMonth?.label || "This Month"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground">
+                <span className="truncate">{isBangla ? "এই মাসের মোট ব্যয়" : expenseSummary?.thisMonth?.label || "This Month"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "চলতি মাসের মোট খরচ" : "Expenses recorded in current month"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
                   ? `৳${toBnNum((expenseSummary?.thisMonth?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(expenseSummary?.thisMonth?.total ?? 0).toLocaleString()}.00`}
               </p>
               <p
                 className={cn(
-                  "text-[11px] font-semibold flex items-center gap-1",
+                  "text-[10px] sm:text-[11px] font-semibold flex items-center gap-1",
                   (expenseSummary?.thisMonth?.change ?? 0) <= 0 ? "text-emerald-400" : "text-rose-400"
                 )}
               >
-                <span>
+                <span className="truncate">
                   {isBangla
                     ? `${expenseSummary?.thisMonth?.changeLabel === "vs Last Month" ? "গত মাসের চেয়ে" : expenseSummary?.thisMonth?.changeLabel || "গত মাসের চেয়ে"} ${(expenseSummary?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${toBnNum(expenseSummary?.thisMonth?.change ?? 0)}%`
                     : `${expenseSummary?.thisMonth?.changeLabel || "vs Last Month"} ${(expenseSummary?.thisMonth?.change ?? 0) >= 0 ? "+" : ""}${expenseSummary?.thisMonth?.change ?? 0}%`}
@@ -729,7 +590,7 @@ const UTILITY_TYPES = [
             </div>
 
             {/* Sparkline Wave */}
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-sky-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">
                 <path d="M 5,30 Q 30,35 50,22 T 75,20 T 95,12" strokeLinecap="round" />
               </svg>
@@ -738,32 +599,32 @@ const UTILITY_TYPES = [
           </div>
 
           {/* Card 3: Total This Year */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-purple-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-purple-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
-                <BarChart3 className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "সর্বমোট ব্যয়" : expenseSummary?.allTime?.label || "Total Expenses"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground">
+                <span className="truncate">{isBangla ? "সর্বমোট ব্যয়" : expenseSummary?.allTime?.label || "Total Expenses"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "সর্বমোট আদায়কৃত ব্যয়" : "All-time total expenses"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
                   ? `৳${toBnNum((expenseSummary?.allTime?.total ?? 0).toLocaleString())}.০০`
                   : `৳${(expenseSummary?.allTime?.total ?? 0).toLocaleString()}.00`}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono">
-                <span>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1 font-mono">
+                <span className="truncate">
                   {expenseSummary?.allTime?.avgExpense !== undefined && expenseSummary?.allTime?.avgExpense !== null
                     ? isBangla
                       ? `গড়: ৳${toBnNum((expenseSummary.allTime.avgExpense ?? 0).toLocaleString())}`
@@ -777,7 +638,7 @@ const UTILITY_TYPES = [
             </div>
 
             {/* Sparkline Wave */}
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-purple-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(192,132,252,0.4)]">
                 <path d="M 5,34 Q 30,24 50,30 T 75,18 T 95,6" strokeLinecap="round" />
               </svg>
@@ -786,32 +647,32 @@ const UTILITY_TYPES = [
           </div>
 
           {/* Card 4: Total Entries */}
-          <div className="rounded-2xl border border-border/70 bg-card/90 p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/40 transition-all">
+          <div className="rounded-xl sm:rounded-2xl border border-border/70 bg-card/90 p-2.5 sm:p-4.5 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-amber-500/40 transition-all">
             <div className="flex items-start justify-between">
-              <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                <FileText className="h-4.5 w-4.5" />
+              <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                <FileText className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </div>
             </div>
 
-            <div className="mt-3 space-y-1 z-10">
-              <div className="flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground">
-                <span>{isBangla ? "মোট এন্ট্রি সংখ্যা" : "Total Entries"}</span>
+            <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1 z-10">
+              <div className="flex items-center gap-1 text-[10px] sm:text-[11.5px] font-medium text-muted-foreground">
+                <span className="truncate">{isBangla ? "মোট এন্ট্রি সংখ্যা" : "Total Entries"}</span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    <Info className="h-3 w-3 text-muted-foreground/60 cursor-help shrink-0" />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isBangla ? "দাখিলকৃত মোট ভাউচার সংখ্যা" : "Number of expense vouchers entered"}
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-2xl font-bold font-mono text-foreground tracking-tight">
+              <p className="text-base sm:text-2xl font-bold font-mono text-foreground tracking-tight">
                 {isBangla
                   ? toBnNum(expenseSummary?.allTime?.count ?? 0)
                   : (expenseSummary?.allTime?.count ?? 0)}
               </p>
-              <p className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
-                <span>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 flex items-center gap-1">
+                <span className="truncate">
                   {isBangla
                     ? `এই মাসে +${toBnNum(expenseSummary?.thisMonth?.count ?? 0)}টি`
                     : `This month: +${expenseSummary?.thisMonth?.count ?? 0}`}
@@ -821,7 +682,7 @@ const UTILITY_TYPES = [
             </div>
 
             {/* Sparkline Wave */}
-            <div className="absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
+            <div className="hidden sm:block absolute right-2 bottom-2 w-28 h-12 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
               <svg viewBox="0 0 100 40" className="w-full h-full stroke-amber-400 stroke-[2.5] fill-none drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
                 <path d="M 5,35 Q 25,28 45,32 T 75,18 T 95,8" strokeLinecap="round" />
               </svg>
@@ -834,553 +695,17 @@ const UTILITY_TYPES = [
         {/* =========================================================================
             3. MIDDLE SECTION (LEFT FORM | RIGHT CATEGORIES + EXPENSE OVERVIEW)
            ========================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* -------------------------------------------------------------
               LEFT: RECORD NEW EXPENSE FORM (Col Span 7)
              ------------------------------------------------------------- */}
-          <form
-            onSubmit={handleSaveExpense}
-            className="lg:col-span-7 rounded-2xl border border-border/80 bg-card/95 p-6 shadow-sm space-y-5 backdrop-blur-sm"
-          >
-            <div className="pb-1">
-              <h2 className="text-base font-bold text-foreground">
-                {isBangla ? "নতুন ব্যয় রেকর্ড করুন" : "Record New Expense"}
-              </h2>
-            </div>
-
-            {/* Row 1: Category & Dynamic Field by the Side (Employee Name / Utility Type / Payable's Name) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Category Dropdown */}
-              <div className="space-y-1.5 w-full">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  {isBangla ? "ক্যাটাগরি" : "Category"} <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={selectedCategoryId}
-                  onValueChange={setSelectedCategoryId}
-                  required
-                >
-                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
-                    <SelectValue placeholder={isBangla ? "ক্যাটাগরি নির্বাচন করুন" : "Select Category"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border max-h-60">
-                    {expenseCategories?.map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        <div className="flex items-center gap-2">
-                          {c.color && (
-                            <span
-                              className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
-                              style={{ backgroundColor: c.color }}
-                            />
-                          )}
-                          <span>{isBangla ? (c.nameBn || c.name) : (c.name || c.nameBn)}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Side Field: If Salary -> Employee Name, If Utility -> Utility Type, Else -> Payable's Name */}
-              {isSalaryCategory ? (
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "কর্মচারীর নাম" : "Employee Name"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder={isBangla ? "যেমন: মো: রফিকুল ইসলাম" : "e.g. Md. Rafiqul Islam"}
-                    value={employeeName}
-                    onChange={(e) => setEmployeeName(e.target.value)}
-                    className="w-full h-10 text-xs bg-muted/20 border-border focus:border-primary"
-                    required
-                  />
-                </div>
-              ) : isUtilityCategory ? (
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "ইউটিলিটির ধরণ" : "Utility Type"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={utilityType} onValueChange={setUtilityType} required>
-                    <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
-                      <SelectValue placeholder={isBangla ? "ধরণ নির্বাচন করুন" : "Select Type"} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {UTILITY_TYPES.map((u) => (
-                        <SelectItem key={u.value} value={u.value}>
-                          <span>{isBangla ? u.labelBn : u.labelEn}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ) : (
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "পাওনাদার / প্রাপকের নাম" : "Payable's Name"}
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder={isBangla ? "যেমন: করিম এন্টারপ্রাইজ / রহিম" : "e.g. Karim Enterprise, Rahim"}
-                    value={payeeName}
-                    onChange={(e) => setPayeeName(e.target.value)}
-                    className="w-full h-10 text-xs bg-muted/20 border-border focus:border-primary"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Row 2: Payment Method & Branch */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Payment Method / Account Dropdown */}
-              <div className="space-y-1.5 w-full">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  {isBangla ? "পেমেন্ট মাধ্যম" : "Payment Method"} <span className="text-destructive">*</span>
-                </Label>
-                <Select value={selectedAccountId} onValueChange={setSelectedAccountId} required>
-                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
-                    <SelectValue placeholder={isBangla ? "পদ্ধতি নির্বাচন করুন" : "Select Payment Method"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border max-h-60">
-                    {paymentMethodsData?.map((pm: any) => {
-                      const labelEn = pm.name || pm.bankName || pm.provider || pm.accountNumber || pm.type || "Account";
-                      const labelBn = pm.nameBn || labelEn;
-                      return (
-                        <SelectItem key={pm.id} value={pm.id}>
-                          <div className="flex items-center justify-between gap-3 w-full">
-                            <span>{isBangla ? labelBn : labelEn}</span>
-                            {pm.type && (
-                              <span className="text-[10px] text-muted-foreground uppercase">
-                                ({pm.type})
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Branch Select */}
-              <div className="space-y-1.5 w-full">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  {isBangla ? "ব্রাঞ্চ / শাখা" : "Branch"} <span className="text-destructive">*</span>
-                </Label>
-                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} required>
-                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
-                    <SelectValue placeholder={isBangla ? "ব্রাঞ্চ নির্বাচন করুন" : "Select Branch"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border max-h-60">
-                    {branchesData?.map((b: any) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {isBangla ? (b.nameBn || b.name) : b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Row 3: Payment Status & Expense Note */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Payment Status Dropdown (Paid / Partial / Unpaid) */}
-              <div className="space-y-1.5 w-full">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  {isBangla ? "পেমেন্ট স্ট্যাটাস" : "Payment Status"} <span className="text-destructive">*</span>
-                </Label>
-                <Select value={paymentStatus} onValueChange={(v: "paid" | "partial" | "unpaid") => setPaymentStatus(v)}>
-                  <SelectTrigger className="w-full h-10 text-xs bg-muted/20 border-border">
-                    <SelectValue placeholder={isBangla ? "স্ট্যাটাস নির্বাচন করুন" : "Select Status"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border">
-                    <SelectItem value="paid">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shrink-0" />
-                        <span>{isBangla ? "পরিশোধিত (Paid)" : "Paid"}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="partial">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0" />
-                        <span>{isBangla ? "আংশিক পরিশোধ (Partial)" : "Partial"}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="unpaid">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-rose-500 inline-block shrink-0" />
-                        <span>{isBangla ? "অপরিশোধিত (Unpaid)" : "Unpaid"}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Expense Note */}
-              <div className="space-y-1.5 w-full">
-                <Label className="text-xs font-semibold text-muted-foreground">
-                  {isBangla ? "ভাউচার নোট / বিবরণ" : "Expense Note"}
-                </Label>
-                <Input
-                  type="text"
-                  placeholder={isBangla ? "ভাউচার / রসিদের বিবরণ (ঐচ্ছিক)" : "Voucher / receipt details (optional)"}
-                  value={expenseNote}
-                  onChange={(e) => setExpenseNote(e.target.value)}
-                  className="w-full h-10 text-xs bg-muted/20 border-border"
-                />
-              </div>
-            </div>
-
-            {/* Row 4: Amount, Due Amount (if Partial) / Unpaid Amount (if Unpaid) & Date */}
-            {paymentStatus === "partial" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Amount / Paid Amount */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "পরিশোধিত পরিমাণ" : "Paid Amount"} <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative flex items-center w-full">
-                    <span className="absolute left-3 text-sm font-bold text-muted-foreground select-none">
-                      ৳
-                    </span>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full h-10 pl-8 font-mono text-sm bg-muted/20 border-border focus:border-primary"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Due Amount (Yellow/Amber Vibe) */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-amber-500">
-                    {isBangla ? "বকেয়া পরিমাণ" : "Due Amount"} <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative flex items-center w-full">
-                    <span className="absolute left-3 text-sm font-bold text-amber-500 select-none">
-                      ৳
-                    </span>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="0.00"
-                      value={dueAmount}
-                      onChange={(e) => setDueAmount(e.target.value)}
-                      className="w-full h-10 pl-8 font-mono text-sm bg-amber-500/10 border-amber-500/30 text-amber-400 focus:border-amber-500"
-                      required={paymentStatus === "partial"}
-                    />
-                  </div>
-                </div>
-
-                {/* Date Field with Popover and Calendar */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "তারিখ" : "Date"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-10 px-3 justify-between text-left font-normal bg-muted/20 border-border text-foreground hover:bg-muted/30 text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
-                      >
-                        <span className="truncate">
-                          {entryDate
-                            ? isBangla
-                              ? formatBnDate(entryDate)
-                              : format(entryDate, "dd MMM yyyy")
-                            : isBangla
-                            ? "তারিখ নির্বাচন করুন"
-                            : "Select date"}
-                        </span>
-                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
-                      <CalendarPicker
-                        mode="single"
-                        selected={entryDate}
-                        onSelect={(date) => date && setEntryDate(date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            ) : paymentStatus === "unpaid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Unpaid Amount (Red/Rose Vibe) */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-rose-500">
-                    {isBangla ? "অপরিশোধিত পরিমাণ" : "Unpaid Amount"} <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative flex items-center w-full">
-                    <span className="absolute left-3 text-sm font-bold text-rose-500 select-none">
-                      ৳
-                    </span>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full h-10 pl-8 font-mono text-sm bg-rose-500/10 border-rose-500/30 text-rose-400 focus:border-rose-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Date Field with Popover and Calendar */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "তারিখ" : "Date"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-10 px-3 justify-between text-left font-normal bg-muted/20 border-border text-foreground hover:bg-muted/30 text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
-                      >
-                        <span className="truncate">
-                          {entryDate
-                            ? isBangla
-                              ? formatBnDate(entryDate)
-                              : format(entryDate, "dd MMM yyyy")
-                            : isBangla
-                            ? "তারিখ নির্বাচন করুন"
-                            : "Select date"}
-                        </span>
-                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
-                      <CalendarPicker
-                        mode="single"
-                        selected={entryDate}
-                        onSelect={(date) => date && setEntryDate(date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Amount Field with Prefix */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "পরিমাণ" : "Amount"} <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative flex items-center w-full">
-                    <span className="absolute left-3 text-sm font-bold text-muted-foreground select-none">
-                      ৳
-                    </span>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="0.00"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full h-10 pl-8 font-mono text-sm bg-muted/20 border-border focus:border-primary"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Date Field with Popover and Calendar */}
-                <div className="space-y-1.5 w-full">
-                  <Label className="text-xs font-semibold text-muted-foreground">
-                    {isBangla ? "তারিখ" : "Date"} <span className="text-destructive">*</span>
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-10 px-3 justify-between text-left font-normal bg-muted/20 border-border text-foreground hover:bg-muted/30 text-xs flex items-center gap-2 cursor-pointer transition-colors shadow-2xs"
-                      >
-                        <span className="truncate">
-                          {entryDate
-                            ? isBangla
-                              ? formatBnDate(entryDate)
-                              : format(entryDate, "dd MMM yyyy")
-                            : isBangla
-                            ? "তারিখ নির্বাচন করুন"
-                            : "Select date"}
-                        </span>
-                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
-                      <CalendarPicker
-                        mode="single"
-                        selected={entryDate}
-                        onSelect={(date) => date && setEntryDate(date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )}
-
-            {/* Row 4: Recurring Expense Toggle Banner */}
-            {/* <div className="rounded-xl border border-border/70 bg-muted/15 p-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
-                  <RefreshCw className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-foreground">
-                    {isBangla ? "পুনরাবৃত্তিমূলক ব্যয়" : "Recurring Expense"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {isBangla
-                      ? "এই ব্যয়টি নির্দিষ্ট বিরতিতে ঘটে (যেমন: মাসিক দোকান ভাড়া)"
-                      : "This expense repeats regularly (e.g. monthly rent)"}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={isRecurring}
-                onCheckedChange={setIsRecurring}
-                className="cursor-pointer"
-              />
-            </div> */}
-
-            {/* If Recurring is ON -> Extra options */}
-            {/* {isRecurring && (
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/20 text-xs animate-in fade-in duration-200">
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">
-                    {isBangla ? "পুনরাবৃত্তির ধরণ" : "Frequency"}
-                  </Label>
-                  <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
-                    <SelectTrigger className="w-full h-8 text-xs bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">{isBangla ? "সাপ্তাহিক" : "Weekly"}</SelectItem>
-                      <SelectItem value="monthly">{isBangla ? "মাসিক" : "Monthly"}</SelectItem>
-                      <SelectItem value="yearly">{isBangla ? "বার্ষিক" : "Yearly"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">
-                    {isBangla ? "পরবর্তী পরিশোধের তারিখ" : "Next Due Date"}
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-8 px-2.5 justify-between text-left font-normal bg-card border border-border rounded-lg text-foreground hover:bg-muted/30 text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                      >
-                        <span className="truncate">
-                          {recurringDueDate
-                            ? isBangla
-                              ? formatBnDate(recurringDueDate)
-                              : format(recurringDueDate, "dd MMM yyyy")
-                            : isBangla
-                            ? "তারিখ নির্বাচন করুন"
-                            : "Select date"}
-                        </span>
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 border-border bg-card shadow-lg" align="start">
-                      <CalendarPicker
-                        mode="single"
-                        selected={recurringDueDate}
-                        onSelect={(date) => date && setRecurringDueDate(date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )} */}
-
-            {/* Row 5: Attachment Drag & Drop + Capture Photo */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">
-                {isBangla ? "ডকুমেন্ট সংযুক্তি" : "Attachment"}
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                {/* Drag & Drop Zone (Col Span 8) */}
-                <label className="sm:col-span-8 border border-dashed border-border/80 hover:border-indigo-500/50 rounded-xl p-3.5 bg-muted/10 hover:bg-muted/20 transition-all flex items-center justify-center gap-3 cursor-pointer group">
-                  <Upload className="h-4 w-4 text-muted-foreground group-hover:text-indigo-400 transition-colors" />
-                  <div className="text-left">
-                    <p className="text-[11.5px] font-medium text-foreground">
-                      {attachmentName ||
-                        (isBangla
-                          ? "ফাইল টেনে আনুন অথবা আপলোড করতে ক্লিক করুন"
-                          : "Drag & drop files here or click to upload")}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {isBangla
-                        ? "সমর্থিত ফরম্যাট: JPG, PNG, PDF (সর্বোচ্চ ৫MB)"
-                        : "Supports: JPG, PNG, PDF (Max 5MB)"}
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".jpg,.jpeg,.png,.pdf"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        const file = e.target.files[0];
-                        setReceiptFile(file);
-                        setAttachmentName(file.name);
-                        toast({
-                          title: isBangla ? "ফাইল সংযুক্ত হয়েছে" : "File Attached",
-                          description: file.name,
-                        });
-                      }
-                    }}
-                  />
-                </label>
-
-                {/* Capture Photo Button (Col Span 4) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAttachmentName("voucher_camera_photo.jpg");
-                    toast({
-                      title: isBangla ? "ছবি তোলা হয়েছে" : "Photo Captured",
-                      description: isBangla ? "রসিদের ছবি সফলভাবে গৃহীত।" : "Receipt image snapped successfully.",
-                    });
-                  }}
-                  className="sm:col-span-4 h-11 px-4 rounded-xl border border-border/80 bg-card hover:bg-muted/40 text-xs font-medium text-foreground flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <Camera className="h-4 w-4 text-muted-foreground" />
-                  <span>{isBangla ? "ছবি তুলুন" : "Capture Photo"}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-red-500 text-white hover:bg-red-500/90 font-semibold text-xs px-6 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-md transition-all"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Save className="h-3.5 w-3.5" />
-                )}
-                {isBangla ? "ব্যয় সংরক্ষণ করুন" : "Save Expense"}
-              </Button>
-            </div>
-          </form>
+          <RecordNewExpense
+            expenseCategories={expenseCategories}
+            branchesData={branchesData}
+            paymentMethodsData={paymentMethodsData}
+            isBangla={isBangla}
+            onOpenAddCategory={handleOpenAddCategory}
+          />
 
           {/* -------------------------------------------------------------
               RIGHT: 2 STACKED CARDS (Categories + Expense Overview) (Col Span 5)
@@ -1613,17 +938,17 @@ const UTILITY_TYPES = [
           >
             <div className="rounded-2xl border border-border/80 bg-card/95 shadow-sm backdrop-blur-sm overflow-hidden flex flex-col h-full flex-1">
               {/* List Header */}
-              <div className="p-5 pb-4 border-b border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/10">
-                <div className="space-y-0.5">
+              <div className="p-3.5 sm:p-5 pb-3 sm:pb-4 border-b border-border/80 flex flex-row items-center justify-between gap-2 bg-muted/10">
+                <div className="space-y-0.5 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-indigo-400" />
-                    {/* <h3 className="text-base font-bold text-foreground">
+                    <Receipt className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-rose-500 shrink-0" />
+                    <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
                       {isBangla
-                        ? `ব্যয়ের তালিকা (${toBnNum(filteredExpenses.length)})`
-                        : `Expenses (${filteredExpenses.length})`}
-                    </h3> */}
+                        ? `ব্যয়ের তালিকা (${toBnNum(expenses?.length || 0)})`
+                        : `Expenses (${expenses?.length || 0})`}
+                    </h3>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground hidden sm:block">
                     {isBangla
                       ? "বিস্তারিত দেখতে তালিকায় ক্লিক করুন"
                       : "Click any item to view full details"}
@@ -1631,16 +956,26 @@ const UTILITY_TYPES = [
                 </div>
 
                 {!selectedExpense && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => window.print()}
-                      className="h-8 text-xs rounded-xl gap-1.5 cursor-pointer"
+                      className="hidden md:flex h-8 text-xs rounded-xl gap-1.5 cursor-pointer px-2.5 sm:px-3"
+                      title={isBangla ? "প্রিন্ট" : "Print"}
                     >
                       <Printer className="h-3.5 w-3.5" />
                       <span>{isBangla ? "প্রিন্ট" : "Print"}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsRecordModalOpen(true)}
+                      className="md:hidden h-8 px-2.5 sm:px-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>{isBangla ? "নতুন ব্যয়" : "New Expense"}</span>
                     </Button>
                   </div>
                 )}
@@ -1714,7 +1049,9 @@ const UTILITY_TYPES = [
                     </p>
                   </div>
                 ) : (
-                  <table className="w-full text-left text-xs border-collapse">
+                  <>
+                    <div className="hidden md:block">
+                      <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-border/80 bg-muted/30 text-muted-foreground font-semibold text-[11px]">
                         <th className="py-3 px-3.5">{isBangla ? "ভাউচার ও বিবরণ" : "Voucher & Item"}</th>
@@ -1885,7 +1222,182 @@ const UTILITY_TYPES = [
                       })}
                     </tbody>
                   </table>
-                )}
+                </div>
+
+                {/* Mobile List Cards View */}
+                <div className="md:hidden">
+                  {/* Top of List Bar: Download Button */}
+                  <div className="px-3.5 py-2 bg-muted/20 border-b border-border/60 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      {isBangla
+                        ? `মোট রেকর্ড: ${toBnNum(expenses.length)}`
+                        : `Total Records: ${expenses.length}`}
+                    </span>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs rounded-lg gap-1.5 cursor-pointer px-2.5 bg-card border-border/80 hover:bg-muted/50 text-foreground shadow-2xs font-medium"
+                        >
+                          <Download className="h-3.5 w-3.5 text-rose-500" />
+                          <span>{isBangla ? "ডাউনলোড" : "Download"}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-card border-border shadow-lg">
+                        <DropdownMenuItem onClick={handleExportExpensesCSV} className="cursor-pointer py-2">
+                          <Download className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          <span>{isBangla ? "CSV ফাইল ডাউনলোড (.csv)" : "Download CSV (.csv)"}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.print()} className="cursor-pointer py-2">
+                          <Printer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          <span>{isBangla ? "PDF / প্রিন্ট কপি" : "Print / PDF Document"}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="divide-y divide-border/60">
+                  {expenses.map((exp: any) => {
+                    const Icon = getCategoryIcon(exp.category?.icon || exp.category?.name);
+                    const isSelected = selectedExpense?.id === exp.id;
+                    const catNameEn = exp.category?.name || "Expense";
+                    const catNameBn = exp.category?.nameBn || catNameEn;
+                    const catColor = exp.category?.color || "#F59E0B";
+                    const voucherCode = exp.voucherCode || (exp.id ? `EXP-${exp.id.slice(-6).toUpperCase()}` : "EXP-000000");
+                    const branchName = exp.branch?.name || branchesData?.find((b: any) => b.id === exp.branchId)?.name || "Main Branch";
+                    const paymentMethodKey = exp.account?.type || exp.paymentMethod || "cash";
+                    const payInfo = PAYMENT_METHOD_MAP[paymentMethodKey] || {
+                      en: exp.account?.name || paymentMethodKey,
+                      bn: exp.account?.name || paymentMethodKey,
+                      badgeColor: "bg-muted text-muted-foreground",
+                    };
+                    const dateObj = exp.date ? new Date(exp.date) : new Date(exp.createdAt || Date.now());
+                    const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
+                    const dateEn = format(validDate, "MMM dd, yyyy");
+                    const dateBn = formatBnDate(validDate);
+                    const amountVal = typeof exp.amount === "number" ? exp.amount : parseFloat(exp.amount) || 0;
+                    const description = exp.description || exp.note || "—";
+                    const attachment = exp.receipt
+                      ? typeof exp.receipt === "string"
+                        ? exp.receipt.split("/").pop()
+                        : "receipt.jpg"
+                      : null;
+
+                    return (
+                      <div
+                        key={exp.id}
+                        onClick={() => setSelectedExpense(exp)}
+                        className={cn(
+                          "p-3.5 space-y-2.5 hover:bg-muted/30 transition-colors cursor-pointer",
+                          isSelected ? "bg-indigo-500/10 border-l-2 border-indigo-500" : ""
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="p-1.5 rounded-lg shrink-0 border"
+                              style={{
+                                backgroundColor: `${catColor}15`,
+                                borderColor: `${catColor}30`,
+                                color: catColor,
+                              }}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-mono font-bold text-foreground text-xs">
+                                  {voucherCode}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground font-medium truncate">
+                                  • {isBangla ? catNameBn : catNameEn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono mt-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                <span>{isBangla ? dateBn : dateEn}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-mono font-bold text-rose-400 text-xs sm:text-sm">
+                              {isBangla
+                                ? `-৳${toBnNum(amountVal.toLocaleString())}`
+                                : `-৳${amountVal.toLocaleString()}`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {description && description !== "—" && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 pl-0.5">
+                            {description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-2 text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground truncate">
+                              <Building2 className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{branchName}</span>
+                            </span>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.5 rounded text-[9px] font-medium border shrink-0",
+                                payInfo.badgeColor
+                              )}
+                            >
+                              {isBangla ? payInfo.bn : payInfo.en}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {attachment && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] text-indigo-300 hover:text-indigo-200 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20 cursor-pointer"
+                                onClick={() => {
+                                  if (typeof exp.receipt === "string") {
+                                    window.open(exp.receipt, "_blank");
+                                  } else {
+                                    toast({
+                                      title: isBangla ? "সংযুক্ত ফাইল" : "Attached Document",
+                                      description: attachment,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Paperclip className="h-3 w-3" />
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground rounded cursor-pointer"
+                              onClick={() => setSelectedExpense(exp)}
+                              title={isBangla ? "বিস্তারিত দেখুন" : "View Details"}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-rose-400 rounded cursor-pointer"
+                              onClick={() => handleDeleteExpense(exp.id)}
+                              title={isBangla ? "মুছে ফেলুন" : "Delete"}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+            )}
               </div>
             </div>
           </div>
@@ -2416,6 +1928,27 @@ const UTILITY_TYPES = [
                 </span>
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Record New Expense Modal for Small Devices */}
+        <Dialog open={isRecordModalOpen} onOpenChange={setIsRecordModalOpen}>
+          <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-foreground">
+                {isBangla ? "নতুন ব্যয় রেকর্ড করুন" : "Record New Expense"}
+              </DialogTitle>
+            </DialogHeader>
+            <RecordNewExpense
+              expenseCategories={expenseCategories}
+              branchesData={branchesData}
+              paymentMethodsData={paymentMethodsData}
+              isBangla={isBangla}
+              onOpenAddCategory={handleOpenAddCategory}
+              onSuccess={() => setIsRecordModalOpen(false)}
+              onCancel={() => setIsRecordModalOpen(false)}
+              isModal
+            />
           </DialogContent>
         </Dialog>
       </div>
